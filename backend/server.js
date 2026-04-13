@@ -51,8 +51,12 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage: storage });
 
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ Đã kết nối MongoDB (HaiHand)!'))
-  .catch(err => console.error('❌ Lỗi DB:', err));
+ mongoose.connect(DB_URL)
+  .then(() => console.log('✅ Đã kết nối MongoDB Atlas thành công!'))
+  .catch(err => {
+    console.error('❌ Lỗi kết nối DB:', err.message);
+    process.exit(1); // Cho sập luôn để mình biết là nó không đọc được link
+  });
 
 // ==========================================
 // 2. ĐỊNH NGHĨA DATABASE

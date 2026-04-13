@@ -50,7 +50,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
-mongoose.connect('mongodb://127.0.0.1:27017/HaiHand')
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ Đã kết nối MongoDB (HaiHand)!'))
   .catch(err => console.error('❌ Lỗi DB:', err));
 

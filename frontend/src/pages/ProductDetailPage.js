@@ -20,7 +20,7 @@ const ProductDetailPage = () => {
   const [showFullPhone, setShowFullPhone] = useState(false); // Thêm state này
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
-  const API_URL = 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     const fetchPostAndReviews = async () => {

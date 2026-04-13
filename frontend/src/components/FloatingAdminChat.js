@@ -21,7 +21,7 @@ const FloatingAdminChat = () => {
     const dragInfo = useRef({ isDragging: false, startX: 0, startY: 0, startRight: 0, startBottom: 0, isClick: true });
     
     const currentUser = JSON.parse(localStorage.getItem('user'));
-    const API_URL = 'http://localhost:4000';
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
     const isEmbedded = window.self !== window.top;
     const isAdmin = currentUser?.role === 'Admin';

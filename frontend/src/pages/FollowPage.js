@@ -11,7 +11,7 @@ const FollowPage = () => {
     // 🚀 STATE LƯU CỐ ĐỊNH SỐ LƯỢNG
     const [counts, setCounts] = useState({ followers: 0, following: 0 });
     
-    const API_URL = 'http://localhost:4000';
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
     const user = JSON.parse(localStorage.getItem('user'));
 
     // LẤY SỐ LƯỢNG TỔNG 1 LẦN DUY NHẤT LÚC VÀO TRANG

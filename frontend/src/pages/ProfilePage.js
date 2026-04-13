@@ -95,7 +95,7 @@ const ProfilePage = () => {
   const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', cccd: '' });
   const [selectedImage, setSelectedImage] = useState(null);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
-  const API_URL = 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');

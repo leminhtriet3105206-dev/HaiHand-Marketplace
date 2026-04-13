@@ -6,7 +6,7 @@ import Footer from '../components/Footer';
 
 const HaiPayPage = () => {
   const navigate = useNavigate();
-  const API_URL = 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
   
   const [user, setUser] = useState(JSON.parse(localStorage.getItem('user')));
   const [activeTab, setActiveTab] = useState('deposit'); 

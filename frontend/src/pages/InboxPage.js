@@ -8,7 +8,7 @@ const InboxPage = () => {
   const navigate = useNavigate();
   const socket = useRef(); 
   const user = JSON.parse(localStorage.getItem('user')) || {};
-  const API_URL = 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   const fetchConversations = async () => {
     if (!user._id) return;

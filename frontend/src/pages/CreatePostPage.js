@@ -22,7 +22,7 @@ const CreatePostPage = () => {
   const [selectedCity, setSelectedCity] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('');
 
-  const API_URL = 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     axios.get('https://provinces.open-api.vn/api/?depth=2')

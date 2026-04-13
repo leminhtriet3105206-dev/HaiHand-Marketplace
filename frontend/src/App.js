@@ -17,7 +17,7 @@ import HaiPayPage from './pages/HaiPayPage';
 import HaiPayResult from './pages/HaiPayResult';
 import PublicProfile from './pages/PublicProfile';
 import FollowPage from './pages/FollowPage';
-
+import ProductListPage from './pages/ProductListPage';
 import FloatingAdminChat from './components/FloatingAdminChat';
 
 function App() {
@@ -40,6 +40,7 @@ function App() {
           <Route path="/haipay" element={<HaiPayPage />} />
           <Route path="/haipay-result" element={<HaiPayResult />} />
           <Route path="/public-profile/:userId" element={<PublicProfile />} />
+          <Route path="/products" element={<ProductListPage />} />
           <Route path="/followed/followed" element={<FollowPage />} />
         </Routes>
 

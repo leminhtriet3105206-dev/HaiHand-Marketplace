@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -71,6 +73,7 @@ const Post = mongoose.models.Post || mongoose.model('Post', new mongoose.Schema(
   description: { type: String, required: true },
   images: [{ type: String }],
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  details: { type: Map, of: String },
   status: { type: String, default: 'PENDING' }
 }, { timestamps: true }));
 
@@ -665,22 +668,42 @@ app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
 
 app.get('/api/posts', async (req, res) => {
     try {
-        const { page = 1, limit = 8, category, search, location } = req.query;
+        // 🚀 BƯỚC 1: Lấy thêm minPrice, maxPrice và sort từ yêu cầu
+        const { page = 1, limit = 8, category, search, location, sort, minPrice, maxPrice } = req.query;
         let query = { status: 'APPROVED' }; 
 
-        if (category) query.category = category;
+        if (category && category !== 'Tất cả') query.category = category;
         if (search) query.title = { $regex: search, $options: 'i' };
-        if (location) query.location = { $regex: location, $options: 'i' };
+        
+        // Regex tìm kiếm địa điểm linh hoạt
+        if (location && location !== 'Toàn quốc') {
+            query.location = { $regex: location, $options: 'i' };
+        }
+
+        // 🚀 BƯỚC 2: LOGIC LỌC GIÁ (Đây là chỗ bác đang thiếu)
+        if (minPrice || maxPrice) {
+            query.price = {};
+            if (minPrice) query.price.$gte = Number(minPrice); // Lớn hơn hoặc bằng
+            if (maxPrice) query.price.$lte = Number(maxPrice); // Nhỏ hơn hoặc bằng
+        }
+
+        // 🚀 BƯỚC 3: XỬ LÝ SẮP XẾP (SORT)
+        let sortOption = { createdAt: -1 }; // Mặc định tin mới nhất
+        if (sort === 'price-asc') sortOption = { price: 1 };  // Giá tăng dần
+        if (sort === 'price-desc') sortOption = { price: -1 }; // Giá giảm dần
 
         const posts = await Post.find(query)
             .populate('author', 'name avatar')
-            .sort({ createdAt: -1 })
+            .sort(sortOption) // Áp dụng sắp xếp vào đây
             .limit(limit * 1)
             .skip((page - 1) * limit)
             .exec();
 
         res.status(200).json(posts);
-    } catch (error) { res.status(500).json({ message: "Lỗi Server!" }); }
+    } catch (error) { 
+        console.error("Lỗi lọc bài đăng:", error);
+        res.status(500).json({ message: "Lỗi Server!" }); 
+    }
 });
 
 app.get('/api/posts/:id', async (req, res) => {
@@ -1510,24 +1533,30 @@ app.post('/api/vnpay/create_payment_url', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Lỗi tạo link VNPay' }); }
 });
 
+// ==========================================
+// 🚀 API: XÁC NHẬN THANH TOÁN VNPAY & BÁO CHO NGƯỜI BÁN
+// ==========================================
 app.post('/api/vnpay/verify', async (req, res) => {
     try {
-        const { orderId, vnp_ResponseCode } = req.body;
+        const { orderId, responseCode } = req.body;
+        if (!orderId) return res.status(400).json({ message: 'Thiếu mã đơn hàng!' });
+
         const order = await Order.findById(orderId);
+        if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
-        if (!order) return res.status(404).json({ error: 'Không tìm thấy đơn hàng!' });
+        if (responseCode === '00') {
+            // Chống React gọi 2 lần làm lỗi dữ liệu
+            if (order.status === 'Đã thanh toán (Admin giữ tiền)') {
+                return res.status(200).json({ message: 'Giao dịch đã được xử lý thành công trước đó!' });
+            }
 
-        if (vnp_ResponseCode === '00') {
-            // 1. Cập nhật trạng thái đơn hàng sang Đã thanh toán
             order.status = 'Đã thanh toán (Admin giữ tiền)';
             await order.save();
 
-            const userId = order.buyer;
-            const user = await User.findById(userId);
-
-            if (user) {
-                // 2. Trừ số lượng sản phẩm trong kho
-                for (const cartItem of user.cart) {
+            // 🚀 TRỪ KHO VÀ XÓA GIỎ HÀNG BẰNG findOneAndUpdate (Chống lỗi VersionError)
+            const user = await User.findById(order.buyer);
+            if (user && user.cart && user.cart.length > 0) {
+                for (let cartItem of user.cart) {
                     const post = await Post.findById(cartItem.product);
                     if (post) {
                         post.quantity = Math.max(0, post.quantity - cartItem.quantity);
@@ -1535,33 +1564,32 @@ app.post('/api/vnpay/verify', async (req, res) => {
                         await post.save();
                     }
                 }
-
-                // 3. 🚀 SỬA LỖI VERSIONERROR TẠI ĐÂY:
-                // Sử dụng findOneAndUpdate để xóa giỏ hàng mà không kiểm tra version (__v)
+                
+                // Xóa sạch giỏ hàng an toàn
                 await User.findOneAndUpdate(
-                    { _id: userId }, 
+                    { _id: order.buyer }, 
                     { $set: { cart: [] } },
-                    { __v: false, new: true } 
+                    { __v: false } 
                 );
             }
 
-            // 4. Bắn thông báo cho người bán
+            // 🔔 BẮN THÔNG BÁO CHO NGƯỜI BÁN
             await UserNotification.create({
                 user: order.seller,
                 title: '🎉 Bạn có đơn hàng mới!',
-                message: `Khách hàng vừa thanh toán thành công đơn hàng #${order._id.toString().slice(-6).toUpperCase()}. Hãy chuẩn bị hàng nhé!`,
+                message: `Khách hàng vừa thanh toán thành công đơn hàng #${order._id.toString().slice(-6).toUpperCase()}. Hãy vào Quản lý đơn -> Đơn Bán để chuẩn bị giao hàng nhé!`,
                 link: '/profile'
             });
 
             return res.status(200).json({ message: 'Giao dịch VNPay thành công!' });
         } else {
-            // Nếu thanh toán thất bại thì xóa đơn tạm
+            // Nếu khách hủy thanh toán thì xóa cái đơn hàng nháp đó đi
             await Order.findByIdAndDelete(orderId);
-            return res.status(400).json({ message: 'Giao dịch thất bại!' });
+            return res.status(400).json({ message: 'Giao dịch thất bại hoặc đã bị khách hủy!' });
         }
     } catch (error) { 
         console.error("Lỗi Verify VNPay:", error); 
-        res.status(500).json({ error: 'Lỗi hệ thống!' });
+        res.status(500).json({ error: 'Lỗi hệ thống khi xác nhận thanh toán!' }); 
     }
 });
 

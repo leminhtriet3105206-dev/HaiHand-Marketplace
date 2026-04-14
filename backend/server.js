@@ -596,13 +596,18 @@ app.get('/api/admin/test-notif', async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Lỗi" }); }
 });
 
-app.get('/api/admin/withdrawals', async (req, res) => {
+app.get('/admin/withdrawals', async (req, res) => {
     try {
-        // Tìm các giao dịch có type là 'withdraw' và status là 'pending'
-        const withdrawals = await Transaction.find({ type: 'withdraw', status: 'pending' }).sort({ createdAt: -1 });
-        res.json(withdrawals);
-    } catch (err) {
-        res.status(500).json({ message: 'Lỗi lấy danh sách rút tiền' });
+        // Tạm thời truyền mảng rỗng nếu bác chưa có bảng Transaction, hoặc lấy dữ liệu thật
+        // const withdrawals = await Transaction.find({ type: 'withdraw', status: 'pending' }).populate('user');
+        
+        // Đoạn này là quan trọng nhất: Gọi file withdrawals.ejs ra để hiển thị
+        res.render('admin/views/withdrawals', { 
+            withdrawals: [] // Chỗ này sau bác thay bằng biến lấy từ database nhé
+        });
+    } catch (error) {
+        console.error("Lỗi khi tải trang quản lý rút tiền:", error);
+        res.status(500).send("Đã xảy ra lỗi trên server");
     }
 });
 

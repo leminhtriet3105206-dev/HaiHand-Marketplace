@@ -1635,10 +1635,16 @@ const otpStore = new Map(); // Nơi lưu tạm mã OTP
 
 // Cấu hình tài khoản Gmail để gửi đi
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com', // Cú pháp chuẩn của Google
+    port: 465,              // Cổng bảo mật SSL
+    secure: true,           // Bật mã hóa
     auth: {
-        user: 'trietle3105@gmail.com', // Email của bác
-        pass: 'lzoryymurvmcrudb'       // Mật khẩu ứng dụng (đã bỏ dấu cách)
+        user: 'trietle3105@gmail.com',
+        pass: 'lzoryymurvmcrudb'
+    },
+    // Thêm đoạn này để ép Google không được từ chối kết nối
+    tls: {
+        rejectUnauthorized: false 
     }
 });
 

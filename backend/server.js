@@ -265,8 +265,7 @@ app.get('/admin/withdrawals', async (req, res) => {
     try {
         // 1. Mở khóa dòng này để nó mò vào Database lấy các lệnh đang chờ (pending)
         // Lưu ý: Nếu bảng giao dịch của bác tên khác (vd: History, Order) thì đổi chữ Transaction nhé
-        const withdrawalsData = await Transaction.find({ type: 'withdraw', status: 'pending' }).populate('user');
-        
+        const withdrawalsData = await Transaction.find({ type: 'Rút tiền', status: 'Đang xử lý' }).populate('user');
         // 2. Truyền dữ liệu thật vào giao diện
         res.render('withdrawals', { 
             withdrawals: withdrawalsData, // Thay cái [] bằng biến dữ liệu thật

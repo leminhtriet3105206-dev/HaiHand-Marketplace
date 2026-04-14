@@ -15,9 +15,7 @@ const app = express();
 
 // 🚀 BƯỚC QUAN TRỌNG: Chỉ dùng DUY NHẤT một cục CORS này, nó sẽ cho phép mọi thứ đi qua
 app.use(cors({
-    origin: function (origin, callback) {
-        callback(null, true);
-    },
+    origin: function (origin, callback) { callback(null, true); },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
@@ -1641,49 +1639,28 @@ app.post('/api/vnpay/verify', async (req, res) => {
 });
 
 
-// ==========================================
-// 🚀 TÍNH NĂNG KHÔI PHỤC MẬT KHẨU (ĐÃ GỠ NODEMAILER)
-// Chỉ làm nhiệm vụ kiểm tra Email và lưu mã OTP do React gửi lên
-// ==========================================
-const otpStore = new Map(); // Nơi lưu tạm mã OTP
-
-// API 1: Backend kiểm tra email và LƯU mã OTP do Frontend gửi lên
+const otpStore = new Map();
 app.post('/api/users/send-otp', async (req, res) => {
     try {
-        // Nhận email và cái mã OTP ngẫu nhiên từ Frontend
-        const { email, generatedOtp } = req.body; 
-
+        const { email, generatedOtp } = req.body;
         const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký tài khoản!' });
-
-        // Lưu mã Frontend tạo vào bộ nhớ, đếm ngược 5 phút
+        if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký!' });
         otpStore.set(email, { otp: generatedOtp, expire: Date.now() + 5 * 60 * 1000 }); 
-        
-        // Trả về OK để Frontend tiến hành tự gửi EmailJS
         res.json({ message: 'Đã lưu mã chờ xác nhận!' });
-    } catch (err) {
-        res.status(500).json({ message: 'Lỗi máy chủ!' });
-    }
+    } catch (err) { res.status(500).json({ message: 'Lỗi server!' }); }
 });
 
-// API 2: Nhập OTP và Mật khẩu mới để đổi (Giữ nguyên)
 app.post('/api/users/reset-password-otp', async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
         const record = otpStore.get(email);
-
-        if (!record) return res.status(400).json({ message: 'Vui lòng nhấn "Gửi mã OTP" trước!' });
-        if (Date.now() > record.expire) {
-            otpStore.delete(email); 
-            return res.status(400).json({ message: 'Mã OTP đã hết hạn, vui lòng lấy mã mới!' });
+        if (!record || Date.now() > record.expire || record.otp !== otp) {
+            return res.status(400).json({ message: 'Mã OTP sai hoặc hết hạn!' });
         }
-        if (record.otp !== otp) return res.status(400).json({ message: 'Mã OTP không chính xác!' });
-
         const user = await User.findOne({ email });
         user.password = newPassword;
         await user.save();
-        otpStore.delete(email); 
-
+        otpStore.delete(email);
         res.json({ message: '🎉 Đổi mật khẩu thành công!' });
     } catch (err) { res.status(500).json({ message: 'Lỗi hệ thống!' }); }
 });

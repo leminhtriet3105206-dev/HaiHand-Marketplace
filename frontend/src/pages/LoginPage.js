@@ -44,16 +44,15 @@ const LoginPage = () => {
             generatedOtp: generatedOtp 
         });
 
-        // 2. Gọi API EmailJS (Tôi đã điền chuẩn ID từ ảnh image_718c07 và 718c0e của bác)
         const emailParams = {
-            service_id: 'service_4q86uoa', // Lấy từ image_718c0e.png
-            template_id: 'template_v64f5jg', // Lấy từ image_718c07.png
-            user_id: 'FxVTloEF4YTi7S87P',    // Public Key lấy từ image_710127.png
-            template_params: {
-                email: forgotEmail, // Phải trùng với biến {{email}} trong template
-                otp: generatedOtp   // Phải trùng với biến {{otp}} trong template
-            }
-        };
+           service_id: 'service_4q86uoa',
+           template_id: 'template_v64f5jg',
+           user_id: 'FxVTloEF4YTi7S87P', // 👈 ĐÂY LÀ PUBLIC KEY CỦA BÁC
+           template_params: {
+                   email: forgotEmail,
+                   otp: generatedOtp
+    }
+};
 
         await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailParams);
         

@@ -108,6 +108,8 @@ const CreatePostPage = () => {
     e.preventDefault();
     const user = JSON.parse(localStorage.getItem('user'));
     const data = new FormData();
+       formData.append('author', user._id); 
+       formData.append('title', title);
     data.append('title', formData.title);
     data.append('price', formData.price);
     data.append('category', formData.category);

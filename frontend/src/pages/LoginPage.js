@@ -159,7 +159,7 @@ const LoginPage = () => {
                     ) : (
                         <form onSubmit={handleResetPassword}>
                             <div className="alert alert-success py-2 small border-0 bg-light text-success text-center mb-4">
-                                Đã gửi mã tới <b>{forgotEmail}</b>. Bác check hòm thư nhé!
+                                Đã gửi mã tới <b>{forgotEmail}</b>. Bạn check hòm thư nhé!
                             </div>
                             <div className="mb-3 text-center">
                                 <label className="form-label fw-bold small text-muted d-block mb-3">Mã xác thực OTP</label>

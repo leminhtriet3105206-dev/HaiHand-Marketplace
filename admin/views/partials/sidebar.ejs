@@ -101,22 +101,22 @@
                 return;
             }
 
-            // Đoạn code mới xử lý link thông minh dựa theo từ khoá
+            // Đoạn code mới xử lý link thông minh dựa theo từ khoá (Đã nâng cấp từ khóa)
             list.innerHTML = data.notifications.map(n => {
                 let targetLink = '#'; 
                 let titleLower = n.title.toLowerCase();
 
                 if (n.link) { 
                     targetLink = n.link; 
-                } else if (titleLower.includes('rút tiền')) {
+                } else if (titleLower.includes('rút tiền') || titleLower.includes('giải ngân')) {
                     targetLink = '/admin/withdrawals';
-                } else if (titleLower.includes('vi phạm') || titleLower.includes('báo cáo')) {
+                } else if (titleLower.includes('vi phạm') || titleLower.includes('báo cáo') || titleLower.includes('cảnh báo')) {
                     targetLink = '/admin/reports';
-                } else if (titleLower.includes('đơn hàng')) {
+                } else if (titleLower.includes('đơn hàng') || titleLower.includes('chốt đơn') || titleLower.includes('đơn mua') || titleLower.includes('giao hàng')) {
                     targetLink = '/orders';
-                } else if (titleLower.includes('bài viết') || titleLower.includes('tin đăng')) {
+                } else if (titleLower.includes('bài viết') || titleLower.includes('tin đăng') || titleLower.includes('sản phẩm mới')) {
                     targetLink = '/posts';
-                } else if (titleLower.includes('người dùng')) {
+                } else if (titleLower.includes('người dùng') || titleLower.includes('tài khoản')) {
                     targetLink = '/users';
                 }
 

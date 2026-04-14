@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });

@@ -45,7 +45,7 @@ const ReviewModal = ({ order, onClose, onSuccess }) => {
     e.preventDefault();
     if (comment.trim() === '') return alert("Vui lòng nhập nhận xét của bạn!");
     try {
-      await axios.post('http://localhost:4000/api/reviews', { seller: order.seller, buyer: order.buyer?._id || order.buyer, rating, comment, orderId: order._id });
+      await axios.post('https://haihand-marketplace.onrender.com/api/reviews', { seller: order.seller, buyer: order.buyer?._id || order.buyer, rating, comment, orderId: order._id });
       alert("✅ Gửi đánh giá thành công! Cảm ơn bạn.");
       onSuccess();
     } catch (error) { alert("❌ " + (error.response?.data?.message || "Lỗi gửi đánh giá")); }
@@ -95,7 +95,7 @@ const ProfilePage = () => {
   const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', cccd: '' });
   const [selectedImage, setSelectedImage] = useState(null);
   const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');

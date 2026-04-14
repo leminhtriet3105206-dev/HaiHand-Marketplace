@@ -21,7 +21,7 @@ const ProductListPage = () => {
 
     useEffect(() => {
         // Lấy danh sách danh mục để hiển thị cột bên trái
-        axios.get(`http://localhost:4000/api/categories`)
+        axios.get(`https://haihand-marketplace.onrender.com/api/categories`)
             .then(({ data }) => setCategories(data))
             .catch(console.error);
     }, []);
@@ -30,7 +30,7 @@ const ProductListPage = () => {
         setLoading(true);
         try {
             // Gọi API lọc sản phẩm với đầy đủ tham số bao gồm cả giá và sắp xếp
-            const res = await axios.get(`http://localhost:4000/api/posts`, {
+            const res = await axios.get(`https://haihand-marketplace.onrender.com/api/posts`, {
                 params: { category, location, search, sort, minPrice, maxPrice }
             });
             setPosts(res.data);

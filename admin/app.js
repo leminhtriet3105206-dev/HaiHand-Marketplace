@@ -275,5 +275,5 @@ app.get("/categories/delete/:id", checkLogin, async (req, res) => {
 });
 
 app.listen(4000, () =>
-  console.log("🚀 Server Admin chạy tại: http://localhost:4000"),
+  console.log("🚀 Server Admin chạy tại: https://haihand-marketplace.onrender.com"),
 );

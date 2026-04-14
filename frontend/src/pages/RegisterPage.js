@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   

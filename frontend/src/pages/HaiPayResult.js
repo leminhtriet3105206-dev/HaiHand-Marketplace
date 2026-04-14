@@ -17,7 +17,7 @@ const HaiPayResult = () => {
 
             if (responseCode === '00') {
                 try {
-                    await axios.post('http://localhost:4000/api/haipay/verify', {
+                    await axios.post('https://haihand-marketplace.onrender.com/api/haipay/verify', {
                         txnRef, responseCode, amount
                     });
                     setStatus('🎉 Nạp tiền HàiPay thành công! Số dư đã được cập nhật.');

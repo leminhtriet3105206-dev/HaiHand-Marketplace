@@ -9,7 +9,7 @@ const CartPage = () => {
   const navigate = useNavigate();
   
   const currentUser = JSON.parse(localStorage.getItem('user'));
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [address, setAddress] = useState(currentUser?.address || '');

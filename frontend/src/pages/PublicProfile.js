@@ -10,7 +10,7 @@ const PublicProfile = () => {
   const [isFollowing, setIsFollowing] = useState(false);
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
   
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
   const currentUser = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {

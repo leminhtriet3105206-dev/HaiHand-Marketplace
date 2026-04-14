@@ -7,7 +7,7 @@ import Footer from '../components/Footer';
 const FavoritesPage = () => {
   const [favorites, setFavorites] = useState([]);
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {

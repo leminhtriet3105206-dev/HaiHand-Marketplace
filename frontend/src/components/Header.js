@@ -4,6 +4,7 @@ import axios from 'axios';
 import { io } from 'socket.io-client';
 import './Header.css'; 
 
+
 const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, location: propLocation, setLocation: propSetLocation }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams(); 

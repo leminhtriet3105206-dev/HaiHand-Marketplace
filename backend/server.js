@@ -12,6 +12,14 @@ const moment = require('moment');
 const querystring = require('qs');
 
 const app = express();
+app.use(cors({
+    origin: function (origin, callback) {
+        callback(null, true); // Chấp nhận mọi nguồn gốc (Vercel, Localhost,...)
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { 

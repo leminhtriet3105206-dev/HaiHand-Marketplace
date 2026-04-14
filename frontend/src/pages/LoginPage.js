@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
-import emailjs from '@emailjs/browser'; // 🚀 ĐÃ THÊM IMPORT EMAILJS VÀO ĐÂY
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -30,9 +29,7 @@ const LoginPage = () => {
     }
   };
 
-  // ==============================================================
-  // 🚀 NÚT 1: GỬI MÃ OTP VỀ EMAIL (Dùng EmailJS siêu mượt)
-  // ==============================================================
+
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return alert('Vui lòng nhập Email!');
@@ -41,33 +38,31 @@ const LoginPage = () => {
     try {
         const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // 1. Gửi mã lên Backend
+        // 1. Gửi mã lên Backend để nó "giữ hộ" và kiểm tra Email tồn tại
         await axios.post(`${API_URL}/api/users/send-otp`, { 
             email: forgotEmail, 
             generatedOtp: generatedOtp 
         });
 
-        // 2. Gọi EmailJS
-        await emailjs.send(
-            'service_4q86uoa',      // Bác kiểm tra kỹ KHÔNG có dấu cách dư thừa nhé
-            'template_v64f5jg',     
-            { 
-                email: forgotEmail, 
-                otp: generatedOtp   
-            },
-            {
-                publicKey: 'FxVTloEF4YTi7S87P'
-            }   
-        );
+        // 2. GỌI THẲNG API CỦA EMAILJS BẰNG AXIOS (KHÔNG DÙNG THƯ VIỆN)
+        const emailData = {
+            service_id: 'service_4q86uoa',
+            template_id: 'template_v64f5jg',
+            user_id: 'FxVTloEF4YTi7S87P', // EmailJS quy định Public Key gọi là user_id trong API
+            template_params: {
+                email: forgotEmail,
+                otp: generatedOtp
+            }
+        };
+
+        // Bắn API thẳng mặt EmailJS
+        await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailData);
         
         alert("📩 Đã gửi mã OTP vào Email! Bác check hộp thư nhé.");
         setIsOtpSent(true); 
     } catch (error) {
-        console.error("LỖI CHI TIẾT:", error);
-        
-        // 🚀 Đã sửa cách bắt lỗi: Ưu tiên đọc lỗi của EmailJS (error.text)
-        const errorMsg = error.text || error.response?.data?.message || "Lỗi không xác định";
-        alert("❌ Lỗi: " + errorMsg);
+        console.error("LỖI GỬI OTP:", error);
+        alert("❌ Lỗi hệ thống: Không thể gửi mã OTP lúc này!");
     }
     setIsLoading(false);
   };

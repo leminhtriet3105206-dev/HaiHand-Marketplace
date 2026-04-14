@@ -261,6 +261,21 @@ app.get('/dashboard', requireAdmin, async (req, res) => {
   }
 });
 
+app.get('/admin/withdrawals', async (req, res) => {
+    try {
+        // Tạm thời truyền mảng rỗng nếu bác chưa có bảng Transaction, hoặc lấy dữ liệu thật
+        // const withdrawals = await Transaction.find({ type: 'withdraw', status: 'pending' }).populate('user');
+        
+        // Đoạn này là quan trọng nhất: Gọi file withdrawals.ejs ra để hiển thị
+        res.render('admin/views/withdrawals', { 
+            withdrawals: [] // Chỗ này sau bác thay bằng biến lấy từ database nhé
+        });
+    } catch (error) {
+        console.error("Lỗi khi tải trang quản lý rút tiền:", error);
+        res.status(500).send("Đã xảy ra lỗi trên server");
+    }
+});
+
 app.get('/admin/chat', requireAdmin, (req, res) => {
     res.render('admin-chat', { active: 'chat' });
 });
@@ -594,21 +609,6 @@ app.get('/api/admin/test-notif', async (req, res) => {
         });
         res.json({ message: "Đã bắn thông báo test!" });
     } catch (error) { res.status(500).json({ error: "Lỗi" }); }
-});
-
-app.get('/admin/withdrawals', async (req, res) => {
-    try {
-        // Tạm thời truyền mảng rỗng nếu bác chưa có bảng Transaction, hoặc lấy dữ liệu thật
-        // const withdrawals = await Transaction.find({ type: 'withdraw', status: 'pending' }).populate('user');
-        
-        // Đoạn này là quan trọng nhất: Gọi file withdrawals.ejs ra để hiển thị
-        res.render('admin/views/withdrawals', { 
-            withdrawals: [] // Chỗ này sau bác thay bằng biến lấy từ database nhé
-        });
-    } catch (error) {
-        console.error("Lỗi khi tải trang quản lý rút tiền:", error);
-        res.status(500).send("Đã xảy ra lỗi trên server");
-    }
 });
 
 // API Duyệt lệnh rút tiền

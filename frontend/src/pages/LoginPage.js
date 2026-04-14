@@ -20,7 +20,7 @@ const LoginPage = () => {
   const [showForgotPass, setShowForgotPass] = useState(false);
 
   // ==============================================================
-  // HÀM ĐĂNG NHẬP (GIỮ NGUYÊN)
+  // HÀM ĐĂNG NHẬP
   // ==============================================================
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -34,7 +34,7 @@ const LoginPage = () => {
   };
 
   // ==============================================================
-  // 🚀 NÚT 1: GỬI MÃ OTP VỀ EMAIL (ĐÃ CẬP NHẬT 3 KEY MỚI)
+  // 🚀 NÚT 1: GỬI MÃ OTP VỀ EMAIL (CHẾ ĐỘ CHUYÊN NGHIỆP)
   // ==============================================================
   const handleSendOtp = async (e) => {
     e.preventDefault();
@@ -42,20 +42,19 @@ const LoginPage = () => {
     setIsLoading(true);
     
     try {
-        // 1. Frontend tự tạo mã OTP 6 số ngẫu nhiên
         const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // 2. Gửi mã lên Backend để lưu mã OTP chờ check
+        // 1. Đồng bộ mã OTP lên Backend
         await axios.post(`${API_URL}/api/users/send-otp`, { 
             email: forgotEmail, 
             generatedOtp: generatedOtp 
         });
 
-        // 3. Ráp 3 Key bác vừa gửi vào đây (Dùng Axios đấm thẳng API EmailJS)
+        // 2. Gọi EmailJS (Sử dụng 3 Key bác đã cung cấp)
         const emailParams = {
-           service_id: 'service_4q86uoa',   // Service ID của bác
-           template_id: 'template_v64f5jg',  // Template ID của bác
-           user_id: 'FxVTIoEF4YTi7S87P',     // 🚀 Public Key MỚI (chữ I hoa)
+           service_id: 'service_4q86uoa',
+           template_id: 'template_v64f5jg',
+           user_id: 'FxVTIoEF4YTi7S87P', // 🚀 Public Key chuẩn (chữ I hoa)
            template_params: {
                    email: forgotEmail,
                    otp: generatedOtp
@@ -64,18 +63,18 @@ const LoginPage = () => {
 
         await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailParams);
         
-        alert("📩 Tuyệt vời! Mã OTP đã được gửi vào Email của bác. Bác check hòm thư nhé!");
+        alert("📩 Hệ thống HaiHand đã gửi mã xác nhận. Bác check hòm thư nhé!");
         setIsOtpSent(true); 
     } catch (error) {
         console.error("LỖI GỬI OTP:", error);
         const detail = error.response?.data || error.message;
-        alert("❌ Lỗi: " + (typeof detail === 'string' ? detail : JSON.stringify(detail)));
+        alert("❌ Lỗi hệ thống: " + (typeof detail === 'string' ? detail : "Vui lòng thử lại sau!"));
     }
     setIsLoading(false);
   };
 
   // ==============================================================
-  // NÚT 2: XÁC NHẬN MÃ VÀ ĐỔI PASS (GIỮ NGUYÊN)
+  // NÚT 2: XÁC NHẬN MÃ VÀ ĐỔI PASS
   // ==============================================================
   const handleResetPassword = async (e) => {
     e.preventDefault();
@@ -88,22 +87,31 @@ const LoginPage = () => {
       });
       alert("✅ " + data.message);
       
-      // Reset lại luồng, quay về màn đăng nhập
       setIsForgotMode(false);
       setIsOtpSent(false);
       setForgotEmail('');
       setOtpForm({ otp: '', newPassword: '' });
     } catch (error) { 
-        alert("❌ " + (error.response?.data?.message || "Lỗi khôi phục!")); 
+        alert("❌ " + (error.response?.data?.message || "Mã xác thực không chính xác!")); 
     }
   };
 
   return (
-    <div className="d-flex justify-content-center align-items-center vh-100" style={{ backgroundColor: '#F4F4F4' }}>
-      <div className="card shadow-lg border-0 rounded-4 overflow-hidden" style={{ width: '400px' }}>
+    <div className="d-flex justify-content-center align-items-center vh-100" style={{ backgroundColor: '#F8F9FA' }}>
+      <div className="card shadow-lg border-0 rounded-4 overflow-hidden" style={{ width: '420px' }}>
+        {/* Header thương hiệu */}
         <div className="bg-warning p-4 text-center">
-            <h2 className="fw-bold text-white mb-0 hover-scale" onClick={() => navigate('/')} style={{cursor: 'pointer'}}>HaiHand</h2>
-            <p className="text-white-50 small m-0 mt-1">{isForgotMode ? 'Khôi phục mật khẩu' : 'Chào mừng trở lại'}</p>
+            <h2 className="fw-bold text-white mb-0" 
+                onClick={() => navigate('/')} 
+                style={{cursor: 'pointer', letterSpacing: '2px', transition: '0.3s'}}
+                onMouseOver={(e) => e.target.style.opacity = '0.8'}
+                onMouseOut={(e) => e.target.style.opacity = '1'}
+            >
+                HAIHAND
+            </h2>
+            <p className="text-white-50 small m-0 mt-1 fw-bold" style={{letterSpacing: '1px'}}>
+                {isForgotMode ? 'XÁC THỰC BẢO MẬT' : 'TRUY CẬP HỆ THỐNG'}
+            </p>
         </div>
 
         <div className="card-body p-4 p-sm-5">
@@ -111,24 +119,24 @@ const LoginPage = () => {
                 // =============== FORM ĐĂNG NHẬP ===============
                 <form onSubmit={handleLogin}>
                     <div className="mb-3">
-                        <label className="form-label fw-bold small text-muted">Email</label>
-                        <input type="email" className="form-control bg-light py-2" required value={loginForm.email} onChange={e => setLoginForm({...loginForm, email: e.target.value})} />
+                        <label className="form-label fw-bold small text-muted">Địa chỉ Email</label>
+                        <input type="email" className="form-control bg-light py-2 border-0" placeholder="user@gmail.com" required value={loginForm.email} onChange={e => setLoginForm({...loginForm, email: e.target.value})} />
                     </div>
                     <div className="mb-4">
                         <div className="d-flex justify-content-between">
                             <label className="form-label fw-bold small text-muted">Mật khẩu</label>
-                            <span className="small text-primary fw-bold" style={{cursor: 'pointer'}} onClick={() => setIsForgotMode(true)}>Quên mật khẩu?</span>
+                            <span className="small text-primary fw-bold" style={{cursor: 'pointer'}} onClick={() => setIsForgotMode(true)}>Quên?</span>
                         </div>
                         <div className="input-group">
-                            <input type={showLoginPass ? "text" : "password"} className="form-control bg-light py-2 border-end-0" required value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} />
-                            <button type="button" className="input-group-text bg-light border-start-0 text-muted" onClick={() => setShowLoginPass(!showLoginPass)}>
+                            <input type={showLoginPass ? "text" : "password"} className="form-control bg-light py-2 border-0" required value={loginForm.password} onChange={e => setLoginForm({...loginForm, password: e.target.value})} />
+                            <button type="button" className="input-group-text bg-light border-0 text-muted" onClick={() => setShowLoginPass(!showLoginPass)}>
                                 {showLoginPass ? '🙈' : '👁️'}
                             </button>
                         </div>
                     </div>
                     <button type="submit" className="btn btn-warning w-100 fw-bold py-2 fs-5 text-white rounded-pill shadow-sm">Đăng nhập</button>
-                    <div className="text-center mt-4 small">
-                        Chưa có tài khoản? <Link to="/register" className="text-decoration-none fw-bold text-warning">Đăng ký ngay</Link>
+                    <div className="text-center mt-4 small text-muted">
+                        Chưa có tài khoản? <Link to="/register" className="text-decoration-none fw-bold text-warning">Tham gia HaiHand</Link>
                     </div>
                 </form>
             ) : (
@@ -136,38 +144,38 @@ const LoginPage = () => {
                 <div>
                     {!isOtpSent ? (
                         <form onSubmit={handleSendOtp}>
-                            <div className="alert alert-info py-2 small border-0 bg-light text-muted text-center mb-4">
-                                Nhập Email của bạn để nhận mã xác nhận (OTP) gồm 6 chữ số.
+                            <div className="alert alert-info py-2 small border-0 bg-light text-muted text-center mb-4" style={{fontSize: '13px'}}>
+                                Nhập Email để nhận mã xác thực (OTP) gồm 6 chữ số.
                             </div>
                             <div className="mb-4">
-                                <label className="form-label fw-bold small text-muted">Email tài khoản <span className="text-danger">*</span></label>
-                                <input type="email" className="form-control bg-light py-2" placeholder="ví dụ: user@gmail.com" required value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} />
+                                <label className="form-label fw-bold small text-muted">Email tài khoản</label>
+                                <input type="email" className="form-control bg-light py-2 border-0" placeholder="ví dụ: trietle@gmail.com" required value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} />
                             </div>
                             <button type="submit" className="btn btn-dark w-100 fw-bold py-2 fs-6 rounded-pill shadow-sm mb-3" disabled={isLoading}>
-                                {isLoading ? '⏳ Đang gửi mail...' : '📩 Gửi mã OTP'}
+                                {isLoading ? '⏳ Đang xử lý...' : '📩 Gửi mã OTP'}
                             </button>
-                            <button type="button" onClick={() => setIsForgotMode(false)} className="btn btn-light w-100 fw-bold py-2 fs-6 rounded-pill text-muted">⬅ Quay lại Đăng nhập</button>
+                            <button type="button" onClick={() => setIsForgotMode(false)} className="btn btn-link w-100 text-decoration-none text-muted small fw-bold">Quay lại Đăng nhập</button>
                         </form>
                     ) : (
                         <form onSubmit={handleResetPassword}>
                             <div className="alert alert-success py-2 small border-0 bg-light text-success text-center mb-4">
-                                Đã gửi mã OTP tới <b>{forgotEmail}</b>. Vui lòng kiểm tra hộp thư!
+                                Đã gửi mã tới <b>{forgotEmail}</b>. Bác check hòm thư nhé!
                             </div>
-                            <div className="mb-3">
-                                <label className="form-label fw-bold small text-muted">Nhập mã OTP (6 số) <span className="text-danger">*</span></label>
-                                <input type="text" className="form-control bg-light text-center fw-bold fs-5 tracking-widest" maxLength="6" required value={otpForm.otp} onChange={e => setOtpForm({...otpForm, otp: e.target.value})} />
+                            <div className="mb-3 text-center">
+                                <label className="form-label fw-bold small text-muted d-block mb-3">Mã xác thực OTP</label>
+                                <input type="text" className="form-control bg-light text-center fw-bold fs-3 border-0" style={{letterSpacing: '8px', color: '#333'}} maxLength="6" required value={otpForm.otp} onChange={e => setOtpForm({...otpForm, otp: e.target.value})} />
                             </div>
                             <div className="mb-4">
-                                <label className="form-label fw-bold small text-muted">Mật khẩu mới <span className="text-danger">*</span></label>
+                                <label className="form-label fw-bold small text-muted">Mật khẩu mới</label>
                                 <div className="input-group">
-                                    <input type={showForgotPass ? "text" : "password"} className="form-control bg-light border-end-0 py-2" required value={otpForm.newPassword} onChange={e => setOtpForm({...otpForm, newPassword: e.target.value})} />
-                                    <button type="button" className="input-group-text bg-light border-start-0 text-muted" onClick={() => setShowForgotPass(!showForgotPass)}>
+                                    <input type={showForgotPass ? "text" : "password"} className="form-control bg-light border-0 py-2" required value={otpForm.newPassword} onChange={e => setOtpForm({...otpForm, newPassword: e.target.value})} />
+                                    <button type="button" className="input-group-text bg-light border-0 text-muted" onClick={() => setShowForgotPass(!showForgotPass)}>
                                         {showForgotPass ? '🙈' : '👁️'}
                                     </button>
                                 </div>
                             </div>
-                            <button type="submit" className="btn btn-success w-100 fw-bold py-2 fs-6 rounded-pill shadow-sm mb-3">🔄 Xác nhận & Đổi mật khẩu</button>
-                            <button type="button" onClick={() => setIsOtpSent(false)} className="btn btn-light w-100 fw-bold py-2 fs-6 rounded-pill text-muted">⬅ Nhập lại Email khác</button>
+                            <button type="submit" className="btn btn-success w-100 fw-bold py-2 fs-6 rounded-pill shadow-sm mb-3">Cập nhật mật khẩu</button>
+                            <button type="button" onClick={() => setIsOtpSent(false)} className="btn btn-link w-100 text-decoration-none text-muted small fw-bold">Thử Email khác</button>
                         </form>
                     )}
                 </div>

@@ -101,24 +101,48 @@
                 return;
             }
 
-            list.innerHTML = data.notifications.map(n => `
-                <div class="p-3 hover:bg-slate-50 transition ${!n.isRead ? 'bg-blue-50/50' : ''}">
-                    <h4 class="text-xs font-bold text-slate-800 mb-1">${n.title}</h4>
-                    <p class="text-[10px] text-slate-600 leading-relaxed">${n.message}</p>
-                    <div class="text-[9px] text-slate-400 mt-1 font-mono">${new Date(n.createdAt).toLocaleString('vi-VN')}</div>
-                </div>
-            `).join('');
+            // Đoạn code mới xử lý link thông minh dựa theo từ khoá
+            list.innerHTML = data.notifications.map(n => {
+                let targetLink = '#'; 
+                let titleLower = n.title.toLowerCase();
+
+                if (n.link) { 
+                    targetLink = n.link; 
+                } else if (titleLower.includes('rút tiền')) {
+                    targetLink = '/admin/withdrawals';
+                } else if (titleLower.includes('vi phạm') || titleLower.includes('báo cáo')) {
+                    targetLink = '/admin/reports';
+                } else if (titleLower.includes('đơn hàng')) {
+                    targetLink = '/orders';
+                } else if (titleLower.includes('bài viết') || titleLower.includes('tin đăng')) {
+                    targetLink = '/posts';
+                } else if (titleLower.includes('người dùng')) {
+                    targetLink = '/users';
+                }
+
+                return `
+                    <a href="${targetLink}" class="block p-3 hover:bg-slate-100 transition border-b border-slate-50 cursor-pointer ${!n.isRead ? 'bg-blue-50/60' : ''}">
+                        <h4 class="text-xs font-bold text-blue-700 mb-1">${n.title}</h4>
+                        <p class="text-[10px] text-slate-600 leading-relaxed">${n.message}</p>
+                        <div class="text-[9px] text-slate-400 mt-1 font-mono">${new Date(n.createdAt).toLocaleString('vi-VN')}</div>
+                    </a>
+                `;
+            }).join('');
+            
         } catch (e) { console.log("Chưa tải được thông báo"); }
     };
+
     window.markNotifsAsRead = async function() {
         await fetch('/api/admin/notifications/read', { method: 'POST' });
         window.fetchAdminNotifs();
     };
+
     window.testAdminNotif = async function() {
         await fetch('/api/admin/test-notif');
         window.fetchAdminNotifs();
         if (!window.isNotifOpen) window.toggleAdminNotifs();
     };
+
     window.fetchUnreadChats = async function() {
         try {
             const res = await fetch('/api/admin/unread-chats');
@@ -134,6 +158,7 @@
             }
         } catch(e) {}
     };
+
     window.fetchAdminNotifs();
     window.fetchUnreadChats();
     setInterval(window.fetchAdminNotifs, 5000);

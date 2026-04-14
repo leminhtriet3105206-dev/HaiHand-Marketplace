@@ -1633,12 +1633,17 @@ app.post('/api/vnpay/verify', async (req, res) => {
 const nodemailer = require('nodemailer');
 const otpStore = new Map(); // Nơi lưu tạm mã OTP
 
-// Cấu hình tài khoản Gmail để gửi đi
+// 1. Cấu hình "Người đưa thư" bọc giáp chống chặn
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true,
     auth: {
         user: 'trietle3105@gmail.com',
-        pass: 'lzoryymurvmcrudb'
+        pass: 'lzoryymurvmcrudb' 
+    },
+    tls: {
+        rejectUnauthorized: false // Bắt buộc có dòng này khi up lên host Render
     }
 });
 
@@ -1651,11 +1656,12 @@ app.post('/api/users/send-otp', async (req, res) => {
 
         // Tạo 6 số ngẫu nhiên
         const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
-        // Lưu vào bộ nhớ tạm, hết hạn sau 5 phút
         otpStore.set(email, { otp, expire: Date.now() + 5 * 60 * 1000 }); 
 
+        // 2. Gửi thư đi
         await transporter.sendMail({
-            from: '"HaiHand Hỗ Trợ" <no-reply@haihand.com>',
+            // SỬA TẠI ĐÂY: Phải dùng đúng email thật của bác, Google mới chịu gửi
+            from: '"HaiHand Hỗ Trợ" <trietle3105@gmail.com>', 
             to: email,
             subject: '🔒 Mã OTP Khôi phục mật khẩu HaiHand',
             html: `
@@ -1670,12 +1676,11 @@ app.post('/api/users/send-otp', async (req, res) => {
         res.json({ message: 'Đã gửi mã OTP vào Email của bạn!' });
     } catch (err) {
         console.error("LỖI GỬI MAIL CHI TIẾT:", err);
-        // Trả thẳng cái lỗi tiếng Anh của Google về cho Frontend để bắt bệnh
         res.status(500).json({ message: 'Lỗi Google: ' + err.message });
     }
 });
 
-// API 2: Nhập OTP và Mật khẩu mới để đổi
+// API 2: Nhập OTP và Mật khẩu mới để đổi (Giữ nguyên không cần sửa)
 app.post('/api/users/reset-password-otp', async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;
@@ -1683,16 +1688,15 @@ app.post('/api/users/reset-password-otp', async (req, res) => {
 
         if (!record) return res.status(400).json({ message: 'Vui lòng nhấn "Gửi mã OTP" trước!' });
         if (Date.now() > record.expire) {
-            otpStore.delete(email); // Xóa mã cũ
+            otpStore.delete(email); 
             return res.status(400).json({ message: 'Mã OTP đã hết hạn, vui lòng lấy mã mới!' });
         }
         if (record.otp !== otp) return res.status(400).json({ message: 'Mã OTP không chính xác!' });
 
-        // Nếu đúng mã, cập nhật pass mới
         const user = await User.findOne({ email });
         user.password = newPassword;
         await user.save();
-        otpStore.delete(email); // Dùng xong thì xóa luôn cho an toàn
+        otpStore.delete(email); 
 
         res.json({ message: '🎉 Đổi mật khẩu thành công!' });
     } catch (err) { res.status(500).json({ message: 'Lỗi hệ thống!' }); }

@@ -38,35 +38,35 @@ const LoginPage = () => {
     try {
         const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // 1. Gửi mã lên Backend để nó "giữ hộ" và kiểm tra Email tồn tại
+        // 1. Gửi mã lên Backend để "giữ hộ"
         await axios.post(`${API_URL}/api/users/send-otp`, { 
             email: forgotEmail, 
             generatedOtp: generatedOtp 
         });
 
-        // 2. GỌI THẲNG API CỦA EMAILJS BẰNG AXIOS (KHÔNG DÙNG THƯ VIỆN)
-        const emailData = {
-            service_id: 'service_4q86uoa',
-            template_id: 'template_v64f5jg',
-            user_id: 'FxVTloEF4YTi7S87P', // EmailJS quy định Public Key gọi là user_id trong API
-            template_params: {
-                email: forgotEmail,
-                otp: generatedOtp
+        // 2. Gọi EmailJS bằng thư viện chuẩn (Cú pháp phiên bản 4 mới nhất)
+        await emailjs.send(
+            'service_4q86uoa',
+            'template_v64f5jg',
+            { 
+                email: forgotEmail, 
+                otp: generatedOtp   
+            },
+            {
+                publicKey: 'FxVTloEF4YTi7S87P'
             }
-        };
-
-        // Bắn API thẳng mặt EmailJS
-        await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailData);
+        );
         
         alert("📩 Đã gửi mã OTP vào Email! Bác check hộp thư nhé.");
         setIsOtpSent(true); 
     } catch (error) {
-        console.error("LỖI GỬI OTP:", error);
-        alert("❌ Lỗi hệ thống: Không thể gửi mã OTP lúc này!");
+        console.error("LỖI EMAILJS CHI TIẾT:", error);
+        // Bắt lỗi sâu nhất để xem thằng EmailJS nó cự cãi cái gì
+        const errorMsg = error?.text || error?.message || "Lỗi không xác định";
+        alert("❌ Lỗi EmailJS: " + errorMsg);
     }
     setIsLoading(false);
   };
-
   // ==============================================================
   // NÚT 2: XÁC NHẬN MÃ VÀ ĐỔI PASS
   // ==============================================================

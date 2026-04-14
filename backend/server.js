@@ -261,15 +261,16 @@ app.get('/dashboard', requireAdmin, async (req, res) => {
   }
 });
 
-app.get('/admin/withdrawals', async (req, res) => {
+aapp.get('/admin/withdrawals', async (req, res) => {
     try {
-        // Tạm thời truyền mảng rỗng nếu bác chưa có bảng Transaction, hoặc lấy dữ liệu thật
-        // const withdrawals = await Transaction.find({ type: 'withdraw', status: 'pending' }).populate('user');
+        // 1. Mở khóa dòng này để nó mò vào Database lấy các lệnh đang chờ (pending)
+        // Lưu ý: Nếu bảng giao dịch của bác tên khác (vd: History, Order) thì đổi chữ Transaction nhé
+        const withdrawalsData = await Transaction.find({ type: 'withdraw', status: 'pending' }).populate('user');
         
-        // Đoạn này là quan trọng nhất: Gọi file withdrawals.ejs ra để hiển thị
+        // 2. Truyền dữ liệu thật vào giao diện
         res.render('withdrawals', { 
-            withdrawals: [], // Chỗ này sau bác thay bằng biến lấy từ database nhé
-            active: 'withdrawals'
+            withdrawals: withdrawalsData, // Thay cái [] bằng biến dữ liệu thật
+            active: 'withdrawals' 
         });
     } catch (error) {
         console.error("Lỗi khi tải trang quản lý rút tiền:", error);

@@ -1640,29 +1640,26 @@ app.post('/api/vnpay/verify', async (req, res) => {
 
 
 const otpStore = new Map();
+
 app.post('/api/users/send-otp', async (req, res) => {
-    try {
-        const { email, generatedOtp } = req.body;
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký!' });
-        otpStore.set(email, { otp: generatedOtp, expire: Date.now() + 5 * 60 * 1000 }); 
-        res.json({ message: 'Đã lưu mã chờ xác nhận!' });
-    } catch (err) { res.status(500).json({ message: 'Lỗi server!' }); }
+    const { email, generatedOtp } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(404).json({ message: 'Email chưa đăng ký!' });
+    otpStore.set(email, { otp: generatedOtp, expire: Date.now() + 5*60*1000 });
+    res.json({ message: 'Mã đã được lưu!' });
 });
 
 app.post('/api/users/reset-password-otp', async (req, res) => {
-    try {
-        const { email, otp, newPassword } = req.body;
-        const record = otpStore.get(email);
-        if (!record || Date.now() > record.expire || record.otp !== otp) {
-            return res.status(400).json({ message: 'Mã OTP sai hoặc hết hạn!' });
-        }
-        const user = await User.findOne({ email });
-        user.password = newPassword;
-        await user.save();
-        otpStore.delete(email);
-        res.json({ message: '🎉 Đổi mật khẩu thành công!' });
-    } catch (err) { res.status(500).json({ message: 'Lỗi hệ thống!' }); }
+    const { email, otp, newPassword } = req.body;
+    const record = otpStore.get(email);
+    if (!record || record.otp !== otp || Date.now() > record.expire) {
+        return res.status(400).json({ message: 'OTP sai hoặc hết hạn!' });
+    }
+    const user = await User.findOne({ email });
+    user.password = newPassword;
+    await user.save();
+    otpStore.delete(email);
+    res.json({ message: 'Đổi pass thành công!' });
 });
 
 server.listen(4000, () => console.log(`🚀 Hệ thống HaiHand đã sẵn sàng tại port 4000`));

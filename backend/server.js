@@ -1642,59 +1642,31 @@ app.post('/api/vnpay/verify', async (req, res) => {
 
 
 // ==========================================
-// 🚀 TÍNH NĂNG GỬI EMAIL KHÔI PHỤC MẬT KHẨU
+// 🚀 TÍNH NĂNG KHÔI PHỤC MẬT KHẨU (ĐÃ GỠ NODEMAILER)
+// Chỉ làm nhiệm vụ kiểm tra Email và lưu mã OTP do React gửi lên
 // ==========================================
-const nodemailer = require('nodemailer');
 const otpStore = new Map(); // Nơi lưu tạm mã OTP
 
-// 1. Cấu hình "Người đưa thư" bọc giáp chống chặn
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: 'trietle3105@gmail.com',
-        pass: 'zyrgfninzdrbzkor' 
-    },
-    tls: {
-        rejectUnauthorized: false // Bắt buộc có dòng này khi up lên host Render
-    }
-});
-
-// API 1: Bấm nút gửi mã OTP về mail
+// API 1: Backend kiểm tra email và LƯU mã OTP do Frontend gửi lên
 app.post('/api/users/send-otp', async (req, res) => {
     try {
-        const { email } = req.body;
+        // Nhận email và cái mã OTP ngẫu nhiên từ Frontend
+        const { email, generatedOtp } = req.body; 
+
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký tài khoản!' });
 
-        // Tạo 6 số ngẫu nhiên
-        const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
-        otpStore.set(email, { otp, expire: Date.now() + 5 * 60 * 1000 }); 
-
-        // 2. Gửi thư đi
-        await transporter.sendMail({
-            // SỬA TẠI ĐÂY: Phải dùng đúng email thật của bác, Google mới chịu gửi
-            from: '"HaiHand Hỗ Trợ" <trietle3105@gmail.com>', 
-            to: email,
-            subject: '🔒 Mã OTP Khôi phục mật khẩu HaiHand',
-            html: `
-                <div style="font-family: Arial; padding: 20px; text-align: center;">
-                    <h2>Xin chào ${user.name},</h2>
-                    <p>Bạn vừa yêu cầu khôi phục mật khẩu. Dưới đây là mã xác nhận của bạn:</p>
-                    <h1 style="color: #ff9800; font-size: 40px; letter-spacing: 5px;">${otp}</h1>
-                    <p style="color: red;"><i>Mã này sẽ hết hạn sau 5 phút. Vui lòng không chia sẻ cho ai!</i></p>
-                </div>
-            `
-        });
-        res.json({ message: 'Đã gửi mã OTP vào Email của bạn!' });
+        // Lưu mã Frontend tạo vào bộ nhớ, đếm ngược 5 phút
+        otpStore.set(email, { otp: generatedOtp, expire: Date.now() + 5 * 60 * 1000 }); 
+        
+        // Trả về OK để Frontend tiến hành tự gửi EmailJS
+        res.json({ message: 'Đã lưu mã chờ xác nhận!' });
     } catch (err) {
-        console.error("LỖI GỬI MAIL CHI TIẾT:", err);
-        res.status(500).json({ message: 'Lỗi Google: ' + err.message });
+        res.status(500).json({ message: 'Lỗi máy chủ!' });
     }
 });
 
-// API 2: Nhập OTP và Mật khẩu mới để đổi (Giữ nguyên không cần sửa)
+// API 2: Nhập OTP và Mật khẩu mới để đổi (Giữ nguyên)
 app.post('/api/users/reset-password-otp', async (req, res) => {
     try {
         const { email, otp, newPassword } = req.body;

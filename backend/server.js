@@ -12,14 +12,17 @@ const moment = require('moment');
 const querystring = require('qs');
 
 const app = express();
+
+// 🚀 BƯỚC QUAN TRỌNG: Chỉ dùng DUY NHẤT một cục CORS này, nó sẽ cho phép mọi thứ đi qua
 app.use(cors({
     origin: function (origin, callback) {
-        callback(null, true); // Chấp nhận mọi nguồn gốc (Vercel, Localhost,...)
+        callback(null, true);
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
+
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: { 
@@ -29,16 +32,12 @@ const io = new Server(server, {
   credentials: true
 });
 
-app.use(cors({
-    origin: ["http://localhost:3000", "https://haihand-marketplace.vercel.app"],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ... (Phần ejs và Cloudinary bên dưới bác giữ nguyên không đụng tới) ...
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../admin/views'));

@@ -18,7 +18,7 @@ const PaymentResultPage = () => {
             }
 
             try {
-                await axios.post('http://localhost:4000/api/vnpay/verify', {
+                await axios.post('http://https://haihand-marketplace.onrender.com/api/vnpay/verify', {
                     orderId, responseCode, userId: user._id
                 });
                 

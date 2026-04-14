@@ -637,22 +637,22 @@ app.put('/api/admin/withdraw/:id/approve', async (req, res) => {
     }
 });
 
-router.get('/edit/:id', async (req, res) => {
+app.get('/users/edit/:id', async (req, res) => {
     try {
-        const user = await User.findById(req.params.id); // Tìm user theo ID
+        const user = await mongoose.model('User').findById(req.params.id); 
         if (!user) return res.redirect('/users');
-        res.render('edit-user', { user }); // Truyền biến user vào file edit-user.ejs
+        res.render('edit-user', { user }); 
     } catch (err) {
         res.status(500).send("Lỗi tìm người dùng");
     }
 });
 
-// 2. Route xử lý lưu thông tin (Khi bấm nút Lưu thay đổi)
-router.post('/edit/:id', async (req, res) => {
+// 2. Route xử lý lưu thông tin (Đổi router -> app)
+app.post('/users/edit/:id', async (req, res) => {
     try {
         const { name, email, phone, role } = req.body;
-        await User.findByIdAndUpdate(req.params.id, { name, email, phone, role });
-        res.redirect('/users'); // Lưu xong quay về danh sách
+        await mongoose.model('User').findByIdAndUpdate(req.params.id, { name, email, phone, role });
+        res.redirect('/users'); 
     } catch (err) {
         res.status(500).send("Lỗi cập nhật người dùng");
     }

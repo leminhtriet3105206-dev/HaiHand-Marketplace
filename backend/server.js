@@ -1626,4 +1626,75 @@ app.post('/api/vnpay/verify', async (req, res) => {
     }
 });
 
+
+// ==========================================
+// 🚀 TÍNH NĂNG GỬI EMAIL KHÔI PHỤC MẬT KHẨU
+// ==========================================
+const nodemailer = require('nodemailer');
+const otpStore = new Map(); // Nơi lưu tạm mã OTP
+
+// Cấu hình tài khoản Gmail để gửi đi
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'trietle3105@gmail.com', // Email của bác
+        pass: 'lzoryymurvmcrudb'       // Mật khẩu ứng dụng (đã bỏ dấu cách)
+    }
+});
+
+// API 1: Bấm nút gửi mã OTP về mail
+app.post('/api/users/send-otp', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký tài khoản!' });
+
+        // Tạo 6 số ngẫu nhiên
+        const otp = Math.floor(100000 + Math.random() * 900000).toString(); 
+        // Lưu vào bộ nhớ tạm, hết hạn sau 5 phút
+        otpStore.set(email, { otp, expire: Date.now() + 5 * 60 * 1000 }); 
+
+        await transporter.sendMail({
+            from: '"HaiHand Hỗ Trợ" <no-reply@haihand.com>',
+            to: email,
+            subject: '🔒 Mã OTP Khôi phục mật khẩu HaiHand',
+            html: `
+                <div style="font-family: Arial; padding: 20px; text-align: center;">
+                    <h2>Xin chào ${user.name},</h2>
+                    <p>Bạn vừa yêu cầu khôi phục mật khẩu. Dưới đây là mã xác nhận của bạn:</p>
+                    <h1 style="color: #ff9800; font-size: 40px; letter-spacing: 5px;">${otp}</h1>
+                    <p style="color: red;"><i>Mã này sẽ hết hạn sau 5 phút. Vui lòng không chia sẻ cho ai!</i></p>
+                </div>
+            `
+        });
+        res.json({ message: 'Đã gửi mã OTP vào Email của bạn!' });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: 'Lỗi gửi email! Kiểm tra lại cấu hình.' });
+    }
+});
+
+// API 2: Nhập OTP và Mật khẩu mới để đổi
+app.post('/api/users/reset-password-otp', async (req, res) => {
+    try {
+        const { email, otp, newPassword } = req.body;
+        const record = otpStore.get(email);
+
+        if (!record) return res.status(400).json({ message: 'Vui lòng nhấn "Gửi mã OTP" trước!' });
+        if (Date.now() > record.expire) {
+            otpStore.delete(email); // Xóa mã cũ
+            return res.status(400).json({ message: 'Mã OTP đã hết hạn, vui lòng lấy mã mới!' });
+        }
+        if (record.otp !== otp) return res.status(400).json({ message: 'Mã OTP không chính xác!' });
+
+        // Nếu đúng mã, cập nhật pass mới
+        const user = await User.findOne({ email });
+        user.password = newPassword;
+        await user.save();
+        otpStore.delete(email); // Dùng xong thì xóa luôn cho an toàn
+
+        res.json({ message: '🎉 Đổi mật khẩu thành công!' });
+    } catch (err) { res.status(500).json({ message: 'Lỗi hệ thống!' }); }
+});
+
 server.listen(4000, () => console.log(`🚀 Hệ thống HaiHand đã sẵn sàng tại port 4000`));

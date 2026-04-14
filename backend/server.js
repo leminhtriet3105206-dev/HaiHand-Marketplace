@@ -267,8 +267,9 @@ app.get('/admin/withdrawals', async (req, res) => {
         // const withdrawals = await Transaction.find({ type: 'withdraw', status: 'pending' }).populate('user');
         
         // Đoạn này là quan trọng nhất: Gọi file withdrawals.ejs ra để hiển thị
-        res.render('admin/views/withdrawals', { 
-            withdrawals: [] // Chỗ này sau bác thay bằng biến lấy từ database nhé
+        res.render('withdrawals', { 
+            withdrawals: [], // Chỗ này sau bác thay bằng biến lấy từ database nhé
+            active: 'withdrawals'
         });
     } catch (error) {
         console.error("Lỗi khi tải trang quản lý rút tiền:", error);

@@ -1640,7 +1640,7 @@ const transporter = nodemailer.createTransport({
     secure: true,
     auth: {
         user: 'trietle3105@gmail.com',
-        pass: 'lzoryymurvmcrudb' 
+        pass: 'zyrg fnin zdrb zkor' 
     },
     tls: {
         rejectUnauthorized: false // Bắt buộc có dòng này khi up lên host Render

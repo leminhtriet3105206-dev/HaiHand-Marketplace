@@ -38,32 +38,32 @@ const LoginPage = () => {
     try {
         const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // 1. Gửi mã lên Backend để "giữ hộ"
+        // 1. Gửi mã lên Backend (Dòng này để Backend lưu mã OTP chờ check)
         await axios.post(`${API_URL}/api/users/send-otp`, { 
             email: forgotEmail, 
             generatedOtp: generatedOtp 
         });
 
-        // 2. Gọi EmailJS bằng thư viện chuẩn (Cú pháp phiên bản 4 mới nhất)
-        await emailjs.send(
-            'service_4q86uoa',
-            'template_v64f5jg',
-            { 
-                email: forgotEmail, 
-                otp: generatedOtp   
-            },
-            {
-                publicKey: 'FxVTloEF4YTi7S87P'
+        // 2. Gọi API EmailJS (Tôi đã điền chuẩn ID từ ảnh image_718c07 và 718c0e của bác)
+        const emailParams = {
+            service_id: 'service_4q86uoa', // Lấy từ image_718c0e.png
+            template_id: 'template_v64f5jg', // Lấy từ image_718c07.png
+            user_id: 'FxVTloEF4YTi7S87P',    // Public Key lấy từ image_710127.png
+            template_params: {
+                email: forgotEmail, // Phải trùng với biến {{email}} trong template
+                otp: generatedOtp   // Phải trùng với biến {{otp}} trong template
             }
-        );
+        };
+
+        await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailParams);
         
-        alert("📩 Đã gửi mã OTP vào Email! Bác check hộp thư nhé.");
+        alert("📩 Tuyệt vời! Mã OTP đã được gửi vào Email của bác.");
         setIsOtpSent(true); 
     } catch (error) {
-        console.error("LỖI EMAILJS CHI TIẾT:", error);
-        // Bắt lỗi sâu nhất để xem thằng EmailJS nó cự cãi cái gì
-        const errorMsg = error?.text || error?.message || "Lỗi không xác định";
-        alert("❌ Lỗi EmailJS: " + errorMsg);
+        console.error("LỖI GỬI OTP:", error);
+        // Hiện lỗi thật sự từ EmailJS để mình biết đường sửa
+        const detail = error.response?.data || error.message;
+        alert("❌ Lỗi: " + (typeof detail === 'string' ? detail : JSON.stringify(detail)));
     }
     setIsLoading(false);
   };

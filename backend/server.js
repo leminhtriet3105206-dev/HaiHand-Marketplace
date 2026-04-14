@@ -1635,16 +1635,10 @@ const otpStore = new Map(); // Nơi lưu tạm mã OTP
 
 // Cấu hình tài khoản Gmail để gửi đi
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com', // Cú pháp chuẩn của Google
-    port: 465,              // Cổng bảo mật SSL
-    secure: true,           // Bật mã hóa
+    service: 'gmail',
     auth: {
         user: 'trietle3105@gmail.com',
         pass: 'lzoryymurvmcrudb'
-    },
-    // Thêm đoạn này để ép Google không được từ chối kết nối
-    tls: {
-        rejectUnauthorized: false 
     }
 });
 
@@ -1675,8 +1669,9 @@ app.post('/api/users/send-otp', async (req, res) => {
         });
         res.json({ message: 'Đã gửi mã OTP vào Email của bạn!' });
     } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: 'Lỗi gửi email! Kiểm tra lại cấu hình.' });
+        console.error("LỖI GỬI MAIL CHI TIẾT:", err);
+        // Trả thẳng cái lỗi tiếng Anh của Google về cho Frontend để bắt bệnh
+        res.status(500).json({ message: 'Lỗi Google: ' + err.message });
     }
 });
 

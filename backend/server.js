@@ -1642,24 +1642,32 @@ app.post('/api/vnpay/verify', async (req, res) => {
 const otpStore = new Map();
 
 app.post('/api/users/send-otp', async (req, res) => {
-    const { email, generatedOtp } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'Email chưa đăng ký!' });
-    otpStore.set(email, { otp: generatedOtp, expire: Date.now() + 5*60*1000 });
-    res.json({ message: 'Mã đã được lưu!' });
+    try {
+        const { email, generatedOtp } = req.body;
+        const user = await mongoose.model('User').findOne({ email });
+        
+        // 🚨 Nếu lỗi "Account not found" ở đây, nghĩa là DB chưa có email này
+        if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký tài khoản!' });
+
+        // Lưu mã OTP vào bộ nhớ tạm để tí nữa check
+        otpStore.set(email, { otp: generatedOtp, expire: Date.now() + 5 * 60 * 1000 });
+        res.json({ message: 'Backend đã sẵn sàng, mời Frontend gửi mail!' });
+    } catch (err) { res.status(500).json({ message: 'Lỗi Backend!' }); }
 });
 
 app.post('/api/users/reset-password-otp', async (req, res) => {
-    const { email, otp, newPassword } = req.body;
-    const record = otpStore.get(email);
-    if (!record || record.otp !== otp || Date.now() > record.expire) {
-        return res.status(400).json({ message: 'OTP sai hoặc hết hạn!' });
-    }
-    const user = await User.findOne({ email });
-    user.password = newPassword;
-    await user.save();
-    otpStore.delete(email);
-    res.json({ message: 'Đổi pass thành công!' });
+    try {
+        const { email, otp, newPassword } = req.body;
+        const record = otpStore.get(email);
+        if (!record || record.otp !== otp || Date.now() > record.expire) {
+            return res.status(400).json({ message: 'Mã OTP sai hoặc đã hết hạn!' });
+        }
+        const user = await mongoose.model('User').findOne({ email });
+        user.password = newPassword;
+        await user.save();
+        otpStore.delete(email);
+        res.json({ message: 'Đổi mật khẩu thành công!' });
+    } catch (err) { res.status(500).json({ message: 'Lỗi hệ thống!' }); }
 });
 
 server.listen(4000, () => console.log(`🚀 Hệ thống HaiHand đã sẵn sàng tại port 4000`));

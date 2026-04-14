@@ -1457,7 +1457,7 @@ app.get('/api/categories', async (req, res) => {
 const vnp_TmnCode = "PWPUZORX";
 const vnp_HashSecret = "EI1KY7CCURZXJUIXCW7QUVXENCM1HQ0L";
 const vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-const vnp_ReturnUrl = "http://localhost:3000/payment-result"; 
+const vnp_ReturnUrl = "https://hai-hand-marketplace.vercel.app/payment-result";
 
 function sortObject(obj) {
     let sorted = {}; let str = []; let key;

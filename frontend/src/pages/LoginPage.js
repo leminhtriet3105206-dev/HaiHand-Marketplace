@@ -55,7 +55,9 @@ const LoginPage = () => {
                 email: forgotEmail, 
                 otp: generatedOtp   
             },
-            'FxVTloEF4YTi7S87P'     
+            {
+                publicKey: 'FxVTloEF4YTi7S87P'
+            }   
         );
         
         alert("📩 Đã gửi mã OTP vào Email! Bác check hộp thư nhé.");

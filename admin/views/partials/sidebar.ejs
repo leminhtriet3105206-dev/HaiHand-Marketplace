@@ -34,6 +34,9 @@
         <a href="/admin/revenue" class="flex items-center space-x-3 p-3 rounded-xl transition <%= typeof active !== 'undefined' && active === 'revenue' ? 'bg-blue-600 font-bold shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' %>">
             <span>💰</span> <span>Doanh thu</span>
         </a>
+        <a href="/admin/withdrawals" class="flex items-center space-x-3 p-3 rounded-xl transition <%= typeof active !== 'undefined' && active === 'withdrawals' ? 'bg-blue-600 font-bold shadow-lg shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-white' %>">
+            <span>🏧</span> <span>Duyệt rút tiền</span>
+        </a>
         <a href="/posts" class="flex items-center space-x-3 p-3 rounded-xl transition <%= typeof active !== 'undefined' && active === 'posts' ? 'bg-blue-600 font-bold' : 'text-slate-400 hover:bg-slate-800 hover:text-white' %>">
             <span>📦</span> <span>Tin đăng</span>
         </a>
@@ -73,14 +76,11 @@
 </style>
 
 <script>
-    // 🚀 DÙNG WINDOW. ĐỂ CHỐNG LỖI CONFLICT JS TRONG EJS
     window.isNotifOpen = false;
-
     window.toggleAdminNotifs = function() {
         window.isNotifOpen = !window.isNotifOpen;
         document.getElementById('admin-notif-panel').classList.toggle('hidden', !window.isNotifOpen);
     };
-
     window.fetchAdminNotifs = async function() {
         try {
             const res = await fetch('/api/admin/notifications');
@@ -110,19 +110,15 @@
             `).join('');
         } catch (e) { console.log("Chưa tải được thông báo"); }
     };
-
     window.markNotifsAsRead = async function() {
         await fetch('/api/admin/notifications/read', { method: 'POST' });
         window.fetchAdminNotifs();
     };
-
     window.testAdminNotif = async function() {
         await fetch('/api/admin/test-notif');
         window.fetchAdminNotifs();
-        if (!window.isNotifOpen) window.toggleAdminNotifs(); // Tự động mở khung ra cho dễ xem
+        if (!window.isNotifOpen) window.toggleAdminNotifs();
     };
-
-    // 🚀 HÀM QUÉT TIN NHẮN CSKH MỚI
     window.fetchUnreadChats = async function() {
         try {
             const res = await fetch('/api/admin/unread-chats');
@@ -138,12 +134,8 @@
             }
         } catch(e) {}
     };
-
-    // Khởi chạy ngay khi load trang
     window.fetchAdminNotifs();
     window.fetchUnreadChats();
-    
-    // Auto cập nhật mỗi 5 giây
     setInterval(window.fetchAdminNotifs, 5000);
     setInterval(window.fetchUnreadChats, 5000);
 </script>

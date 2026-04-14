@@ -596,6 +596,28 @@ app.get('/api/admin/test-notif', async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Lỗi" }); }
 });
 
+app.get('/api/admin/withdrawals', async (req, res) => {
+    try {
+        // Tìm các giao dịch có type là 'withdraw' và status là 'pending'
+        const withdrawals = await Transaction.find({ type: 'withdraw', status: 'pending' }).sort({ createdAt: -1 });
+        res.json(withdrawals);
+    } catch (err) {
+        res.status(500).json({ message: 'Lỗi lấy danh sách rút tiền' });
+    }
+});
+
+// API Duyệt lệnh rút tiền
+app.put('/api/admin/withdraw/:id/approve', async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Cập nhật trạng thái thành 'success'
+        await Transaction.findByIdAndUpdate(id, { status: 'success' });
+        res.json({ message: 'Đã duyệt lệnh rút tiền thành công!' });
+    } catch (err) {
+        res.status(500).json({ message: 'Lỗi khi duyệt lệnh' });
+    }
+});
+
 // ==========================================
 // 4. API DÀNH CHO FRONTEND (REACT)
 // ==========================================

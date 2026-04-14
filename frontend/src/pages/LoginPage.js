@@ -39,33 +39,34 @@ const LoginPage = () => {
     setIsLoading(true);
     
     try {
-        // 1. Frontend tự tạo mã OTP 6 số ngẫu nhiên
         const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // 2. Gửi mã lên Backend để nó "giữ hộ" và kiểm tra xem Email có thật không
+        // 1. Gửi mã lên Backend
         await axios.post(`${API_URL}/api/users/send-otp`, { 
             email: forgotEmail, 
             generatedOtp: generatedOtp 
         });
 
-        // 3. Nếu Backend báo OK (Email hợp lệ), gọi thằng EmailJS gửi thư đi
+        // 2. Gọi EmailJS
         await emailjs.send(
-            'service_4q86uoa',      // Service ID
-            'template_v64f5jg',     // Template ID
+            'service_4q86uoa',      // Bác kiểm tra kỹ KHÔNG có dấu cách dư thừa nhé
+            'template_v64f5jg',     
             { 
-                email: forgotEmail, // Gửi đến email khách nhập (khớp biến {{email}})
-                otp: generatedOtp   // Gắn mã OTP vào thư (khớp biến {{otp}})
+                email: forgotEmail, 
+                otp: generatedOtp   
             },
-            'FxVTloEF4YTi7S87P'     // Public Key
+            'FxVTloEF4YTi7S87P'     
         );
         
-        alert("📩 Đã gửi mã OTP vào Email của bạn! Vui lòng kiểm tra hộp thư.");
-        setIsOtpSent(true); // Mở khóa màn hình cho khách nhập OTP
+        alert("📩 Đã gửi mã OTP vào Email! Bác check hộp thư nhé.");
+        setIsOtpSent(true); 
     } catch (error) {
-        // Bắt lỗi nếu nhập sai email không có trong Database hoặc lỗi mạng
-        alert("❌ " + (error.response?.data?.message || "Lỗi gửi email! Kiểm tra lại mạng."));
+        console.error("LỖI CHI TIẾT:", error);
+        
+        // 🚀 Đã sửa cách bắt lỗi: Ưu tiên đọc lỗi của EmailJS (error.text)
+        const errorMsg = error.text || error.response?.data?.message || "Lỗi không xác định";
+        alert("❌ Lỗi: " + errorMsg);
     }
-    
     setIsLoading(false);
   };
 

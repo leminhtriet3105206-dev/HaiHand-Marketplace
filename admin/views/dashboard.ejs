@@ -31,7 +31,7 @@
             </div>
             <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 border-l-4 border-l-orange-500 bg-orange-50/30 hover:shadow-md transition">
                 <h3 class="text-orange-600 font-bold text-xs uppercase tracking-wider">Doanh thu sàn (5%)</h3>
-                <p class="text-3xl font-black text-orange-700 mt-2"><%= stats.revenue.toLocaleString('vi-VN') %> đ</p>
+                <p class="text-3xl font-black text-orange-700 mt-2"><%= (stats && stats.revenue ? stats.revenue : 0).toLocaleString('vi-VN') %> đ</p>
             </div>
         </div>
 

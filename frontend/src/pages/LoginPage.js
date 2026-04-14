@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import emailjs from '@emailjs/browser'; // 🚀 ĐÃ THÊM IMPORT EMAILJS VÀO ĐÂY
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -29,22 +30,48 @@ const LoginPage = () => {
     }
   };
 
-  // NÚT 1: GỬI MÃ OTP VỀ EMAIL
+  // ==============================================================
+  // 🚀 NÚT 1: GỬI MÃ OTP VỀ EMAIL (Dùng EmailJS siêu mượt)
+  // ==============================================================
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return alert('Vui lòng nhập Email!');
     setIsLoading(true);
+    
     try {
-      const { data } = await axios.post(`${API_URL}/api/users/send-otp`, { email: forgotEmail });
-      alert("📩 " + data.message);
-      setIsOtpSent(true); // Mở khóa form nhập mã
+        // 1. Frontend tự tạo mã OTP 6 số ngẫu nhiên
+        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // 2. Gửi mã lên Backend để nó "giữ hộ" và kiểm tra xem Email có thật không
+        await axios.post(`${API_URL}/api/users/send-otp`, { 
+            email: forgotEmail, 
+            generatedOtp: generatedOtp 
+        });
+
+        // 3. Nếu Backend báo OK (Email hợp lệ), gọi thằng EmailJS gửi thư đi
+        await emailjs.send(
+            'service_4q86uoa',      // Service ID
+            'template_v64f5jg',     // Template ID
+            { 
+                email: forgotEmail, // Gửi đến email khách nhập (khớp biến {{email}})
+                otp: generatedOtp   // Gắn mã OTP vào thư (khớp biến {{otp}})
+            },
+            'FxVTloEF4YTi7S87P'     // Public Key
+        );
+        
+        alert("📩 Đã gửi mã OTP vào Email của bạn! Vui lòng kiểm tra hộp thư.");
+        setIsOtpSent(true); // Mở khóa màn hình cho khách nhập OTP
     } catch (error) {
-      alert("❌ " + (error.response?.data?.message || "Lỗi gửi mã!"));
+        // Bắt lỗi nếu nhập sai email không có trong Database hoặc lỗi mạng
+        alert("❌ " + (error.response?.data?.message || "Lỗi gửi email! Kiểm tra lại mạng."));
     }
+    
     setIsLoading(false);
   };
 
+  // ==============================================================
   // NÚT 2: XÁC NHẬN MÃ VÀ ĐỔI PASS
+  // ==============================================================
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (otpForm.newPassword.length < 6) return alert('❌ Mật khẩu mới phải có ít nhất 6 ký tự!');

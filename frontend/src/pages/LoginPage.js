@@ -9,15 +9,19 @@ const LoginPage = () => {
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   
-  // States mới cho luồng OTP
+  // States cho luồng OTP
   const [forgotEmail, setForgotEmail] = useState('');
   const [otpForm, setOtpForm] = useState({ otp: '', newPassword: '' });
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // States hiện ẩn mật khẩu
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [showForgotPass, setShowForgotPass] = useState(false);
 
+  // ==============================================================
+  // HÀM ĐĂNG NHẬP (GIỮ NGUYÊN)
+  // ==============================================================
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -29,45 +33,49 @@ const LoginPage = () => {
     }
   };
 
-
+  // ==============================================================
+  // 🚀 NÚT 1: GỬI MÃ OTP VỀ EMAIL (ĐÃ CẬP NHẬT 3 KEY MỚI)
+  // ==============================================================
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return alert('Vui lòng nhập Email!');
     setIsLoading(true);
     
     try {
+        // 1. Frontend tự tạo mã OTP 6 số ngẫu nhiên
         const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // 1. Gửi mã lên Backend (Dòng này để Backend lưu mã OTP chờ check)
+        // 2. Gửi mã lên Backend để lưu mã OTP chờ check
         await axios.post(`${API_URL}/api/users/send-otp`, { 
             email: forgotEmail, 
             generatedOtp: generatedOtp 
         });
 
+        // 3. Ráp 3 Key bác vừa gửi vào đây (Dùng Axios đấm thẳng API EmailJS)
         const emailParams = {
-           service_id: 'service_4q86uoa',
-           template_id: 'template_v64f5jg',
-           user_id: 'FxVTloEF4YTi7S87P', // 👈 ĐÂY LÀ PUBLIC KEY CỦA BÁC
+           service_id: 'service_4q86uoa',   // Service ID của bác
+           template_id: 'template_v64f5jg',  // Template ID của bác
+           user_id: 'FxVTIoEF4YTi7S87P',     // 🚀 Public Key MỚI (chữ I hoa)
            template_params: {
                    email: forgotEmail,
                    otp: generatedOtp
-    }
-};
+           }
+        };
 
         await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailParams);
         
-        alert("📩 Tuyệt vời! Mã OTP đã được gửi vào Email của bác.");
+        alert("📩 Tuyệt vời! Mã OTP đã được gửi vào Email của bác. Bác check hòm thư nhé!");
         setIsOtpSent(true); 
     } catch (error) {
         console.error("LỖI GỬI OTP:", error);
-        // Hiện lỗi thật sự từ EmailJS để mình biết đường sửa
         const detail = error.response?.data || error.message;
         alert("❌ Lỗi: " + (typeof detail === 'string' ? detail : JSON.stringify(detail)));
     }
     setIsLoading(false);
   };
+
   // ==============================================================
-  // NÚT 2: XÁC NHẬN MÃ VÀ ĐỔI PASS
+  // NÚT 2: XÁC NHẬN MÃ VÀ ĐỔI PASS (GIỮ NGUYÊN)
   // ==============================================================
   const handleResetPassword = async (e) => {
     e.preventDefault();
@@ -127,7 +135,6 @@ const LoginPage = () => {
                 // =============== FORM QUÊN MẬT KHẨU ===============
                 <div>
                     {!isOtpSent ? (
-                        // BƯỚC 1: NHẬP EMAIL LẤY MÃ
                         <form onSubmit={handleSendOtp}>
                             <div className="alert alert-info py-2 small border-0 bg-light text-muted text-center mb-4">
                                 Nhập Email của bạn để nhận mã xác nhận (OTP) gồm 6 chữ số.
@@ -142,7 +149,6 @@ const LoginPage = () => {
                             <button type="button" onClick={() => setIsForgotMode(false)} className="btn btn-light w-100 fw-bold py-2 fs-6 rounded-pill text-muted">⬅ Quay lại Đăng nhập</button>
                         </form>
                     ) : (
-                        // BƯỚC 2: NHẬP MÃ VÀ ĐỔI PASS
                         <form onSubmit={handleResetPassword}>
                             <div className="alert alert-success py-2 small border-0 bg-light text-success text-center mb-4">
                                 Đã gửi mã OTP tới <b>{forgotEmail}</b>. Vui lòng kiểm tra hộp thư!

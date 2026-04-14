@@ -261,7 +261,7 @@ app.get('/dashboard', requireAdmin, async (req, res) => {
   }
 });
 
-aapp.get('/admin/withdrawals', async (req, res) => {
+app.get('/admin/withdrawals', async (req, res) => {
     try {
         // 1. Mở khóa dòng này để nó mò vào Database lấy các lệnh đang chờ (pending)
         // Lưu ý: Nếu bảng giao dịch của bác tên khác (vd: History, Order) thì đổi chữ Transaction nhé

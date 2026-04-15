@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom'; 
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
-import './Header.css'; 
-
+import './Header.css';
 
 const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, location: propLocation, setLocation: propSetLocation }) => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams(); 
+  const [searchParams] = useSearchParams();
   
   const urlSearch = searchParams.get('search') || '';
   const urlLocation = searchParams.get('location') || 'Toàn quốc';
@@ -27,203 +26,173 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
   const [notifCount, setNotifCount] = useState(0);
   const [cartCount, setCartCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [categories, setCategories] = useState([]);
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [tempCity, setTempCity] = useState('');
-  const [tempDistrict, setTempDistrict] = useState('');
-  
-  // 🚀 ĐỔI THÀNH STATE ĐỂ GIAO DIỆN CẬP NHẬT KHI LẤY ĐƯỢC TIỀN MỚI
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem('user');
-    return stored && stored !== "undefined" ? JSON.parse(stored) : null;
-  });
+  const [user, setUser] = useState(null);
 
-  const socket = useRef();
+  const [provinces, setProvinces] = useState([]);
+  const [filteredProvinces, setFilteredProvinces] = useState([]);
+  const [locationSearchKeyword, setLocationSearchKeyword] = useState('');
+
   const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
   useEffect(() => {
-    axios.get(`${API_URL}/api/categories`).then(({ data }) => setCategories([{name: 'Tất cả', icon: '🏠'}, ...data])).catch(console.error);
-    axios.get('https://provinces.open-api.vn/api/?depth=2').then(res => setProvinces(res.data)).catch(console.error);
-
-    if (user?._id) {
-      const fetchData = async () => {
+    const fetchProvinces = async () => {
         try {
-          // 🚀 1. LẤY DỮ LIỆU USER MỚI NHẤT (SỬA LỖI GIẢI NGÂN XONG PHẢI F5)
-          const userRes = await axios.get(`${API_URL}/api/users/${user._id}`);
-          if (userRes.data) {
-            setUser(userRes.data);
-            localStorage.setItem('user', JSON.stringify(userRes.data));
-          }
+            const { data } = await axios.get('https://provinces.open-api.vn/api/?depth=1');
+            setProvinces(data);
+            setFilteredProvinces(data);
+        } catch (error) {
+            console.error("Lỗi lấy danh sách tỉnh thành:", error);
+        }
+    };
+    fetchProvinces();
+  }, []);
 
-          // 2. Lấy các thông tin khác
-          axios.get(`${API_URL}/api/users/cart/${user._id}`).then(({ data }) => setCartCount(data.length));
-          axios.get(`${API_URL}/api/messages/unread-count/${user._id}`).then(({ data }) => setUnreadCount(data.count));
-          axios.get(`${API_URL}/api/users/${user._id}/notifications`).then(({ data }) => {
-              setNotifications(data.notifications);
-              setNotifCount(data.unreadCount);
-          });
-        } catch (err) { console.error(err); }
-      };
+  const handleLocationSearch = (e) => {
+      const keyword = e.target.value.toLowerCase();
+      setLocationSearchKeyword(keyword);
+      const filtered = provinces.filter(p => p.name.toLowerCase().includes(keyword));
+      setFilteredProvinces(filtered);
+  };
 
-      fetchData();
-      const notifInterval = setInterval(fetchData, 10000);
-
-      socket.current = io(API_URL, { transports: ["websocket", "polling"], reconnection: true });
-      socket.current.emit('addUser', user._id);
-      socket.current.on('getMessage', () => setUnreadCount(prev => prev + 1));
-
-      return () => {
-        clearInterval(notifInterval);
-        socket.current?.disconnect();
-      };
-    }
-  }, [user?._id]);
+  const handleSelectLocation = (locName) => {
+      if (propSetLocation) propSetLocation(locName);
+      else setLocalLocation(locName);
+      setShowLocationModal(false);
+      navigate(`/?location=${encodeURIComponent(locName)}`);
+  };
 
   useEffect(() => {
-    if (tempCity) {
-        const city = provinces.find(p => p.name === tempCity);
-        setDistricts(city ? city.districts : []);
-    } else { setDistricts([]); }
-    setTempDistrict('');
-  }, [tempCity, provinces]);
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      
+      const fetchCounts = async () => {
+          try {
+              const resCart = await axios.get(`${API_URL}/api/cart/${parsedUser._id}`);
+              setCartCount(resCart.data.items?.length || 0);
+          } catch(e) { console.error("Lỗi đếm giỏ hàng:", e); }
+      };
+      fetchCounts();
+    }
+  }, [API_URL]);
 
-  const executeSearch = (newLoc, newKey) => {
-    const sKey = newKey !== undefined ? newKey : keyword;
-    const sLoc = newLoc !== undefined ? newLoc : location;
-    const params = new URLSearchParams();
-    if (sKey.trim()) params.set('search', sKey);
-    if (sLoc !== 'Toàn quốc') params.set('location', sLoc);
-    
-    navigate(`/products?${params.toString()}`);
-    if (onSearch) onSearch();
-  };
-
-  const handleApplyLocation = () => {
-    let finalLoc = 'Toàn quốc';
-    if (tempCity) finalLoc = tempDistrict ? `${tempDistrict}, ${tempCity}` : tempCity;
-    if (propSetLocation) propSetLocation(finalLoc); else setLocalLocation(finalLoc);
-    setShowLocationModal(false);
-    executeSearch(finalLoc);
-  };
-
-  const handleNotificationClick = async (link) => {
-      setShowNotifMenu(false);
-      try { await axios.post(`${API_URL}/api/users/${user._id}/notifications/read`); setNotifCount(0); } catch(e){}
-      if(link) navigate(link);
+  const handleSearchSubmit = (e) => {
+    if (e.key === 'Enter') {
+        const queryParams = new URLSearchParams();
+        if (keyword) queryParams.set('search', keyword);
+        if (location !== 'Toàn quốc') queryParams.set('location', location);
+        
+        navigate(`/?${queryParams.toString()}`);
+        if (onSearch) onSearch();
+    }
   };
 
   return (
-    <header className="bg-warning py-3 shadow-sm sticky-top" style={{ zIndex: 1040 }}>
-      <div className="container d-flex justify-content-between align-items-center">
+    <header className="bg-white border-bottom shadow-sm">
+      <div className="container py-2 d-flex align-items-center justify-content-between gap-3 flex-wrap flex-md-nowrap">
         
-        <div className="d-flex align-items-center gap-4">
-          <h2 className="fw-bold m-0 text-white hover-scale" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>HaiHand</h2>
-          <div className="position-relative" onMouseEnter={() => setShowCategoryMenu(true)} onMouseLeave={() => setShowCategoryMenu(false)}>
-              <div className="d-flex align-items-center gap-2 text-white px-3 py-2 rounded-3" style={{cursor: 'pointer'}}>
-                  <span className="fs-4 fw-bold">≡</span><span className="fw-bold d-none d-md-block">Danh mục</span>
-              </div>
-              {showCategoryMenu && (
-                  <div className="position-absolute bg-white shadow-lg rounded-3 py-2" style={{top: '100%', left: '0', width: '260px', zIndex: 1050, border: '1px solid #eaeaea'}}>
-                      {categories.map((cat, idx) => (
-                          <div key={idx} className="px-3 py-2 d-flex align-items-center gap-3 transition-all" style={{cursor: 'pointer'}} onClick={() => navigate(`/products?category=${cat.name}`)}>
-                              <div className="d-flex justify-content-center align-items-center bg-light rounded-circle shadow-sm" style={{width: '35px', height: '35px', overflow: 'hidden'}}>
-                                  {cat.name === 'Tất cả' ? <span style={{fontSize: '18px'}}>{cat.icon}</span> : <img src={cat.image?.startsWith('http') ? cat.image : `${API_URL}/uploads/${cat.image}`} style={{width: '100%', height: '100%', objectFit: 'cover'}} alt={cat.name}/>}
-                              </div>
-                              <span className="fw-bold text-dark" style={{fontSize: '14px'}}>{cat.name}</span>
-                          </div>
-                      ))}
-                  </div>
-              )}
+        {/* LOGO */}
+        <Link to="/" className="text-decoration-none">
+          <h2 className="fw-bold text-warning mb-0 m-0" style={{ cursor: 'pointer', minWidth: '120px' }}>HaiHand</h2>
+        </Link>
+
+        {/* CỤM TÌM KIẾM & BỘ LỌC */}
+        <div className="d-flex flex-grow-1 align-items-center gap-2 w-100 w-md-auto mt-2 mt-md-0 position-relative">
+          <div className="input-group" style={{ maxWidth: '400px' }}>
+             <input
+                type="text"
+                className="form-control bg-light border-0 px-3 py-2"
+                placeholder="Tìm kiếm sản phẩm..."
+                value={keyword}
+                onChange={(e) => propSetKeyword ? propSetKeyword(e.target.value) : setLocalKeyword(e.target.value)}
+                onKeyDown={handleSearchSubmit}
+             />
+             <button className="btn btn-warning px-3" onClick={() => handleSearchSubmit({key: 'Enter'})}>🔍</button>
           </div>
+          
+          <button onClick={() => setShowLocationModal(true)} className="btn btn-light border text-truncate" style={{ maxWidth: '150px' }}>
+              📍 {location}
+          </button>
         </div>
-        
-        <div className="search-bar-wrapper shadow-sm mx-3 d-flex align-items-center bg-white" style={{ borderRadius: '50px', padding: '5px 8px', maxWidth: '600px', flex: 1 }}>
-            <span className="ms-2 text-muted">🔍</span>
-            <input type="text" className="search-input" placeholder="Tìm sản phẩm, danh mục..." value={keyword} onChange={(e) => propSetKeyword ? propSetKeyword(e.target.value) : setLocalKeyword(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && executeSearch()} style={{ border: 'none', outline: 'none', padding: '10px', flex: 1, background: 'transparent' }} />
-            <div className="position-relative border-start border-2 px-3 py-1 d-flex align-items-center" style={{ minWidth: '140px' }}>
-                <div className="d-flex align-items-center w-100" style={{ cursor: 'pointer' }} onClick={() => setShowLocationModal(!showLocationModal)}>
-                    <span className="fw-bold text-muted text-truncate" style={{maxWidth: '120px'}} title={location}>{location.split(',')[0]}</span><span className="ms-2 text-muted small">▼</span>
+
+        {/* MODAL CHỌN ĐỊA ĐIỂM */}
+        {showLocationModal && (
+            <div className="position-absolute bg-white shadow-lg border rounded-3 p-3 z-index-dropdown" style={{ top: '60px', left: '50%', transform: 'translateX(-50%)', width: '350px' }}>
+                <div className="d-flex justify-content-between mb-3">
+                    <h6 className="fw-bold m-0">Chọn khu vực</h6>
+                    <button className="btn-close" onClick={() => setShowLocationModal(false)}></button>
                 </div>
-                {showLocationModal && (
-                    <div className="position-absolute bg-white p-3 rounded-4 shadow-lg" style={{ top: '140%', right: '0', width: '300px', zIndex: 1060, border: '1px solid #eaeaea' }}>
-                        <h6 className="fw-bold mb-3 text-center text-dark">Khu vực</h6>
-                        <select className="form-select border-2 rounded-3 mb-2" value={tempCity} onChange={e => setTempCity(e.target.value)}>
-                            <option value="">Toàn quốc</option>
-                            {provinces.map(p => <option key={p.code} value={p.name}>{p.name}</option>)}
-                        </select>
-                        <select className="form-select border-2 rounded-3 mb-3" value={tempDistrict} onChange={e => setTempDistrict(e.target.value)} disabled={!tempCity}>
-                            <option value="">Tất cả quận huyện</option>
-                            {districts.map(d => <option key={d.code} value={d.name}>{d.name}</option>)}
-                        </select>
-                        <button className="btn btn-warning w-100 fw-bold rounded-pill text-dark" onClick={handleApplyLocation}>Áp dụng</button>
-                    </div>
-                )}
+                <input type="text" className="form-control mb-2" placeholder="Tìm tỉnh/thành phố..." value={locationSearchKeyword} onChange={handleLocationSearch} />
+                <button className={`btn btn-outline-warning w-100 mb-2 ${location === 'Toàn quốc' ? 'active' : ''}`} onClick={() => handleSelectLocation('Toàn quốc')}>🌍 Toàn quốc</button>
+                <div style={{ maxHeight: '250px', overflowY: 'auto' }}>
+                    {filteredProvinces.map(p => (
+                        <div key={p.code} className="p-2 cursor-pointer hover-bg-light rounded" onClick={() => handleSelectLocation(p.name)}>{p.name}</div>
+                    ))}
+                </div>
             </div>
-            <button className="search-button rounded-pill px-4 fw-bold bg-dark text-white border-0 py-2 ms-1" onClick={() => executeSearch()}>Tìm kiếm</button>
-        </div>
+        )}
 
+        {/* CỤM NÚT BÊN PHẢI VÀ AVATAR */}
         <div className="d-flex align-items-center gap-3">
-          <div className="position-relative d-flex align-items-center justify-content-center bg-white rounded-circle shadow-sm hover-scale" style={{ width: '40px', height: '40px', cursor: 'pointer', fontSize: '18px' }} onClick={() => navigate('/cart')}>
-            🛒 {cartCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '10px'}}>{cartCount}</span>}
-          </div>
+          
+          {/* 🚀 NÚT ĐĂNG TIN THÊM VÀO ĐÂY */}
+          <Link 
+            to="/create-post" 
+            className="btn btn-warning fw-bold text-dark d-flex align-items-center gap-1 shadow-sm rounded-pill px-3"
+          >
+            <span>➕</span>
+            <span className="d-none d-sm-inline">Đăng tin</span>
+          </Link>
 
+          {/* CÁC CHỨC NĂNG NGƯỜI DÙNG */}
           {user ? (
             <div className="d-flex align-items-center gap-3">
-                <div className="text-white position-relative hover-scale d-flex align-items-center justify-content-center" style={{cursor: 'pointer', fontSize: '20px', width: '40px', height: '40px'}} onClick={() => navigate('/chat')}>
-                    💬 {unreadCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '10px'}}>{unreadCount}</span>}
-                </div>
-
-                <div className="position-relative" onMouseEnter={() => setShowNotifMenu(true)} onMouseLeave={() => setShowNotifMenu(false)}>
-                    <div className="text-white position-relative hover-scale d-flex align-items-center justify-content-center" style={{cursor: 'pointer', fontSize: '20px', width: '40px', height: '40px'}}>
-                        🔔 {notifCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '10px'}}>{notifCount}</span>}
-                    </div>
-                    {showNotifMenu && (
-                        <div className="position-absolute bg-white shadow-lg rounded-4 overflow-hidden" style={{top: '100%', right: '-50px', width: '350px', zIndex: 1050, border: '1px solid #eaeaea'}}>
-                            <div className="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
-                                <h6 className="fw-bold mb-0 text-dark">Thông báo</h6>
-                                <button onClick={() => handleNotificationClick()} className="btn btn-sm btn-link text-decoration-none p-0" style={{fontSize: '12px'}}>Đã đọc</button>
-                            </div>
-                            <div style={{maxHeight: '400px', overflowY: 'auto'}}>
-                                {notifications.length === 0 && <div className="p-4 text-center text-muted small">Chưa có thông báo.</div>}
-                                {notifications.map((n, i) => (
-                                    <div key={i} onClick={() => handleNotificationClick(n.link)} className={`p-3 border-bottom d-flex gap-3 ${!n.isRead ? 'bg-primary-subtle' : ''}`} style={{cursor: 'pointer'}}>
-                                        <div className="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style={{width: '40px', height: '40px', flexShrink: 0}}>{n.title.includes('đơn')?'📦':'💰'}</div>
-                                        <div>
-                                            <h6 className="fw-bold text-dark mb-1" style={{fontSize: '13px'}}>{n.title}</h6>
-                                            <p className="text-muted mb-1" style={{fontSize: '12px'}}>{n.message}</p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                <div className="position-relative" style={{cursor: 'pointer'}} onClick={() => navigate('/chat')}>
+                    💬 
+                    {unreadCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '0.6rem'}}>{unreadCount}</span>}
                 </div>
                 
-                <div className="position-relative" onMouseEnter={() => setShowProfileMenu(true)} onMouseLeave={() => setShowProfileMenu(false)}>
-                    <div className="d-flex align-items-center gap-2 bg-warning-subtle p-1 pe-3 rounded-pill" style={{cursor:'pointer'}}>
-                        <div className="bg-white text-warning rounded-circle fw-bold d-flex justify-content-center align-items-center shadow-sm" style={{width:'35px', height:'35px', overflow: 'hidden'}}>
-                            {user.avatar ? <img src={user.avatar} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="avt" /> : user.name.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="fw-bold text-white d-none d-md-block small">{user.name} ▾</span>
-                    </div>
+                <div className="position-relative" style={{cursor: 'pointer'}} onClick={() => setShowNotifMenu(!showNotifMenu)}>
+                    🔔 
+                    {notifCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '0.6rem'}}>{notifCount}</span>}
+                </div>
+                
+                <div className="position-relative" style={{cursor: 'pointer'}} onClick={() => navigate('/cart')}>
+                    🛒 
+                    {cartCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '0.6rem'}}>{cartCount}</span>}
+                </div>
+
+                <div className="position-relative">
+                    <img
+                        src={user.avatar || 'https://via.placeholder.com/40'}
+                        alt="avatar"
+                        className="rounded-circle border"
+                        style={{ width: '40px', height: '40px', objectFit: 'cover', cursor: 'pointer' }}
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                    />
                     {showProfileMenu && (
-                        <div className="position-absolute bg-white shadow-lg rounded-4 p-3" style={{top: '100%', right: '0', width: '280px', border: '1px solid #eaeaea', zIndex: 1050}}>
-                            <div className="d-flex align-items-center gap-3 mb-3 border-bottom pb-3 text-dark">
-                               <div className="bg-warning text-white rounded-circle fw-bold d-flex justify-content-center align-items-center" style={{width:'50px', height:'50px', fontSize: '20px', overflow: 'hidden'}}>
-                                  {user.avatar ? <img src={user.avatar} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="avt" /> : user.name.charAt(0).toUpperCase()}
+                        <div className="position-absolute bg-white shadow-lg rounded-4 p-3 z-index-dropdown" style={{ right: 0, top: '50px', width: '280px', border: '1px solid #eee' }}>
+                            <div className="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
+                               <img src={user.avatar || 'https://via.placeholder.com/50'} alt="avatar" className="rounded-circle border" style={{ width: '50px', height: '50px', objectFit: 'cover' }} />
+                               <div>
+                                   <div className="fw-bold fs-6">{user.name || 'Người dùng'}</div>
+                                   <div className="text-muted small">@{user.email.split('@')[0]}</div>
                                </div>
-                               <div><h6 className="fw-bold mb-0">{user.name}</h6><small className="text-muted">{user.email}</small></div>
                             </div>
-                            <div onClick={() => navigate('/haipay')} className="mb-2 d-flex justify-content-between align-items-center px-3 py-2 rounded-3 shadow-sm" style={{cursor: 'pointer', backgroundColor: '#e7f1ff', border: '1px solid #cfe2ff'}}>
-                                <span className="fw-bold text-primary" style={{fontSize: '14px'}}>💳 Ví HàiPay</span>
-                                <span className="badge bg-primary">{(user.walletBalance || 0).toLocaleString('vi-VN')} đ</span>
+                            <div className="bg-light rounded-3 p-2 mb-3 text-center">
+                                <span className="small text-muted">Số dư HaiPay: </span>
+                                <span className="fw-bold text-success">{Number(user.balance || 0).toLocaleString('vi-VN')} đ</span>
                             </div>
                             <ul className="list-unstyled mb-0">
                                <li className="mb-1"><div onClick={() => navigate('/profile')} className="d-block text-dark px-3 py-2 rounded-3 hover-bg-light" style={{cursor: 'pointer'}}>👤 Quản lý cá nhân</div></li>
-                               {/* 🚀 ĐÃ THÊM LẠI MỤC TIN LƯU CHO BÁC */}
                                <li className="mb-1"><div onClick={() => navigate('/favorites')} className="d-block text-dark px-3 py-2 rounded-3 hover-bg-light" style={{cursor: 'pointer'}}>❤️ Tin đăng đã lưu</div></li>
                                <li className="mb-1"><div onClick={() => navigate('/followed/followed')} className="d-block text-dark px-3 py-2 rounded-3 hover-bg-light" style={{cursor: 'pointer'}}>👥 Bạn bè (Theo dõi)</div></li>
+                               {user.role === 'Admin' && (
+                                   <li className="mb-1">
+                                       <a href="https://haihand-marketplace.onrender.com/admin" target="_blank" rel="noopener noreferrer" className="d-block text-primary fw-bold px-3 py-2 rounded-3 hover-bg-light text-decoration-none">⚙️ Quản trị hệ thống</a>
+                                   </li>
+                               )}
                                <li className="border-top pt-2 mt-1"><div onClick={() => { localStorage.clear(); window.location.href='/login'; }} className="d-block text-danger fw-bold px-3 py-2 rounded-3 hover-bg-light" style={{cursor: 'pointer'}}>🚪 Đăng xuất</div></li>
                             </ul>
                         </div>

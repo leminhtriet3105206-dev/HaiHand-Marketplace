@@ -19,6 +19,8 @@ import PublicProfile from './pages/PublicProfile';
 import FollowPage from './pages/FollowPage';
 import ProductListPage from './pages/ProductListPage';
 import FloatingAdminChat from './components/FloatingAdminChat';
+import TermsPage from './pages/TermsPage';
+import PrivacyPage from './pages/PrivacyPage';
 
 function App() {
   return (
@@ -42,6 +44,8 @@ function App() {
           <Route path="/public-profile/:userId" element={<PublicProfile />} />
           <Route path="/products" element={<ProductListPage />} />
           <Route path="/followed/followed" element={<FollowPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
         </Routes>
 
         

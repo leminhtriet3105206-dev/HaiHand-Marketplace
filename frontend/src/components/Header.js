@@ -18,7 +18,6 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
   const location = propLocation !== undefined ? propLocation : localLocation;
 
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showNotifMenu, setShowNotifMenu] = useState(false);
 
@@ -34,6 +33,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
 
   const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
+  // Lấy danh sách tỉnh thành
   useEffect(() => {
     const fetchProvinces = async () => {
         try {
@@ -61,6 +61,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
       navigate(`/?location=${encodeURIComponent(locName)}`);
   };
 
+  // Lấy thông tin user và số lượng giỏ hàng/thông báo
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
@@ -78,7 +79,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
   }, [API_URL]);
 
   const handleSearchSubmit = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' || e.type === 'click') {
         const queryParams = new URLSearchParams();
         if (keyword) queryParams.set('search', keyword);
         if (location !== 'Toàn quốc') queryParams.set('location', location);
@@ -92,12 +93,12 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
     <header className="bg-white border-bottom shadow-sm">
       <div className="container py-2 d-flex align-items-center justify-content-between gap-3 flex-wrap flex-md-nowrap">
         
-        {/* LOGO */}
+        {/* 1. LOGO */}
         <Link to="/" className="text-decoration-none">
           <h2 className="fw-bold text-warning mb-0 m-0" style={{ cursor: 'pointer', minWidth: '120px' }}>HaiHand</h2>
         </Link>
 
-        {/* CỤM TÌM KIẾM & BỘ LỌC */}
+        {/* 2. CỤM TÌM KIẾM & BỘ LỌC ĐỊA ĐIỂM */}
         <div className="d-flex flex-grow-1 align-items-center gap-2 w-100 w-md-auto mt-2 mt-md-0 position-relative">
           <div className="input-group" style={{ maxWidth: '400px' }}>
              <input
@@ -108,17 +109,17 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
                 onChange={(e) => propSetKeyword ? propSetKeyword(e.target.value) : setLocalKeyword(e.target.value)}
                 onKeyDown={handleSearchSubmit}
              />
-             <button className="btn btn-warning px-3" onClick={() => handleSearchSubmit({key: 'Enter'})}>🔍</button>
+             <button className="btn btn-warning px-3" onClick={handleSearchSubmit}>🔍</button>
           </div>
           
-          <button onClick={() => setShowLocationModal(true)} className="btn btn-light border text-truncate" style={{ maxWidth: '150px' }}>
+          <button onClick={() => setShowLocationModal(!showLocationModal)} className="btn btn-light border text-truncate" style={{ maxWidth: '150px' }}>
               📍 {location}
           </button>
         </div>
 
         {/* MODAL CHỌN ĐỊA ĐIỂM */}
         {showLocationModal && (
-            <div className="position-absolute bg-white shadow-lg border rounded-3 p-3 z-index-dropdown" style={{ top: '60px', left: '50%', transform: 'translateX(-50%)', width: '350px' }}>
+            <div className="position-absolute bg-white shadow-lg border rounded-3 p-3" style={{ top: '60px', left: '50%', transform: 'translateX(-50%)', width: '350px', zIndex: 1050 }}>
                 <div className="d-flex justify-content-between mb-3">
                     <h6 className="fw-bold m-0">Chọn khu vực</h6>
                     <button className="btn-close" onClick={() => setShowLocationModal(false)}></button>
@@ -133,15 +134,15 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
             </div>
         )}
 
-        {/* CỤM NÚT BÊN PHẢI VÀ AVATAR */}
+        {/* 3. CỤM BÊN PHẢI: NÚT ĐĂNG TIN VÀ USER */}
         <div className="d-flex align-items-center gap-3">
           
-          {/* 🚀 NÚT ĐĂNG TIN THÊM VÀO ĐÂY */}
+          {/* 🚀 NÚT ĐĂNG TIN (GIỮ IM Ở ĐÂY, LUÔN HIỂN THỊ) */}
           <Link 
             to="/create-post" 
             className="btn btn-warning fw-bold text-dark d-flex align-items-center gap-1 shadow-sm rounded-pill px-3"
           >
-            <span>➕</span>
+            <span className="fs-5 lh-1">+</span>
             <span className="d-none d-sm-inline">Đăng tin</span>
           </Link>
 
@@ -172,12 +173,12 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
                         onClick={() => setShowProfileMenu(!showProfileMenu)}
                     />
                     {showProfileMenu && (
-                        <div className="position-absolute bg-white shadow-lg rounded-4 p-3 z-index-dropdown" style={{ right: 0, top: '50px', width: '280px', border: '1px solid #eee' }}>
+                        <div className="position-absolute bg-white shadow-lg rounded-4 p-3" style={{ right: 0, top: '50px', width: '280px', border: '1px solid #eee', zIndex: 1050 }}>
                             <div className="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom">
                                <img src={user.avatar || 'https://via.placeholder.com/50'} alt="avatar" className="rounded-circle border" style={{ width: '50px', height: '50px', objectFit: 'cover' }} />
                                <div>
-                                   <div className="fw-bold fs-6">{user.name || 'Người dùng'}</div>
-                                   <div className="text-muted small">@{user.email.split('@')[0]}</div>
+                                   <div className="fw-bold fs-6 text-truncate" style={{maxWidth: '180px'}}>{user.name || 'Người dùng'}</div>
+                                   <div className="text-muted small text-truncate" style={{maxWidth: '180px'}}>@{user.email.split('@')[0]}</div>
                                </div>
                             </div>
                             <div className="bg-light rounded-3 p-2 mb-3 text-center">
@@ -199,7 +200,9 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
                     )}
                 </div>
             </div>
-          ) : <button onClick={() => navigate('/login')} className="btn btn-light fw-bold text-warning rounded-pill px-4 shadow-sm">Đăng nhập</button>}
+          ) : (
+            <button onClick={() => navigate('/login')} className="btn btn-light fw-bold text-warning rounded-pill px-4 shadow-sm border">Đăng nhập</button>
+          )}
         </div>
       </div>
     </header>

@@ -41,7 +41,7 @@ const Footer = () => {
               </li>
               <li className="mb-3 d-flex align-items-start gap-2">
                 <span className="text-warning">✉️</span>
-                <span className="text-secondary">trietle@gmail.com</span> {/* */}
+                <span className="text-secondary">trietle3105@gmail.com</span> {/* */}
               </li>
               <li className="mb-3 d-flex align-items-start gap-2">
                 <span className="text-warning">📍</span>
@@ -55,10 +55,10 @@ const Footer = () => {
             <h6 className="fw-bold mb-4 text-uppercase" style={{ letterSpacing: '1px' }}>Chứng nhận</h6>
             <div className="bg-secondary bg-opacity-10 p-3 rounded-3 border border-secondary border-opacity-25">
                <div className="fw-bold text-warning mb-1">HAIHAND TRUSTED</div>
-               <div className="small text-secondary mb-3">Sàn thương mại điện tử đã được xác thực uy tín 100%</div>
+               <div className="small text-secondary mb-3">Sàn thương mại điện tử chưa được xác thực uy tín 100%</div>
                <img 
-                 src="https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Logo_bo_cong_thuong.svg/1200px-Logo_bo_cong_thuong.svg.png" 
-                 alt="Bộ Công Thương" 
+                  src="/assets/bct-logo.png"
+                 alt="Bộ Công Thương Chưa Chứng Nhận" 
                  style={{ height: '45px', filter: 'brightness(0) invert(1)' }}
                />
             </div>

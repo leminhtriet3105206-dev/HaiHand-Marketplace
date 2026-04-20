@@ -4,6 +4,26 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header'; 
 import Footer from '../components/Footer';
 
+// 🚀 HÀM TÍNH THỜI GIAN ĐĂNG BÀI (MỚI THÊM)
+const formatTimeAgo = (dateString) => {
+  if (!dateString) return 'Mới'; // Đề phòng dữ liệu cũ không có ngày tháng
+  const date = new Date(dateString);
+  const now = new Date();
+  const seconds = Math.floor((now - date) / 1000);
+  
+  let interval = seconds / 31536000;
+  if (interval > 1) return Math.floor(interval) + " năm trước";
+  interval = seconds / 2592000;
+  if (interval > 1) return Math.floor(interval) + " tháng trước";
+  interval = seconds / 86400;
+  if (interval > 1) return Math.floor(interval) + " ngày trước";
+  interval = seconds / 3600;
+  if (interval > 1) return Math.floor(interval) + " giờ trước";
+  interval = seconds / 60;
+  if (interval > 1) return Math.floor(interval) + " phút trước";
+  return "Vừa xong";
+};
+
 const HomePage = () => {
   const [filteredPosts, setFilteredPosts] = useState([]); 
   const [selectedCategory, setSelectedCategory] = useState('Tất cả'); 
@@ -14,9 +34,6 @@ const HomePage = () => {
   const [hasMore, setHasMore] = useState(true);
   
   const [favoriteIds, setFavoriteIds] = useState([]);
-  
-  // 🚀 THÊM STATE LOADING
-  const [isLoading, setIsLoading] = useState(true);
   
   const navigate = useNavigate();
   const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com'; 
@@ -31,9 +48,6 @@ const HomePage = () => {
   }, [user?._id]);
 
   const fetchPosts = async (currentPage = 1, currentCategory = 'Tất cả', currentKeyword = '') => {
-    // 🚀 BẬT LOADING KHI BẮT ĐẦU GỌI API
-    if (currentPage === 1) setIsLoading(true);
-
     try {
       let url = `${API_URL}/api/posts?page=${currentPage}&limit=8`;
       
@@ -55,9 +69,6 @@ const HomePage = () => {
       setHasMore(data.length === 8);
     } catch (error) {
       console.error("Lỗi kết nối Server:", error);
-    } finally {
-      // 🚀 TẮT LOADING KHI ĐÃ CÓ DỮ LIỆU HOẶC BỊ LỖI
-      setIsLoading(false);
     }
   };
 
@@ -170,19 +181,10 @@ const HomePage = () => {
               <h5 className="fw-bold m-0 border-start border-4 border-warning ps-3">
                   {selectedCategory === 'Tất cả' ? 'Tin đăng mới nhất' : `Danh mục: ${selectedCategory}`}
               </h5>
-              <small className="text-muted">{!isLoading ? filteredPosts.length : 0} tin đăng</small>
+              <small className="text-muted">{filteredPosts.length} tin đăng</small>
           </div>
           
-          {/* 🚀 HIỂN THỊ LOADING NẾU ĐANG TẢI */}
-          {isLoading ? (
-              <div className="text-center py-5">
-                  <div className="spinner-border text-warning" role="status" style={{ width: '3rem', height: '3rem' }}>
-                      <span className="visually-hidden">Loading...</span>
-                  </div>
-                  <h5 className="mt-3 text-muted fw-bold">Đang tải dữ liệu...</h5>
-                  <p className="text-muted small">Server đang được đánh thức, bác chờ khoảng 30s nhé!</p>
-              </div>
-          ) : filteredPosts.length === 0 ? (
+          {filteredPosts.length === 0 ? (
               <div className="text-center py-5 text-muted bg-white rounded shadow-sm">
                   <h3 className="mb-2">📭 Trống trơn...</h3>
                   <p>Hiện chưa có tin nào thuộc mục <b>{selectedCategory}</b></p>
@@ -208,7 +210,10 @@ const HomePage = () => {
                                 onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'}} 
                             />
                             
-                            <span className="position-absolute top-0 start-0 bg-warning text-dark fw-bold px-2 py-1 shadow-sm" style={{fontSize: '10px', borderRadius: '0 0 12px 0'}}>MỚI</span>
+                            {/* 🚀 ĐÃ THAY CHỮ "MỚI" THÀNH BỘ ĐẾM THỜI GIAN */}
+                            <span className="position-absolute top-0 start-0 bg-warning text-dark fw-bold px-2 py-1 shadow-sm" style={{fontSize: '10px', borderRadius: '0 0 12px 0'}}>
+                                🕒 {formatTimeAgo(post.createdAt)}
+                            </span>
                             
                             {!isAuthor && (
                                 <button 
@@ -228,6 +233,7 @@ const HomePage = () => {
                                     )}
                                 </button>
                             )}
+
                         </div>
                         <div className="card-body p-3 d-flex flex-column">
                           <h6 className="card-title text-truncate fw-bold mb-1" style={{fontSize: '14px', color: '#333'}}>{post.title}</h6>
@@ -254,6 +260,8 @@ const HomePage = () => {
         </div>
       </div>
 
+      <div onClick={() => navigate('/create-post')} className="bg-warning text-white rounded-circle shadow-lg d-flex justify-content-center align-items-center hover-scale" 
+           style={{width: '60px', height: '60px', position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)', cursor: 'pointer', fontSize: '30px', zIndex: 1000, border: '4px solid white'}}>+</div>
       <Footer />
     </div>
   );

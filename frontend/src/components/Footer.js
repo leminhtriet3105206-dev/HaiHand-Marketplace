@@ -59,12 +59,12 @@ const Footer = () => {
                <img 
                   src="/logo.png"
                  alt="Bộ Công Thương Chưa Chứng Nhận" 
-                 style={{ height: '45px', filter: 'brightness(0) invert(1)' }}
+                 style={{ height: '45px', borderRadius: '8px' }}
                />
             </div>
           </div>
         </div>
-
+ 
         <hr className="my-5 border-secondary opacity-25" />
 
         {/* Bottom Strip */}

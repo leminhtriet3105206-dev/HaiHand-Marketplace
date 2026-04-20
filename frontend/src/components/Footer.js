@@ -57,7 +57,7 @@ const Footer = () => {
                <div className="fw-bold text-warning mb-1">HAIHAND TRUSTED</div>
                <div className="small text-secondary mb-3">Sàn thương mại điện tử chưa được xác thực uy tín 100%</div>
                <img 
-                  src="/assets/bct-logo.png"
+                  src="/public/bct-logo.png"
                  alt="Bộ Công Thương Chưa Chứng Nhận" 
                  style={{ height: '45px', filter: 'brightness(0) invert(1)' }}
                />

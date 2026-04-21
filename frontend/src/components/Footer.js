@@ -52,7 +52,7 @@ const Footer = () => {
           <div className="col-lg-3 col-md-6 text-center text-lg-start">
             <h6 className="fw-bold mb-4 text-uppercase" style={{ letterSpacing: '1px' }}>Chứng nhận</h6>
             <div className="bg-secondary bg-opacity-10 p-3 rounded-3 border border-secondary border-opacity-25">
-               <div className="fw-bold text-warning mb-1">HAIHAND TRUSTED</div>
+               <div className="fw-bold text-warning mb-1">HAIHAND UNTRUSTED</div>
                <div className="small text-secondary mb-3">Sàn thương mại điện tử chưa được xác thực uy tín 100%</div>
                <img 
                   src="/logo.png"

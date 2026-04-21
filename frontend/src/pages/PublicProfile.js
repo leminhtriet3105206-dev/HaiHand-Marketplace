@@ -90,6 +90,9 @@ const PublicProfile = () => {
                 className="rounded-circle border border-4 border-white shadow" 
                 style={{width: '100px', height: '100px', objectFit: 'cover'}} 
                 alt="avatar" 
+                onError={(e) => {
+                   e.target.src = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png';
+                }}
               />
               <div className="mb-2">
                 <h4 className="fw-bold mb-0">{data.user.name}</h4>

@@ -86,12 +86,18 @@ const PublicProfile = () => {
           <div className="px-4 pb-4" style={{marginTop: '-50px'}}>
             <div className="d-flex align-items-end gap-3 mb-3">
               <img 
-                src={data.user.avatar || 'https://via.placeholder.com/100'} 
-                className="rounded-circle border border-4 border-white shadow" 
-                style={{width: '100px', height: '100px', objectFit: 'cover'}} 
-                alt="avatar" 
-                onError={(e) => {
-                   e.target.src = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png';
+                src={
+                  data.user.avatar 
+                   ? (data.user.avatar.startsWith('http') 
+                     ? data.user.avatar 
+                       : `${process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com'}/${data.user.avatar.replace(/\\/g, '/')}`) 
+                   : 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'
+               } 
+               className="rounded-circle border border-4 border-white shadow"
+               style={{width: '100px', height: '100px', objectFit: 'cover'}}
+               alt="avatar"
+               onError={(e) => {
+               e.target.src = 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png';
                 }}
               />
               <div className="mb-2">

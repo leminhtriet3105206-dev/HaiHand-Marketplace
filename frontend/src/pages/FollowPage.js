@@ -8,13 +8,13 @@ const FollowPage = () => {
     const [tab, setTab] = useState('followers'); 
     const [list, setList] = useState([]);
     
-    // 🚀 STATE LƯU CỐ ĐỊNH SỐ LƯỢNG
+    
     const [counts, setCounts] = useState({ followers: 0, following: 0 });
     
     const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
     const user = JSON.parse(localStorage.getItem('user'));
 
-    // LẤY SỐ LƯỢNG TỔNG 1 LẦN DUY NHẤT LÚC VÀO TRANG
+    
     useEffect(() => {
         if (!user) return;
         axios.get(`${API_URL}/api/users/public-profile/${user._id}`)
@@ -25,7 +25,7 @@ const FollowPage = () => {
             .catch(err => console.log(err));
     }, [user?._id]);
 
-    // TẢI DANH SÁCH MỖI KHI CHUYỂN TAB
+    
     useEffect(() => {
         const fetchList = async () => {
             if (!user) return;
@@ -42,7 +42,7 @@ const FollowPage = () => {
     return (
         <div className="bg-light min-vh-100">
             <Header />
-            {/* THANH TAB CHỌN CHẾ ĐỘ XEM */}
+            
             <div className="bg-white border-bottom shadow-sm">
                 <div className="container d-flex gap-5">
                     <button 
@@ -66,10 +66,10 @@ const FollowPage = () => {
                         </div>
                     ) : (
                         list.map(item => {
-                            // Chống sập nếu item bị lỗi dữ liệu
+                            
                             if (!item.follower || !item.following) return null;
 
-                            // Lấy thông tin người kia dựa vào tab đang mở
+                            
                             const person = tab === 'followers' ? item.follower : item.following;
                             
                             return (

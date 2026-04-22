@@ -6,7 +6,7 @@ const Footer = () => {
     <footer className="bg-dark text-white pt-5 pb-3 mt-auto">
       <div className="container">
         <div className="row g-4">
-          {/* Cột 1: Giới thiệu & Thương hiệu */}
+          
           <div className="col-lg-4 col-md-6">
             <h3 className="fw-bold text-warning mb-3">HaiHand</h3>
             <p className="text-secondary small" style={{ lineHeight: '1.8' }}>
@@ -14,13 +14,13 @@ const Footer = () => {
               Chúng tôi kết nối người bán và người mua một cách an toàn, nhanh chóng và tin cậy.
             </p>
             <div className="d-flex gap-3 mt-4">
-              <span className="fs-4 cursor-pointer">🔵</span> {/* Facebook Icon */}
-              <span className="fs-4 cursor-pointer">🔴</span> {/* YouTube Icon */}
-              <span className="fs-4 cursor-pointer">🟣</span> {/* Instagram Icon */}
+              <span className="fs-4 cursor-pointer">🔵</span> 
+              <span className="fs-4 cursor-pointer">🔴</span> 
+              <span className="fs-4 cursor-pointer">🟣</span> 
             </div>
           </div>
 
-          {/* Cột 2: Liên kết nhanh */}
+          
           <div className="col-lg-2 col-md-6">
             <h6 className="fw-bold mb-4 text-uppercase" style={{ letterSpacing: '1px' }}>Khám phá</h6>
             <ul className="list-unstyled">
@@ -29,26 +29,26 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Cột 3: Thông tin liên hệ (Dữ liệu từ ảnh của bác) */}
+          
           <div className="col-lg-3 col-md-6">
             <h6 className="fw-bold mb-4 text-uppercase" style={{ letterSpacing: '1px' }}>Liên hệ hỗ trợ</h6>
             <ul className="list-unstyled">
               <li className="mb-3 d-flex align-items-start gap-2">
                 <span className="text-warning">📞</span>
-                <span className="text-secondary">(+84) 934 332 300</span> {/* */}
+                <span className="text-secondary">(+84) 934 332 300</span> 
               </li>
               <li className="mb-3 d-flex align-items-start gap-2">
                 <span className="text-warning">✉️</span>
-                <span className="text-secondary">trietle3105@gmail.com</span> {/* */}
+                <span className="text-secondary">trietle3105@gmail.com</span> 
               </li>
               <li className="mb-3 d-flex align-items-start gap-2">
                 <span className="text-warning">📍</span>
-                <span className="text-secondary">123 Đường 3/2, Q.10, TP.HCM</span> {/* */}
+                <span className="text-secondary">123 Đường 3/2, Q.10, TP.HCM</span> 
               </li>
             </ul>
           </div>
 
-          {/* Cột 4: Chứng nhận uy tín */}
+          
           <div className="col-lg-3 col-md-6 text-center text-lg-start">
             <h6 className="fw-bold mb-4 text-uppercase" style={{ letterSpacing: '1px' }}>Chứng nhận</h6>
             <div className="bg-secondary bg-opacity-10 p-3 rounded-3 border border-secondary border-opacity-25">
@@ -65,7 +65,7 @@ const Footer = () => {
  
         <hr className="my-5 border-secondary opacity-25" />
 
-        {/* Bottom Strip */}
+        
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
           <p className="text-secondary small mb-0">© 2026 HaiHand Marketplace. Bản quyền thuộc về Lê Minh Triết.</p>
           <div className="d-flex gap-4 small">

@@ -29,7 +29,7 @@ const InboxPage = () => {
 
   return (
     <div style={{ backgroundColor: '#fff', minHeight: '100vh' }}>
-      {/* Header Vàng Trắng */}
+      
       <div className="py-3 px-3 shadow-sm d-flex align-items-center" style={{ backgroundColor: '#ffc107' }}>
         <button onClick={() => navigate('/')} className="btn btn-link text-dark p-0 me-3 text-decoration-none">
           <span style={{fontSize: '24px'}}>←</span>

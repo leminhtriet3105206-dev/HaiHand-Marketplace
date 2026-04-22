@@ -11,7 +11,7 @@ const ProductListPage = () => {
     const [loading, setLoading] = useState(true);
     const [categories, setCategories] = useState([]);
 
-    // 🚀 LẤY ĐẦY ĐỦ THAM SỐ TỪ URL (KHÔNG THIẾU CÁI NÀO)
+    
     const category = searchParams.get('category') || '';
     const location = searchParams.get('location') || '';
     const search = searchParams.get('search') || '';
@@ -20,7 +20,7 @@ const ProductListPage = () => {
     const maxPrice = searchParams.get('maxPrice') || '';
 
     useEffect(() => {
-        // Lấy danh sách danh mục để hiển thị cột bên trái
+        
         axios.get(`https://haihand-marketplace.onrender.com/api/categories`)
             .then(({ data }) => setCategories(data))
             .catch(console.error);
@@ -29,7 +29,7 @@ const ProductListPage = () => {
     const fetchPosts = async () => {
         setLoading(true);
         try {
-            // Gọi API lọc sản phẩm với đầy đủ tham số bao gồm cả giá và sắp xếp
+            
             const res = await axios.get(`https://haihand-marketplace.onrender.com/api/posts`, {
                 params: { category, location, search, sort, minPrice, maxPrice }
             });
@@ -41,19 +41,19 @@ const ProductListPage = () => {
         }
     };
 
-    // Theo dõi mọi sự thay đổi trên URL để tải lại dữ liệu
+    
     useEffect(() => {
         fetchPosts();
     }, [category, location, search, sort, minPrice, maxPrice]);
 
-    // 🚀 HÀM XỬ LÝ SẮP XẾP (SORT)
+    
     const handleSortChange = (e) => {
         const newSort = e.target.value;
         searchParams.set('sort', newSort);
         setSearchParams(searchParams);
     };
 
-    // 🚀 HÀM XỬ LÝ LỌC KHOẢNG GIÁ
+    
     const applyPriceFilter = (min, max) => {
         if (min !== null) searchParams.set('minPrice', min); else searchParams.delete('minPrice');
         if (max !== null) searchParams.set('maxPrice', max); else searchParams.delete('maxPrice');
@@ -68,12 +68,12 @@ const ProductListPage = () => {
 
     return (
         <div className="bg-light min-vh-100">
-            {/* Giữ nguyên Header với đầy đủ chức năng thông báo, chat... */}
+            
             <Header onSearch={fetchPosts} />
             
             <div className="container py-4">
                 <div className="row">
-                    {/* 🚀 CỘT TRÁI: DANH MỤC & BỘ LỌC GIÁ */}
+                    
                     <div className="col-md-3 d-none d-md-block">
                         <div className="bg-white rounded-4 shadow-sm p-3 mb-4 border-0">
                             <h6 className="fw-bold mb-3 border-bottom pb-2">📂 Danh mục tin đăng</h6>
@@ -98,7 +98,7 @@ const ProductListPage = () => {
                             </ul>
                         </div>
                         
-                        {/* 🚀 BỘ LỌC GIÁ: ĐÃ CẬP NHẬT LOGIC CHẠY ĐƯỢC */}
+                        
                         <div className="bg-white rounded-4 shadow-sm p-3 border-0">
                             <h6 className="fw-bold mb-3 border-bottom pb-2">💰 Khoảng giá</h6>
                             <button 
@@ -127,9 +127,9 @@ const ProductListPage = () => {
                         </div>
                     </div>
 
-                    {/* 🚀 CỘT PHẢI: KẾT QUẢ TÌM KIẾM */}
+                    
                     <div className="col-md-9">
-                        {/* Thanh lọc nhanh: Tin mới nhất, Giá tăng/giảm */}
+                        
                         <div className="bg-white p-3 rounded-4 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center border-0">
                             <div className="d-flex align-items-center gap-3">
                                 <span className="fw-bold text-muted small">Lọc theo:</span>
@@ -149,7 +149,7 @@ const ProductListPage = () => {
                             </div>
                         </div>
 
-                        {/* Danh sách tin đăng */}
+                        
                         <div className="row g-3">
                             {loading ? (
                                 <div className="text-center p-5 w-100">

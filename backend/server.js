@@ -13,7 +13,7 @@ const querystring = require('qs');
 
 const app = express();
 
-// 🚀 BƯỚC QUAN TRỌNG: Chỉ dùng DUY NHẤT một cục CORS này, nó sẽ cho phép mọi thứ đi qua
+
 app.use(cors({
     origin: function (origin, callback) { callback(null, true); },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -35,23 +35,23 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// ... (Phần ejs và Cloudinary bên dưới bác giữ nguyên không đụng tới) ...
+
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, '../admin/views'));
 
-// 🚀 IMPORT ĐỒ NGHỀ CLOUDINARY
+
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
-// 🚀 CẤU HÌNH TÀI KHOẢN
+
 cloudinary.config({
   cloud_name: 'dbznseukv',
   api_key: '184464981981638',
   api_secret: '-UKbuZxsQKgmKL3-p47oQDQJDrc'
 });
 
-// 🚀 CẤU HÌNH KHO CHỨA
+
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
@@ -68,19 +68,19 @@ const DB_URL = process.env.MONGODB_URI;
   .then(() => console.log('✅ Đã kết nối MongoDB Atlas thành công!'))
   .catch(err => {
     console.error('❌ Lỗi kết nối DB:', err.message);
-    process.exit(1); // Cho sập luôn để mình biết là nó không đọc được link
+    process.exit(1); 
   });
 
-// ==========================================
-// 2. ĐỊNH NGHĨA DATABASE
-// ==========================================
+
+
+
 const Category = mongoose.models.Category || mongoose.model('Category', new mongoose.Schema({
   name: { type: String, required: true },
   image: { type: String, required: true },
   description: { type: String, default: '' }
 }));
 
-// 🚀 Đã thêm `mongoose.models.Post ||` để chống lỗi MissingSchema
+
 const Post = mongoose.models.Post || mongoose.model('Post', new mongoose.Schema({
   title: { type: String, required: true },
   price: { type: Number, required: true },
@@ -191,9 +191,9 @@ const Follow = mongoose.models.Follow || mongoose.model('Follow', new mongoose.S
     following: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true }));
 
-// ==========================================
-// 3. API DÀNH CHO ADMIN (EJS)
-// ==========================================
+
+
+
 const session = require('express-session');
 app.use(session({
   secret: 'khoa-bi-mat-haihand',
@@ -246,11 +246,11 @@ app.get('/dashboard', requireAdmin, async (req, res) => {
     const userCount = await User.countDocuments();
     const pendingCount = await Post.countDocuments({ status: 'PENDING' });
     
-    // 🚀 Lấy doanh thu thực tế từ bảng Revenue
+    
     const revenues = await Revenue.find().sort({ createdAt: -1 });
     const totalRevenue = revenues.reduce((sum, item) => sum + item.commissionAmount, 0);
 
-    // Lấy 5 giao dịch thu phí gần nhất để hiện lên bảng Dashboard
+    
     const recentRevenues = await Revenue.find()
       .populate({
         path: 'orderId',
@@ -266,7 +266,7 @@ app.get('/dashboard', requireAdmin, async (req, res) => {
         stats: { postCount, userCount, pendingCount, revenue: totalRevenue }, 
         recentPending, 
         recentUsers,
-        recentRevenues, // 🚀 Gửi dữ liệu này sang EJS
+        recentRevenues, 
         active: 'dashboard' 
     });
   } catch (error) { 
@@ -276,12 +276,12 @@ app.get('/dashboard', requireAdmin, async (req, res) => {
 
 app.get('/admin/withdrawals', async (req, res) => {
     try {
-        // 1. Mở khóa dòng này để nó mò vào Database lấy các lệnh đang chờ (pending)
-        // Lưu ý: Nếu bảng giao dịch của bác tên khác (vd: History, Order) thì đổi chữ Transaction nhé
+        
+        
         const withdrawalsData = await Transaction.find({ type: 'Rút tiền', status: 'Đang xử lý' }).populate('user');
-        // 2. Truyền dữ liệu thật vào giao diện
+        
         res.render('withdrawals', { 
-            withdrawals: withdrawalsData, // Thay cái [] bằng biến dữ liệu thật
+            withdrawals: withdrawalsData, 
             active: 'withdrawals' 
         });
     } catch (error) {
@@ -319,7 +319,7 @@ app.get('/posts', requireAdmin, async (req, res) => {
 });
 
 app.get('/api/admin/orders', async (req, res) => {
-    const orders = await Order.find().populate('buyer'); // Lấy hết, không lọc status
+    const orders = await Order.find().populate('buyer'); 
     res.json(orders);
 });
 
@@ -327,22 +327,22 @@ app.get('/posts/delete/:id', requireAdmin, async (req, res) => {
   try { await Post.findByIdAndUpdate(req.params.id, { status: 'DELETED' }); res.redirect('/posts'); } catch(e) { res.redirect('/posts'); }
 });
 
-// 🚀 API: ADMIN DUYỆT BÀI ĐĂNG & BÁO CHO CHỦ BÀI VIẾT
+
 app.get('/posts/approve/:id', requireAdmin, async (req, res) => {
     try {
         const post = await Post.findById(req.params.id);
         if (!post) return res.status(404).send("Không tìm thấy bài viết");
 
-        // Đổi trạng thái sang đã duyệt
+        
         post.status = 'APPROVED';
         await post.save();
 
-        // 🔔 BẮN THÔNG BÁO CHO CHỦ BÀI ĐĂNG
+        
         await UserNotification.create({
             user: post.author,
             title: '✅ Tin đăng đã được duyệt!',
             message: `Tin đăng "${post.title}" của bạn đã chính thức hiển thị trên chợ. Chúc bạn mau chốt đơn nhé!`,
-            link: `/post/${post._id}` // Bấm vào thông báo nhảy thẳng ra bài viết
+            link: `/post/${post._id}` 
         });
 
         res.redirect('/posts');
@@ -353,7 +353,7 @@ app.get('/posts/approve/:id', requireAdmin, async (req, res) => {
 
 app.get('/orders', requireAdmin, async (req, res) => {
   try {
-    // Phải lấy thêm trường 'phone' và 'address' để file EJS không bị lỗi undefined
+    
     const orders = await Order.find()
         .populate('buyer', 'name email')
         .sort({ createdAt: -1 });
@@ -409,13 +409,13 @@ app.post('/categories/edit/:id', requireAdmin, upload.single('image'), async (re
   } catch (error) { res.redirect('/categories'); }
 });
 
-// 🚀 API: ADMIN CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG (CÓ RÀO CHẮN BẢO MẬT)
+
 app.post('/orders/update-status/:id', requireAdmin, async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).send("Không tìm thấy đơn hàng");
         
-        // 🚀 RÀO CHẮN BACKEND: Khóa cứng nếu đơn đã chốt sổ hoặc đã hủy
+        
         if (order.status === 'Đã thanh toán cho người bán' || order.status === 'Đã hủy') {
             return res.status(400).send(`
                 <div style="text-align:center; padding: 50px; font-family: sans-serif;">
@@ -426,38 +426,38 @@ app.post('/orders/update-status/:id', requireAdmin, async (req, res) => {
             `);
         }
 
-        // Cập nhật trạng thái mới
+        
         order.status = req.body.status;
         await order.save();
         
-        // Cập nhật xong tự động quay về trang quản lý đơn
+        
         res.redirect('/orders');
     } catch (error) {
         res.status(500).send("Lỗi server khi cập nhật trạng thái");
     }
 });
 
-// 🚀 API: ADMIN GIẢI NGÂN & BÁO TIỀN VỀ VÍ CHO NGƯỜI BÁN
+
 app.post('/api/admin/release-funds/:orderId', requireAdmin, async (req, res) => {
     try {
         const order = await Order.findById(req.params.orderId);
         if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
 
-        // Chặn bảo mật kép
+        
         if (order.status !== 'Hoàn thành') {
             return res.status(400).json({ message: "Chỉ giải ngân khi đơn hàng đã Hoàn thành!" });
         }
 
-        // Tính tiền chiết khấu (Sàn lấy 5%, Người bán nhận 95%)
+        
         const platformFee = order.totalPrice * 0.05;
         const sellerReceive = order.totalPrice - platformFee;
 
-        // 1. Cộng tiền vào ví cho người bán
+        
         const seller = await User.findById(order.seller);
         seller.walletBalance = (seller.walletBalance || 0) + sellerReceive;
         await seller.save();
 
-        // 2. Ghi nhận doanh thu cho Sàn
+        
         const newRevenue = new Revenue({
             orderId: order._id,
             commissionAmount: platformFee,
@@ -465,16 +465,16 @@ app.post('/api/admin/release-funds/:orderId', requireAdmin, async (req, res) => 
         });
         await newRevenue.save();
 
-        // 3. Chốt sổ đơn hàng
+        
         order.status = 'Đã thanh toán cho người bán';
         await order.save();
 
-        // 🔔 BẮN THÔNG BÁO CHO NGƯỜI BÁN TIỀN ĐÃ VỀ
+        
         await UserNotification.create({
             user: order.seller,
             title: '💰 Tiền đã về ví HaiPay!',
             message: `Tuyệt vời! Bạn vừa được giải ngân ${sellerReceive.toLocaleString('vi-VN')}đ từ đơn hàng #${order._id.toString().slice(-6).toUpperCase()} (Đã trừ 5% phí sàn).`,
-            link: '/haipay' // Bấm vào nhảy ra xem số dư ví
+            link: '/haipay' 
         });
 
         res.json({ message: "Giải ngân và bắn thông báo thành công!" });
@@ -484,24 +484,24 @@ app.post('/api/admin/release-funds/:orderId', requireAdmin, async (req, res) => 
     }
 });
 
-// 🚀 API: ADMIN HOÀN TIỀN CHO ĐƠN BỊ HỦY SAU KHI ĐÃ THANH TOÁN TRƯỚC
+
 app.post('/api/admin/refund-order/:orderId', requireAdmin, async (req, res) => {
     try {
         const order = await Order.findById(req.params.orderId);
         if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
 
-        // Phải đúng trạng thái mới cho hoàn
+        
         if (order.status !== 'Đã hủy (Chờ hoàn tiền)') {
             return res.status(400).json({ message: "Đơn hàng này không ở trạng thái chờ hoàn tiền!" });
         }
 
-        // 1. Hoàn tiền vào ví HaiPay cho người mua
+        
         const buyer = await User.findById(order.buyer);
         if (buyer) {
             buyer.walletBalance = (buyer.walletBalance || 0) + order.totalPrice;
             await buyer.save();
 
-            // Ghi nhận biến động số dư (Transaction) để khách tra cứu
+            
             await Transaction.create({
                 user: buyer._id,
                 type: 'Hoàn tiền',
@@ -510,7 +510,7 @@ app.post('/api/admin/refund-order/:orderId', requireAdmin, async (req, res) => {
                 description: `Hoàn tiền từ đơn hàng đã hủy #${order._id.toString().slice(-6).toUpperCase()}`
             });
 
-            // 2. Bắn thông báo cho người mua yên tâm
+            
             await UserNotification.create({
                 user: buyer._id,
                 title: '💸 Đã nhận được tiền hoàn!',
@@ -519,7 +519,7 @@ app.post('/api/admin/refund-order/:orderId', requireAdmin, async (req, res) => {
             });
         }
 
-        // 3. Chốt sổ trạng thái đơn hàng thành "Đã hủy" (Khóa vĩnh viễn)
+        
         order.status = 'Đã hủy';
         await order.save();
 
@@ -530,10 +530,10 @@ app.post('/api/admin/refund-order/:orderId', requireAdmin, async (req, res) => {
     }
 });
 
-// 🚀 API: TRANG THỐNG KÊ DOANH THU CHO ADMIN
+
 app.get('/admin/revenue', requireAdmin, async (req, res) => {
   try {
-    // Lấy toàn bộ lịch sử chiết khấu, kèm thông tin đơn hàng để đối soát
+    
     const revenueList = await Revenue.find()
       .populate({
         path: 'orderId',
@@ -541,7 +541,7 @@ app.get('/admin/revenue', requireAdmin, async (req, res) => {
       })
       .sort({ createdAt: -1 });
 
-    // Tính tổng doanh thu mọi thời đại
+    
     const totalRevenue = revenueList.reduce((sum, item) => sum + item.commissionAmount, 0);
 
     res.render('revenue', { revenueList, totalRevenue });
@@ -568,25 +568,25 @@ app.get('/api/admin/notifications', async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Lỗi" }); }
 });
 
-// 🚀 3. API ĐÁNH DẤU ĐÃ ĐỌC THÔNG BÁO
+
 app.post('/api/admin/notifications/read', async (req, res) => {
     await Notification.updateMany({ isRead: false }, { isRead: true });
     res.json({ success: true });
 });
 
-// 🚀 ROUTE: TRANG QUẢN LÝ BÁO CÁO DÀNH CHO ADMIN
+
 app.get('/admin/reports', requireAdmin, async (req, res) => {
     try {
-        // Lấy danh sách báo cáo và nạp thêm thông tin người gửi + bài viết bị báo cáo
+        
         const reports = await Report.find()
             .populate('reporter', 'name')
             .populate('post', 'title')
             .sort({ createdAt: -1 });
 
-        // Render ra file reports.ejs (Nhớ tạo file này trong thư mục views nha)
+        
         res.render('reports', { 
             reports, 
-            active: 'reports', // Để sidebar highlight đúng mục
+            active: 'reports', 
             user: req.session.user 
         });
     } catch (error) {
@@ -596,7 +596,7 @@ app.get('/admin/reports', requireAdmin, async (req, res) => {
 
 app.get('/api/admin/contact', async (req, res) => {
     try {
-        // Tìm 1 tài khoản có role là Admin
+        
         const admin = await User.findOne({ role: 'Admin' }).select('_id name avatar email');
         if (!admin) return res.status(404).json({ message: "Chưa có Admin nào trong hệ thống!" });
         res.status(200).json(admin);
@@ -614,7 +614,7 @@ app.get('/api/admin/unread-chats', async (req, res) => {
     } catch (error) { res.json({ count: 0 }); }
 });
 
-// 2. Tạo một thông báo ảo để Test xem chuông có reo không
+
 app.get('/api/admin/test-notif', async (req, res) => {
     try {
         await Notification.create({
@@ -625,11 +625,11 @@ app.get('/api/admin/test-notif', async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Lỗi" }); }
 });
 
-// API Duyệt lệnh rút tiền
+
 app.put('/api/admin/withdraw/:id/approve', async (req, res) => {
     try {
         const { id } = req.params;
-        // Cập nhật trạng thái thành 'success'
+        
         await Transaction.findByIdAndUpdate(id, { status: 'success' });
         res.json({ message: 'Đã duyệt lệnh rút tiền thành công!' });
     } catch (err) {
@@ -647,7 +647,7 @@ app.get('/users/edit/:id', async (req, res) => {
     }
 });
 
-// 2. Route xử lý lưu thông tin (Đổi router -> app)
+
 app.post('/users/edit/:id', async (req, res) => {
     try {
         const { name, email, phone, role } = req.body;
@@ -658,9 +658,9 @@ app.post('/users/edit/:id', async (req, res) => {
     }
 });
 
-// ==========================================
-// 4. API DÀNH CHO FRONTEND (REACT)
-// ==========================================
+
+
+
 
 app.get('/api/users/search', async (req, res) => {
   try {
@@ -725,7 +725,7 @@ app.post('/api/users/register', async (req, res) => {
 app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
   try {
     const updateData = { ...req.body };
-    // 🚀 Đã sửa lỗi: Lấy trực tiếp đường dẫn Cloudinary thay vì lưu localhost
+    
     if (req.file) updateData.avatar = req.file.path; 
     const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
     res.status(200).json(updatedUser);
@@ -734,33 +734,33 @@ app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
 
 app.get('/api/posts', async (req, res) => {
     try {
-        // 🚀 BƯỚC 1: Lấy thêm minPrice, maxPrice và sort từ yêu cầu
+        
         const { page = 1, limit = 8, category, search, location, sort, minPrice, maxPrice } = req.query;
         let query = { status: 'APPROVED' }; 
 
         if (category && category !== 'Tất cả') query.category = category;
         if (search) query.title = { $regex: search, $options: 'i' };
         
-        // Regex tìm kiếm địa điểm linh hoạt
+        
         if (location && location !== 'Toàn quốc') {
             query.location = { $regex: location, $options: 'i' };
         }
 
-        // 🚀 BƯỚC 2: LOGIC LỌC GIÁ (Đây là chỗ bác đang thiếu)
+        
         if (minPrice || maxPrice) {
             query.price = {};
-            if (minPrice) query.price.$gte = Number(minPrice); // Lớn hơn hoặc bằng
-            if (maxPrice) query.price.$lte = Number(maxPrice); // Nhỏ hơn hoặc bằng
+            if (minPrice) query.price.$gte = Number(minPrice); 
+            if (maxPrice) query.price.$lte = Number(maxPrice); 
         }
 
-        // 🚀 BƯỚC 3: XỬ LÝ SẮP XẾP (SORT)
-        let sortOption = { createdAt: -1 }; // Mặc định tin mới nhất
-        if (sort === 'price-asc') sortOption = { price: 1 };  // Giá tăng dần
-        if (sort === 'price-desc') sortOption = { price: -1 }; // Giá giảm dần
+        
+        let sortOption = { createdAt: -1 }; 
+        if (sort === 'price-asc') sortOption = { price: 1 };  
+        if (sort === 'price-desc') sortOption = { price: -1 }; 
 
         const posts = await Post.find(query)
             .populate('author', 'name avatar')
-            .sort(sortOption) // Áp dụng sắp xếp vào đây
+            .sort(sortOption) 
             .limit(limit * 1)
             .skip((page - 1) * limit)
             .exec();
@@ -801,7 +801,7 @@ app.post('/api/users/:userId/checkout', async (req, res) => {
     const user = await User.findById(userId);
     const cartItems = user.cart; 
 
-    // 🚀 MỚI: KIỂM TRA THANH TOÁN BẰNG HAIPAY (Xác minh CCCD & Số dư)
+    
     if (paymentMethod === 'HAIPAY') {
         if (!user.cccd || user.cccd.trim() === '') {
             return res.status(400).json({ error: 'Bạn cần cập nhật CCCD (KYC) trong Hồ sơ để dùng ví HaiPay!' });
@@ -814,7 +814,7 @@ app.post('/api/users/:userId/checkout', async (req, res) => {
     const firstPost = await Post.findById(items[0]);
     const sellerId = firstPost ? firstPost.author : null;
 
-    // 🚀 MỚI: Xác định trạng thái đơn hàng tùy phương thức
+    
     let finalStatus = 'Chờ xác nhận';
     if (paymentMethod === 'VNPAY') finalStatus = 'Chờ thanh toán VNPay';
     if (paymentMethod === 'HAIPAY') finalStatus = 'Đã thanh toán (Admin giữ tiền)';
@@ -829,9 +829,9 @@ app.post('/api/users/:userId/checkout', async (req, res) => {
         status: finalStatus 
     });
 
-    // 🚀 MỚI: XỬ LÝ TRỪ TIỀN VÀ TRỪ KHO NẾU LÀ HAIPAY
+    
     if (paymentMethod === 'HAIPAY') {
-        user.walletBalance -= totalPrice; // Trừ thẳng tiền trong ví
+        user.walletBalance -= totalPrice; 
         
         for (let cartItem of cartItems) {
             const post = await Post.findById(cartItem.product);
@@ -844,7 +844,7 @@ app.post('/api/users/:userId/checkout', async (req, res) => {
         user.cart = [];
         await user.save();
         await newOrder.save();
-        // Trả về số dư mới để Frontend cập nhật Header
+        
         return res.status(200).json({ message: 'Thanh toán bằng HaiPay thành công!', order: newOrder, newBalance: user.walletBalance });
     }
 
@@ -891,7 +891,7 @@ app.get('/api/users/public-profile/:userId', async (req, res) => {
         return res.status(200).json({ user, posts, reviews, followersCount, followingCount, avgRating });
     } catch (error) {
         console.error("Lỗi sập Profile:", error.message);
-        // 🛡️ ÉP TRẢ VỀ DATA RỖNG ĐỂ UI CHỈ HIỆN TRỐNG CHỨ KHÔNG QUĂNG LỖI 500 ĐỎ LÒM
+        
         return res.status(200).json({ user: {}, posts: [], reviews: [], followersCount: 0, followingCount: 0, avgRating: 5 });
     }
 });
@@ -900,15 +900,15 @@ app.post('/api/reviews', async (req, res) => {
   try {
     const { seller, buyer, rating, comment, orderId } = req.body;
     
-    // Check xem đã đánh giá chưa
+    
     const order = await Order.findById(orderId);
     if (order.isReviewed) return res.status(400).json({ message: "Đơn hàng này đã được đánh giá rồi!" });
 
-    // Lưu đánh giá mới
+    
     const newReview = new Review({ seller, buyer, rating, comment, orderId });
     await newReview.save();
 
-    // Cập nhật trạng thái đơn hàng là đã đánh giá
+    
     order.isReviewed = true;
     await order.save();
 
@@ -920,7 +920,7 @@ app.get('/api/users/follow-status', async (req, res) => {
     try {
         const { followerId, followingId } = req.query;
 
-        // Check ID có hợp lệ chuẩn MongoDB không
+        
         if (!followerId || followerId === 'undefined' || !mongoose.Types.ObjectId.isValid(followerId)) {
             return res.status(200).json({ isFollowing: false });
         }
@@ -932,12 +932,12 @@ app.get('/api/users/follow-status', async (req, res) => {
         return res.status(200).json({ isFollowing: !!follow });
     } catch (e) {
         console.error("Lỗi API follow-status:", e.message);
-        // 🛡️ ÉP TRẢ VỀ 200 (THÀNH CÔNG) VÀ FALSE ĐỂ REACT KHÔNG BỊ SẬP BẢNG ĐỎ
+        
         return res.status(200).json({ isFollowing: false });
     }
 });
 
-// 🚀 API LẤY THÔNG BÁO CỦA USER
+
 app.get('/api/users/:userId/notifications', async (req, res) => {
     try {
         const notifs = await UserNotification.find({ user: req.params.userId }).sort({ createdAt: -1 }).limit(30);
@@ -946,13 +946,13 @@ app.get('/api/users/:userId/notifications', async (req, res) => {
     } catch (error) { res.status(500).json({ error: "Lỗi" }); }
 });
 
-// 🚀 API ĐÁNH DẤU ĐÃ ĐỌC THÔNG BÁO
+
 app.post('/api/users/:userId/notifications/read', async (req, res) => {
     await UserNotification.updateMany({ user: req.params.userId, isRead: false }, { isRead: true });
     res.json({ success: true });
 });
 
-// 🚀 API: LẤY LỊCH SỬ GIAO DỊCH CỦA USER
+
 app.get('/api/users/:userId/transactions', async (req, res) => {
     try {
         const trans = await Transaction.find({ user: req.params.userId }).sort({ createdAt: -1 });
@@ -977,14 +977,14 @@ app.post('/api/users/:userId/withdraw', async (req, res) => {
             description: `Rút tiền về NH: ${bankName} - STK: ${bankAccount}`
         });
 
-        // Bắn thông báo cho user yên tâm
+        
         await UserNotification.create({
             user: user._id, title: '🏦 Đã tạo lệnh rút tiền!',
             message: `Lệnh rút ${amount.toLocaleString('vi-VN')}đ về tài khoản ${bankName} đang được xử lý. Tiền sẽ về trong 2-4 tiếng nữa nhé.`,
             link: '/haipay'
         });
 
-        // 🚀 THÊM ĐOẠN NÀY: Bắn chuông réo Admin vào giải ngân
+        
         await Notification.create({
             title: '💸 Yêu cầu rút tiền mới!',
             message: `Khách hàng ${user.name} vừa yêu cầu rút ${amount.toLocaleString('vi-VN')}đ. Bác mau vào kiểm tra và chuyển khoản nhé!`,
@@ -996,22 +996,22 @@ app.post('/api/users/:userId/withdraw', async (req, res) => {
     }
 });
 
-// 🚀 ROUTE: ADMIN XÓA BÀI VIẾT VI PHẠM
+
 app.post('/admin/posts/delete/:id', requireAdmin, async (req, res) => {
     try {
         const postId = req.params.id;
 
-        // 1. Xóa bài viết khỏi Database
+        
         const deletedPost = await Post.findByIdAndDelete(postId);
         
         if (!deletedPost) {
             return res.status(404).send("Không tìm thấy bài viết để xóa!");
         }
 
-        // 2. Tự động xóa luôn các Báo cáo liên quan đến bài viết này cho sạch DB
+        
         await mongoose.models.Report.deleteMany({ post: postId });
 
-        // 3. (Tùy chọn) Bắn thông báo cho người đăng bài biết bài đã bị xóa do vi phạm
+        
         if (deletedPost.author) {
             await UserNotification.create({
                 user: deletedPost.author,
@@ -1021,7 +1021,7 @@ app.post('/admin/posts/delete/:id', requireAdmin, async (req, res) => {
             });
         }
 
-        // Quay lại trang báo cáo sau khi xóa thành công
+        
         res.redirect('/admin/reports');
     } catch (error) {
         console.error("Lỗi xóa bài Admin:", error);
@@ -1031,12 +1031,12 @@ app.post('/admin/posts/delete/:id', requireAdmin, async (req, res) => {
 
 app.get('/admin/orders', async (req, res) => {
     try {
-        // 🚀 SỬA TẠI ĐÂY: Lấy tất cả đơn hàng, sắp xếp mới nhất lên đầu (sort -1)
+        
         const orders = await Order.find()
-            .populate('buyer', 'name email phone') // Lấy thông tin người mua
+            .populate('buyer', 'name email phone') 
             .sort({ createdAt: -1 }); 
 
-        res.render('orders', { orders }); // Trả về file orders.ejs
+        res.render('orders', { orders }); 
     } catch (error) {
         res.status(500).send("Lỗi tải danh sách đơn hàng");
     }
@@ -1047,7 +1047,7 @@ app.post('/api/reports', async (req, res) => {
         const { reporterId, postId, reason } = req.body;
         await Report.create({ reporter: reporterId, post: postId, reason });
         
-        // Bắn thông báo cho Admin (Nếu bác muốn)
+        
         await Notification.create({
             title: '🚩 Có báo cáo mới!',
             message: `Một bài đăng vừa bị người dùng báo cáo vi phạm. Hãy kiểm tra ngay!`,
@@ -1060,7 +1060,7 @@ app.post('/api/reports', async (req, res) => {
 
 app.post('/admin/reports/ignore/:id', requireAdmin, async (req, res) => {
     try {
-        // Chỉ cần xóa cái đơn Báo cáo đó đi là xong, bài viết vẫn giữ nguyên
+        
         await mongoose.models.Report.findByIdAndDelete(req.params.id);
         res.redirect('/admin/reports');
     } catch (error) {
@@ -1080,7 +1080,7 @@ app.post('/api/users/follow', async (req, res) => {
             return res.json({ message: "Đã bỏ theo dõi", isFollowing: false });
         } else {
             await Follow.create({ follower: followerId, following: followingId });
-            // Bắn thông báo cho người được theo dõi
+            
             await UserNotification.create({
                 user: followingId,
                 title: '👤 Có người theo dõi mới!',
@@ -1108,13 +1108,13 @@ app.get('/api/users/:userId/follow-list', async (req, res) => {
             list = await mongoose.models.Follow.find({ follower: userId }).populate('following', 'name avatar email');
         }
 
-        // 🛡️ Lọc bỏ những dòng rác (trường hợp user kia đã xóa tài khoản)
+        
         list = list.filter(item => item.follower && item.following);
 
         res.status(200).json(list);
     } catch (e) {
         console.error("Lỗi get follow list:", e.message);
-        // 🛡️ Bị lỗi cũng trả về mảng rỗng, cấm sập server!
+        
         res.status(200).json([]); 
     }
 });
@@ -1127,11 +1127,11 @@ app.get('/api/users/:id', async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Lỗi server' }); }
 });
 
-// ==========================================
-// 🚀 API QUẢN LÝ ĐƠN HÀNG (C2C) MỚI THÊM
-// ==========================================
 
-// 1. Lấy danh sách đơn bán cho Người bán
+
+
+
+
 app.get('/api/orders/seller/:sellerId', async (req, res) => {
   try {
     const orders = await Order.find({ seller: req.params.sellerId })
@@ -1142,17 +1142,17 @@ app.get('/api/orders/seller/:sellerId', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Lỗi lấy đơn hàng của người bán' }); }
 });
 
-// 🚀 API: NGƯỜI BÁN XÁC NHẬN ĐƠN HÀNG
+
 app.put('/api/orders/:orderId/confirm', async (req, res) => {
     try {
         const order = await Order.findById(req.params.orderId).populate('seller buyer');
         if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
-        // Đổi trạng thái sang một mốc mới để Admin dễ nhận biết
+        
         order.status = 'Người bán đã chuẩn bị hàng'; 
         await order.save();
 
-        // 🔔 BẮN THÔNG BÁO CHO ADMIN
+        
         await Notification.create({
             title: '📦 Người bán đã chốt đơn!',
             message: `Người bán ${order.seller?.name || 'Ẩn danh'} đã đóng gói xong đơn hàng #${order._id.toString().slice(-6).toUpperCase()}. Admin hãy xem chi tiết và điều phối giao hàng!`,
@@ -1163,37 +1163,37 @@ app.put('/api/orders/:orderId/confirm', async (req, res) => {
     } catch (error) { res.status(500).json({ message: 'Lỗi xác nhận đơn' }); }
 });
 
-// 🚀 API: HỦY ĐƠN HÀNG (TÍCH HỢP HOÀN TIỀN VÀ TRẢ LẠI KHO)
+
 app.put('/api/orders/:orderId/cancel', async (req, res) => {
     try {
         const order = await Order.findById(req.params.orderId);
         if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
-        // 1. Chặn không cho hủy nếu đơn đã đi quá xa
+        
         if (order.status === 'Đã hủy') return res.status(400).json({ message: 'Đơn này đã bị hủy từ trước rồi!' });
         if (order.status === 'Đang giao hàng' || order.status === 'Đang giao' || order.status === 'Hoàn thành' || order.status === 'Đã thanh toán cho người bán') {
             return res.status(400).json({ message: 'Đơn hàng đang giao hoặc đã hoàn thành, không thể hủy!' });
         }
 
-        // 2. 💸 HOÀN TIỀN VÀO VÍ HAIPAY (Nếu khách đã thanh toán trước)
+        
         if (order.status === 'Đã thanh toán (Admin giữ tiền)') {
             await User.findByIdAndUpdate(order.buyer, {
-                $inc: { walletBalance: order.totalPrice } // Cộng lại đúng số tiền khách đã trả vào ví
+                $inc: { walletBalance: order.totalPrice } 
             });
         }
 
-        // 3. 📦 TRẢ HÀNG LẠI VÀO KHO CHO NGƯỜI BÁN
-        // Lưu ý: order.items đang lưu mảng ID của Post
+        
+        
         for (let postId of order.items) {
             const post = await Post.findById(postId);
             if (post) {
-                post.quantity += 1; // Cộng lại 1 món vào kho
-                if (post.status === 'SOLD') post.status = 'APPROVED'; // Nếu trước đó hết hàng, giờ mở bán lại
+                post.quantity += 1; 
+                if (post.status === 'SOLD') post.status = 'APPROVED'; 
                 await post.save();
             }
         }
 
-        // 4. Đổi trạng thái đơn thành Đã hủy
+        
         order.status = 'Đã hủy';
         await order.save();
 
@@ -1204,13 +1204,13 @@ app.put('/api/orders/:orderId/cancel', async (req, res) => {
     }
 });
 
-// 4. API: NGƯỜI MUA XÁC NHẬN ĐÃ NHẬN HÀNG
+
 app.put('/api/orders/:orderId/receive', async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
-    // 🚀 SỬA Ở ĐÂY: Chấp nhận cả 2 kiểu ghi
+    
     if (order.status !== 'Đang giao hàng' && order.status !== 'Đang giao') {
         return res.status(400).json({ message: 'Đơn hàng chưa được giao, không thể xác nhận!' });
     }
@@ -1266,7 +1266,7 @@ app.post('/api/posts', upload.array('images', 5), async (req, res) => {
 
     await newPost.save();
 
-    // 🚀 THÊM ĐOẠN NÀY: Bắn thông báo cho Admin
+    
     await Notification.create({
         title: '📦 Có tin đăng mới chờ duyệt!',
         message: `Vừa có một tin đăng mới: "${title}". Bác vào mục Tin đăng kiểm tra và duyệt bài nhé!`,
@@ -1334,13 +1334,13 @@ app.post('/api/users/cart', async (req, res) => {
     } catch (error) { res.status(500).json({ message: "Lỗi Server" }); }
 });
 
-// 🚀 2. API: NGƯỜI BÁN XÁC NHẬN ĐƠN HÀNG
+
 app.put('/api/orders/:orderId/confirm', async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
-    // Chỉ cho xác nhận khi đang chờ
+    
     if (order.status !== 'Chờ xác nhận' && order.status !== 'Đã thanh toán (Admin giữ tiền)') {
         return res.status(400).json({ message: 'Trạng thái đơn hàng không hợp lệ để xác nhận' });
     }
@@ -1351,18 +1351,18 @@ app.put('/api/orders/:orderId/confirm', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Lỗi xác nhận đơn' }); }
 });
 
-// 🚀 3. API: HỦY ĐƠN HÀNG (Dùng chung cho cả Người Mua và Người Bán)
+
 app.put('/api/orders/:orderId/cancel', async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
-    // Cấm hủy khi hàng đã giao đi
+    
     if (order.status === 'Đang giao hàng' || order.status === 'Hoàn thành') {
         return res.status(400).json({ message: 'Đơn hàng đang giao hoặc đã hoàn thành, không thể hủy!' });
     }
 
-    // Nếu đã thanh toán VNPay thì chuyển sang trạng thái chờ Admin hoàn tiền
+    
     if (order.status === 'Đã thanh toán (Admin giữ tiền)') {
         order.status = 'Đã hủy (Chờ hoàn tiền)';
     } else {
@@ -1370,7 +1370,7 @@ app.put('/api/orders/:orderId/cancel', async (req, res) => {
     }
     await order.save();
 
-    // 🚀 QUAN TRỌNG: Mở khóa lại sản phẩm để người khác có thể mua (Đổi từ SOLD về APPROVED)
+    
     if (order.items && order.items.length > 0) {
         await Post.updateMany({ _id: { $in: order.items } }, { status: 'APPROVED' });
     }
@@ -1379,9 +1379,9 @@ app.put('/api/orders/:orderId/cancel', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Lỗi hủy đơn' }); }
 });
 
-// ==========================================
-// 5. API CHAT & SOCKET
-// ==========================================
+
+
+
 
 app.get('/api/messages/clear-all', async (req, res) => {
   try {
@@ -1446,13 +1446,13 @@ app.post('/api/messages', upload.single('image'), async (req, res) => {
       post: req.body.postId || null
     });
 
-    // 🚀 SỬA LỖI: Schema của bạn là mảng images: [String], nên phải bọc trong ngoặc vuông
+    
     if (req.file) {
         newMessage.images = [req.file.path];
     }
     await newMessage.save();
     
-    // Populate lấy thêm thuộc tính images của post để hiển thị cho chuẩn
+    
     const populatedMsg = await Message.findById(newMessage._id).populate('post', 'title price images image');
     res.status(200).json(populatedMsg);
   } catch (err) { 
@@ -1474,18 +1474,18 @@ app.put('/api/messages/mark-read', async (req, res) => {
 let onlineUsers = [];
 
 io.on('connection', (socket) => {
-  // 1. Khi có người dùng kết nối
+  
   socket.on('addUser', (userId) => {
-    // Xóa record cũ của user này (nếu có) để tránh trùng lặp
+    
     onlineUsers = onlineUsers.filter(u => u.userId !== userId);
-    // Lưu lại với socket.id mới nhất
+    
     onlineUsers.push({ userId, socketId: socket.id });
     
-    // 🚀 THÊM DÒNG NÀY: Phát sóng danh sách online mới nhất cho toàn bộ user
+    
     io.emit('getUsers', onlineUsers);
   });
   
-  // 2. Khi gửi tin nhắn (Khúc này của bác chuẩn rồi)
+  
   socket.on('sendMessage', (msgData) => {
     const receiver = onlineUsers.find(u => u.userId === msgData.receiverId);
     if (receiver) {
@@ -1494,16 +1494,15 @@ io.on('connection', (socket) => {
     }
   });
 
-  // 3. Khi người dùng tắt web hoặc mất mạng
+  
   socket.on('disconnect', () => { 
     onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id); 
     
-    // 🚀 THÊM DÒNG NÀY LUN: Báo cho mọi người biết có người vừa offline để tắt chấm xanh
+    
     io.emit('getUsers', onlineUsers);
   });
 });
 
-// Đoạn API lấy danh mục giữ nguyên
 app.get('/api/categories', async (req, res) => {
   try {
     const categories = await Category.find();
@@ -1513,9 +1512,6 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-// ==========================================
-// 💵 TÍCH HỢP THANH TOÁN VNPAY SANDBOX
-// ==========================================
 const vnp_TmnCode = "PWPUZORX";
 const vnp_HashSecret = "EI1KY7CCURZXJUIXCW7QUVXENCM1HQ0L";
 const vnp_Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
@@ -1599,9 +1595,9 @@ app.post('/api/vnpay/create_payment_url', async (req, res) => {
     } catch (error) { res.status(500).json({ error: 'Lỗi tạo link VNPay' }); }
 });
 
-// ==========================================
-// 🚀 API: XÁC NHẬN THANH TOÁN VNPAY & BÁO CHO NGƯỜI BÁN
-// ==========================================
+
+
+
 app.post('/api/vnpay/verify', async (req, res) => {
     try {
         const { orderId, responseCode } = req.body;
@@ -1611,7 +1607,7 @@ app.post('/api/vnpay/verify', async (req, res) => {
         if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
         if (responseCode === '00') {
-            // Chống React gọi 2 lần làm lỗi dữ liệu
+            
             if (order.status === 'Đã thanh toán (Admin giữ tiền)') {
                 return res.status(200).json({ message: 'Giao dịch đã được xử lý thành công trước đó!' });
             }
@@ -1619,7 +1615,7 @@ app.post('/api/vnpay/verify', async (req, res) => {
             order.status = 'Đã thanh toán (Admin giữ tiền)';
             await order.save();
 
-            // 🚀 TRỪ KHO VÀ XÓA GIỎ HÀNG BẰNG findOneAndUpdate (Chống lỗi VersionError)
+            
             const user = await User.findById(order.buyer);
             if (user && user.cart && user.cart.length > 0) {
                 for (let cartItem of user.cart) {
@@ -1631,7 +1627,7 @@ app.post('/api/vnpay/verify', async (req, res) => {
                     }
                 }
                 
-                // Xóa sạch giỏ hàng an toàn
+                
                 await User.findOneAndUpdate(
                     { _id: order.buyer }, 
                     { $set: { cart: [] } },
@@ -1639,7 +1635,7 @@ app.post('/api/vnpay/verify', async (req, res) => {
                 );
             }
 
-            // 🔔 BẮN THÔNG BÁO CHO NGƯỜI BÁN
+            
             await UserNotification.create({
                 user: order.seller,
                 title: '🎉 Bạn có đơn hàng mới!',
@@ -1649,7 +1645,7 @@ app.post('/api/vnpay/verify', async (req, res) => {
 
             return res.status(200).json({ message: 'Giao dịch VNPay thành công!' });
         } else {
-            // Nếu khách hủy thanh toán thì xóa cái đơn hàng nháp đó đi
+            
             await Order.findByIdAndDelete(orderId);
             return res.status(400).json({ message: 'Giao dịch thất bại hoặc đã bị khách hủy!' });
         }
@@ -1667,10 +1663,10 @@ app.post('/api/users/send-otp', async (req, res) => {
         const { email, generatedOtp } = req.body;
         const user = await mongoose.model('User').findOne({ email });
         
-        // 🚨 Nếu lỗi "Account not found" ở đây, nghĩa là DB chưa có email này
+        
         if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký tài khoản!' });
 
-        // Lưu mã OTP vào bộ nhớ tạm để tí nữa check
+        
         otpStore.set(email, { otp: generatedOtp, expire: Date.now() + 5 * 60 * 1000 });
         res.json({ message: 'Backend đã sẵn sàng, mời Frontend gửi mail!' });
     } catch (err) { res.status(500).json({ message: 'Lỗi Backend!' }); }

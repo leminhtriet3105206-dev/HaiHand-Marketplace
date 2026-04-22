@@ -24,7 +24,7 @@ const PaymentResultPage = () => {
                 
                 if (responseCode === '00') {
                     setStatus('🎉 Thanh toán thành công! Admin đang giữ tiền của bạn.');
-                    window.dispatchEvent(new Event('cartUpdated')); // Nhảy số giỏ hàng
+                    window.dispatchEvent(new Event('cartUpdated')); 
                 } else {
                     setStatus('❌ Giao dịch thất bại hoặc bạn đã hủy thanh toán!');
                 }

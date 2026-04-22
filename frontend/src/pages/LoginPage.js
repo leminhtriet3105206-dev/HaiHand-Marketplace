@@ -9,19 +9,19 @@ const LoginPage = () => {
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   
-  // States cho luồng OTP
+  
   const [forgotEmail, setForgotEmail] = useState('');
   const [otpForm, setOtpForm] = useState({ otp: '', newPassword: '' });
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // States hiện ẩn mật khẩu
+  
   const [showLoginPass, setShowLoginPass] = useState(false);
   const [showForgotPass, setShowForgotPass] = useState(false);
 
-  // ==============================================================
-  // HÀM ĐĂNG NHẬP
-  // ==============================================================
+  
+  
+  
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
@@ -33,9 +33,9 @@ const LoginPage = () => {
     }
   };
 
-  // ==============================================================
-  // 🚀 NÚT 1: GỬI MÃ OTP VỀ EMAIL (CHẾ ĐỘ CHUYÊN NGHIỆP)
-  // ==============================================================
+  
+  
+  
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (!forgotEmail) return alert('Vui lòng nhập Email!');
@@ -44,17 +44,17 @@ const LoginPage = () => {
     try {
         const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // 1. Đồng bộ mã OTP lên Backend
+        
         await axios.post(`${API_URL}/api/users/send-otp`, { 
             email: forgotEmail, 
             generatedOtp: generatedOtp 
         });
 
-        // 2. Gọi EmailJS (Sử dụng 3 Key bác đã cung cấp)
+        
         const emailParams = {
            service_id: 'service_4q86uoa',
            template_id: 'template_v64f5jg',
-           user_id: 'FxVTIoEF4YTi7S87P', // 🚀 Public Key chuẩn (chữ I hoa)
+           user_id: 'FxVTIoEF4YTi7S87P', 
            template_params: {
                    email: forgotEmail,
                    otp: generatedOtp
@@ -73,9 +73,9 @@ const LoginPage = () => {
     setIsLoading(false);
   };
 
-  // ==============================================================
-  // NÚT 2: XÁC NHẬN MÃ VÀ ĐỔI PASS
-  // ==============================================================
+  
+  
+  
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (otpForm.newPassword.length < 6) return alert('❌ Mật khẩu mới phải có ít nhất 6 ký tự!');
@@ -99,7 +99,7 @@ const LoginPage = () => {
   return (
     <div className="d-flex justify-content-center align-items-center vh-100" style={{ backgroundColor: '#F8F9FA' }}>
       <div className="card shadow-lg border-0 rounded-4 overflow-hidden" style={{ width: '420px' }}>
-        {/* Header thương hiệu */}
+        
         <div className="bg-warning p-4 text-center">
             <h2 className="fw-bold text-white mb-0" 
                 onClick={() => navigate('/')} 
@@ -116,7 +116,7 @@ const LoginPage = () => {
 
         <div className="card-body p-4 p-sm-5">
             {!isForgotMode ? (
-                // =============== FORM ĐĂNG NHẬP ===============
+                
                 <form onSubmit={handleLogin}>
                     <div className="mb-3">
                         <label className="form-label fw-bold small text-muted">Địa chỉ Email</label>
@@ -140,7 +140,7 @@ const LoginPage = () => {
                     </div>
                 </form>
             ) : (
-                // =============== FORM QUÊN MẬT KHẨU ===============
+                
                 <div>
                     {!isOtpSent ? (
                         <form onSubmit={handleSendOtp}>

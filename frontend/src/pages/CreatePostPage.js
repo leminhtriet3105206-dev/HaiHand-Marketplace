@@ -80,10 +80,10 @@ const CreatePostPage = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     if (!user) return alert("Vui lòng đăng nhập lại!");
 
-    // 🚀 SỬA LỖI TẠI ĐÂY: Dùng biến 'data' thay vì 'formData' để append
+    
     const data = new FormData();
-    data.append('author', user._id); // Giải quyết lỗi "Vô danh"
-    data.append('title', formData.title); // Giải quyết lỗi "title is not defined"
+    data.append('author', user._id); 
+    data.append('title', formData.title); 
     data.append('price', formData.price);
     data.append('category', formData.category);
     data.append('description', formData.description);

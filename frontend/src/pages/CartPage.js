@@ -13,7 +13,7 @@ const CartPage = () => {
 
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [address, setAddress] = useState(currentUser?.address || '');
-  const [paymentMethod, setPaymentMethod] = useState('COD'); // Thêm HAIPAY
+  const [paymentMethod, setPaymentMethod] = useState('COD'); 
 
   const fetchCart = async () => {
     try {
@@ -30,7 +30,7 @@ const CartPage = () => {
       return;
     }
     fetchCart();
-    // eslint-disable-next-line
+    
   }, []);
 
   const handleRemoveItem = async (postId) => {
@@ -115,21 +115,21 @@ const CartPage = () => {
             if (vnpayRes.data && vnpayRes.data.paymentUrl) window.location.href = vnpayRes.data.paymentUrl;
             else alert("Không thể tạo link VNPay!");
         }
-        // 🚀 MỚI: XỬ LÝ KHI THANH TOÁN BẰNG HAIPAY THÀNH CÔNG
+        
         else if (paymentMethod === 'HAIPAY') {
             setCartItems([]);
             window.dispatchEvent(new Event('cartUpdated'));
             
-            // Cập nhật lại số dư ví vào LocalStorage để Header tự cập nhật
+            
             const updatedUser = { ...currentUser, walletBalance: orderRes.data.newBalance };
             localStorage.setItem('user', JSON.stringify(updatedUser));
-            window.dispatchEvent(new Event('userUpdated')); // Bắn tín hiệu cho Header
+            window.dispatchEvent(new Event('userUpdated')); 
 
             alert("🎉 Thanh toán rẹt rẹt bằng HaiPay thành công!");
             navigate('/');
         }
     } catch (error) {
-        // Nếu lỗi do thiếu CCCD hoặc thiếu tiền
+        
         if (error.response && error.response.status === 400) {
             alert("❌ " + error.response.data.error);
             if (error.response.data.error.includes('CCCD')) navigate('/profile');
@@ -217,7 +217,7 @@ const CartPage = () => {
                             <select className="form-select bg-light fw-bold" value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
                                 <option value="COD">💵 Thanh toán tiền mặt (COD)</option>
                                 <option value="VNPAY">💳 Chuyển khoản ngân hàng (VNPay)</option>
-                                {/* 🚀 MỚI: Thêm ví HaiPay */}
+                                
                                 <option value="HAIPAY">⚡ Thanh toán qua ví HaiPay</option>
                             </select>
                         </div>

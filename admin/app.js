@@ -7,7 +7,7 @@ const session = require("express-session");
 const cors = require("cors");
 const Post = require("./models/Post");
 const User = require("./models/User");
-const Category = require("./models/Category"); // <-- MỚI THÊM
+const Category = require("./models/Category"); 
 
 mongoose
   .connect("mongodb://127.0.0.1:27017/HaiHand")
@@ -43,9 +43,9 @@ const checkLogin = (req, res, next) => {
   } else res.redirect("/login");
 };
 
-// ==========================================
-// API DÀNH CHO FRONTEND (REACT)
-// ==========================================
+
+
+
 app.get("/api/posts", async (req, res) => {
   try {
     const posts = await Post.find({ status: "APPROVED" })
@@ -138,9 +138,9 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-// ==========================================
-// ROUTE CHO TRANG ADMIN (EJS)
-// ==========================================
+
+
+
 app.get("/login", (req, res) => res.render("login", { error: null }));
 
 app.post("/login", async (req, res) => {
@@ -181,24 +181,24 @@ app.get("/dashboard", checkLogin, (req, res) => {
   res.redirect("/");
 });
 
-// === TRANG CHỦ (Đã thêm lấy thông báo thực tế) ===
+
 app.get("/", checkLogin, async (req, res) => {
   try {
     const totalPosts = await Post.countDocuments();
     const totalUsers = await User.countDocuments();
     const pendingPosts = await Post.countDocuments({ status: "Chờ duyệt" });
 
-    // Lấy 5 bài chờ duyệt mới nhất
+    
     const recentPending = await Post.find({ status: "Chờ duyệt" })
       .populate("author")
       .sort({ date: -1 })
       .limit(5);
-    // Lấy 5 user mới đăng ký
+    
     const recentUsers = await User.find().sort({ date: -1 }).limit(5);
 
     const stats = { totalPosts, totalUsers, pendingPosts };
 
-    // Truyền hết sang cho giao diện
+    
     res.render("dashboard", { stats, recentPending, recentUsers });
   } catch (err) {
     res.status(500).send("Có lỗi xảy ra khi tải bảng điều khiển!");
@@ -250,7 +250,7 @@ app.post("/users/edit/:id", checkLogin, async (req, res) => {
   }
 });
 
-// === MỚI THÊM: QUẢN LÝ DANH MỤC ===
+
 app.get("/categories", checkLogin, async (req, res) => {
   const categories = await Category.find().sort({ date: -1 });
   res.render("categories", { categories });
@@ -266,7 +266,7 @@ app.post("/categories/add", checkLogin, async (req, res) => {
     res.redirect("/categories");
   } catch (err) {
     res.redirect("/categories");
-  } // Lỗi (ví dụ trùng tên) thì quay lại
+  } 
 });
 
 app.get("/categories/delete/:id", checkLogin, async (req, res) => {

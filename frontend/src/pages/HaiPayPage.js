@@ -17,18 +17,18 @@ const HaiPayPage = () => {
   const [bankAccount, setBankAccount] = useState('');
   const [transactions, setTransactions] = useState([]);
 
-  // Hàm tải dữ liệu ví và lịch sử giao dịch mới nhất
+  
   const fetchWalletData = async () => {
     if (!user?._id) return;
     try {
-        // Lấy thông tin user mới nhất (số dư ví)
+        
         const userRes = await axios.get(`${API_URL}/api/users/${user._id}`);
         if (userRes.data) {
             setUser(userRes.data);
             localStorage.setItem('user', JSON.stringify(userRes.data));
         }
         
-        // Lấy lịch sử giao dịch
+        
         const transRes = await axios.get(`${API_URL}/api/users/${user._id}/transactions`);
         setTransactions(transRes.data);
     } catch (error) {
@@ -41,27 +41,27 @@ const HaiPayPage = () => {
     fetchWalletData();
   }, [user?._id, navigate]);
 
-  // 🚀 XỬ LÝ NẠP TIỀN VNPAY THẬT
+  
   const handleDeposit = async () => {
     const amount = parseInt(depositAmount);
     if (!amount || amount < 10000) return alert("Nạp tối thiểu 10.000đ bác nhé!");
 
     try {
-        // Gọi API nạp tiền đã viết trong server.js
+        
         const { data } = await axios.post(`${API_URL}/api/haipay/deposit`, {
             amount: amount,
             userId: user._id
         });
 
         if (data.paymentUrl) {
-            window.location.href = data.paymentUrl; // Chuyển sang VNPay
+            window.location.href = data.paymentUrl; 
         }
     } catch (error) {
         alert("Lỗi kết nối cổng thanh toán!");
     }
   };
 
-  // 🚀 XỬ LÝ RÚT TIỀN (ĐÃ SỬA LỖI 404)
+  
   const handleWithdraw = async (e) => {
     e.preventDefault();
     const amount = Number(withdrawAmount);
@@ -71,7 +71,7 @@ const HaiPayPage = () => {
 
     if (window.confirm(`Xác nhận rút ${amount.toLocaleString('vi-VN')}đ về ${bankName}?`)) {
         try {
-            // 🚀 ĐÃ SỬA: Gọi đúng địa chỉ API trong server.js
+            
             const res = await axios.post(`${API_URL}/api/users/${user._id}/withdraw`, {
                 amount: amount,
                 bankName,
@@ -79,14 +79,14 @@ const HaiPayPage = () => {
             });
             
             alert("✅ " + res.data.message);
-            // Cập nhật lại state user sau khi rút
+            
             setUser(res.data.user);
             localStorage.setItem('user', JSON.stringify(res.data.user));
             
             setWithdrawAmount(''); 
             setBankAccount('');
             setActiveTab('history');
-            fetchWalletData(); // Tải lại lịch sử để hiện dòng "Đang xử lý"
+            fetchWalletData(); 
         } catch (error) {
             alert("❌ " + (error.response?.data?.message || "Lỗi xử lý!"));
         }

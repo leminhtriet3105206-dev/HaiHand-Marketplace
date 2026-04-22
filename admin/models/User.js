@@ -6,7 +6,7 @@ const userSchema = new mongoose.Schema({
   name: String,
   email: String,
   phone: String,
-  role: { type: String, default: "Khách hàng" }, // Admin hoặc Khách hàng
+  role: { type: String, default: "Khách hàng" }, 
   date: { type: Date, default: Date.now },
 });
 

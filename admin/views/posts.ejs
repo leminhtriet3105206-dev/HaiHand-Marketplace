@@ -53,7 +53,7 @@
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center py-2">
                                         <% 
-                                            // 🚀 ĐÃ NÂNG CẤP LOGIC ẢNH: Phân biệt Cloudinary và Local
+                                            
                                             let imgSrc = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
                                             if (post.images && post.images.length > 0) {
                                                 imgSrc = post.images[0].startsWith('http') ? post.images[0] : '/' + post.images[0].replace(/\\/g, '/');
@@ -125,7 +125,7 @@
             document.getElementById("noResults").classList.toggle("d-none", hasData);
         }
 
-        // 🚀 ĐÃ THAY LÕI HÀM XÓA: Dùng Fetch API kết nối thẳng tới Backend
+        
         async function deletePost(id) {
             if(!confirm("❗ Bẩm lão đại, ngài có chắc chắn muốn XÓA vĩnh viễn tin này chứ? Hành động này không thể hoàn tác!")) {
                 return;
@@ -138,7 +138,7 @@
 
                 if (response.ok) {
                     alert("⚔️ Bẩm, đã trảm bài đăng thành công!");
-                    window.location.reload(); // Tự động F5 để cập nhật bảng
+                    window.location.reload(); 
                 } else {
                     alert("Lỗi: Kẻ địch quá mạnh, không thể gỡ bỏ! (Hãy đảm bảo Server đã có API DELETE /api/posts/:id)");
                 }
@@ -148,7 +148,7 @@
             }
         }
 
-        // Hàm duyệt bài đệ tử giữ nguyên để không làm ảnh hưởng luồng cũ của ngài
+        
         function approvePost(id) {
             if (confirm("Phê duyệt bài đăng này để hiển thị công khai trên HaiHand?")) {
                 window.location.href = "/posts/approve/" + id;

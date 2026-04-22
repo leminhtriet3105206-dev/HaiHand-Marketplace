@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header'; 
 import Footer from '../components/Footer';
 
-// 🚀 HÀM TÍNH THỜI GIAN ĐĂNG BÀI (MỚI THÊM)
+
 const formatTimeAgo = (dateString) => {
-  if (!dateString) return 'Mới'; // Đề phòng dữ liệu cũ không có ngày tháng
+  if (!dateString) return 'Mới'; 
   const date = new Date(dateString);
   const now = new Date();
   const seconds = Math.floor((now - date) / 1000);
@@ -107,7 +107,7 @@ const HomePage = () => {
   useEffect(() => {
     fetchPosts(1, 'Tất cả', '');
     fetchCategories();
-    // eslint-disable-next-line
+    
   }, []);
 
   const getImageUrl = (post) => {
@@ -210,7 +210,7 @@ const HomePage = () => {
                                 onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'}} 
                             />
                             
-                            {/* 🚀 ĐÃ THAY CHỮ "MỚI" THÀNH BỘ ĐẾM THỜI GIAN */}
+                            
                             <span className="position-absolute top-0 start-0 bg-warning text-dark fw-bold px-2 py-1 shadow-sm" style={{fontSize: '10px', borderRadius: '0 0 12px 0'}}>
                                 🕒 {formatTimeAgo(post.createdAt)}
                             </span>

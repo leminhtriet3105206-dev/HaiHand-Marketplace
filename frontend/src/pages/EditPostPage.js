@@ -16,7 +16,7 @@ const EditPostPage = () => {
     title: '', price: '', category: 'Đồ điện tử', description: '', quantity: 1 
   });
 
-  // 🚀 STATE ĐỊA CHỈ XỊN
+  
   const [provinces, setProvinces] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [selectedCity, setSelectedCity] = useState('');
@@ -25,11 +25,11 @@ const EditPostPage = () => {
   const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
   useEffect(() => {
-    // 1. Kéo dữ liệu 63 tỉnh thành
+    
     axios.get('https://provinces.open-api.vn/api/?depth=2')
       .then(res => setProvinces(res.data)).catch(console.error);
 
-    // 2. Kéo dữ liệu cũ về điền vào Form
+    
     const fetchPost = async () => {
       try {
         const { data } = await axios.get(`${API_URL}/api/posts/${id}`);
@@ -41,17 +41,17 @@ const EditPostPage = () => {
           quantity: data.quantity || 1
         });
         
-        // Lấy ảnh cũ hiển thị
+        
         if (data.images && data.images.length > 0) {
             setExistingImages(data.images);
         } else if (data.image) {
             setExistingImages([data.image]); 
         }
 
-        // Tách địa chỉ cũ ra để set vào Select (Nếu có dấu phẩy)
+        
         if (data.location && data.location.includes(',')) {
             const parts = data.location.split(',').map(item => item.trim());
-            // Format đệ tử tạo là "Quận/Huyện, Tỉnh/Thành"
+            
             if (parts.length >= 2) {
                 setSelectedDistrict(parts[0]);
                 setSelectedCity(parts[1]);
@@ -70,7 +70,7 @@ const EditPostPage = () => {
     fetchPost();
   }, [id, navigate]);
 
-  // 🚀 Tự động lọc Quận/Huyện khi Tỉnh/Thành thay đổi
+  
   useEffect(() => {
     if (selectedCity && provinces.length > 0) {
       const city = provinces.find(p => p.name === selectedCity);
@@ -80,7 +80,7 @@ const EditPostPage = () => {
     }
   }, [selectedCity, provinces]);
 
-  // Xóa bộ nhớ đệm của ảnh preview để web không bị nặng
+  
   useEffect(() => {
     return () => {
         previewImages.forEach(url => URL.revokeObjectURL(url));
@@ -98,7 +98,7 @@ const EditPostPage = () => {
     }
     setFiles(selectedFiles);
 
-    // TẠO LINK XEM TRƯỚC (PREVIEW) CHO ẢNH MỚI
+    
     const previews = selectedFiles.map(file => URL.createObjectURL(file));
     setPreviewImages(previews);
   };
@@ -114,11 +114,11 @@ const EditPostPage = () => {
     data.append('description', formData.description); 
     data.append('quantity', formData.quantity);
 
-    // Ghép địa chỉ chuẩn: "Quận/Huyện, Tỉnh/Thành"
+    
     const finalLocation = selectedDistrict ? `${selectedDistrict}, ${selectedCity}` : selectedCity;
     data.append('location', finalLocation);
 
-    // Bơm ảnh mới vào nếu có
+    
     if (files.length > 0) {
         files.forEach(f => { data.append('images', f); });
     }
@@ -177,7 +177,7 @@ const EditPostPage = () => {
             </select>
           </div>
 
-          {/* 🚀 BỘ CHỌN ĐỊA CHỈ THÔNG MINH ĐÃ ĐƯỢC MANG VÀO ĐÂY */}
+          
           <div className="row mb-3">
             <div className="col-md-6">
                 <label className="form-label fw-bold text-muted small">Tỉnh / Thành phố</label>
@@ -195,7 +195,7 @@ const EditPostPage = () => {
             </div>
           </div>
 
-          {/* 🚀 KHU VỰC HIỂN THỊ ẢNH (CŨ VÀ PREVIEW) */}
+          
           <div className="mb-3 border p-3 rounded-3 bg-light">
               {previewImages.length > 0 ? (
                   <>
@@ -218,7 +218,7 @@ const EditPostPage = () => {
               )}
           </div>
           
-          {/* UPLOAD ẢNH MỚI */}
+          
           <div className="mb-3">
             <label className="form-label fw-bold text-muted small">Tải ảnh mới (Tối đa 5 tấm)</label>
             <input type="file" className="form-control bg-light" accept="image/*" multiple onChange={handleFileChange} />

@@ -10,14 +10,14 @@ const ProductDetailPage = () => {
   const [post, setPost] = useState(null);
   const [mainImage, setMainImage] = useState('');
   
-  // STATE CHO ĐÁNH GIÁ
+  
   const [reviews, setReviews] = useState([]);
   const [avgRating, setAvgRating] = useState(0);
 
-  // 🚀 STATE CHO BÁO CÁO VI PHẠM VÀ HIỂN THỊ SỐ ĐIỆN THOẠI
+  
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportReason, setReportReason] = useState('');
-  const [showFullPhone, setShowFullPhone] = useState(false); // Thêm state này
+  const [showFullPhone, setShowFullPhone] = useState(false); 
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
@@ -96,7 +96,7 @@ const ProductDetailPage = () => {
 
   const displayImages = post.images && post.images.length > 0 ? post.images : (post.image ? [post.image] : []);
 
-  // Hàm ẩn một phần số điện thoại
+  
   const formatHiddenPhone = (phone) => {
     if (!phone) return "Chưa cập nhật";
     return phone.substring(0, phone.length - 3) + "***";
@@ -128,7 +128,7 @@ const ProductDetailPage = () => {
                         <span className="badge bg-light text-dark border px-3 py-2 fs-6">Kho: {post.quantity ?? 0}</span>
                     </div>
 
-                    {/* 🚀 KHỐI THÔNG TIN NGƯỜI ĐĂNG + NÚT HIỆN SỐ ĐT */}
+                    
                     <div className="bg-light p-3 rounded-4 border mb-4 shadow-sm">
                         <div className="d-flex align-items-center">
                             <Link to={`/public-profile/${post.author?._id}`} className="text-decoration-none">
@@ -144,7 +144,7 @@ const ProductDetailPage = () => {
                                 <small className="text-success fw-bold">✓ Đã xác minh danh tính</small>
                             </div>
                             
-                            {/* NÚT BẤM ĐỂ HIỆN SỐ NẰM BÊN PHẢI */}
+                            
                             <div className="ms-auto">
                                 {showFullPhone ? (
                                     <a href={`tel:${post.author?.phone}`} className="btn btn-success btn-sm rounded-pill fw-bold px-3">
@@ -182,7 +182,7 @@ const ProductDetailPage = () => {
                                 <button className="btn btn-warning fw-bold text-dark py-3 rounded-pill shadow-sm" style={{flex: 1}} disabled={post.quantity === 0} onClick={() => handleAddToCart(false)}>
                                     🛒 Thêm vào giỏ
                                 </button>
-                                {/* 🚀 TRẢ LẠI NÚT MUA NGAY ĐỎ RỰC */}
+                                
                                 <button className="btn btn-danger fw-bold text-white py-3 rounded-pill shadow-sm" style={{flex: 1}} disabled={post.quantity === 0} onClick={() => handleAddToCart(true)}>
                                     {post.quantity === 0 ? 'Hết hàng' : '💳 Mua ngay'}
                                 </button>
@@ -193,7 +193,7 @@ const ProductDetailPage = () => {
             </div>
         </div>
 
-        {/* ĐÁNH GIÁ GIỮ NGUYÊN */}
+        
         <div className="bg-white rounded-4 shadow-sm p-4">
             <h5 className="fw-bold mb-4 border-start border-4 border-warning ps-2">Đánh giá người bán ({reviews.length})</h5>
             {reviews.length > 0 ? (
@@ -219,7 +219,7 @@ const ProductDetailPage = () => {
       </div>
       <Footer />
 
-      {/* MODAL BÁO CÁO GIỮ NGUYÊN */}
+      
       {showReportModal && (
         <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: 'rgba(0,0,0,0.6)', zIndex: 1050 }}>
             <div className="modal-dialog modal-dialog-centered">

@@ -27,7 +27,7 @@ const HaiPayResult = () => {
                     currentUser.walletBalance = (currentUser.walletBalance || 0) + actualAmount;
                     localStorage.setItem('user', JSON.stringify(currentUser));
                     
-                    // 🚀 Bắn tin cho Header cập nhật ngay lập tức
+                    
                     window.dispatchEvent(new Event('userUpdated'));
                 } catch (error) {
                     setStatus('❌ Lỗi hệ thống khi cộng tiền vào ví!');

@@ -22,14 +22,14 @@ const FavoritesPage = () => {
   }, [user?._id]);
 
   const handleRemoveFavorite = async (e, postId) => {
-    e.stopPropagation(); // Chặn click nhảy trang
+    e.stopPropagation(); 
     try {
       await axios.post(`${API_URL}/api/users/favorites`, { userId: user._id, postId: postId });
       setFavorites(favorites.filter(item => item._id !== postId));
     } catch (error) { console.error(error); }
   };
 
-  // 🚀 HÀM QUÉT LINK ẢNH CHUẨN XÁC ĐƯA TỪ TRANG CHỦ SANG
+  
   const getImageUrl = (post) => {
     if (post.images && post.images.length > 0) {
         return post.images[0].startsWith('http') ? post.images[0] : `${API_URL}/${post.images[0].replace(/\\/g, '/')}`;
@@ -77,7 +77,7 @@ const FavoritesPage = () => {
               <div className="col-6 col-md-3 mb-4" key={post._id}>
                 <div className="card h-100 border-0 shadow-sm hover-shadow position-relative" style={{ borderRadius: '15px', overflow: 'hidden' }}>
                   
-                  {/* 🚀 ĐÃ THAY ICON SVG TRÁI TIM ĐỎ CHUẨN XÁC */}
+                  
                   <button 
                     onClick={(e) => handleRemoveFavorite(e, post._id)} 
                     className="position-absolute m-2 btn btn-light shadow-sm rounded-circle d-flex justify-content-center align-items-center heart-btn-hover" 
@@ -90,7 +90,7 @@ const FavoritesPage = () => {
                   </button>
 
                   <div style={{ height: '180px', overflow: 'hidden', cursor: 'pointer' }} className="bg-light d-flex align-items-center justify-content-center position-relative" onClick={() => navigate(`/post/${post._id}`)}>
-                    {/* 🚀 GỌI HÀM getImageUrl ĐỂ XỬ LÝ LINK ẢNH */}
+                    
                     <img 
                         src={getImageUrl(post)} 
                         className="card-img-top" 

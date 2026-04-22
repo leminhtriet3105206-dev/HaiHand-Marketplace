@@ -83,8 +83,8 @@ const ProfilePage = () => {
   const [myPosts, setMyPosts] = useState([]);
   const [myOrders, setMyOrders] = useState([]); 
   const [mySales, setMySales] = useState([]);   
-  const [myReviews, setMyReviews] = useState([]); // 🚀 Bảng dữ liệu Đánh giá
-  const [avgRating, setAvgRating] = useState(0);  // 🚀 Sao trung bình
+  const [myReviews, setMyReviews] = useState([]); 
+  const [avgRating, setAvgRating] = useState(0);  
 
   const [activeTab, setActiveTab] = useState('info'); 
   const [subTabOrder, setSubTabOrder] = useState('buy'); 
@@ -106,7 +106,7 @@ const ProfilePage = () => {
       fetchMyPosts(parsedUser._id);
       fetchMyOrders(parsedUser._id);
       fetchMySales(parsedUser._id); 
-      fetchMyReviews(parsedUser._id); // Lấy danh sách đánh giá
+      fetchMyReviews(parsedUser._id); 
     } else { navigate('/login'); }
   }, [navigate]);
 
@@ -114,7 +114,7 @@ const ProfilePage = () => {
   const fetchMyOrders = async (userId) => { try { const { data } = await axios.get(`${API_URL}/api/users/${userId}/orders`); setMyOrders(data); } catch (e) {} };
   const fetchMySales = async (userId) => { try { const { data } = await axios.get(`${API_URL}/api/orders/seller/${userId}`); setMySales(data); } catch (e) {} };
   
-  // 🚀 Hàm lấy đánh giá
+  
   const fetchMyReviews = async (userId) => {
       try { 
           const { data } = await axios.get(`${API_URL}/api/users/public-profile/${userId}`); 
@@ -178,7 +178,7 @@ const ProfilePage = () => {
 
       <div className="container py-5 flex-grow-1">
         <div className="row">
-          {/* SIDEBAR TABS */}
+          
           <div className="col-md-3 mb-4">
             <div className="bg-white rounded-4 shadow-sm p-3 sticky-top" style={{top: '100px'}}>
               <h6 className="fw-bold mb-3 ms-2 text-muted text-uppercase small">Thiết lập</h6>
@@ -191,7 +191,7 @@ const ProfilePage = () => {
                 <li><button onClick={() => setActiveTab('orders')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'orders' ? 'bg-success text-white' : 'btn-light text-muted bg-white'}`}>📦 Đơn hàng của tôi</button></li>
                 <li><button onClick={() => setActiveTab('posts')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'posts' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>🏪 Quản lý tin đăng</button></li>
                 
-                {/* 🚀 NÚT XEM ĐÁNH GIÁ MỚI */}
+                
                 <li><button onClick={() => setActiveTab('reviews')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'reviews' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>⭐ Đánh giá của tôi</button></li>
                 
                 <li className="border-top pt-2 mt-2"><button onClick={() => { localStorage.removeItem('user'); window.location.href='/login'; }} className="btn btn-light bg-white text-danger w-100 text-start fw-bold py-2 rounded-3">🚪 Đăng xuất</button></li>
@@ -201,7 +201,7 @@ const ProfilePage = () => {
 
           <div className="col-md-9">
             
-            {/* TAB THÔNG TIN CÁ NHÂN */}
+            
             {activeTab === 'info' && (
               <form onSubmit={handleUpdateProfile}>
                 <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-warning mb-4">
@@ -247,7 +247,7 @@ const ProfilePage = () => {
               </form>
             )}
 
-            {/* TAB BẢO MẬT */}
+            
             {activeTab === 'security' && (
               <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-dark">
                 <h4 className="fw-bold mb-4 text-dark">Đổi mật khẩu</h4>
@@ -260,7 +260,7 @@ const ProfilePage = () => {
               </div>
             )}
 
-            {/* TAB QUẢN LÝ TIN ĐĂNG */}
+            
             {activeTab === 'posts' && (
               <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-info">
                   <h4 className="fw-bold mb-4 text-dark text-center">Tin đăng của tôi ({myPosts.length})</h4>
@@ -289,7 +289,7 @@ const ProfilePage = () => {
               </div>
             )}
 
-            {/* TAB QUẢN LÝ ĐƠN HÀNG */}
+            
             {activeTab === 'orders' && (
               <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-success">
                 <h4 className="fw-bold mb-4 text-dark text-center">Quản lý Đơn hàng</h4>
@@ -298,7 +298,7 @@ const ProfilePage = () => {
                     <button onClick={() => setSubTabOrder('sell')} className={`btn fw-bold px-4 rounded-pill transition-all ${subTabOrder === 'sell' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'}`}>🏪 Đơn Bán ({mySales.length})</button>
                 </div>
 
-                {/* ĐƠN MUA */}
+                
                 {subTabOrder === 'buy' && (
                     <div>
                         {myOrders.length === 0 && <p className="text-center text-muted">Bạn chưa đặt mua đơn hàng nào.</p>}
@@ -344,7 +344,7 @@ const ProfilePage = () => {
                     </div>
                 )}
 
-                {/* ĐƠN BÁN */}
+                
                 {subTabOrder === 'sell' && (
                     <div>
                         {mySales.length === 0 && <p className="text-center text-muted">Chưa có ai đặt mua hàng của bạn.</p>}
@@ -392,7 +392,7 @@ const ProfilePage = () => {
               </div>
             )}
 
-            {/* 🚀 TAB: ĐÁNH GIÁ CỦA TÔI (CHO NGƯỜI BÁN) */}
+            
             {activeTab === 'reviews' && (
                 <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-warning">
                     <h4 className="fw-bold mb-4 text-dark text-center">Đánh giá từ khách hàng</h4>

@@ -84,7 +84,7 @@
 
     <script>
         async function approveWithdraw(id) {
-            // Câu hỏi xác nhận nghiệp vụ cực gắt để báo cáo thầy cô
+            
             if(confirm('⚠️ XÁC NHẬN NGHIỆP VỤ:\nBạn ĐÃ DÙNG APP NGÂN HÀNG để chuyển tiền mặt cho khách hàng này chưa?\n\nHành động này không thể hoàn tác!')) {
                 try {
                     const res = await fetch(`/api/admin/withdraw/${id}/approve`, { method: 'PUT' });

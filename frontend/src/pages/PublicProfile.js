@@ -14,11 +14,11 @@ const PublicProfile = () => {
   const currentUser = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
-    // 1. Lấy thông tin Profile và số lượng Follower/Following từ API Public Profile
+    
     axios.get(`${API_URL}/api/users/public-profile/${userId}`)
       .then(res => {
           setData(res.data);
-          // Cập nhật số lượng trực tiếp từ dữ liệu trả về của Backend
+          
           setCounts({ 
               followers: res.data.followersCount || 0, 
               following: res.data.followingCount || 0 
@@ -28,7 +28,7 @@ const PublicProfile = () => {
           console.error("Lỗi tải trang cá nhân:", err);
       });
 
-    // 2. Kiểm tra trạng thái "Đã theo dõi chưa" nếu người xem đã đăng nhập
+    
     if (currentUser && currentUser._id !== userId) {
         axios.get(`${API_URL}/api/users/follow-status`, { 
             params: { followerId: currentUser._id, followingId: userId } 
@@ -54,7 +54,7 @@ const PublicProfile = () => {
         
         setIsFollowing(resData.isFollowing);
 
-        // Sau khi bấm, gọi lại API profile để cập nhật lại con số hiển thị chính xác nhất
+        
         const updateRes = await axios.get(`${API_URL}/api/users/public-profile/${userId}`);
         setCounts({ 
             followers: updateRes.data.followersCount || 0, 
@@ -70,7 +70,7 @@ const PublicProfile = () => {
         alert("Vui lòng đăng nhập để nhắn tin!");
         return;
     }
-    // Chuyển hướng sang trang Chat và truyền thông tin người nhận qua state
+    
     navigate('/chat', { state: { receiver: data.user } });
   };
 
@@ -80,7 +80,7 @@ const PublicProfile = () => {
     <div className="bg-light min-vh-100">
       <Header />
       <div className="container py-4">
-        {/* CARD THÔNG TIN NGƯỜI BÁN */}
+        
         <div className="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
           <div className="bg-secondary" style={{height: '150px', backgroundImage: 'linear-gradient(to right, #ece9e6, #ffffff)'}}></div>
           <div className="px-4 pb-4" style={{marginTop: '-50px'}}>
@@ -113,7 +113,7 @@ const PublicProfile = () => {
             </div>
             
             <div className="d-flex gap-2">
-              {/* Không hiện nút theo dõi nếu đang xem chính trang của mình */}
+              
               {currentUser?._id !== userId && (
                 <>
                   <button 
@@ -132,7 +132,7 @@ const PublicProfile = () => {
         </div>
 
         <div className="row">
-          {/* DANH SÁCH TIN ĐĂNG */}
+          
           <div className="col-md-8">
             <h5 className="fw-bold mb-3 border-start border-4 border-warning ps-2">Tin đang đăng ({data.posts?.length || 0})</h5>
             <div className="row g-3">
@@ -162,7 +162,7 @@ const PublicProfile = () => {
             </div>
           </div>
 
-          {/* KHỐI ĐÁNH GIÁ */}
+          
           <div className="col-md-4">
             <h5 className="fw-bold mb-3 border-start border-4 border-warning ps-2">Phản hồi từ người mua</h5>
             <div className="bg-white p-3 rounded-4 shadow-sm">

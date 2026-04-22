@@ -74,18 +74,18 @@
     </div>
 
     <script>
-      // Cấu hình CKEditor
+      
       ClassicEditor.create(document.querySelector("#editor")).catch((error) => {
         console.error(error);
       });
 
-      // Xử lý khi bấm Đăng tin
+      
       document
         .getElementById("postForm")
         .addEventListener("submit", function (e) {
-          e.preventDefault(); // Dừng lại một chút để hiện thông báo đẹp
+          e.preventDefault(); 
 
-          const form = this; // Lưu lại form
+          const form = this; 
 
           Swal.fire({
             title: "Xác nhận đăng tin?",
@@ -98,7 +98,7 @@
             cancelButtonText: "Kiểm tra lại",
           }).then((result) => {
             if (result.isConfirmed) {
-              // Nếu người dùng bấm Đồng ý -> Gửi form đi thật
+              
               form.submit();
             }
           });

@@ -8,7 +8,7 @@ const RegisterPage = () => {
 
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   
-  // 🚀 States bật/tắt con mắt mật khẩu
+  
   const [showPass, setShowPass] = useState(false);
   const [showConfirmPass, setShowConfirmPass] = useState(false);
 

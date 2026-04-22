@@ -32,7 +32,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
   const [tempCity, setTempCity] = useState('');
   const [tempDistrict, setTempDistrict] = useState('');
   
-  // 🚀 STATE ĐỂ NHẬN BIẾT LÚC NÀO ĐANG CUỘN CHUỘT
+  
   const [isScrolled, setIsScrolled] = useState(false);
 
   const [user, setUser] = useState(() => {
@@ -43,10 +43,10 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
   const socket = useRef();
   const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
-  // Lắng nghe sự kiện cuộn chuột để làm hiệu ứng giấu Banner
+  
   useEffect(() => {
     const handleScroll = () => {
-      // Nếu cuộn xuống quá 40px thì giấu banner
+      
       setIsScrolled(window.scrollY > 40);
     };
     window.addEventListener('scroll', handleScroll);
@@ -123,11 +123,11 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
   };
 
   return (
-    // Thêm transition để khi đổi padding lúc cuộn nó mượt mà
+    
     <header className={`bg-warning shadow-sm sticky-top ${isScrolled ? 'py-2' : 'py-3'}`} style={{ zIndex: 1040, top: 0, transition: 'padding 0.3s ease' }}>
       <div className="container">
         
-        {/* 🚀 1. TOP BANNER: Sẽ bị bóp chiều cao và mờ dần khi bác cuộn chuột */}
+        
         <div 
           className="d-none d-md-flex justify-content-between align-items-center w-100 overflow-hidden"
           style={{ 
@@ -139,7 +139,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
         >
         </div>
 
-        {/* 🚀 2. DÒNG MAIN HEADER: Luôn dính ở lại (Logo, Search, User) */}
+        
         <div className="d-flex justify-content-between align-items-center">
           
           <div className="d-flex align-items-center gap-4">
@@ -189,7 +189,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
           </div>
 
           <div className="d-flex align-items-center gap-3">
-            {/* 🚀 NÚT ĐĂNG TIN ĐÃ ĐƯỢC CẤY LẠI VÀO ĐÂY */}
+            
             <Link to="/create-post" className="btn btn-outline-light fw-bold rounded-pill d-flex align-items-center gap-1 shadow-sm px-3 border-2 hover-text-dark" style={{transition: '0.3s'}}>
               <span className="fs-5 lh-1">+</span>
               <span className="d-none d-xl-inline">Đăng tin</span>

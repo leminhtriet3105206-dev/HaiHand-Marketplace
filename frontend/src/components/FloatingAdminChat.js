@@ -6,9 +6,9 @@ import { io } from 'socket.io-client';
 const FloatingAdminChat = () => {
     const navigate = useNavigate();
     
-    // 🚀 THÊM STATE CHO KÉO THẢ VÀ ẨN NÚT
-    const [isHidden, setIsHidden] = useState(false); // State để ẩn hoàn toàn nút
-    const [pos, setPos] = useState({ right: 30, bottom: 30 }); // Tọa độ
+    
+    const [isHidden, setIsHidden] = useState(false); 
+    const [pos, setPos] = useState({ right: 30, bottom: 30 }); 
     const [isDragging, setIsDragging] = useState(false);
     
     const [isOpen, setIsOpen] = useState(false);
@@ -26,9 +26,9 @@ const FloatingAdminChat = () => {
     const isEmbedded = window.self !== window.top;
     const isAdmin = currentUser?.role === 'Admin';
 
-    // ==========================================
-    // 1. LOGIC KÉO THẢ NÚT (DRAG & DROP)
-    // ==========================================
+    
+    
+    
     const handleMouseDown = (e) => {
         dragInfo.current = {
             isDragging: true,
@@ -47,19 +47,19 @@ const FloatingAdminChat = () => {
             const deltaX = e.clientX - dragInfo.current.startX;
             const deltaY = e.clientY - dragInfo.current.startY;
 
-            // Nếu chuột di chuyển quá 5px, xác định là KÉO chứ không phải CLICK
+            
             if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
                 dragInfo.current.isClick = false;
             }
 
-            // Tính tọa độ mới (Dịch ngược vì đang dùng bottom/right)
+            
             let newRight = dragInfo.current.startRight - deltaX;
             let newBottom = dragInfo.current.startBottom - deltaY;
 
-            // BỌC THÉP: Không cho kéo lọt ra ngoài mép màn hình
+            
             if (newRight < 10) newRight = 10;
             if (newBottom < 10) newBottom = 10;
-            // Chừa lại 360px và 500px chiều cao để khi mở khung chat lên không bị mất góc
+            
             if (newRight > window.innerWidth - 360) newRight = window.innerWidth - 360;
             if (newBottom > window.innerHeight - 500) newBottom = window.innerHeight - 500;
 
@@ -81,9 +81,9 @@ const FloatingAdminChat = () => {
         };
     }, [isDragging]);
 
-    // ==========================================
-    // 2. TÌM ADMIN VÀ SOCKET CHAT
-    // ==========================================
+    
+    
+    
     useEffect(() => {
         if (isAdmin || isEmbedded) return; 
         const fetchAdmin = async () => {
@@ -116,11 +116,11 @@ const FloatingAdminChat = () => {
 
     useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isOpen]);
 
-    // 🚀 NẾU LÀ ADMIN, ĐANG TRONG IFRAME HOẶC ĐÃ BẤM "TẮT" THÌ TÀNG HÌNH NÚT
+    
     if (isAdmin || isEmbedded || isHidden) return null;
 
     const handleToggle = (e) => {
-        if (!dragInfo.current.isClick) return; // Đang kéo thì cấm mở popup
+        if (!dragInfo.current.isClick) return; 
 
         if (!currentUser) {
             alert("Bác vui lòng đăng nhập để chat với Hỗ trợ viên nhé!");
@@ -152,10 +152,10 @@ const FloatingAdminChat = () => {
     };
 
     return (
-        // 🚀 ĐÃ CẬP NHẬT GÁN TỌA ĐỘ VÀO ĐÂY
+        
         <div style={{ position: 'fixed', bottom: `${pos.bottom}px`, right: `${pos.right}px`, zIndex: 9999 }}>
             
-            {/* KHUNG CHAT MINI */}
+            
             {isOpen && (
                 <div className="bg-white shadow-lg rounded-4 overflow-hidden d-flex flex-column mb-3 position-relative" 
                      style={{ width: '350px', height: '450px', border: '1px solid #ddd', transition: 'opacity 0.3s' }}>
@@ -189,10 +189,10 @@ const FloatingAdminChat = () => {
                 </div>
             )}
 
-            {/* BỌC NÚT TẮT VÀ NÚT KÉO BÊN TRONG NHAU */}
+            
             <div className="position-absolute" style={{ bottom: '0', right: '0', width: '60px', height: '60px' }}>
                 
-                {/* 🚀 NÚT TẮT HẲN WIDGET (Dấu X đỏ góc trên bên trái) */}
+                
                 {!isOpen && (
                     <button 
                         onClick={(e) => { e.stopPropagation(); setIsHidden(true); }}
@@ -207,7 +207,7 @@ const FloatingAdminChat = () => {
                     </button>
                 )}
 
-                {/* 🚀 NÚT CHÍNH CÓ THỂ KÉO THẢ */}
+                
                 <div 
                     onMouseDown={handleMouseDown}
                     onClick={handleToggle}
@@ -215,8 +215,8 @@ const FloatingAdminChat = () => {
                     style={{
                         backgroundColor: '#ffc107', 
                         borderRadius: '50%',
-                        cursor: isDragging ? 'grabbing' : 'grab', // Đổi icon trỏ chuột khi kéo
-                        transition: isDragging ? 'none' : 'transform 0.2s', // Tắt hiệu ứng mượt khi kéo để ko bị lag
+                        cursor: isDragging ? 'grabbing' : 'grab', 
+                        transition: isDragging ? 'none' : 'transform 0.2s', 
                         border: '3px solid white'
                     }}
                     onMouseOver={(e) => !isDragging && (e.currentTarget.style.transform = 'scale(1.1)')}

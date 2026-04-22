@@ -161,7 +161,7 @@ const ChatPage = () => {
   return (
     <div className="vh-100 d-flex flex-column" style={{ backgroundColor: '#f0f2f5' }}>
       
-      {/* 🚀 CHIÊU CUỐI: Chỉ hiện Header nếu KHÔNG bị nhúng vào iFrame của Admin */}
+      
       {window.self === window.top && <Header />}
 
       <div className="container-fluid flex-grow-1 overflow-hidden p-0 d-flex">

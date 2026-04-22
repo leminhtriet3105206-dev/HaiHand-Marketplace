@@ -4,10 +4,10 @@ const postSchema = new mongoose.Schema({
   title: { type: String, required: true },
   price: { type: Number, required: true },
   
-  // 👇 ĐỔI: Thay 'area' thành 'category' (Danh mục)
+  
   category: { type: String, required: true }, 
   
-  // 👇 ĐỔI: Thêm 'location' (Nơi bán) cho giống HaiHand
+  
   location: { type: String, default: "Toàn quốc" }, 
 
   image: String,

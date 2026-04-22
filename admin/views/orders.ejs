@@ -134,7 +134,7 @@
     </div>
 
     <script>
-        // Lọc tìm kiếm đơn hàng
+        
         function filterOrders() {
             const input = document.getElementById("orderSearch").value.toLowerCase();
             const rows = document.querySelectorAll(".order-row");
@@ -143,7 +143,7 @@
             });
         }
 
-        // Xóa đơn hàng khỏi hệ thống
+        
         async function deleteOrder(id) {
             if(!confirm("⚠️ Hành động này sẽ xóa vĩnh viễn dữ liệu đơn hàng. Tiếp tục?")) return;
             const res = await fetch(`/admin/orders/delete/${id}`, { method: 'POST' });
@@ -153,7 +153,7 @@
             }
         }
 
-        // Giải ngân tiền cho người bán (Thu phí 5%)
+        
         async function releaseFunds(orderId) {
             if(!confirm("💸 Xác nhận giải ngân 95% số tiền cho người bán?")) return;
             try {
@@ -166,7 +166,7 @@
             }
         }
 
-        // Hoàn tiền cho người mua (Đơn bị hủy)
+        
         async function refundOrder(orderId) {
             if(!confirm("💸 Xác nhận hoàn trả lại tiền vào ví HaiPay cho khách hàng?")) return;
             try {
@@ -179,7 +179,7 @@
             }
         }
 
-        // Điều khiển Modal Chi tiết
+        
         function openOrderDetails(id, name, phone, address, created, updated, price) {
             document.getElementById('md-id').textContent = '#' + id.slice(-6).toUpperCase();
             document.getElementById('md-name').textContent = name;

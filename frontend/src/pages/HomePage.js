@@ -259,9 +259,6 @@ const HomePage = () => {
           )}
         </div>
       </div>
-
-      <div onClick={() => navigate('/create-post')} className="bg-warning text-white rounded-circle shadow-lg d-flex justify-content-center align-items-center hover-scale" 
-           style={{width: '60px', height: '60px', position: 'fixed', bottom: '30px', left: '50%', transform: 'translateX(-50%)', cursor: 'pointer', fontSize: '30px', zIndex: 1000, border: '4px solid white'}}>+</div>
       <Footer />
     </div>
   );

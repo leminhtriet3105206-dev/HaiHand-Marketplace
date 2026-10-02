@@ -1,0 +1,430 @@
+﻿import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import Header from '../components/Header';
+
+const OrderDetailModal = ({ order, onClose }) => {
+  if (!order) return null;
+  return (
+    <div className="fixed-top w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.6)', zIndex: 2000, backdropFilter: 'blur(4px)' }}>
+      <div className="bg-white rounded-4 shadow-lg w-100 mx-3 overflow-hidden animate__animated animate__zoomIn" style={{ maxWidth: '600px' }}>
+        <div className="p-4 border-bottom bg-light d-flex justify-content-between align-items-center">
+          <div><h5 className="fw-bold mb-0 text-dark">≡ƒôª Chi tiß║┐t ─æ╞ín h├áng</h5><small className="text-muted">M├ú ─ÉH: #{order._id.slice(-6).toUpperCase()}</small></div>
+          <button onClick={onClose} className="btn-close shadow-none"></button>
+        </div>
+        <div className="p-4" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          <p className="fw-bold text-muted small text-uppercase mb-3 tracking-wider">Sß║ún phß║⌐m trong ─æ╞ín</p>
+          {order.items.map((item, idx) => (
+            <div key={idx} className="d-flex align-items-center p-3 mb-3 rounded-4 border bg-white shadow-sm transition-all hover-scale">
+              <img src={(item?.images && item.images.length > 0) ? item.images[0] : (item?.image || 'https://via.placeholder.com/80')} style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '12px' }} alt="sp" className="border" />
+              <div className="ms-3 flex-grow-1"><h6 className="fw-bold mb-1 text-dark text-truncate" style={{maxWidth: '250px'}}>{item?.title || 'Sß║ún phß║⌐m ─æ├ú bß╗ï x├│a'}</h6><p className="text-danger fw-black mb-0">{Number(item?.price || 0).toLocaleString('vi-VN')} ─æ</p></div>
+            </div>
+          ))}
+          <div className="mt-4 pt-4 border-top">
+            <div className="row">
+              <div className="col-6"><p className="fw-bold text-muted small text-uppercase mb-2 tracking-wider">Kh├ích h├áng</p><p className="fw-bold mb-0 text-dark">{order.buyer?.name || 'Kh├ích h├áng'}</p><small className="text-muted">≡ƒô₧ {order.phone}</small></div>
+              <div className="col-6 border-start"><p className="fw-bold text-muted small text-uppercase mb-2 tracking-wider">─Éß╗ïa chß╗ë giao h├áng</p><p className="small text-dark mb-0">{order.address}</p></div>
+            </div>
+          </div>
+        </div>
+        <div className="p-4 bg-success-subtle border-top d-flex justify-content-between align-items-center">
+          <span className="fw-bold text-success uppercase small">Tß╗òng thanh to├ín</span><h4 className="fw-black text-danger mb-0">{Number(order.totalPrice).toLocaleString('vi-VN')} ─æ</h4>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ReviewModal = ({ order, onClose, onSuccess }) => {
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+
+  if (!order) return null;
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (comment.trim() === '') return alert("Vui l├▓ng nhß║¡p nhß║¡n x├⌐t cß╗ºa bß║ín!");
+    try {
+      await axios.post('https://haihand-marketplace.onrender.com/api/reviews', { seller: order.seller, buyer: order.buyer?._id || order.buyer, rating, comment, orderId: order._id });
+      alert("Γ£à Gß╗¡i ─æ├ính gi├í th├ánh c├┤ng! Cß║úm ╞ín bß║ín.");
+      onSuccess();
+    } catch (error) { alert("Γ¥î " + (error.response?.data?.message || "Lß╗ùi gß╗¡i ─æ├ính gi├í")); }
+  };
+
+  return (
+    <div className="fixed-top w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.6)', zIndex: 2000, backdropFilter: 'blur(4px)' }}>
+      <div className="bg-white rounded-4 shadow-lg w-100 mx-3 overflow-hidden animate__animated animate__zoomIn p-4" style={{ maxWidth: '500px' }}>
+        <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+          <h5 className="fw-bold mb-0 text-dark">Γ¡É ─É├ính gi├í ng╞░ß╗¥i b├ín</h5>
+          <button onClick={onClose} className="btn-close shadow-none"></button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="text-center mb-4">
+            <p className="fw-bold text-muted small mb-2">Chß║Ñt l╞░ß╗úng sß║ún phß║⌐m v├á th├íi ─æß╗Ö ng╞░ß╗¥i b├ín thß║┐ n├áo?</p>
+            <div className="d-flex justify-content-center gap-2 fs-2" style={{cursor: 'pointer'}}>
+              {[1, 2, 3, 4, 5].map((star) => (<span key={star} onClick={() => setRating(star)} className={star <= rating ? "text-warning" : "text-secondary opacity-25"}>Γÿà</span>))}
+            </div>
+            <div className="text-warning fw-bold mt-1">{rating} Sao</div>
+          </div>
+          <div className="mb-4">
+            <label className="fw-bold small text-muted mb-2">Nhß║¡n x├⌐t chi tiß║┐t</label>
+            <textarea className="form-control bg-light border-0" rows="4" placeholder="H├úy chia sß║╗ trß║úi nghiß╗çm cß╗ºa bß║ín vß╗ü ng╞░ß╗¥i b├ín v├á sß║ún phß║⌐m n├áy nh├⌐..." value={comment} onChange={(e) => setComment(e.target.value)} required></textarea>
+          </div>
+          <button type="submit" className="btn btn-warning w-100 fw-bold py-3 rounded-pill shadow-sm">Gß╗¼I ─É├üNH GI├ü</button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const ProfilePage = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [myPosts, setMyPosts] = useState([]);
+  const [myOrders, setMyOrders] = useState([]); 
+  const [mySales, setMySales] = useState([]);   
+  const [myReviews, setMyReviews] = useState([]); 
+  const [avgRating, setAvgRating] = useState(0);  
+
+  const [activeTab, setActiveTab] = useState('info'); 
+  const [subTabOrder, setSubTabOrder] = useState('buy'); 
+  
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [reviewOrder, setReviewOrder] = useState(null);
+
+  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', cccd: '' });
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    const parsedUser = storedUser && storedUser !== "undefined" ? JSON.parse(storedUser) : null;
+    if (parsedUser) {
+      setUser(parsedUser);
+      setEditForm({ name: parsedUser.name || '', phone: parsedUser.phone || '', address: parsedUser.address || '', cccd: parsedUser.cccd || '' });
+      fetchMyPosts(parsedUser._id);
+      fetchMyOrders(parsedUser._id);
+      fetchMySales(parsedUser._id); 
+      fetchMyReviews(parsedUser._id); 
+    } else { navigate('/login'); }
+  }, [navigate]);
+
+  const fetchMyPosts = async (userId) => { try { const { data } = await axios.get(`${API_URL}/api/posts/user/${userId}`); setMyPosts(data); } catch (e) {} };
+  const fetchMyOrders = async (userId) => { try { const { data } = await axios.get(`${API_URL}/api/users/${userId}/orders`); setMyOrders(data); } catch (e) {} };
+  const fetchMySales = async (userId) => { try { const { data } = await axios.get(`${API_URL}/api/orders/seller/${userId}`); setMySales(data); } catch (e) {} };
+  
+  
+  const fetchMyReviews = async (userId) => {
+      try { 
+          const { data } = await axios.get(`${API_URL}/api/users/public-profile/${userId}`); 
+          setMyReviews(data.reviews); 
+          setAvgRating(data.avgRating);
+      } catch (error) {}
+  };
+
+  const handleConfirmOrder = async (orderId) => {
+      if(!window.confirm("X├íc nhß║¡n chß╗æt ─æ╞ín v├á tiß║┐n h├ánh giao h├áng cho kh├ích?")) return;
+      try { await axios.put(`${API_URL}/api/orders/${orderId}/confirm`); alert("Γ£à ─É├ú x├íc nhß║¡n ─æ╞ín h├áng th├ánh c├┤ng!"); fetchMySales(user._id); } catch (e) { alert("Γ¥î Lß╗ùi!"); }
+  };
+
+  const handleCancelOrder = async (orderId, isSeller = false) => {
+      if(!window.confirm("Bß║ín c├│ chß║»c chß║»n muß╗æn hß╗ºy ─æ╞ín h├áng n├áy kh├┤ng?")) return;
+      try { await axios.put(`${API_URL}/api/orders/${orderId}/cancel`); alert("Γ£à ─É├ú hß╗ºy ─æ╞ín h├áng!"); if (isSeller) fetchMySales(user._id); else fetchMyOrders(user._id); } catch (e) { alert("Γ¥î Lß╗ùi!"); }
+  };
+
+  const handleReceiveOrder = async (orderId) => {
+      if(!window.confirm("X├íc nhß║¡n bß║ín ─æ├ú nhß║¡n ─æ╞░ß╗úc h├áng?")) return;
+      try { await axios.put(`${API_URL}/api/orders/${orderId}/receive`); alert("Γ£à ─É├ú x├íc nhß║¡n nhß║¡n h├áng!"); fetchMyOrders(user._id); } catch (e) { alert("Γ¥î Lß╗ùi!"); }
+  };
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    try {
+        const formData = new FormData();
+        Object.keys(editForm).forEach(key => formData.append(key, editForm[key]));
+        if (selectedImage) formData.append('avatar', selectedImage);
+        const { data } = await axios.put(`${API_URL}/api/users/profile/${user._id}`, formData);
+        localStorage.setItem('user', JSON.stringify(data)); setUser(data); setSelectedImage(null); window.dispatchEvent(new Event('userUpdated')); alert('Γ£à ─É├ú l╞░u th├ánh c├┤ng!');
+    } catch (e) { alert('Γ¥î Lß╗ùi cß║¡p nhß║¡t!'); }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) return alert('Γ¥î Mß║¡t khß║⌐u kh├┤ng khß╗¢p!');
+    try { await axios.put(`${API_URL}/api/users/change-password/${user._id}`, passwordForm); alert('Γ£à Th├ánh c├┤ng! H├úy ─æ─âng nhß║¡p lß║íi.'); localStorage.removeItem('user'); navigate('/login'); } catch (e) { alert('Γ¥î Lß╗ùi!'); }
+  };
+
+  const handleDeletePost = async (postId) => { if(window.confirm("X├│a b├ái viß║┐t n├áy?")) { try { await axios.delete(`${API_URL}/api/posts/${postId}`); setMyPosts(myPosts.filter(p => p._id !== postId)); alert("Γ£à ─É├ú x├│a!"); } catch (e) {} } };
+
+  const getStatusBadge = (status) => {
+    if(status === 'Chß╗¥ x├íc nhß║¡n') return 'bg-warning text-dark';
+    if(status === '─É├ú thanh to├ín (Admin giß╗» tiß╗ün)') return 'bg-info text-dark';
+    if(status === 'Ng╞░ß╗¥i b├ín ─æ├ú chuß║⌐n bß╗ï h├áng') return 'bg-orange text-dark border-orange';
+    if(status === '─Éang giao h├áng' || status === '─Éang giao') return 'bg-primary';
+    if(status === 'Ho├án th├ánh') return 'bg-success';
+    return 'bg-secondary'; 
+  };
+
+  if (!user) return null;
+  const isKycVerified = user.cccd && user.cccd.length > 8;
+
+  return (
+    <div style={{ backgroundColor: '#F4F4F4', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Header />
+      
+      {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
+      {reviewOrder && <ReviewModal order={reviewOrder} onClose={() => setReviewOrder(null)} onSuccess={() => { setReviewOrder(null); fetchMyOrders(user._id); }} />}
+
+      <div className="container py-5 flex-grow-1">
+        <div className="row">
+          
+          <div className="col-md-3 mb-4">
+            <div className="bg-white rounded-4 shadow-sm p-3 sticky-top" style={{top: '100px'}}>
+              <h6 className="fw-bold mb-3 ms-2 text-muted text-uppercase small">Thiß║┐t lß║¡p</h6>
+              <ul className="list-unstyled mb-4">
+                <li><button onClick={() => setActiveTab('info')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'info' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>≡ƒæñ Th├┤ng tin c├í nh├ón</button></li>
+                <li><button onClick={() => setActiveTab('security')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'security' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>≡ƒöÆ Bß║úo mß║¡t</button></li>
+              </ul>
+              <h6 className="fw-bold mb-3 ms-2 text-muted text-uppercase small">Giao dß╗ïch</h6>
+              <ul className="list-unstyled">
+                <li><button onClick={() => setActiveTab('orders')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'orders' ? 'bg-success text-white' : 'btn-light text-muted bg-white'}`}>≡ƒôª ─É╞ín h├áng cß╗ºa t├┤i</button></li>
+                <li><button onClick={() => setActiveTab('posts')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'posts' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>≡ƒÅ¬ Quß║ún l├╜ tin ─æ─âng</button></li>
+                
+                
+                <li><button onClick={() => setActiveTab('reviews')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'reviews' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>Γ¡É ─É├ính gi├í cß╗ºa t├┤i</button></li>
+                
+                <li className="border-top pt-2 mt-2"><button onClick={() => { localStorage.removeItem('user'); window.location.href='/login'; }} className="btn btn-light bg-white text-danger w-100 text-start fw-bold py-2 rounded-3">≡ƒÜ¬ ─É─âng xuß║Ñt</button></li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="col-md-9">
+            
+            
+            {activeTab === 'info' && (
+              <form onSubmit={handleUpdateProfile}>
+                <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-warning mb-4">
+                    <h4 className="fw-bold mb-4 text-dark">Hß╗ô s╞í c├í nh├ón</h4>
+                    <div className="d-flex align-items-center mb-4 pb-4 border-bottom">
+                        <div className="position-relative d-inline-block me-4">
+                            <div className="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style={{width: '90px', height: '90px', fontSize: '35px', overflow: 'hidden'}}>
+                                {selectedImage ? <img src={URL.createObjectURL(selectedImage)} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="preview" /> : user?.avatar ? <img src={user.avatar} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="avatar" /> : user?.name?.charAt(0).toUpperCase()}
+                            </div>
+                            <label className="position-absolute bottom-0 end-0 bg-dark text-white rounded-circle d-flex align-items-center justify-content-center shadow" style={{width: '30px', height: '30px', cursor: 'pointer', border: '2px solid white'}}>
+                                ≡ƒô╖ <input type="file" hidden onChange={(e) => setSelectedImage(e.target.files[0])} accept="image/*" />
+                            </label>
+                        </div>
+                        <div><h5 className="fw-bold mb-1 text-dark">{user.name}</h5><p className="text-muted mb-0">{user.email}</p></div>
+                    </div>
+                    <div className="row g-3">
+                        <div className="col-md-4"><label className="fw-bold small text-muted mb-1">Hß╗ì v├á t├¬n</label><input type="text" className="form-control bg-light" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required /></div>
+                        <div className="col-md-4"><label className="fw-bold small text-muted mb-1">Sß╗æ ─æiß╗çn thoß║íi</label><input type="text" className="form-control bg-light" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} /></div>
+                        <div className="col-md-4"><label className="fw-bold small text-muted mb-1">─Éß╗ïa chß╗ë</label><input type="text" className="form-control bg-light" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} /></div>
+                    </div>
+                </div>
+
+                <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-info mb-4 position-relative overflow-hidden">
+                    <div className="d-flex justify-content-between align-items-center mb-3">
+                        <h5 className="fw-bold text-dark mb-0">X├íc minh danh t├¡nh (KYC)</h5>
+                        {isKycVerified ? (<span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill"><i className="bi bi-shield-check me-1"></i> ─É├ú x├íc minh an to├án</span>) : (<span className="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill"><i className="bi bi-shield-exclamation me-1"></i> Ch╞░a x├íc minh</span>)}
+                    </div>
+                    <p className="text-muted small mb-4">Cung cß║Ñp sß╗æ C─ân c╞░ß╗¢c c├┤ng d├ón (CCCD) ─æß╗â mß╗ƒ kh├│a t├¡nh n─âng giao dß╗ïch qua <b>V├¡ HaiPay</b> v├á t─âng ─æß╗Ö uy t├¡n.</p>
+                    <div className="row">
+                        <div className="col-md-6">
+                            <label className="fw-bold small text-muted mb-1">Sß╗æ thß║╗ CCCD/CMND <span className="text-danger">*</span></label>
+                            <div className="input-group">
+                                <span className="input-group-text bg-light border-end-0">≡ƒÆ│</span>
+                                <input type="text" className="form-control border-start-0 ps-0 bg-light" placeholder="Nhß║¡p 12 sß╗æ CCCD cß╗ºa bß║ín..." value={editForm.cccd} onChange={e => setEditForm({...editForm, cccd: e.target.value})} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="text-end">
+                    <button type="submit" className="btn btn-dark fw-bold px-5 py-3 rounded-pill shadow-sm hover-scale">≡ƒÆ╛ Cß║¼P NHß║¼T Tß║ñT Cß║ó TH├öNG TIN</button>
+                </div>
+              </form>
+            )}
+
+            
+            {activeTab === 'security' && (
+              <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-dark">
+                <h4 className="fw-bold mb-4 text-dark">─Éß╗òi mß║¡t khß║⌐u</h4>
+                <form onSubmit={handleChangePassword}>
+                    <div className="mb-3"><label className="fw-bold small text-muted mb-1">Mß║¡t khß║⌐u hiß╗çn tß║íi</label><input type="password" className="form-control bg-light" value={passwordForm.oldPassword} onChange={e => setPasswordForm({...passwordForm, oldPassword: e.target.value})} required /></div>
+                    <div className="mb-3"><label className="fw-bold small text-muted mb-1">Mß║¡t khß║⌐u mß╗¢i</label><input type="password" className="form-control bg-light" value={passwordForm.newPassword} onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})} required /></div>
+                    <div className="mb-3"><label className="fw-bold small text-muted mb-1">X├íc nhß║¡n mß║¡t khß║⌐u mß╗¢i</label><input type="password" className="form-control bg-light" value={passwordForm.confirmPassword} onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} required /></div>
+                    <button type="submit" className="btn btn-dark fw-bold px-5 py-2 rounded-pill shadow-sm">≡ƒöÆ Cß║¡p nhß║¡t</button>
+                </form>
+              </div>
+            )}
+
+            
+            {activeTab === 'posts' && (
+              <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-info">
+                  <h4 className="fw-bold mb-4 text-dark text-center">Tin ─æ─âng cß╗ºa t├┤i ({myPosts.length})</h4>
+                  {myPosts.length === 0 && <p className="text-center text-muted">Bß║ín ch╞░a c├│ b├ái ─æ─âng n├áo.</p>}
+                  {myPosts.map(post => (
+                    <div key={post._id} className="d-flex p-3 border align-items-center bg-white rounded-4 mb-3 shadow-sm hover-scale transition-all">
+                        <img src={(post.images && post.images.length > 0) ? post.images[0] : (post.image || 'https://via.placeholder.com/80')} style={{width:'80px', height:'80px', objectFit:'cover', borderRadius:'12px', cursor: 'pointer'}} className="me-3 shadow-sm border" alt="sp" onClick={() => navigate(`/post/${post._id}`)} />
+                        <div className="flex-grow-1" onClick={() => navigate(`/post/${post._id}`)} style={{cursor: 'pointer'}}>
+                            <h6 className="fw-bold mb-1">{post.title}</h6>
+                            <div className="d-flex align-items-center gap-2">
+                                <small className="text-danger fw-bold">{Number(post.price).toLocaleString('vi-VN')} ─æ</small>
+                                <span className="badge bg-light text-dark border small">Kho: {post.quantity || 0}</span>
+                            </div>
+                        </div>
+                        <div className="ms-2 d-flex flex-column align-items-end gap-2">
+                            <span className={`badge rounded-pill px-3 py-1 ${ (post.quantity === 0 || post.status === 'SOLD') ? 'bg-secondary' : (post.status === 'APPROVED' ? 'bg-success' : 'bg-warning text-dark')}`}>
+                                { (post.quantity === 0 || post.status === 'SOLD') ? '≡ƒñ¥ ─É├ú b├ín hß║┐t' : (post.status === 'APPROVED' ? 'Γ£à ─Éang b├ín' : 'ΓÅ│ Chß╗¥ duyß╗çt')}
+                            </span>
+                            <div className="d-flex gap-2">
+                                <button onClick={() => navigate(`/edit-post/${post._id}`)} className="btn btn-sm btn-outline-primary rounded-pill fw-bold px-3">Sß╗¡a</button>
+                                <button onClick={() => handleDeletePost(post._id)} className="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">X├│a</button>
+                            </div>
+                        </div>
+                    </div>
+                  ))}
+              </div>
+            )}
+
+            
+            {activeTab === 'orders' && (
+              <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-success">
+                <h4 className="fw-bold mb-4 text-dark text-center">Quß║ún l├╜ ─É╞ín h├áng</h4>
+                <div className="d-flex justify-content-center gap-3 mb-4 border-bottom pb-3">
+                    <button onClick={() => setSubTabOrder('buy')} className={`btn fw-bold px-4 rounded-pill transition-all ${subTabOrder === 'buy' ? 'btn-success' : 'btn-outline-success'}`}>≡ƒ¢Æ ─É╞ín Mua ({myOrders.length})</button>
+                    <button onClick={() => setSubTabOrder('sell')} className={`btn fw-bold px-4 rounded-pill transition-all ${subTabOrder === 'sell' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'}`}>≡ƒÅ¬ ─É╞ín B├ín ({mySales.length})</button>
+                </div>
+
+                
+                {subTabOrder === 'buy' && (
+                    <div>
+                        {myOrders.length === 0 && <p className="text-center text-muted">Bß║ín ch╞░a ─æß║╖t mua ─æ╞ín h├áng n├áo.</p>}
+                        {myOrders.map(order => (
+                        <div key={order._id} className="border rounded-4 mb-4 shadow-sm overflow-hidden bg-white">
+                            <div className="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
+                                <span className="text-muted fw-bold small">M├ú: #{order._id.slice(-6).toUpperCase()}</span>
+                                <span className={`badge rounded-pill px-3 py-2 ${getStatusBadge(order.status)}`}>{order.status}</span>
+                            </div>
+                            <div className="p-3">
+                                {order.items.map((item, idx) => (
+                                    <div key={idx} className="d-flex align-items-center mb-3 pb-3 border-bottom border-light">
+                                        <img src={(item?.images && item.images[0]) || item?.image || 'https://via.placeholder.com/60'} style={{width:'60px', height:'60px', objectFit:'cover', borderRadius:'8px'}} alt="sp" className="border shadow-sm" />
+                                        <div className="ms-3 flex-grow-1">
+                                            <h6 className="fw-bold mb-1 text-dark text-truncate" style={{maxWidth: '350px'}}>{item?.title}</h6>
+                                            <small className="text-danger fw-bold">{Number(item?.price || 0).toLocaleString('vi-VN')} ─æ</small>
+                                        </div>
+                                        <div className="d-flex gap-2">
+                                            <button onClick={() => setSelectedOrder(order)} className="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-4 hover-scale transition-all">Chi tiß║┐t</button>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="d-flex justify-content-between align-items-center pt-2 bg-success-subtle p-3 rounded-4 mt-2">
+                                    <div className="d-flex gap-2">
+                                        {(order.status === 'Chß╗¥ x├íc nhß║¡n' || order.status === '─É├ú thanh to├ín (Admin giß╗» tiß╗ün)') && (
+                                            <button onClick={() => handleCancelOrder(order._id, false)} className="btn btn-sm btn-danger rounded-pill fw-bold px-3 shadow-sm">Hß╗ºy ─æ╞ín</button>
+                                        )}
+                                        {(order.status === '─Éang giao h├áng' || order.status === '─Éang giao') && (
+                                            <button onClick={() => handleReceiveOrder(order._id)} className="btn btn-sm btn-success rounded-pill fw-bold px-3 shadow-sm">Γ£à ─É├ú nhß║¡n ─æ╞░ß╗úc h├áng</button>
+                                        )}
+                                        {order.status === 'Ho├án th├ánh' && !order.isReviewed && (
+                                            <button onClick={() => setReviewOrder(order)} className="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-4 shadow-sm border-2">Γ¡É ─É├ính gi├í ngay</button>
+                                        )}
+                                    </div>
+                                    <div className="text-end d-flex align-items-center gap-3">
+                                        <span className="text-muted small">Tß╗òng tiß╗ün:</span>
+                                        <span className="text-danger fw-black fs-5">{Number(order.totalPrice).toLocaleString('vi-VN')} ─æ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        ))}
+                    </div>
+                )}
+
+                
+                {subTabOrder === 'sell' && (
+                    <div>
+                        {mySales.length === 0 && <p className="text-center text-muted">Ch╞░a c├│ ai ─æß║╖t mua h├áng cß╗ºa bß║ín.</p>}
+                        {mySales.map(order => (
+                        <div key={order._id} className="border border-warning rounded-4 mb-4 shadow-sm overflow-hidden bg-white">
+                            <div className="bg-warning-subtle p-3 border-bottom border-warning d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span className="text-dark fw-bold small me-2">M├ú: #{order._id.slice(-6).toUpperCase()}</span>
+                                    <span className="text-muted small">| Ng╞░ß╗¥i mua: <b>{order.buyer?.name}</b></span>
+                                </div>
+                                <span className={`badge rounded-pill px-3 py-2 ${getStatusBadge(order.status)}`}>{order.status}</span>
+                            </div>
+                            <div className="p-3">
+                                {order.items.map((item, idx) => (
+                                    <div key={idx} className="d-flex align-items-center mb-3 pb-3 border-bottom border-light">
+                                        <img src={(item?.images && item.images[0]) || item?.image || 'https://via.placeholder.com/60'} style={{width:'60px', height:'60px', objectFit:'cover', borderRadius:'8px'}} alt="sp" className="border shadow-sm" />
+                                        <div className="ms-3 flex-grow-1">
+                                            <h6 className="fw-bold mb-1 text-dark text-truncate" style={{maxWidth: '350px'}}>{item?.title}</h6>
+                                            <small className="text-danger fw-bold">{Number(item?.price || 0).toLocaleString('vi-VN')} ─æ</small>
+                                        </div>
+                                        <div className="d-flex gap-2">
+                                            <button onClick={() => setSelectedOrder(order)} className="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-4 hover-scale transition-all">Chi tiß║┐t</button>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="d-flex justify-content-between align-items-center pt-2 bg-warning-subtle p-3 rounded-4 mt-2">
+                                    <div className="d-flex gap-2">
+                                        {(order.status === 'Chß╗¥ x├íc nhß║¡n' || order.status === '─É├ú thanh to├ín (Admin giß╗» tiß╗ün)') && (
+                                            <>
+                                                <button onClick={() => handleConfirmOrder(order._id)} className="btn btn-sm btn-success rounded-pill fw-bold px-4 shadow-sm">X├íc nhß║¡n ─æ╞ín</button>
+                                                <button onClick={() => handleCancelOrder(order._id, true)} className="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">Tß╗½ chß╗æi</button>
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="text-end d-flex align-items-center gap-3">
+                                        <span className="text-muted small">Thu vß╗ü:</span>
+                                        <span className="text-danger fw-black fs-5">{Number(order.totalPrice).toLocaleString('vi-VN')} ─æ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        ))}
+                    </div>
+                )}
+              </div>
+            )}
+
+            
+            {activeTab === 'reviews' && (
+                <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-warning">
+                    <h4 className="fw-bold mb-4 text-dark text-center">─É├ính gi├í tß╗½ kh├ích h├áng</h4>
+                    
+                    <div className="text-center mb-5 bg-light p-4 rounded-4">
+                        <h1 className="fw-black text-warning display-4 mb-0">{avgRating}/5</h1>
+                        <div className="text-warning fs-3">{"Γ¡É".repeat(Math.round(avgRating))}</div>
+                        <p className="text-muted fw-bold">Dß╗▒a tr├¬n {myReviews.length} l╞░ß╗út ─æ├ính gi├í</p>
+                    </div>
+
+                    {myReviews.length === 0 && <p className="text-center text-muted">Bß║ín ch╞░a nhß║¡n ─æ╞░ß╗úc ─æ├ính gi├í n├áo.</p>}
+                    
+                    {myReviews.map(rev => (
+                        <div key={rev._id} className="d-flex gap-3 border-bottom pb-4 mb-4">
+                            <img src={rev.buyer?.avatar || 'https://via.placeholder.com/50'} className="rounded-circle shadow-sm" style={{width: '50px', height: '50px', objectFit: 'cover'}} alt="avt" />
+                            <div>
+                                <div className="bg-light p-3 rounded-4 position-relative">
+                                    <h6 className="fw-bold text-dark mb-1">{rev.buyer?.name || 'Kh├ích h├áng'}</h6>
+                                    <div className="text-warning small mb-2">{"Γ¡É".repeat(rev.rating)}</div>
+                                    <p className="text-secondary mb-0" style={{fontStyle: 'italic'}}>"{rev.comment}"</p>
+                                </div>
+                                <small className="text-muted ms-2 mt-1 d-block" style={{fontSize: '10px'}}>{new Date(rev.createdAt).toLocaleString('vi-VN')}</small>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ProfilePage;

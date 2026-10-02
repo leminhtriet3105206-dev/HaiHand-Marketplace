@@ -101,14 +101,15 @@ const LoginPage = () => {
       <div className="card shadow-lg border-0 rounded-4 overflow-hidden" style={{ width: '420px' }}>
         
         <div className="bg-warning p-4 text-center">
-            <h2 className="fw-bold text-white mb-0" 
+            <div 
                 onClick={() => navigate('/')} 
-                style={{cursor: 'pointer', letterSpacing: '2px', transition: '0.3s'}}
-                onMouseOver={(e) => e.target.style.opacity = '0.8'}
-                onMouseOut={(e) => e.target.style.opacity = '1'}
+                style={{cursor: 'pointer', transition: '0.3s'}}
+                onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
+                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                className="d-flex justify-content-center"
             >
-                HAIHAND
-            </h2>
+                <img src="/logo.png" alt="HaiHand" style={{height: '32px', objectFit: 'contain'}} />
+            </div>
             <p className="text-white-50 small m-0 mt-1 fw-bold" style={{letterSpacing: '1px'}}>
                 {isForgotMode ? 'XÁC THỰC BẢO MẬT' : 'TRUY CẬP HỆ THỐNG'}
             </p>

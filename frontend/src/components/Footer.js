@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="row g-4">
           
           <div className="col-lg-4 col-md-6">
-            <h3 className="fw-bold text-warning mb-3">HaiHand</h3>
+            <img src="/logo.png" alt="HaiHand" className="mb-3" style={{height: '32px', objectFit: 'contain'}} />
             <p className="text-secondary small" style={{ lineHeight: '1.8' }}>
               Hệ thống Marketplace hàng đầu dành cho cộng đồng mua bán đồ cũ. 
               Chúng tôi kết nối người bán và người mua một cách an toàn, nhanh chóng và tin cậy.

@@ -143,7 +143,9 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
         <div className="d-flex justify-content-between align-items-center">
           
           <div className="d-flex align-items-center gap-4">
-            <h2 className="fw-bold m-0 text-white hover-scale" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>HaiHand</h2>
+            <div style={{ cursor: 'pointer' }} onClick={() => navigate('/')} className="hover-scale">
+                <img src="/logo.png" alt="HaiHand" style={{height: '32px', objectFit: 'contain'}} />
+            </div>
             <div className="position-relative" onMouseEnter={() => setShowCategoryMenu(true)} onMouseLeave={() => setShowCategoryMenu(false)}>
                 <div className="d-flex align-items-center gap-2 text-white px-3 py-2 rounded-3" style={{cursor: 'pointer'}}>
                     <span className="fs-4 fw-bold">≡</span><span className="fw-bold d-none d-md-block">Danh mục</span>

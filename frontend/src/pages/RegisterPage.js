@@ -40,7 +40,15 @@ const RegisterPage = () => {
       <div className="card shadow-lg border-0 rounded-4 overflow-hidden" style={{ width: '450px' }}>
         
         <div className="bg-warning p-4 text-center">
-            <h2 className="fw-bold text-white mb-0 hover-scale" onClick={() => navigate('/')} style={{cursor: 'pointer'}}>HaiHand</h2>
+            <div 
+                onClick={() => navigate('/')} 
+                style={{cursor: 'pointer', transition: '0.3s'}}
+                onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
+                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                className="d-flex justify-content-center hover-scale"
+            >
+                <img src="/logo.png" alt="HaiHand" style={{height: '32px', objectFit: 'contain'}} />
+            </div>
             <p className="text-white-50 small m-0 mt-1">Tạo tài khoản mới</p>
         </div>
 

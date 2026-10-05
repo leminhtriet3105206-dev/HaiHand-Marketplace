@@ -45,16 +45,8 @@ export default function ProductListPage() {
       });
       setPosts(res.data);
     } catch (err) {
-      console.warn("API lỗi, dùng danh sách tin ảo:", err);
-      // Mock data fallback
-      const mockPosts = [
-        { _id: '1', title: 'iPhone 14 Pro 128GB Tím Quốc Tế VNA nguyên áp suất', price: 16490000, condition: 'Như mới', location: 'Đống Đa, Hà Nội', category: 'Điện thoại', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm'], createdAt: new Date(Date.now() - 15*60000).toISOString(), author: { name: 'Hoàng Long' } },
-        { _id: '2', title: 'iPhone 13 Trắng Starlight 128GB pin zin 89% fullbox', price: 11800000, condition: 'Như mới', location: 'Cầu Giấy, Hà Nội', category: 'Điện thoại', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuAQrPfb_3cUe0g9aHE2CiRM1y_KFEl-f25iOBAUzt9DZlG40wLqGonj6H_UGBEhH64FpFqm3vNVzNiOZVvrE-1qP8G4SyGnsAPuLn8BURNmpUJwuTm7gFVRXj4MCPHaB80m6snb274BnRSwt_peh5yAnP4QItle_A6GRp-v0BKgGjO1pI1CnjAhM7xQJyNGkoNYS-nqy3Nne59ZHls2uSaTfWrnWHAL4g7Qpjw28q2qLKQPKMUITwU0'], createdAt: new Date(Date.now() - 25*60000).toISOString(), author: { name: 'Thu Trang' } },
-        { _id: '3', title: 'iPhone 15 Pro Max 256GB Titan Tự Nhiên VNA bảo hành dài', price: 23900000, condition: 'Mới', location: 'Hoàn Kiếm, Hà Nội', category: 'Điện thoại', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuBV-_ZYor-TcTEKHjnFggD1vWanyp5nP381fF8Q7mc9yp6VIBx1XwqErhieQq8hdPiwkgoYD85sRtd3SrNKorXmspCU5b5f4_v1zR9u8ZDdsUEHoKZyvfViNW3fNPV7iI9qO3Dm_5Fyn3YGDDBSYQBLjkii1S064C02oDZshlJghiLME6aCpnFL0wgfGSOP0qhzaGyOUIhR_Czqv6bif3yGYoKy2Ya4OneCJ1yOcsM-PiLy-9e5u3EH'], createdAt: new Date(Date.now() - 40*60000).toISOString(), author: { name: 'Trọng Đạt' } },
-        { _id: '4', title: 'MacBook Air M1 8GB/256GB Gold đẹp 98%, pin 92% kèm sạc zin', price: 12500000, condition: 'Như mới', location: 'Quận 1, TP. HCM', category: 'Laptop', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuAQrPfb_3cUe0g9aHE2CiRM1y_KFEl-f25iOBAUzt9DZlG40wLqGonj6H_UGBEhH64FpFqm3vNVzNiOZVvrE-1qP8G4SyGnsAPuLn8BURNmpUJwuTm7gFVRXj4MCPHaB80m6snb274BnRSwt_peh5yAnP4QItle_A6GRp-v0BKgGjO1pI1CnjAhM7xQJyNGkoNYS-nqy3Nne59ZHls2uSaTfWrnWHAL4g7Qpjw28q2qLKQPKMUITwU0'], createdAt: new Date(Date.now() - 3600000).toISOString(), author: { name: 'Thanh Hà' } },
-        { _id: '5', title: 'Ghế công thái học Sihoo M57 màu xám, còn dùng tốt', price: 1850000, condition: 'Đã qua sử dụng', location: 'Hải Châu, Đà Nẵng', category: 'Nội thất', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuDCOlV6K75vLhEQo0YyipXMOE826LiZsXicv1hdseNe_FjoSxTWrjNGbmCM0fdk0zFUXyHhuOyCAgTnS_cw0Q1mJifUlI_KJiko4-Rr3AXBL4ULiIbzOetNGbwyhFAi9eouedkigWGM6gMFBZF0Dc-G5LH8xqmrE2QD-_yuQWu1aAEK5YtCAaaTCXLpK9adQ720arpav11kpneJGE32wtzlkqxw10QMyM5cIDJc83ZZmpBQGdfwTSQ_'], createdAt: new Date(Date.now() - 7200000).toISOString(), author: { name: 'Văn Lâm' } }
-      ];
-      setPosts(mockPosts);
+      console.warn("Lỗi tải danh sách sản phẩm:", err);
+      setPosts([]);
     } finally {
       setLoading(false);
     }

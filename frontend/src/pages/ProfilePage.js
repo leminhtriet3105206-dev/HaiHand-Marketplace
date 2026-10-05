@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AppHeader } from '../components/AppHeader';
@@ -21,6 +21,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', cccd: '' });
   const [selectedImage, setSelectedImage] = useState(null);
+  const fileInputRef = useRef(null);
 
   const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
@@ -28,16 +29,11 @@ export default function ProfilePage() {
     const storedUser = localStorage.getItem('user');
     const parsedUser = storedUser && storedUser !== "undefined" ? JSON.parse(storedUser) : null;
     
-    // For UI demonstration even if not logged in or backend down, we can simulate a logged in user:
-    const currentUser = parsedUser || {
-        _id: 'mockUser123',
-        name: 'Minh Tuấn',
-        email: 'tuan.m***@gmail.com',
-        phone: '098****234',
-        address: 'Dịch Vọng Hậu, Cầu Giấy, Hà Nội',
-        walletBalance: 12450000,
-        cccd: '123456789012'
-    };
+    if (!parsedUser) {
+        navigate('/login');
+        return;
+    }
+    const currentUser = parsedUser;
 
     setUser(currentUser);
     setEditForm({ name: currentUser.name || '', phone: currentUser.phone || '', address: currentUser.address || '', cccd: currentUser.cccd || '' });
@@ -51,9 +47,6 @@ export default function ProfilePage() {
                 axios.get(`${API_URL}/api/orders/seller/${currentUser._id}`).catch(() => ({data: []})),
                 axios.get(`${API_URL}/api/users/public-profile/${currentUser._id}`).catch(() => ({data: {reviews: [], avgRating: 5}}))
             ]);
-            
-            // If API returns empty and we are using mock user, fill mock data
-            if (postsRes.data.length === 0 && currentUser._id === 'mockUser123') throw new Error("Load mock data");
 
             setMyPosts(postsRes.data);
             setMyOrders(ordersRes.data);
@@ -61,28 +54,7 @@ export default function ProfilePage() {
             setMyReviews(profileRes.data.reviews || []);
             setAvgRating(profileRes.data.avgRating || 0);
         } catch (error) {
-            console.warn("Dùng dữ liệu giả lập cho Profile vì backend không phản hồi");
-            setMyPosts([
-                {
-                    _id: 'p1', title: 'MacBook Pro M1 16GB / 512GB Space Gray chính hãng SA/A pin 91%', price: 21500000, oldPrice: 22800000, condition: 'Như mới', 
-                    images: ['https://lh3.googleusercontent.com/aida-public/AOnz_o502q2iW2U1Z5r-1Yw-t_0V8gYm-Y8eM0W3-X_k6Tz-6F9u9S7wY8wR8N8D_7d9J6s4v8U_mH2e_xN2O8z_g_x_7J0E_Qz3E8m0w8O0w8O0w8O0w8O0w8O0'],
-                    quantity: 1, status: 'APPROVED', views: 89, chats: 14, timeAgo: 'Đăng 2 giờ trước'
-                },
-                {
-                    _id: 'p2', title: 'Tai nghe không dây chống ồn Sony WH-1000XM4 đen fullbox đủ phụ kiện cáp sạc', price: 3800000, condition: 'Đã qua sử dụng', 
-                    images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuAQrPfb_3cUe0g9aHE2CiRM1y_KFEl-f25iOBAUzt9DZlG40wLqGonj6H_UGBEhH64FpFqm3vNVzNiOZVvrE-1qP8G4SyGnsAPuLn8BURNmpUJwuTm7gFVRXj4MCPHaB80m6snb274BnRSwt_peh5yAnP4QItle_A6GRp-v0BKgGjO1pI1CnjAhM7xQJyNGkoNYS-nqy3Nne59ZHls2uSaTfWrnWHAL4g7Qpjw28q2qLKQPKMUITwU0'],
-                    quantity: 1, status: 'APPROVED', views: 47, chats: 6, timeAgo: 'Đăng hôm qua'
-                },
-                {
-                    _id: 'p3', title: 'Đồng hồ cơ Seiko 5 Automatic cổ điển mặt số xanh tia máy 7S26 chuẩn Nhật', price: 1850000, condition: 'Cũ', 
-                    images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuBV-_ZYor-TcTEKHjnFggD1vWanyp5nP381fF8Q7mc9yp6VIBx1XwqErhieQq8hdPiwkgoYD85sRtd3SrNKorXmspCU5b5f4_v1zR9u8ZDdsUEHoKZyvfViNW3fNPV7iI9qO3Dm_5Fyn3YGDDBSYQBLjkii1S064C02oDZshlJghiLME6aCpnFL0wgfGSOP0qhzaGyOUIhR_Czqv6bif3yGYoKy2Ya4OneCJ1yOcsM-PiLy-9e5u3EH'],
-                    quantity: 1, status: 'PENDING', views: 22, chats: 0, timeAgo: 'Đang chờ duyệt'
-                }
-            ]);
-            setMyOrders([]);
-            setMySales([]);
-            setMyReviews([]);
-            setAvgRating(5);
+            console.error("Lỗi tải thông tin Profile", error);
         } finally {
             setLoading(false);
         }
@@ -98,26 +70,37 @@ export default function ProfilePage() {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     try {
-        if (user._id !== 'mockUser123') {
-            const formData = new FormData();
-            Object.keys(editForm).forEach(key => formData.append(key, editForm[key]));
-            if (selectedImage) formData.append('avatar', selectedImage);
-            const { data } = await axios.put(`${API_URL}/api/users/profile/${user._id}`, formData);
-            localStorage.setItem('user', JSON.stringify(data)); 
-            setUser(data);
-        } else {
-            setUser({ ...user, ...editForm });
-        }
+        const formData = new FormData();
+        Object.keys(editForm).forEach(key => formData.append(key, editForm[key]));
+        if (selectedImage) formData.append('avatar', selectedImage);
+        const { data } = await axios.put(`${API_URL}/api/users/profile/${user._id}`, formData);
+        localStorage.setItem('user', JSON.stringify(data)); 
+        setUser(data);
         setIsEditing(false);
         window.dispatchEvent(new Event('userUpdated')); 
         alert('🎉 Đã lưu thành công!');
     } catch (e) { alert('Lỗi cập nhật!'); }
   };
 
+  const handleAvatarChange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+          const formData = new FormData();
+          formData.append('avatar', file);
+          const { data } = await axios.put(`${API_URL}/api/users/profile/${user._id}`, formData);
+          localStorage.setItem('user', JSON.stringify(data));
+          setUser(data);
+          window.dispatchEvent(new Event('userUpdated'));
+      } catch (err) {
+          alert('Có lỗi xảy ra khi tải ảnh lên');
+      }
+  };
+
   const handleDeletePost = async (postId) => { 
       if(window.confirm("Xóa bài viết này?")) { 
           try { 
-              if (user._id !== 'mockUser123') await axios.delete(`${API_URL}/api/posts/${postId}`); 
+              await axios.delete(`${API_URL}/api/posts/${postId}`); 
               setMyPosts(myPosts.filter(p => p._id !== postId)); 
               alert("Đã xóa!"); 
           } catch (e) { alert("Lỗi!"); } 
@@ -166,9 +149,10 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-6">
                     <div className="relative">
                         <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-stone-50 bg-stone-100 shadow-sm">
-                            <img src={user.avatar || 'https://via.placeholder.com/150'} alt="Avatar" className="w-full h-full object-cover" />
+                            <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/\\/g, '/')}`) : 'https://via.placeholder.com/150'} alt="Avatar" className="w-full h-full object-cover" />
                         </div>
-                        <button className="absolute bottom-0 right-0 w-8 h-8 bg-[#FACC15] text-[#1C1917] rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-[#EAB308]">
+                        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
+                        <button onClick={() => fileInputRef.current.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-[#FACC15] text-[#1C1917] rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-[#EAB308]">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                         </button>
                     </div>
@@ -176,12 +160,9 @@ export default function ProfilePage() {
                     <div>
                         <div className="flex items-center gap-3 mb-1">
                             <h1 className="text-2xl font-black text-[#1C1917]">{user.name}</h1>
-                            <span className="text-stone-400 text-sm">@minhtuan_c2c</span>
+                            <span className="text-stone-400 text-sm">@{user.email?.split('@')[0]}</span>
                             <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> Tài khoản hoạt động tích cực
-                            </span>
-                            <span className="bg-orange-100 text-[#EA580C] px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
-                                ★ Người bán uy tín 5 sao
                             </span>
                         </div>
                         <div className="flex flex-wrap items-center gap-4 text-xs text-stone-500 font-medium mb-4">
@@ -197,15 +178,15 @@ export default function ProfilePage() {
                             </div>
                             <div>
                                 <p className="text-[10px] text-stone-500 uppercase font-bold">Đã thanh lý</p>
-                                <p className="text-lg font-black text-[#EA580C]">34 <span className="text-xs font-normal text-stone-400">món</span></p>
+                                <p className="text-lg font-black text-[#EA580C]">{mySales.length} <span className="text-xs font-normal text-stone-400">món</span></p>
                             </div>
                             <div>
-                                <p className="text-[10px] text-stone-500 uppercase font-bold">Tỉ lệ tích cực</p>
-                                <p className="text-lg font-black text-emerald-600">99.2% <span className="text-xs font-normal text-stone-400">({myReviews.length})</span></p>
+                                <p className="text-[10px] text-stone-500 uppercase font-bold">Đánh giá</p>
+                                <p className="text-lg font-black text-emerald-600">{myReviews.length > 0 ? myReviews.length : 0} <span className="text-xs font-normal text-stone-400">nhận xét</span></p>
                             </div>
                             <div>
-                                <p className="text-[10px] text-stone-500 uppercase font-bold">Điểm tin cậy</p>
-                                <p className="text-lg font-black text-[#1C1917]">980 <span className="text-xs font-normal text-stone-400">/1000</span></p>
+                                <p className="text-[10px] text-stone-500 uppercase font-bold">Đơn mua</p>
+                                <p className="text-lg font-black text-[#1C1917]">{myOrders.length} <span className="text-xs font-normal text-stone-400">đơn</span></p>
                             </div>
                         </div>
                     </div>
@@ -394,28 +375,13 @@ export default function ProfilePage() {
                     </div>
                     <div className="p-4">
                         <div className="flex justify-between text-xs font-bold text-stone-600 mb-2">
-                            <span>Tiến trình lên <strong>Top Seller</strong></span>
-                            <span className="text-[#EA580C]">85%</span>
+                            <span>Tiến trình lên <strong>Người Bán Chuẩn</strong></span>
+                            <span className="text-[#EA580C]">0%</span>
                         </div>
                         <div className="w-full bg-stone-100 rounded-full h-1.5 mb-2">
-                            <div className="bg-[#EA580C] h-1.5 rounded-full" style={{width: '85%'}}></div>
+                            <div className="bg-[#EA580C] h-1.5 rounded-full" style={{width: '0%'}}></div>
                         </div>
-                        <p className="text-[10px] text-stone-400 mb-4">Còn 6 giao dịch thành công nữa để nhận huy hiệu Siêu Bán Hàng.</p>
-                        
-                        <div className="space-y-2 mb-4 text-xs">
-                            <div className="flex justify-between">
-                                <span className="text-stone-500 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg> Hạn mức giao dịch Ví HaiPay:</span>
-                                <span className="font-bold text-[#1C1917]">50.000.000 đ</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-stone-500 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Thời gian giải ngân:</span>
-                                <span className="font-bold text-emerald-600">Tức thì (0s)</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-stone-500 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg> Phản hồi khách mua:</span>
-                                <span className="font-bold text-[#1C1917]">15 phút (98%)</span>
-                            </div>
-                        </div>
+                        <p className="text-[10px] text-stone-400 mb-4">Hoàn thành thêm giao dịch để nhận huy hiệu.</p>
                         <button className="w-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold py-2 rounded-lg transition-colors flex justify-center items-center gap-1">
                             Chi tiết đặc quyền thành viên <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                         </button>

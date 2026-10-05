@@ -6,10 +6,20 @@ export const AppHeader = ({ onSearch }) => {
   const [keyword, setKeyword] = useState('');
   const navigate = useNavigate();
 
+  const user = JSON.parse(localStorage.getItem('user'));
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (onSearch) {
       onSearch(keyword);
+    }
+  };
+
+  const handleCreatePostClick = () => {
+    if (!user) {
+      navigate('/login');
+    } else {
+      navigate('/create-post');
     }
   };
 
@@ -41,31 +51,43 @@ export const AppHeader = ({ onSearch }) => {
           <nav className="hidden lg:flex items-center gap-5 text-sm font-medium text-[#1C1917]">
             <Link to="/" className="hover:underline">Trang chủ</Link>
             <Link to="/products" className="hover:underline">Khám phá</Link>
-            <Link to="/chat" className="relative hover:underline">
-              Tin nhắn
-              <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full border border-[#FACC15]"></span>
-            </Link>
+            {user && (
+              <Link to="/chat" className="relative hover:underline">
+                Tin nhắn
+                <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full border border-[#FACC15]"></span>
+              </Link>
+            )}
           </nav>
           
           <div className="flex items-center gap-1">
-            <button aria-label="Thông báo" className="p-2 relative hover:bg-black/5 rounded-full transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#1C1917]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </button>
-            <button onClick={() => navigate('/cart')} aria-label="Giỏ hàng" className="p-2 relative hover:bg-black/5 rounded-full transition-colors">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#1C1917]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              <span className="absolute top-1 right-1 flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full border border-[#FACC15]">3</span>
-            </button>
-            <Link to="/profile" className="hidden sm:flex items-center gap-2 ml-2 pl-2 border-l border-black/10 hover:opacity-80 transition-opacity">
-              <img src="https://i.pravatar.cc/150?u=minhtuan" alt="Minh Tuấn" className="w-8 h-8 rounded-full border border-white" />
-              <span className="text-sm font-semibold text-[#1C1917]">Minh Tuấn</span>
-            </Link>
+            {user ? (
+              <>
+                <button aria-label="Thông báo" className="p-2 relative hover:bg-black/5 rounded-full transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#1C1917]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                  </svg>
+                </button>
+                <button onClick={() => navigate('/cart')} aria-label="Giỏ hàng" className="p-2 relative hover:bg-black/5 rounded-full transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#1C1917]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                  </svg>
+                  <span className="absolute top-1 right-1 flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full border border-[#FACC15]">3</span>
+                </button>
+                <Link to="/profile" className="hidden sm:flex items-center gap-2 ml-2 pl-2 border-l border-black/10 hover:opacity-80 transition-opacity">
+                  <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com'}/${user.avatar.replace(/\\\\/g, '/')}`) : "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg"} alt={user.name} className="w-8 h-8 rounded-full border border-white object-cover" />
+                  <span className="text-sm font-semibold text-[#1C1917]">{user.name}</span>
+                </Link>
+              </>
+            ) : (
+              <div className="flex items-center gap-3 ml-2 border-l border-black/10 pl-2">
+                <Link to="/login" className="text-sm font-semibold text-[#1C1917] hover:underline">Đăng nhập</Link>
+                <span className="text-black/20">|</span>
+                <Link to="/register" className="text-sm font-semibold text-[#1C1917] hover:underline">Đăng ký</Link>
+              </div>
+            )}
           </div>
           
-          <Button variant="dark" className="hidden sm:flex ml-1 py-1.5 px-3" onClick={() => navigate('/create-post')}>
+          <Button variant="dark" className="hidden sm:flex ml-1 py-1.5 px-3" onClick={handleCreatePostClick}>
             + Đăng tin
           </Button>
         </div>

@@ -10,16 +10,14 @@ export default function ChatPage() {
   const location = useLocation();
   
   const userString = localStorage.getItem('user');
-  const parsedUser = useMemo(() => userString && userString !== "undefined" ? JSON.parse(userString) : null, [userString]);
-  
-  const user = parsedUser || {
-      _id: 'mockUser123',
-      name: 'Minh Tuấn',
-      email: 'tuan.m***@gmail.com',
-      phone: '098****234',
-      avatar: 'https://i.pravatar.cc/150?u=minhtuan',
-      role: 'User'
-  };
+  const user = useMemo(() => userString && userString !== "undefined" ? JSON.parse(userString) : null, [userString]);
+
+  useEffect(() => {
+    if (!user) {
+      alert("Vui lòng đăng nhập để xem tin nhắn!");
+      navigate('/login');
+    }
+  }, [user, navigate]);
 
   const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
@@ -27,7 +25,7 @@ export default function ChatPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [onlineUsers, setOnlineUsers] = useState(['u1', 'u2']); // Mock online
+  const [onlineUsers, setOnlineUsers] = useState([]);
   const [selectedReceiver, setSelectedReceiver] = useState(null);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
@@ -42,7 +40,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     // We do not redirect to login if backend is down for UI demo
-    if (parsedUser) {
+    if (user) {
         socket.current = io(API_URL, { transports: ["websocket", "polling"], reconnection: true });
         socket.current.emit('addUser', user._id);
         socket.current.on('getUsers', (users) => { setOnlineUsers(users.map(u => u.userId)); });
@@ -58,41 +56,16 @@ export default function ChatPage() {
         });
         return () => socket.current.disconnect();
     }
-  }, [user._id, API_URL, parsedUser]);
+  }, [user?._id, API_URL, user]);
 
   const fetchInboxList = async () => {
     setLoading(true);
     try {
-      if (!parsedUser) throw new Error("Mock");
+      if (!user) return;
       const { data } = await axios.get(`${API_URL}/api/messages/conversations/${user._id}`);
       setInboxList(data);
     } catch (err) { 
-      console.warn("Dùng dữ liệu giả lập cho Chat vì backend không phản hồi");
-      // Fallback Mock Data matching Stitch UI
-      setInboxList([
-          {
-              otherUser: { _id: 'u1', name: 'Hoàng Nam', avatar: 'https://i.pravatar.cc/150?u=hoangnam', verified: true },
-              lastMessage: { content: 'Dạ máy em còn đủ box cáp zin nha anh, anh qua...', sender: 'u1', createdAt: Date.now() - 2 * 60000, isRead: false },
-              unreadCount: 1
-          },
-          {
-              otherUser: { _id: 'u2', name: 'Linh Chi', avatar: 'https://i.pravatar.cc/150?u=linhchi' },
-              lastMessage: { content: 'Dạ bạn có ship COD về Đà Nẵng không ạ?', sender: 'u2', createdAt: Date.now() - 15 * 60000, isRead: true },
-              unreadCount: 0
-          },
-          {
-              otherUser: { _id: 'u3', name: 'Cửa hàng Audio Sài Gòn', avatar: 'https://i.pravatar.cc/150?u=audio', badge: 'Pro' },
-              lastMessage: { content: 'Loa Marshall bên em bao test 7 ngày nha anh, có bill...', sender: 'u3', createdAt: Date.now() - 3600000, isRead: true },
-              unreadCount: 0
-          },
-          {
-              otherUser: { _id: 'u4', name: 'Bác Hùng (Xe máy cũ)', avatar: 'https://i.pravatar.cc/150?u=bachung' },
-              lastMessage: { content: 'Xe biển Hà Nội chính chủ em nhé, qua nhà bác ở Định...', sender: 'mockUser123', createdAt: Date.now() - 86400000, isRead: true },
-              unreadCount: 0
-          }
-      ]);
-      // Auto select first user
-      handleSelectConversation({ _id: 'u1', name: 'Hoàng Nam', avatar: 'https://i.pravatar.cc/150?u=hoangnam', rating: 4.9, reviews: 128, location: 'Cầu Giấy, Hà Nội' });
+      console.warn("Lỗi tải tin nhắn", err);
     }
     finally { setLoading(false); }
   };
@@ -107,25 +80,20 @@ export default function ChatPage() {
     }
   }, [location.state, navigate]);
 
-  const handleSelectConversation = (receiver) => {
+  const handleSelectConversation = async (receiver) => {
     setSelectedReceiver(receiver);
     setSearchTerm(''); setSearchResults([]);
     
-    // Simulate fetching messages
-    setMessages([
-        { sender: 'mockUser123', content: '', post: null, createdAt: Date.now() - 86400000, isDateMarker: 'Hôm nay, 16:42' },
-        { sender: 'u1', content: 'Chào anh Tuấn! Máy này em dùng làm máy phụ giữ gìn kỹ lắm ạ. Pin chuẩn zin 91%, chưa từng tháo ốc mở máy hay thay kính bao giờ.', createdAt: Date.now() - 7200000 },
-        { sender: 'u1', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm'], textOverlay: 'Viền góc xước dăm nhẹ', createdAt: Date.now() - 7100000 },
-        { sender: 'u1', content: 'Dạ máy em còn đủ phụ kiện hộp trùng IMEI và dây sạc zin theo máy nha anh. Nếu anh qua xem trực tiếp ở Duy Tân - Cầu Giấy tối nay em fix thêm 200k tiền xăng xe cho vui vẻ ạ!', createdAt: Date.now() - 7000000 },
-        { sender: 'mockUser123', content: 'Tầm 7h tối nay mình qua ngõ 123 Duy Tân xem máy được không bạn? Chỗ bạn có quán cafe nào sáng sủa, có wifi ổn định để mình cắm máy check 3uTools lại lần nữa không?', createdAt: Date.now() - 3600000, status: 'Đã gửi' }
-    ]);
+    // Fetch messages from backend
+    if (user && receiver) {
+      try {
+        const { data } = await axios.get(`${API_URL}/api/messages/${user._id}/${receiver._id}`);
+        setMessages(data);
+      } catch (error) {
+        console.error("Lỗi tải tin nhắn", error);
+      }
+    }
     
-    // Set linked post if any
-    setLinkedPost({
-        title: 'iPhone 14 Pro Max 256GB...', price: 19800000, oldPrice: 21500000, condition: 'Như mới • Pin 91%',
-        image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm'
-    });
-
     setInboxList(prev => prev.map(item => {
         if(item.otherUser._id === receiver._id) return { ...item, unreadCount: 0, lastMessage: { ...item.lastMessage, isRead: true } };
         return item;
@@ -144,8 +112,8 @@ export default function ChatPage() {
         scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, 100);
 
-    // Call API if not mock
-    if (parsedUser) {
+    // Call API
+    if (user) {
         try {
             await axios.post(`${API_URL}/api/messages`, {
                 senderId: user._id, receiverId: selectedReceiver._id, text: newMessage, postId: linkedPost?._id || null
@@ -259,12 +227,12 @@ export default function ChatPage() {
                                         {item.lastMessage.post && (
                                             <div className="flex items-center gap-1 text-[10px] text-stone-500 mb-1 truncate">
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
-                                                {item.lastMessage.post.title || 'iPhone 14 Pro Max 256GB Vàng...'}
+                                                {item.lastMessage.post.title || 'Bài đăng'}
                                             </div>
                                         )}
                                         <p className={`text-xs truncate ${isUnread ? 'font-bold text-[#1C1917]' : 'text-stone-500'}`}>
                                             {item.lastMessage.sender === user?._id ? 'Bạn: ' : ''}
-                                            {item.lastMessage.content || 'Đã gửi ảnh'}
+                                            {item.lastMessage.content || 'Đã gửi đính kèm'}
                                         </p>
                                     </div>
                                     
@@ -305,11 +273,9 @@ export default function ChatPage() {
                                         {onlineUsers.includes(selectedReceiver._id) && <span className="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full font-bold">Đang trực tuyến</span>}
                                     </h3>
                                     <div className="flex items-center gap-2 text-xs text-stone-500 font-medium mt-0.5">
-                                        <span className="text-[#EA580C]">★ {selectedReceiver.rating || 4.9} <span className="text-stone-400">({selectedReceiver.reviews || 128} phản hồi)</span></span>
+                                        <span className="text-[#EA580C]">★ {selectedReceiver.rating || 0} <span className="text-stone-400">({selectedReceiver.reviews || 0} phản hồi)</span></span>
                                         <span>•</span>
-                                        <span>Tỷ lệ phản hồi: 99% (Dưới 3 phút)</span>
-                                        <span>•</span>
-                                        <span>{selectedReceiver.location || 'Cầu Giấy, Hà Nội'}</span>
+                                        <span>{selectedReceiver.address || 'Chưa cập nhật địa chỉ'}</span>
                                     </div>
                                 </div>
                             </div>

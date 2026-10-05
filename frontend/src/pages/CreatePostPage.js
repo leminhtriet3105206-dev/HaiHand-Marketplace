@@ -4,17 +4,33 @@ import { useNavigate, Link } from 'react-router-dom';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 
+const categoryDataMap = {
+    'Điện tử - Công nghệ': {
+        subCategories: ['Điện thoại thông minh', 'Máy tính bảng', 'Laptop', 'Phụ kiện', 'Khác'],
+        brands: ['Apple', 'Samsung', 'Xiaomi', 'Sony', 'Asus', 'Dell', 'HP', 'Lenovo', 'Khác']
+    },
+    'Xe cộ': {
+        subCategories: ['Xe máy', 'Ô tô', 'Xe đạp', 'Khác'],
+        brands: ['Honda', 'Yamaha', 'Suzuki', 'Toyota', 'VinFast', 'Khác']
+    },
+    'Thời trang': {
+        subCategories: ['Quần áo nam', 'Quần áo nữ', 'Giày dép', 'Phụ kiện', 'Khác'],
+        brands: ['Adidas', 'Nike', 'Zara', 'H&M', 'Khác']
+    },
+    'Nội thất': {
+        subCategories: ['Bàn ghế', 'Giường', 'Tủ', 'Khác'],
+        brands: ['IKEA', 'Hòa Phát', 'Khác']
+    }
+};
+
+const getCategoryData = (cat1) => categoryDataMap[cat1] || { subCategories: ['Khác'], brands: ['Khác'] };
+
 export default function CreatePostPage() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [files, setFiles] = useState([]);
-  const [previewImages, setPreviewImages] = useState([
-      // Mock initial images to match screenshot exactly
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm'
-  ]);
+  const [previewImages, setPreviewImages] = useState([]);
   
   const [categories, setCategories] = useState([]);
   const [provinces, setProvinces] = useState([]);
@@ -22,41 +38,37 @@ export default function CreatePostPage() {
   const [wards, setWards] = useState([]);
 
   const [formData, setFormData] = useState({
-    title: 'iPhone 14 Pro Max 256GB Tím Deep Purple VN/A Pin 98%',
-    price: '18500000',
-    category1: 'Điện tử - Công nghệ',
-    category2: 'Điện thoại thông minh',
-    brand: 'Apple',
-    condition: 'Như mới',
-    description: `- Xuất xứ: Máy chính hãng VN/A mua tại Thế Giới Di Động còn đủ hóa đơn điện tử.
-- Ngoại hình: Đang ốp và dán cường lực từ lúc đập hộp nên viền không một vết cấn, kính trước sau đẹp keng 99%.
-- Tình trạng pin: 98%, dung lượng 256GB tha hồ quay chụp.
-- Phụ kiện đi kèm: Hộp trùng IMEI, cáp Type-C to Lightning zin theo máy, tặng kèm 2 ốp lưng UAG.
-- Cam kết: Máy nguyên zin 100% chưa qua bảo hành sửa chữa, bao thợ test thoải mái.
-- Lý do bán: Lên đời 16 Pro Max nên cần nhượng lại cho ai có nhu cầu.`,
-    city: 'Hà Nội',
-    district: 'Quận Cầu Giấy',
-    ward: 'Phường Dịch Vọng Hậu',
-    phone: '098****234',
-    tradeDirect: true,
-    tradeCod: true,
-    tradeHaiPay: true,
-    commit: true
+    title: '',
+    price: '',
+    category1: '',
+    category2: '',
+    brand: '',
+    condition: '',
+    description: '',
+    city: '',
+    district: '',
+    ward: '',
+    phone: '',
+    tradeDirect: false,
+    tradeCod: false,
+    tradeHaiPay: false,
+    commit: false
   });
 
-  const user = JSON.parse(localStorage.getItem('user')) || { _id: 'mock', name: 'Minh Tuấn', avatar: 'https://i.pravatar.cc/150?u=minhtuan' };
+  const user = JSON.parse(localStorage.getItem('user'));
   const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
   useEffect(() => {
+    if (!user) {
+      alert('Vui lòng đăng nhập để đăng tin!');
+      navigate('/login');
+      return;
+    }
     // Fetch provinces
     axios.get('https://provinces.open-api.vn/api/?depth=3')
       .then(res => setProvinces(res.data))
       .catch(err => {
-          console.warn("API Provinces failed, using mock");
-          setProvinces([
-              { name: 'Hà Nội', code: 1, districts: [{ name: 'Quận Cầu Giấy', code: 11, wards: [{name: 'Phường Dịch Vọng Hậu', code: 111}] }] },
-              { name: 'TP. Hồ Chí Minh', code: 2, districts: [] }
-          ]);
+          console.warn("Lỗi tải danh sách tỉnh thành", err);
       });
 
     // Fetch categories
@@ -117,15 +129,12 @@ export default function CreatePostPage() {
     files.forEach(file => data.append('images', file));
 
     try {
-        if(user._id !== 'mock') {
-            await axios.post(`${API_URL}/api/posts`, data);
-        }
+        await axios.post(`${API_URL}/api/posts`, data);
         alert("Đăng tin thành công!");
         navigate('/');
     } catch (error) { 
-        console.warn("Backend error, assuming success for UI mock");
-        alert("Đăng tin thành công (Chế độ giả lập)!");
-        navigate('/');
+        console.error("Lỗi đăng bài:", error);
+        alert("Lỗi đăng tin!");
     }
   };
 
@@ -235,23 +244,34 @@ export default function CreatePostPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
                         <div>
                             <label className="block text-sm font-bold text-[#1C1917] mb-1.5">Danh mục cấp 1 <span className="text-red-500">*</span></label>
-                            <select className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.category1} onChange={e => setFormData({...formData, category1: e.target.value})}>
+                            <select className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.category1} onChange={e => {
+                                const cat1 = e.target.value;
+                                const data = getCategoryData(cat1);
+                                setFormData({
+                                    ...formData, 
+                                    category1: cat1,
+                                    category2: data.subCategories[0],
+                                    brand: data.brands[0]
+                                });
+                            }}>
+                                <option value="">-- Chọn danh mục --</option>
                                 {categories.map((c, i) => <option key={i} value={c.name || c}>{c.name || c}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-[#1C1917] mb-1.5">Danh mục cấp 2 <span className="text-red-500">*</span></label>
                             <select className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.category2} onChange={e => setFormData({...formData, category2: e.target.value})}>
-                                <option>Điện thoại thông minh</option>
-                                <option>Máy tính bảng</option>
+                                {getCategoryData(formData.category1).subCategories.map((sub, idx) => (
+                                    <option key={idx} value={sub}>{sub}</option>
+                                ))}
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-[#1C1917] mb-1.5">Hãng sản xuất <span className="text-red-500">*</span></label>
                             <select className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})}>
-                                <option>Apple</option>
-                                <option>Samsung</option>
-                                <option>Xiaomi</option>
+                                {getCategoryData(formData.category1).brands.map((brand, idx) => (
+                                    <option key={idx} value={brand}>{brand}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -309,18 +329,17 @@ export default function CreatePostPage() {
                         <div>
                             <label className="block text-sm font-bold text-[#1C1917] mb-1.5">Giá muốn bán (VNĐ) <span className="text-red-500">*</span></label>
                             <div className="relative">
-                                <input type="text" className="w-full h-14 pl-4 pr-10 text-xl font-bold text-red-600 rounded-xl border border-stone-200 focus:outline-none focus:border-[#FACC15] bg-stone-50 focus:bg-white transition-colors" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
+                                <input type="number" className="w-full h-14 pl-4 pr-10 text-xl font-bold text-red-600 rounded-xl border border-stone-200 focus:outline-none focus:border-[#FACC15] bg-stone-50 focus:bg-white transition-colors" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
                                 <span className="absolute right-4 top-4 font-bold text-stone-400">đ</span>
                             </div>
-                            <p className="text-[11px] text-stone-400 mt-1.5">Mười tám triệu năm trăm nghìn đồng</p>
+                            {formData.price && (
+                                <p className="text-[11px] text-stone-400 mt-1.5 font-bold">
+                                    {new Intl.NumberFormat('vi-VN').format(formData.price)} đ
+                                </p>
+                            )}
                         </div>
-                        <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex flex-col justify-center">
-                            <div className="flex items-center gap-1.5 text-xs text-stone-500 font-bold mb-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                                Giá tham khảo thị trường:
-                            </div>
-                            <div className="text-lg font-black text-[#1C1917]">18.0 - 19.5 Tr <span className="text-[10px] text-emerald-600 font-bold bg-emerald-100 px-1.5 py-0.5 rounded ml-1 align-middle">Giá bạn đặt rất tốt!</span></div>
-                            <p className="text-[10px] text-stone-400 mt-1">Dựa trên 45 tin bán iPhone 14 Pro Max tương đương loại và nơi</p>
+                        <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex flex-col justify-center text-center">
+                            <span className="text-xs text-stone-400 font-bold">Tính năng gợi ý giá thị trường đang được phát triển.</span>
                         </div>
                     </div>
 
@@ -334,7 +353,7 @@ export default function CreatePostPage() {
                                         Gặp trực tiếp xem hàng & Test máy tận nơi
                                         <span className="bg-[#FACC15] text-[#1C1917] text-[9px] px-1.5 py-0.5 rounded font-black">Lựa chọn số 1 an toàn</span>
                                     </div>
-                                    <p className="text-[11px] text-stone-500 mt-0.5">Khuyến nghị giao dịch tại quán cafe hoặc địa chỉ nhà riêng tại Cầu Giấy, Hà Nội để hai bên cùng an tâm kiểm tra.</p>
+                                    <p className="text-[11px] text-stone-500 mt-0.5">Khuyến nghị giao dịch tại quán cafe hoặc địa chỉ công cộng để hai bên cùng an tâm kiểm tra.</p>
                                 </div>
                             </label>
                             

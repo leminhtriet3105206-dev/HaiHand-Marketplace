@@ -25,36 +25,7 @@ export default function CartPage() {
       const allIds = data.map(item => item.product._id);
       setSelectedItems(new Set(allIds));
     } catch (error) {
-      console.warn("Lỗi tải giỏ hàng, dùng dữ liệu giả định", error);
-      // Fallback Mock Data matching the Stitch UI
-      const mockCart = [
-        {
-          product: {
-            _id: '1', title: 'Máy ảnh Sony A6400 kèm lens kit 16-50mm', price: 14200000, condition: 'Đã qua sử dụng', category: 'Đồ cũ độc bản', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm'], quantity: 1, author: { _id: 'u1', name: 'Cửa hàng Phụ Kiện Vintage - Tuấn Anh', location: 'Quận 10, TP.HCM', avatarName: 'TA' }
-          },
-          quantity: 1
-        },
-        {
-          product: {
-            _id: '2', title: 'Nồi chiên không dầu Philips 4.5L còn mới 95%', price: 850000, condition: 'Đã qua sử dụng', category: 'Gia dụng cũ', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuAQrPfb_3cUe0g9aHE2CiRM1y_KFEl-f25iOBAUzt9DZlG40wLqGonj6H_UGBEhH64FpFqm3vNVzNiOZVvrE-1qP8G4SyGnsAPuLn8BURNmpUJwuTm7gFVRXj4MCPHaB80m6snb274BnRSwt_peh5yAnP4QItle_A6GRp-v0BKgGjO1pI1CnjAhM7xQJyNGkoNYS-nqy3Nne59ZHls2uSaTfWrnWHAL4g7Qpjw28q2qLKQPKMUITwU0'], quantity: 1, author: { _id: 'u2', name: 'Minh Trang (Thanh lý đồ gia dụng)', location: 'Đống Đa, Hà Nội', rating: 5.0, reviewCount: 42, note: 'Mua từ 2 món hỗ trợ 30k phí ship hoặc bớt 50k khi qua nhà lấy trực tiếp!', avatarName: 'MT', isPersonal: true }
-          },
-          quantity: 1
-        },
-        {
-          product: {
-            _id: '3', title: 'Bộ máy ép chậm mini Tefal nguyên hộp còn bảo hành', price: 620000, condition: 'Như mới', category: 'Fullbox', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuBV-_ZYor-TcTEKHjnFggD1vWanyp5nP381fF8Q7mc9yp6VIBx1XwqErhieQq8hdPiwkgoYD85sRtd3SrNKorXmspCU5b5f4_v1zR9u8ZDdsUEHoKZyvfViNW3fNPV7iI9qO3Dm_5Fyn3YGDDBSYQBLjkii1S064C02oDZshlJghiLME6aCpnFL0wgfGSOP0qhzaGyOUIhR_Czqv6bif3yGYoKy2Ya4OneCJ1yOcsM-PiLy-9e5u3EH'], quantity: 1, author: { _id: 'u2', name: 'Minh Trang (Thanh lý đồ gia dụng)', location: 'Đống Đa, Hà Nội', avatarName: 'MT', isPersonal: true }
-          },
-          quantity: 1
-        },
-        {
-          product: {
-            _id: '4', title: 'Bàn phím cơ Keychron K2 v2 nhôm RGB', price: 1350000, condition: 'Như mới', category: 'Còn keypuller + cáp Type-C', images: ['https://lh3.googleusercontent.com/aida-public/AB6AXuDCOlV6K75vLhEQo0YyipXMOE826LiZsXicv1hdseNe_FjoSxTWrjNGbmCM0fdk0zFUXyHhuOyCAgTnS_cw0Q1mJifUlI_KJiko4-Rr3AXBL4ULiIbzOetNGbwyhFAi9eouedkigWGM6gMFBZF0Dc-G5LH8xqmrE2QD-_yuQWu1aAEK5YtCAaaTCXLpK9adQ720arpav11kpneJGE32wtzlkqxw10QMyM5cIDJc83ZZmpBQGdfwTSQ_'], quantity: 1, author: { _id: 'u3', name: 'Đức Hoàng Tech', location: 'Ba Đình, Hà Nội', avatarName: 'DH', badge: 'Thành viên 3 năm' }
-          },
-          quantity: 1
-        }
-      ];
-      setCartItems(mockCart);
-      setSelectedItems(new Set(['1', '2', '3'])); // Select 3 items like in mockup
+      console.error("Lỗi tải giỏ hàng", error);
     } finally {
       setLoading(false);
     }

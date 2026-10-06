@@ -3,15 +3,19 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
 
 export default function CartPage() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [cartItems, setCartItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   
   const currentUser = JSON.parse(localStorage.getItem('user'));
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   const [paymentMethod, setPaymentMethod] = useState('COD'); 
   const [discountCode, setDiscountCode] = useState('HAIHANDVOUCHER100K');
@@ -40,7 +44,8 @@ export default function CartPage() {
   }, []);
 
   const handleRemoveItem = async (postId) => {
-    if (!window.confirm("Bạn muốn xóa sản phẩm này khỏi giỏ hàng?")) return;
+    const isConfirmed = await confirm("Bạn muốn xóa sản phẩm này khỏi giỏ hàng?");
+    if (!isConfirmed) return;
     try {
       if (currentUser) {
         await axios.delete(`${API_URL}/api/users/cart/${currentUser._id}/${postId}`);
@@ -53,7 +58,7 @@ export default function CartPage() {
       });
       window.dispatchEvent(new Event('cartUpdated')); 
     } catch (error) {
-      alert("Lỗi không thể gỡ sản phẩm!");
+      toast.error('Lỗi', "Lỗi không thể gỡ sản phẩm!");
     }
   };
 
@@ -64,7 +69,7 @@ export default function CartPage() {
         return;
     }
     if (maxStock && change > 0 && newQty > maxStock) {
-        alert(`Sản phẩm này hiện chỉ còn ${maxStock} món trong kho!`);
+        toast.info('Thông báo', `Sản phẩm này hiện chỉ còn ${maxStock} món trong kho!`);
         return;
     }
     try {
@@ -83,7 +88,7 @@ export default function CartPage() {
         }));
         window.dispatchEvent(new Event('cartUpdated'));
     } catch (error) {
-        alert("Lỗi cập nhật số lượng!");
+        toast.error('Lỗi', "Lỗi cập nhật số lượng!");
     }
   };
 
@@ -117,26 +122,23 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckout = async () => {
+  const handleCheckout = async (computedFinalTotal) => {
     const selectedCartItems = cartItems.filter(item => selectedItems.has(item.product._id));
-    if (selectedCartItems.length === 0) return alert("Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!");
-
-    const total = calculateTotal();
-    const finalTotal = total + 65000 - 100000; // Fake ship fee and discount for demo
+    if (selectedCartItems.length === 0) return toast.warning('Chú ý', "Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!");
 
     if (!currentUser) {
-        alert("Chức năng thanh toán yêu cầu đăng nhập và kết nối Backend đang hoạt động.");
+        toast.warning('Chú ý', "Chức năng thanh toán yêu cầu đăng nhập và kết nối Backend đang hoạt động.");
         return;
     }
 
-    const confirmPay = window.confirm(`Xác nhận thanh toán ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(finalTotal)} bằng phương thức ${paymentMethod}?`);
+    const confirmPay = await confirm(`Xác nhận thanh toán ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(computedFinalTotal)} bằng phương thức ${paymentMethod}?`);
     if (!confirmPay) return;
 
     try {
         const itemIds = selectedCartItems.map(item => item.product._id);
         const orderRes = await axios.post(`${API_URL}/api/users/${currentUser._id}/checkout`, {
             items: itemIds,
-            totalPrice: finalTotal,
+            totalPrice: computedFinalTotal,
             phone: currentUser.phone || '0123456789',
             address: currentUser.address || 'Hà Nội',
             paymentMethod
@@ -145,35 +147,35 @@ export default function CartPage() {
         const newOrder = orderRes.data.order;
 
         if (paymentMethod === 'COD') {
-            alert("🎉 Đặt hàng thành công!");
-            navigate('/');
+            toast.success('Thành công', "🎉 Đặt hàng thành công!");
+            navigate('/profile?tab=orders_buy');
         } 
         else if (paymentMethod === 'VNPAY') {
             const vnpayRes = await axios.post(`${API_URL}/api/vnpay/create_payment_url`, {
-                amount: finalTotal,
+                amount: computedFinalTotal,
                 orderId: newOrder._id
             });
             if (vnpayRes.data && vnpayRes.data.paymentUrl) window.location.href = vnpayRes.data.paymentUrl;
-            else alert("Không thể tạo link VNPay!");
+            else toast.info('Thông báo', "Không thể tạo link VNPay!");
         }
         else if (paymentMethod === 'HAIPAY') {
             const updatedUser = { ...currentUser, walletBalance: orderRes.data.newBalance };
             localStorage.setItem('user', JSON.stringify(updatedUser));
             window.dispatchEvent(new Event('userUpdated')); 
-            alert("🎉 Thanh toán rẹt rẹt bằng HaiPay thành công!");
-            navigate('/');
+            toast.success('Thành công', "🎉 Thanh toán rẹt rẹt bằng HaiPay thành công!");
+            navigate('/profile?tab=orders_buy');
         }
     } catch (error) {
         if (error.response && error.response.status === 400) {
-            alert("❌ " + error.response.data.error);
+            toast.error('Lỗi', "❌ " + error.response.data.error);
         } else {
-            alert("Lỗi trong quá trình thanh toán!");
+            toast.error('Lỗi', "Lỗi trong quá trình thanh toán!");
         }
     }
   };
 
   const getImageUrl = (imgStr) => {
-    if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
+    if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
     return imgStr.startsWith('http') ? imgStr : `${API_URL}/${imgStr.replace(/\\/g, '/')}`;
   };
 
@@ -198,8 +200,21 @@ export default function CartPage() {
   }, {});
 
   const subTotal = calculateTotal();
-  const shippingFee = subTotal > 0 ? 65000 : 0;
-  const discount = subTotal > 0 ? -100000 : 0;
+  const sellersCount = Object.keys(groupedCart).length;
+  const shippingFee = subTotal > 0 ? (sellersCount * 25000) : 0;
+  
+  let discount = 0;
+  let appliedVoucherText = '';
+  if (discountCode.toUpperCase() === 'HAIHANDVOUCHER100K' && subTotal >= 5000000) {
+      discount = -100000;
+      appliedVoucherText = 'Đã áp dụng giảm 100.000 đ cho đơn trên 5 triệu';
+  } else if (discountCode.toUpperCase() === 'FREESHIP') {
+      discount = -shippingFee;
+      appliedVoucherText = 'Đã áp dụng miễn phí vận chuyển';
+  } else if (discountCode.trim() !== '') {
+      appliedVoucherText = 'Mã giảm giá không hợp lệ hoặc chưa đủ điều kiện';
+  }
+  
   const finalTotal = Math.max(0, subTotal + shippingFee + discount);
 
   return (
@@ -337,14 +352,14 @@ export default function CartPage() {
                     {/* Seller Note / Footer */}
                     {seller.note ? (
                       <div className="bg-orange-50 px-4 py-3 border-t border-orange-100 flex items-center gap-2 text-xs text-orange-800">
-                        <span className="font-bold border border-orange-200 bg-orange-100 px-2 rounded">🏷 Ưu đãi từ {seller.name.split(' ')[0]}:</span>
-                        <span>{seller.note}</span>
+                        <span className="font-bold border border-orange-200 bg-orange-100 px-2 rounded">🏷 Ưu đãi từ {(seller?.name || '').split(' ')[0]}:</span>
+                        <span>{seller?.note || ''}</span>
                       </div>
                     ) : (
                       <div className="bg-stone-50 px-4 py-3 border-t border-stone-100 flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2 text-stone-600">
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-[#EA580C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                          <span>Hình thức: <strong>Ship COD đồng kiểm tận nhà</strong> hoặc <strong>Hẹn gặp trực tiếp</strong> tại {seller.location.split(',')[0]}</span>
+                          <span>Hình thức: <strong>Ship COD đồng kiểm tận nhà</strong> hoặc <strong>Hẹn gặp trực tiếp</strong> tại {(seller?.location || '').split(',')[0]}</span>
                         </div>
                         <span className="font-semibold text-[#EA580C]">Phí ship dự kiến: 35.000 đ</span>
                       </div>
@@ -397,7 +412,12 @@ export default function CartPage() {
                     </div>
                     <button className="px-4 bg-stone-100 text-stone-600 font-bold text-sm rounded-lg hover:bg-stone-200">Áp dụng</button>
                   </div>
-                  {discount < 0 && <p className="text-xs text-[#EA580C] font-semibold mt-2 flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> Đã áp dụng giảm 100.000 đ cho đơn trên 5 triệu</p>}
+                  {appliedVoucherText && (
+                    <p className={`text-xs font-semibold mt-2 flex items-center gap-1 ${discount < 0 ? 'text-[#EA580C]' : 'text-red-500'}`}>
+                      {discount < 0 ? <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg> : null}
+                      {appliedVoucherText}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-3 mb-4 pb-4 border-b border-stone-100 text-sm">
@@ -432,7 +452,7 @@ export default function CartPage() {
                 )}
 
                 <button 
-                  onClick={handleCheckout} 
+                  onClick={() => handleCheckout(finalTotal)} 
                   disabled={selectedItems.size === 0}
                   className="w-full bg-[#FACC15] hover:bg-[#EAB308] disabled:bg-stone-200 disabled:text-stone-400 text-[#1C1917] font-bold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 mb-4"
                 >

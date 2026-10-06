@@ -3,6 +3,8 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
+import { useToast } from '../components/Toast';
+
 
 const categoryDataMap = {
     'Điện tử - Công nghệ': {
@@ -26,11 +28,13 @@ const categoryDataMap = {
 const getCategoryData = (cat1) => categoryDataMap[cat1] || { subCategories: ['Khác'], brands: ['Khác'] };
 
 export default function CreatePostPage() {
+  const toast = useToast();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [files, setFiles] = useState([]);
   const [previewImages, setPreviewImages] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [categories, setCategories] = useState([]);
   const [provinces, setProvinces] = useState([]);
@@ -56,11 +60,10 @@ export default function CreatePostPage() {
   });
 
   const user = JSON.parse(localStorage.getItem('user'));
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     if (!user) {
-      alert('Vui lòng đăng nhập để đăng tin!');
       navigate('/login');
       return;
     }
@@ -114,7 +117,10 @@ export default function CreatePostPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.commit) return alert("Vui lòng xác nhận cam kết!");
+    if (!formData.commit) return toast.warning('Chú ý', "Vui lòng xác nhận cam kết!");
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
 
     const data = new FormData();
     data.append('author', user._id); 
@@ -130,11 +136,12 @@ export default function CreatePostPage() {
 
     try {
         await axios.post(`${API_URL}/api/posts`, data);
-        alert("Đăng tin thành công!");
-        navigate('/');
+        toast.success('Thành công', "Đăng tin thành công và đang chờ duyệt!");
+        navigate('/profile');
     } catch (error) { 
         console.error("Lỗi đăng bài:", error);
-        alert("Lỗi đăng tin!");
+        toast.error('Lỗi', "Lỗi đăng tin!");
+        setIsSubmitting(false);
     }
   };
 
@@ -462,9 +469,13 @@ export default function CreatePostPage() {
                     <div className="flex items-center gap-3">
                         <button type="button" className="px-6 py-3 rounded-xl border border-stone-200 bg-white font-bold text-stone-700 hover:bg-stone-50 transition-colors">Lưu nháp</button>
                         <button type="button" className="px-6 py-3 rounded-xl border border-stone-200 bg-white font-bold text-stone-700 hover:bg-stone-50 transition-colors flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> Xem trước tin</button>
-                        <button type="submit" className="ml-auto px-8 py-3 rounded-xl bg-[#FACC15] font-black text-[#1C1917] hover:bg-[#EAB308] shadow-sm transition-colors flex items-center gap-2 text-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                            Đăng tin ngay
+                        <button type="submit" disabled={isSubmitting} className={`ml-auto px-8 py-3 rounded-xl font-black text-[#1C1917] shadow-sm transition-colors flex items-center gap-2 text-lg ${isSubmitting ? 'bg-stone-300 cursor-not-allowed' : 'bg-[#FACC15] hover:bg-[#EAB308]'}`}>
+                            {isSubmitting ? (
+                                <svg className="animate-spin h-5 w-5 text-[#1C1917]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            )}
+                            {isSubmitting ? 'Đang xử lý...' : 'Đăng tin ngay'}
                         </button>
                     </div>
                 </div>
@@ -487,7 +498,7 @@ export default function CreatePostPage() {
                     <div className="p-4">
                         <div className="bg-stone-50 rounded-xl overflow-hidden border border-stone-200">
                             <div className="relative aspect-[4/3] bg-white border-b border-stone-200">
-                                <img src={previewImages[0] || 'https://via.placeholder.com/400'} className="w-full h-full object-cover" alt="preview" />
+                                <img src={previewImages[0] || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-full h-full object-cover" alt="preview" />
                                 <div className="absolute top-2 left-2 bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">Như mới</div>
                                 <div className="absolute top-2 right-2 w-7 h-7 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-stone-500">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
@@ -502,7 +513,7 @@ export default function CreatePostPage() {
                                     {formData.price ? new Intl.NumberFormat('vi-VN').format(formData.price) : '0'} đ
                                 </div>
                                 <div className="flex items-center gap-2 border-t border-stone-100 pt-3">
-                                    <img src={user.avatar} className="w-6 h-6 rounded-full" alt="avt" />
+                                    <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/\\/g, '/')}`) : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-6 h-6 rounded-full" alt="avt" />
                                     <span className="text-xs font-bold text-[#1C1917] flex-1 truncate">{user.name}</span>
                                     <span className="text-[10px] text-stone-400">Vừa xong</span>
                                 </div>

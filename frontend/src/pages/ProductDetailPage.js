@@ -3,8 +3,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
+import { useToast } from '../components/Toast';
+
 
 export default function ProductDetailPage() {
+  const toast = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
@@ -16,7 +19,7 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState('mota'); // mota, checklist, thanhtoan
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     const fetchPostAndReviews = async () => {
@@ -39,13 +42,13 @@ export default function ProductDetailPage() {
   }, [id, navigate, API_URL]);
 
   const getImageUrl = (imgStr) => {
-    if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
+    if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
     return imgStr.startsWith('http') ? imgStr : `${API_URL}/${imgStr.replace(/\\/g, '/')}`;
   };
 
   const handleAddToCart = async (isBuyNow = false) => {
     if (!currentUser) {
-        alert("Bạn phải đăng nhập thì mới mua được nha!");
+        toast.warning('Chú ý', "Bạn phải đăng nhập thì mới mua được nha!");
         navigate('/login');
         return;
     }
@@ -57,15 +60,15 @@ export default function ProductDetailPage() {
         });
         window.dispatchEvent(new Event('cartUpdated')); 
         if (isBuyNow) navigate('/cart');
-        else alert("🛒 Đã thêm sản phẩm vào giỏ hàng thành công!");
+        else toast.success('Thành công', "🛒 Đã thêm sản phẩm vào giỏ hàng thành công!");
     } catch (error) {
-        alert("Lỗi kết nối tới Server!");
+        toast.error('Lỗi', "Lỗi kết nối tới Server!");
     }
   };
 
   const handleChat = () => {
     if (!currentUser) {
-        alert("Vui lòng đăng nhập để nhắn tin!");
+        toast.warning('Chú ý', "Vui lòng đăng nhập để nhắn tin!");
         navigate('/login');
         return;
     }
@@ -121,7 +124,7 @@ export default function ProductDetailPage() {
             {/* Image Gallery */}
             <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-sm">
               <div className="relative w-full aspect-square md:aspect-[4/3] rounded-lg overflow-hidden bg-stone-100 flex items-center justify-center">
-                <img src={getImageUrl(mainImage)} alt={post.title} className="w-full h-full object-cover" onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'}} />
+                <img src={getImageUrl(mainImage)} alt={post.title} className="w-full h-full object-cover" onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'}} />
                 {post.details?.condition && (
                   <span className="absolute top-4 left-4 bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-200 shadow-sm">
                     {post.details.condition}
@@ -140,7 +143,7 @@ export default function ProductDetailPage() {
                       onClick={() => setMainImage(img)}
                       className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${mainImage === img ? 'border-[#FACC15]' : 'border-transparent'}`}
                     >
-                      <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="" onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'}} />
+                      <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="" onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'}} />
                     </button>
                   ))}
                 </div>
@@ -205,7 +208,7 @@ export default function ProductDetailPage() {
                     <div key={index} className="bg-stone-50 rounded-lg p-4 border border-stone-100">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <img src={rev.buyer?.avatar || 'https://via.placeholder.com/40'} className="w-10 h-10 rounded-full object-cover" alt="avt" />
+                          <img src={rev.buyer?.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-10 h-10 rounded-full object-cover" alt="avt" />
                           <div>
                             <p className="font-bold text-sm">{rev.buyer?.name || 'Khách hàng'}</p>
                             <p className="text-xs text-stone-500">{new Date(rev.createdAt).toLocaleString('vi-VN')}</p>
@@ -278,7 +281,7 @@ export default function ProductDetailPage() {
               <div className="border border-stone-200 rounded-xl p-4 mb-6 relative">
                 <div className="flex items-center gap-3 pb-4 border-b border-stone-100">
                   <Link to={`/public-profile/${post.author?._id}`}>
-                    <img src={post.author?.avatar || 'https://via.placeholder.com/60'} className="w-14 h-14 rounded-full object-cover border-2 border-stone-100" alt="Seller" />
+                    <img src={post.author?.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-14 h-14 rounded-full object-cover border-2 border-stone-100" alt="Seller" />
                   </Link>
                   <div>
                     <Link to={`/public-profile/${post.author?._id}`} className="hover:underline">

@@ -23,10 +23,10 @@ export const AppFooter = () => {
         <div>
           <h4 className="font-semibold text-[#1C1917] mb-4">Chăm sóc khách hàng</h4>
           <ul className="space-y-2 text-sm text-stone-500">
-            <li><a href="/" className="hover:text-[#EA580C]">Trung tâm trợ giúp</a></li>
-            <li><a href="/" className="hover:text-[#EA580C]">Hướng dẫn mua đồ cũ an toàn</a></li>
-            <li><a href="/" className="hover:text-[#EA580C]">Quy trình giải quyết tranh chấp</a></li>
-            <li><a href="/" className="hover:text-[#EA580C]">Câu hỏi thường gặp</a></li>
+            <li><Link to="/help-center" className="hover:text-[#EA580C]">Trung tâm trợ giúp</Link></li>
+            <li><Link to="/safe-buying-guide" className="hover:text-[#EA580C]">Hướng dẫn mua đồ cũ an toàn</Link></li>
+            <li><Link to="/dispute-resolution" className="hover:text-[#EA580C]">Quy trình giải quyết tranh chấp</Link></li>
+            <li><Link to="/faq" className="hover:text-[#EA580C]">Câu hỏi thường gặp</Link></li>
           </ul>
         </div>
 
@@ -34,10 +34,10 @@ export const AppFooter = () => {
         <div>
           <h4 className="font-semibold text-[#1C1917] mb-4">Về HaiHand</h4>
           <ul className="space-y-2 text-sm text-stone-500">
-            <li><a href="/" className="hover:text-[#EA580C]">Giới thiệu HaiHand</a></li>
-            <li><a href="/" className="hover:text-[#EA580C]">Tuyển dụng</a></li>
-            <li><a href="/" className="hover:text-[#EA580C]">Tiêu chuẩn cộng đồng</a></li>
-            <li><a href="/" className="hover:text-[#EA580C]">Tác động môi trường</a></li>
+            <li><Link to="/about" className="hover:text-[#EA580C]">Giới thiệu HaiHand</Link></li>
+            <li><Link to="/careers" className="hover:text-[#EA580C]">Tuyển dụng</Link></li>
+            <li><Link to="/community-standards" className="hover:text-[#EA580C]">Tiêu chuẩn cộng đồng</Link></li>
+            <li><Link to="/environmental-impact" className="hover:text-[#EA580C]">Tác động môi trường</Link></li>
           </ul>
         </div>
 
@@ -55,9 +55,9 @@ export const AppFooter = () => {
         <div>
           <h4 className="font-semibold text-[#1C1917] mb-4">Quy chế sàn TMĐT</h4>
           <ul className="space-y-2 text-sm text-stone-500">
-            <li><a href="/" className="hover:text-[#EA580C]">Quy chế hoạt động</a></li>
-            <li><a href="/" className="hover:text-[#EA580C]">Chính sách bảo mật</a></li>
-            <li><a href="/" className="hover:text-[#EA580C]">Biểu phí minh bạch</a></li>
+            <li><Link to="/terms" className="hover:text-[#EA580C]">Quy chế hoạt động</Link></li>
+            <li><Link to="/privacy" className="hover:text-[#EA580C]">Chính sách bảo mật</Link></li>
+            <li><Link to="/fee-structure" className="hover:text-[#EA580C]">Biểu phí minh bạch</Link></li>
           </ul>
         </div>
       </div>

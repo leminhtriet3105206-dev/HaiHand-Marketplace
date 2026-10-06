@@ -7,8 +7,11 @@ const InboxPage = () => {
   const [conversations, setConversations] = useState([]);
   const navigate = useNavigate();
   const socket = useRef(); 
-  const user = JSON.parse(localStorage.getItem('user')) || {};
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const user = React.useMemo(() => {
+    const stored = localStorage.getItem('user');
+    return stored && stored !== "undefined" ? JSON.parse(stored) : {};
+  }, []);
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   const fetchConversations = async () => {
     if (!user._id) return;

@@ -8,9 +8,14 @@ const cors = require("cors");
 const Post = require("./models/Post");
 const User = require("./models/User");
 const Category = require("./models/Category"); 
+const Revenue = mongoose.models.Revenue || mongoose.model('Revenue', new mongoose.Schema({
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+    commissionAmount: { type: Number, required: true },
+    createdAt: { type: Date, default: Date.now }
+}));
 
 mongoose
-  .connect("mongodb://127.0.0.1:27017/HaiHand")
+  .connect("mongodb://admin:060531%40triet@ac-jjrhvgj-shard-00-00.g7gg6wx.mongodb.net:27017,ac-jjrhvgj-shard-00-01.g7gg6wx.mongodb.net:27017,ac-jjrhvgj-shard-00-02.g7gg6wx.mongodb.net:27017/HaiHand?ssl=true&replicaSet=atlas-u9u35j-shard-0&authSource=admin&retryWrites=true&w=majority")
   .then(() => console.log("✅ Đã kết nối MongoDB (HaiHand)!"))
   .catch((err) => console.error(err));
 
@@ -198,8 +203,15 @@ app.get("/", checkLogin, async (req, res) => {
 
     const stats = { totalPosts, totalUsers, pendingPosts };
 
-    
-    res.render("dashboard", { stats, recentPending, recentUsers });
+    const recentRevenues = await Revenue.find()
+      .populate({
+        path: 'orderId',
+        populate: { path: 'buyer', select: 'name' }
+      })
+      .sort({ createdAt: -1 })
+      .limit(5);
+
+    res.render("dashboard", { stats, recentPending, recentUsers, recentRevenues });
   } catch (err) {
     res.status(500).send("Có lỗi xảy ra khi tải bảng điều khiển!");
   }
@@ -274,6 +286,6 @@ app.get("/categories/delete/:id", checkLogin, async (req, res) => {
   res.redirect("/categories");
 });
 
-app.listen(4000, () =>
-  console.log("🚀 Server Admin chạy tại: https://haihand-marketplace.onrender.com"),
+app.listen(4001, () =>
+  console.log("🚀 Server Admin chạy tại port 4001"),
 );

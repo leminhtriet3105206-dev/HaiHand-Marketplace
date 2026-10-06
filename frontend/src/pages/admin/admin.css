@@ -1,0 +1,247 @@
+/* admin.css - Admin Portal Styles */
+
+.admin-layout {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f8fafc;
+    font-family: 'Inter', sans-serif;
+}
+
+.admin-sidebar {
+    width: 250px;
+    background: #ffffff;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    height: 100vh;
+    z-index: 100;
+}
+
+.admin-sidebar-logo {
+    padding: 24px;
+    font-size: 24px;
+    font-weight: 800;
+    color: #f97316;
+    text-align: center;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.admin-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 0;
+    flex: 1;
+}
+
+.admin-nav-item {
+    padding: 14px 24px;
+    color: #64748b;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s ease;
+}
+
+.admin-nav-item:hover, .admin-nav-item.active {
+    background: #fff7ed;
+    color: #ea580c;
+    border-right: 3px solid #ea580c;
+}
+
+.admin-main {
+    flex: 1;
+    margin-left: 250px;
+    display: flex;
+    flex-direction: column;
+}
+
+.admin-header {
+    height: 70px;
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 32px;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+}
+
+.admin-header-profile {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-header-profile span {
+    font-weight: 600;
+    color: #334155;
+}
+
+.admin-logout-btn {
+    padding: 8px 16px;
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.admin-logout-btn:hover {
+    background: #fecaca;
+}
+
+.admin-content {
+    padding: 32px;
+    flex: 1;
+}
+
+/* Data Tables */
+.admin-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+    padding: 24px;
+}
+
+.admin-table-toolbar {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.admin-search-input {
+    padding: 10px 16px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 300px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.admin-search-input:focus {
+    border-color: #f97316;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-table th, .admin-table td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.admin-table th {
+    font-weight: 600;
+    color: #64748b;
+    background: #f8fafc;
+}
+
+.admin-table tr:hover {
+    background: #f8fafc;
+}
+
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-active { background: #dcfce7; color: #166534; }
+.status-banned { background: #fee2e2; color: #991b1b; }
+.status-pending { background: #fef9c3; color: #854d0e; }
+
+.action-btn {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: opacity 0.2s;
+}
+
+.action-btn:hover { opacity: 0.8; }
+.btn-edit { background: #e0f2fe; color: #0284c7; }
+.btn-delete { background: #fee2e2; color: #dc2626; }
+.btn-approve { background: #dcfce7; color: #16a34a; }
+
+/* Admin Login */
+.admin-login-container {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #fef08a 0%, #f97316 100%);
+}
+
+.admin-login-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    padding: 40px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+    width: 100%;
+    max-width: 420px;
+}
+
+.admin-login-card h2 {
+    text-align: center;
+    color: #1e293b;
+    margin-bottom: 30px;
+    font-size: 28px;
+    font-weight: 800;
+}
+
+.admin-login-form .form-group {
+    margin-bottom: 20px;
+}
+
+.admin-login-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #475569;
+}
+
+.admin-login-form input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+    font-size: 15px;
+}
+
+.admin-login-form input:focus {
+    border-color: #f97316;
+}
+
+.admin-login-btn {
+    width: 100%;
+    padding: 14px;
+    background: #f97316;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.admin-login-btn:hover {
+    background: #ea580c;
+    transform: translateY(-2px);
+}

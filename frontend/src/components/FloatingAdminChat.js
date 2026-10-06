@@ -2,8 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { io } from 'socket.io-client';
+import { useToast } from './Toast';
+
 
 const FloatingAdminChat = () => {
+    const toast = useToast();
     const navigate = useNavigate();
     
     
@@ -20,7 +23,10 @@ const FloatingAdminChat = () => {
     const scrollRef = useRef();
     const dragInfo = useRef({ isDragging: false, startX: 0, startY: 0, startRight: 0, startBottom: 0, isClick: true });
     
-    const currentUser = JSON.parse(localStorage.getItem('user'));
+    const currentUser = React.useMemo(() => {
+        const stored = localStorage.getItem('user');
+        return stored && stored !== "undefined" ? JSON.parse(stored) : null;
+    }, []);
     const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
 
     const isEmbedded = window.self !== window.top;
@@ -123,12 +129,12 @@ const FloatingAdminChat = () => {
         if (!dragInfo.current.isClick) return; 
 
         if (!currentUser) {
-            alert("Bác vui lòng đăng nhập để chat với Hỗ trợ viên nhé!");
+            toast.warning('Yêu cầu đăng nhập', "Bác vui lòng đăng nhập để chat với Hỗ trợ viên nhé!");
             navigate('/login');
             return;
         }
         if (!adminUser) {
-            alert("Hệ thống hiện tại chưa có Admin trực ban!");
+            toast.info('Thông báo', "Hệ thống hiện tại chưa có Admin trực ban!");
             return;
         }
         setIsOpen(!isOpen);

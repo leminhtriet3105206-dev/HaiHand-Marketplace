@@ -22,7 +22,7 @@ const OrderDetailModal = ({ order, onClose }) => {
                         {order.items.map((item, idx) => (
                             <div key={idx} className="flex gap-4 p-3 rounded-2xl bg-slate-50 border border-slate-100">
                                 <div className="w-20 h-20 rounded-xl overflow-hidden bg-white shadow-sm flex-shrink-0">
-                                    <img src={item.image || "https://via.placeholder.com/80"} alt={item.title} className="w-full h-full object-cover" />
+                                    <img src={item.image || "https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png"} alt={item.title} className="w-full h-full object-cover" />
                                 </div>
                                 <div className="flex-1">
                                     <h6 className="font-bold text-slate-800 mb-1 leading-snug">{item.title}</h6>

@@ -1,11 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
+import { useToast } from '../components/Toast';
+import { useConfirm } from '../components/ConfirmModal';
+
 
 export default function ProfilePage() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialTab = queryParams.get('tab') || 'posts';
+
   const [user, setUser] = useState(null);
   const [myPosts, setMyPosts] = useState([]);
   const [myOrders, setMyOrders] = useState([]); 
@@ -13,17 +22,17 @@ export default function ProfilePage() {
   const [myReviews, setMyReviews] = useState([]); 
   const [avgRating, setAvgRating] = useState(0);  
 
-  const [activeTab, setActiveTab] = useState('posts'); 
+  const [activeTab, setActiveTab] = useState(initialTab); 
   const [postFilter, setPostFilter] = useState('all'); 
   const [loading, setLoading] = useState(true);
 
   // Edit forms (simple toggle for now)
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', cccd: '' });
+  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', cccd: '', avatarFrame: 'none', profileTitle: 'Người Mới' });
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -36,7 +45,19 @@ export default function ProfilePage() {
     const currentUser = parsedUser;
 
     setUser(currentUser);
-    setEditForm({ name: currentUser.name || '', phone: currentUser.phone || '', address: currentUser.address || '', cccd: currentUser.cccd || '' });
+    setEditForm({ 
+        name: currentUser.name || '', 
+        phone: currentUser.phone || '', 
+        address: currentUser.address || '', 
+        cccd: currentUser.cccd || '',
+        bio: currentUser.bio || '',
+        username: currentUser.username || '',
+        taxId: currentUser.taxId || '',
+        gender: currentUser.gender || '',
+        dob: currentUser.dob || '',
+        avatarFrame: currentUser.avatarFrame || 'none',
+        profileTitle: currentUser.profileTitle || 'Người Mới'
+    });
 
     const fetchData = async () => {
         setLoading(true);
@@ -63,7 +84,7 @@ export default function ProfilePage() {
   }, []);
 
   const getImageUrl = (imgStr) => {
-    if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
+    if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
     return imgStr.startsWith('http') ? imgStr : `${API_URL}/${imgStr.replace(/\\/g, '/')}`;
   };
 
@@ -78,8 +99,8 @@ export default function ProfilePage() {
         setUser(data);
         setIsEditing(false);
         window.dispatchEvent(new Event('userUpdated')); 
-        alert('🎉 Đã lưu thành công!');
-    } catch (e) { alert('Lỗi cập nhật!'); }
+        toast.success('Thành công', '🎉 Đã lưu thành công!');
+    } catch (e) { toast.error('Lỗi', 'Lỗi cập nhật!'); }
   };
 
   const handleAvatarChange = async (e) => {
@@ -93,17 +114,18 @@ export default function ProfilePage() {
           setUser(data);
           window.dispatchEvent(new Event('userUpdated'));
       } catch (err) {
-          alert('Có lỗi xảy ra khi tải ảnh lên');
+          toast.info('Thông báo', 'Có lỗi xảy ra khi tải ảnh lên');
       }
   };
 
   const handleDeletePost = async (postId) => { 
-      if(window.confirm("Xóa bài viết này?")) { 
+      const isConfirmed = await confirm("Xóa bài viết này?");
+      if(isConfirmed) { 
           try { 
               await axios.delete(`${API_URL}/api/posts/${postId}`); 
               setMyPosts(myPosts.filter(p => p._id !== postId)); 
-              alert("Đã xóa!"); 
-          } catch (e) { alert("Lỗi!"); } 
+              toast.info('Thông báo', "Đã xóa!"); 
+          } catch (e) { toast.error('Lỗi', "Lỗi!"); } 
       } 
   };
 
@@ -123,6 +145,38 @@ export default function ProfilePage() {
     if(status === 'Hoàn thành') return 'bg-emerald-100 text-emerald-700';
     return 'bg-stone-100 text-stone-600'; 
   };
+
+  const getFrameStyles = (frame) => {
+    switch(frame) {
+        case 'bronze': return 'border-[#cd7f32] shadow-[0_0_10px_rgba(205,127,50,0.6)]';
+        case 'silver': return 'border-[#c0c0c0] shadow-[0_0_10px_rgba(192,192,192,0.6)]';
+        case 'gold': return 'border-[#ffd700] shadow-[0_0_15px_rgba(255,215,0,0.6)]';
+        case 'diamond': return 'border-[#b9f2ff] shadow-[0_0_15px_rgba(185,242,255,0.8)]';
+        default: return 'border-stone-50';
+    }
+  };
+
+  let accountLevel = "Hạng Đồng";
+  let nextLevelProgress = 0;
+  let nextLevelName = "Người Bán Bạc";
+  
+  if (mySales.length >= 30) {
+      accountLevel = "Hạng Kim Cương";
+      nextLevelProgress = 100;
+      nextLevelName = "Max Level";
+  } else if (mySales.length >= 15) {
+      accountLevel = "Hạng Vàng";
+      nextLevelProgress = Math.round(((mySales.length - 15) / 15) * 100);
+      nextLevelName = "Hạng Kim Cương";
+  } else if (mySales.length >= 5) {
+      accountLevel = "Hạng Bạc";
+      nextLevelProgress = Math.round(((mySales.length - 5) / 10) * 100);
+      nextLevelName = "Hạng Vàng";
+  } else {
+      accountLevel = "Hạng Đồng";
+      nextLevelProgress = Math.round((mySales.length / 5) * 100);
+      nextLevelName = "Hạng Bạc";
+  }
 
   return (
     <div className="bg-[#FFFBEB] min-h-screen font-sans text-[#1C1917] flex flex-col">
@@ -148,19 +202,28 @@ export default function ProfilePage() {
                 
                 <div className="flex items-center gap-6">
                     <div className="relative">
-                        <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-stone-50 bg-stone-100 shadow-sm">
-                            <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/\\/g, '/')}`) : 'https://via.placeholder.com/150'} alt="Avatar" className="w-full h-full object-cover" />
+                        <div className={`w-24 h-24 rounded-full overflow-hidden border-4 bg-stone-100 shadow-sm ${getFrameStyles(user.avatarFrame)}`}>
+                            <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/\\/g, '/')}`) : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} alt="Avatar" className="w-full h-full object-cover" />
                         </div>
-                        <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
-                        <button onClick={() => fileInputRef.current.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-[#FACC15] text-[#1C1917] rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-[#EAB308]">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                        </button>
+                        {isEditing && (
+                            <>
+                                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
+                                <button onClick={() => fileInputRef.current.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-[#FACC15] text-[#1C1917] rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-[#EAB308] z-10">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                </button>
+                            </>
+                        )}
                     </div>
                     
                     <div>
-                        <div className="flex items-center gap-3 mb-1">
+                        <div className="flex flex-wrap items-center gap-3 mb-1">
                             <h1 className="text-2xl font-black text-[#1C1917]">{user.name}</h1>
                             <span className="text-stone-400 text-sm">@{user.email?.split('@')[0]}</span>
+                            {(user.profileTitle && user.profileTitle !== 'Người Mới') && (
+                                <span className="bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 px-3 py-0.5 rounded-full text-xs font-black shadow-sm">
+                                    🏆 {user.profileTitle}
+                                </span>
+                            )}
                             <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
                                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> Tài khoản hoạt động tích cực
                             </span>
@@ -171,35 +234,45 @@ export default function ProfilePage() {
                             <span className="flex items-center gap-1"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> {user.address}</span>
                         </div>
                         
-                        <div className="flex items-center gap-8 bg-stone-50 px-4 py-2 rounded-lg border border-stone-100">
-                            <div>
-                                <p className="text-[10px] text-stone-500 uppercase font-bold">Đang đăng bán</p>
-                                <p className="text-lg font-black text-[#1C1917]">{myPosts.length} <span className="text-xs font-normal text-stone-400">tin</span></p>
+                        {!isEditing && (
+                            <div className="flex flex-wrap items-center gap-8 bg-stone-50 px-4 py-3 rounded-xl border border-stone-100 shadow-sm">
+                                <div>
+                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đang đăng bán</p>
+                                    <p className="text-xl font-black text-[#1C1917]">{myPosts.length} <span className="text-xs font-medium text-stone-400">tin</span></p>
+                                </div>
+                                <div className="w-px h-8 bg-stone-200 hidden md:block"></div>
+                                <div>
+                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đã thanh lý</p>
+                                    <p className="text-xl font-black text-[#EA580C]">{mySales.length} <span className="text-xs font-medium text-stone-400">món</span></p>
+                                </div>
+                                <div className="w-px h-8 bg-stone-200 hidden md:block"></div>
+                                <div>
+                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đánh giá</p>
+                                    <p className="text-xl font-black text-emerald-600">{myReviews.length > 0 ? myReviews.length : 0} <span className="text-xs font-medium text-stone-400">nhận xét</span></p>
+                                </div>
+                                <div className="w-px h-8 bg-stone-200 hidden md:block"></div>
+                                <div>
+                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đơn mua</p>
+                                    <p className="text-xl font-black text-[#1C1917]">{myOrders.length} <span className="text-xs font-medium text-stone-400">đơn</span></p>
+                                </div>
                             </div>
-                            <div>
-                                <p className="text-[10px] text-stone-500 uppercase font-bold">Đã thanh lý</p>
-                                <p className="text-lg font-black text-[#EA580C]">{mySales.length} <span className="text-xs font-normal text-stone-400">món</span></p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-stone-500 uppercase font-bold">Đánh giá</p>
-                                <p className="text-lg font-black text-emerald-600">{myReviews.length > 0 ? myReviews.length : 0} <span className="text-xs font-normal text-stone-400">nhận xét</span></p>
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-stone-500 uppercase font-bold">Đơn mua</p>
-                                <p className="text-lg font-black text-[#1C1917]">{myOrders.length} <span className="text-xs font-normal text-stone-400">đơn</span></p>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
 
-                <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto">
-                    <button className="w-full bg-[#FACC15] text-[#1C1917] font-bold py-2.5 px-6 rounded-lg hover:bg-[#EAB308] flex items-center justify-center gap-2 transition-colors">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg> Tạo tin đăng mới
-                    </button>
-                    <button onClick={() => setIsEditing(!isEditing)} className="w-full bg-stone-100 text-[#1C1917] font-bold py-2.5 px-6 rounded-lg hover:bg-stone-200 flex items-center justify-center gap-2 transition-colors border border-stone-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg> Chỉnh sửa hồ sơ
-                    </button>
-                </div>
+                {!isEditing && (
+                    <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto mt-4 md:mt-0">
+                        <button className="w-full bg-[#FACC15] text-[#1C1917] font-bold py-2.5 px-6 rounded-lg hover:bg-[#EAB308] flex items-center justify-center gap-2 transition-colors shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg> Tạo tin đăng mới
+                        </button>
+                        <button onClick={() => setIsEditing(true)} className="w-full bg-stone-50 text-stone-700 font-bold py-2.5 px-6 rounded-lg hover:bg-stone-100 flex items-center justify-center gap-2 transition-colors border border-stone-200 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg> Chỉnh sửa hồ sơ
+                        </button>
+                        <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} className="w-full bg-red-50 text-red-600 font-bold py-2.5 px-6 rounded-lg hover:bg-red-100 flex items-center justify-center gap-2 transition-colors border border-red-200 shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Đăng xuất
+                        </button>
+                    </div>
+                )}
             </div>
         </div>
 
@@ -207,10 +280,11 @@ export default function ProfilePage() {
         <div className="flex flex-col lg:flex-row gap-6">
             
             {/* Left Content Area */}
-            <div className="w-full lg:w-[65%] flex flex-col gap-4">
+            <div className={`w-full ${isEditing ? 'lg:w-full' : 'lg:w-[65%]'} flex flex-col gap-4`}>
                 
                 {/* Tabs */}
-                <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                {!isEditing && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
                     <button onClick={() => setActiveTab('posts')} className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-lg font-bold text-sm transition-colors ${activeTab === 'posts' ? 'bg-orange-100 text-[#EA580C] border border-orange-200' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                         Tin đang đăng bán <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === 'posts' ? 'bg-[#EA580C] text-white' : 'bg-stone-200 text-stone-600'}`}>{myPosts.length}</span>
@@ -227,26 +301,103 @@ export default function ProfilePage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
                         Đánh giá cộng đồng <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === 'reviews' ? 'bg-[#EA580C] text-white' : 'bg-stone-200 text-stone-600'}`}>{myReviews.length}</span>
                     </button>
-                </div>
+                    </div>
+                )}
 
                 {isEditing && (
-                    <form onSubmit={handleUpdateProfile} className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm animate-fade-in mb-4">
+                    <form onSubmit={handleUpdateProfile} className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm animate-fade-in mb-4 max-w-4xl mx-auto w-full">
                         <h3 className="font-bold text-lg mb-4">Chỉnh sửa hồ sơ</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                                <label className="block text-xs font-bold text-stone-500 mb-1">Họ và tên</label>
-                                <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required />
+                        
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 mb-1">Họ và tên *</label>
+                                    <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 mb-1">Số điện thoại *</label>
+                                    <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} required />
+                                </div>
                             </div>
+                    
                             <div>
-                                <label className="block text-xs font-bold text-stone-500 mb-1">Số điện thoại</label>
-                                <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
-                            </div>
-                            <div className="md:col-span-2">
                                 <label className="block text-xs font-bold text-stone-500 mb-1">Địa chỉ</label>
                                 <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} />
                             </div>
+                    
+                            <div>
+                                <label className="block text-xs font-bold text-stone-500 mb-1">Giới thiệu về trang</label>
+                                <textarea className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15] min-h-[100px]" value={editForm.bio} onChange={e => setEditForm({...editForm, bio: e.target.value})} placeholder="Mô tả ngắn gọn về cửa hàng hoặc bản thân..." />
+                            </div>
+                    
+                            <div>
+                                <label className="block text-xs font-bold text-stone-500 mb-1">Tên gọi nhớ</label>
+                                <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.username} onChange={e => setEditForm({...editForm, username: e.target.value})} placeholder="Ví dụ: cuahangdocu123" />
+                                <p className="text-[10px] text-stone-400 mt-1">Tên gọi nhớ sẽ giúp người khác dễ dàng tìm thấy bạn.</p>
+                            </div>
+                    
+                            <div className="pt-4 mt-4 border-t border-stone-100">
+                                <h4 className="font-bold text-sm text-stone-800 mb-1">Thông tin bảo mật</h4>
+                                <p className="text-xs text-stone-500 mb-4">Những thông tin dưới đây mang tính bảo mật. Chỉ bạn mới có thể thấy và chỉnh sửa những thông tin này.</p>
+                                
+                                <div className="space-y-3">
+                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                                        <label className="w-48 text-xs font-bold text-stone-600">Email</label>
+                                        <input type="email" className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-100 text-stone-500" value={user?.email || ''} disabled />
+                                    </div>
+                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                                        <label className="w-48 text-xs font-bold text-stone-600">CCCD / CMND / Hộ chiếu</label>
+                                        <input type="text" className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.cccd} onChange={e => setEditForm({...editForm, cccd: e.target.value})} />
+                                    </div>
+                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                                        <label className="w-48 text-xs font-bold text-stone-600">Mã số thuế</label>
+                                        <input type="text" className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.taxId} onChange={e => setEditForm({...editForm, taxId: e.target.value})} />
+                                    </div>
+                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                                        <label className="w-48 text-xs font-bold text-stone-600">Giới tính</label>
+                                        <select className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})}>
+                                            <option value="">Chọn giới tính</option>
+                                            <option value="Nam">Nam</option>
+                                            <option value="Nữ">Nữ</option>
+                                            <option value="Khác">Khác</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                                        <label className="w-48 text-xs font-bold text-stone-600">Ngày sinh</label>
+                                        <input type="date" className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.dob} onChange={e => setEditForm({...editForm, dob: e.target.value})} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 mt-4 border-t border-stone-100">
+                                <h4 className="font-bold text-sm text-[#EA580C] mb-1">Trang trí hồ sơ chuyên nghiệp</h4>
+                                <p className="text-xs text-stone-500 mb-4">Mở khóa khung và danh hiệu tùy theo Cấp độ tài khoản của bạn ({accountLevel}).</p>
+                                
+                                <div className="space-y-3">
+                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                                        <label className="w-48 text-xs font-bold text-stone-600">Khung Avatar</label>
+                                        <select className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.avatarFrame} onChange={e => setEditForm({...editForm, avatarFrame: e.target.value})}>
+                                            <option value="none">Không dùng khung</option>
+                                            <option value="bronze">Khung Đồng</option>
+                                            <option value="silver" disabled={accountLevel === 'Hạng Đồng'}>Khung Bạc {accountLevel === 'Hạng Đồng' && '(Khóa)'}</option>
+                                            <option value="gold" disabled={accountLevel === 'Hạng Đồng' || accountLevel === 'Hạng Bạc'}>Khung Vàng {(accountLevel === 'Hạng Đồng' || accountLevel === 'Hạng Bạc') && '(Khóa)'}</option>
+                                            <option value="diamond" disabled={accountLevel !== 'Hạng Kim Cương'}>Khung Kim Cương {accountLevel !== 'Hạng Kim Cương' && '(Khóa)'}</option>
+                                        </select>
+                                    </div>
+                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
+                                        <label className="w-48 text-xs font-bold text-stone-600">Danh hiệu</label>
+                                        <select className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.profileTitle} onChange={e => setEditForm({...editForm, profileTitle: e.target.value})}>
+                                            <option value="Người Mới">Người Mới</option>
+                                            <option value="Thành Viên Tích Cực" disabled={accountLevel === 'Hạng Đồng'}>Thành Viên Tích Cực</option>
+                                            <option value="Uy Tín" disabled={accountLevel === 'Hạng Đồng' || accountLevel === 'Hạng Bạc'}>Uy Tín</option>
+                                            <option value="Đối Tác Vàng" disabled={accountLevel !== 'Hạng Kim Cương'}>Đối Tác Vàng</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="flex gap-3 justify-end mt-4 pt-4 border-t border-stone-100">
+                        
+                        <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-stone-100">
                             <button type="button" onClick={() => setIsEditing(false)} className="px-5 py-2 font-bold text-stone-500 hover:text-stone-800">Hủy</button>
                             <button type="submit" className="px-6 py-2 bg-[#1C1917] text-white font-bold rounded-lg hover:bg-stone-800">Lưu thay đổi</button>
                         </div>
@@ -273,13 +424,18 @@ export default function ProfilePage() {
                         {/* List */}
                         <div className="flex flex-col gap-4">
                             {myPosts.filter(p => postFilter === 'all' || (postFilter === 'active' && p.status === 'APPROVED') || (postFilter === 'pending' && p.status === 'PENDING')).map(post => (
-                                <div key={post._id} className="bg-white rounded-xl border border-stone-200 shadow-sm p-4 hover:border-stone-300 transition-colors">
-                                    <div className="flex flex-col sm:flex-row gap-4">
+                                <div key={post._id} className={`bg-white rounded-xl border ${post.status === 'PENDING' ? 'border-orange-200 bg-orange-50/30' : 'border-stone-200'} shadow-sm p-4 hover:border-stone-300 transition-colors relative`}>
+                                    <div className={`flex flex-col sm:flex-row gap-4 ${post.status === 'PENDING' ? 'opacity-70' : ''}`}>
                                         
                                         <div className="w-full sm:w-36 h-36 bg-stone-100 rounded-lg overflow-hidden border border-stone-200 shrink-0 relative cursor-pointer" onClick={() => navigate(`/post/${post._id}`)}>
-                                            <span className="absolute top-2 left-2 bg-white/90 text-emerald-700 text-[10px] font-bold px-1.5 rounded shadow-sm">{post.condition || 'Cũ'}</span>
-                                            <img src={getImageUrl(post.images?.[0] || post.image)} alt={post.title} className="w-full h-full object-cover" />
-                                            <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-bold px-1.5 rounded flex items-center gap-1 shadow-sm">
+                                            <span className="absolute top-2 left-2 bg-white/90 text-emerald-700 text-[10px] font-bold px-1.5 rounded shadow-sm z-10">{post.condition || 'Cũ'}</span>
+                                            <img src={getImageUrl(post.images?.[0] || post.image)} alt={post.title} className={`w-full h-full object-cover ${post.status === 'PENDING' ? 'grayscale brightness-50' : ''}`} />
+                                            {post.status === 'PENDING' && (
+                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
+                                                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg uppercase tracking-wider">Chờ Duyệt</span>
+                                                </div>
+                                            )}
+                                            <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-bold px-1.5 rounded flex items-center gap-1 shadow-sm z-10">
                                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> {post.location?.split(',')[0] || 'Hà Nội'}
                                             </span>
                                         </div>
@@ -333,9 +489,62 @@ export default function ProfilePage() {
                 )}
 
                 {!isEditing && activeTab.startsWith('orders') && (
-                    <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-6 text-center text-stone-500">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-                        <p>Bạn chưa có đơn hàng nào trong mục này.</p>
+                    <div className="flex flex-col gap-4">
+                        {(activeTab === 'orders_buy' ? myOrders : mySales).map(order => (
+                            <div key={order._id} className="bg-white rounded-xl border border-stone-200 shadow-sm p-4 animate-fade-in hover:border-[#EA580C]/30 transition-colors">
+                                <div className="flex justify-between items-center mb-4 pb-3 border-b border-stone-100">
+                                    <span className="text-xs font-bold text-stone-500">Mã đơn: #{order._id.substring(0, 8).toUpperCase()}</span>
+                                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${getStatusBadge(order.status)} shadow-sm`}>{order.status}</span>
+                                </div>
+                                
+                                {/* Order Tracker */}
+                                <div className="flex items-center justify-between w-full max-w-sm mx-auto mb-8 mt-4 relative">
+                                    <div className="absolute top-1/2 left-0 w-full h-1 bg-stone-100 -translate-y-1/2 z-0 rounded-full"></div>
+                                    <div className="absolute top-1/2 left-0 h-1 bg-emerald-500 -translate-y-1/2 z-0 transition-all duration-500 rounded-full" style={{ width: ['Chờ xác nhận', 'Đang giao hàng', 'Hoàn thành'].indexOf(order.status) === -1 ? '0%' : `${(['Chờ xác nhận', 'Đang giao hàng', 'Hoàn thành'].indexOf(order.status) / 2) * 100}%` }}></div>
+                                    
+                                    {['Chờ xác nhận', 'Đang giao hàng', 'Hoàn thành'].map((s, i) => {
+                                        const currentIndex = ['Chờ xác nhận', 'Đang giao hàng', 'Hoàn thành'].indexOf(order.status);
+                                        const isCompleted = i <= currentIndex;
+                                        return (
+                                            <div key={s} className="relative z-10 flex flex-col items-center">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-colors duration-500 ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white border-stone-200 text-stone-300'}`}>
+                                                    {isCompleted ? '✓' : i + 1}
+                                                </div>
+                                                <span className={`text-[10px] font-bold whitespace-nowrap absolute -bottom-5 transition-colors duration-500 ${isCompleted ? 'text-emerald-700' : 'text-stone-400'}`}>{s}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+
+                                {order.items?.map((item, idx) => (
+                                    <div key={idx} className="flex gap-4 mb-3 p-2 hover:bg-stone-50 rounded-lg transition-colors cursor-pointer" onClick={() => item.product?._id && navigate(`/post/${item.product._id}`)}>
+                                        <div className="w-20 h-20 bg-stone-100 rounded-lg overflow-hidden shrink-0 border border-stone-200 shadow-sm">
+                                            <img src={getImageUrl(item.product?.image || item.product?.images?.[0])} alt={item.product?.title} className="w-full h-full object-cover" />
+                                        </div>
+                                        <div className="flex-1 flex flex-col justify-center">
+                                            <h4 className="font-bold text-sm text-[#1C1917] line-clamp-1 group-hover:text-[#EA580C] transition-colors">{item.product?.title || 'Sản phẩm không xác định'}</h4>
+                                            <p className="text-xs text-stone-500 mt-1">Số lượng: x{item.quantity}</p>
+                                            <p className="text-sm font-bold text-[#EA580C] mt-1">{new Intl.NumberFormat('vi-VN').format(item.price)} đ</p>
+                                        </div>
+                                    </div>
+                                ))}
+                                <div className="flex justify-between items-center mt-3 pt-3 border-t border-stone-100 bg-[#FFFBEB] -mx-4 -mb-4 p-4 rounded-b-xl border-t-dashed border-t-orange-200">
+                                    <span className="text-sm font-bold text-stone-600">Tổng thanh toán:</span>
+                                    <span className="text-xl font-black text-[#EA580C]">{new Intl.NumberFormat('vi-VN').format(order.totalAmount)} đ</span>
+                                </div>
+                                {order.status === 'Chờ xác nhận' && activeTab === 'orders_sell' && (
+                                    <div className="flex justify-end gap-2 mt-4">
+                                        <button className="px-5 py-2 bg-[#1C1917] text-white text-sm font-bold rounded-lg hover:bg-stone-800 shadow-sm transition-colors">Xác nhận đơn</button>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                        {(activeTab === 'orders_buy' ? myOrders : mySales).length === 0 && (
+                            <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8 text-center text-stone-500 animate-fade-in">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mx-auto mb-4 text-stone-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                                <p className="font-medium">Chưa có đơn hàng nào.</p>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -345,7 +554,7 @@ export default function ProfilePage() {
                             <div key={i} className="mb-4 pb-4 border-b border-stone-100 last:border-0 last:mb-0 last:pb-0">
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-3">
-                                        <img src={rev.buyer?.avatar || 'https://via.placeholder.com/40'} className="w-10 h-10 rounded-full object-cover bg-stone-100" alt="avt" />
+                                        <img src={rev.buyer?.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-10 h-10 rounded-full object-cover bg-stone-100" alt="avt" />
                                         <div>
                                             <p className="font-bold text-sm text-[#1C1917]">{rev.buyer?.name || 'Khách hàng'}</p>
                                             <p className="text-xs text-stone-400">{new Date(rev.createdAt || Date.now()).toLocaleDateString('vi-VN')}</p>
@@ -362,24 +571,25 @@ export default function ProfilePage() {
             </div>
 
             {/* Right Sidebar Area */}
-            <div className="w-full lg:w-[35%] flex flex-col gap-4">
-                
-                {/* Account Rank Card */}
+            {!isEditing && (
+                <div className="w-full lg:w-[35%] flex flex-col gap-4">
+                    
+                    {/* Account Rank Card */}
                 <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
                     <div className="p-4 border-b border-stone-100 flex justify-between items-center">
                         <div className="flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EA580C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
                             <h3 className="font-bold text-[#1C1917]">Cấp độ tài khoản</h3>
                         </div>
-                        <span className="bg-[#FEF3C7] text-[#D97706] text-xs font-bold px-2 py-0.5 rounded border border-[#FDE68A]">Hạng Vàng</span>
+                        <span className="bg-[#FEF3C7] text-[#D97706] text-xs font-bold px-2 py-0.5 rounded border border-[#FDE68A]">{accountLevel}</span>
                     </div>
                     <div className="p-4">
                         <div className="flex justify-between text-xs font-bold text-stone-600 mb-2">
-                            <span>Tiến trình lên <strong>Người Bán Chuẩn</strong></span>
-                            <span className="text-[#EA580C]">0%</span>
+                            <span>Tiến trình lên <strong>{nextLevelName}</strong></span>
+                            <span className="text-[#EA580C]">{nextLevelProgress}%</span>
                         </div>
                         <div className="w-full bg-stone-100 rounded-full h-1.5 mb-2">
-                            <div className="bg-[#EA580C] h-1.5 rounded-full" style={{width: '0%'}}></div>
+                            <div className="bg-[#EA580C] h-1.5 rounded-full" style={{width: `${nextLevelProgress}%`}}></div>
                         </div>
                         <p className="text-[10px] text-stone-400 mb-4">Hoàn thành thêm giao dịch để nhận huy hiệu.</p>
                         <button className="w-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold py-2 rounded-lg transition-colors flex justify-center items-center gap-1">
@@ -395,17 +605,17 @@ export default function ProfilePage() {
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EA580C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                             <h3 className="font-bold text-[#1C1917]">Số dư Ví HaiPay</h3>
                         </div>
-                        <span className="text-xs font-bold text-[#EA580C] cursor-pointer hover:underline">Chi tiết ví</span>
+                        <span onClick={() => navigate('/haipay')} className="text-xs font-bold text-[#EA580C] cursor-pointer hover:underline">Chi tiết ví</span>
                     </div>
                     <div className="mb-4">
                         <p className="text-3xl font-black text-[#1C1917] tracking-tight">{new Intl.NumberFormat('vi-VN').format(user.walletBalance || 0)} <span className="text-xl underline">đ</span></p>
                         <p className="text-xs text-stone-500 mt-1 font-medium">Số dư khả dụng: <strong className="text-[#1C1917]">{new Intl.NumberFormat('vi-VN').format(user.walletBalance || 0)} đ</strong></p>
                     </div>
                     <div className="flex gap-2">
-                        <button className="flex-1 bg-[#FACC15] hover:bg-[#EAB308] text-[#1C1917] font-bold py-2 text-sm rounded-lg transition-colors">
+                        <button onClick={() => navigate('/haipay')} className="flex-1 bg-[#FACC15] hover:bg-[#EAB308] text-[#1C1917] font-bold py-2 text-sm rounded-lg transition-colors">
                             Rút về ngân hàng
                         </button>
-                        <button className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-2 text-sm rounded-lg transition-colors">
+                        <button onClick={() => navigate('/haipay')} className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-2 text-sm rounded-lg transition-colors">
                             Lịch sử ví
                         </button>
                     </div>
@@ -448,6 +658,7 @@ export default function ProfilePage() {
                 </div>
 
             </div>
+            )}
 
         </div>
       </main>

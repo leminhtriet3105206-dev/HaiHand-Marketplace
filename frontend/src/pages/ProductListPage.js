@@ -20,7 +20,7 @@ export default function ProductListPage() {
   const minPrice = searchParams.get('minPrice') || '';
   const maxPrice = searchParams.get('maxPrice') || '';
 
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     // Fetch categories
@@ -97,7 +97,7 @@ export default function ProductListPage() {
     if (post.image) {
         return post.image.startsWith('http') ? post.image : `${API_URL}/uploads/${post.image}`;
     }
-    return 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
+    return 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
   };
 
   const formatTimeAgo = (dateString) => {

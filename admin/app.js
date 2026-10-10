@@ -8,6 +8,14 @@ const cors = require("cors");
 const Post = require("./models/Post");
 const User = require("./models/User");
 const Category = require("./models/Category"); 
+
+const Order = mongoose.models.Order || mongoose.model('Order', new mongoose.Schema({
+    buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    totalPrice: { type: Number },
+    status: { type: String }
+}));
+
 const Revenue = mongoose.models.Revenue || mongoose.model('Revenue', new mongoose.Schema({
     orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
     commissionAmount: { type: Number, required: true },

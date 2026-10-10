@@ -164,13 +164,6 @@ const Review = mongoose.models.Review || mongoose.model('Review', new mongoose.S
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' } 
 }, { timestamps: true }));
 
-const Notification = mongoose.models.Notification || mongoose.model('Notification', new mongoose.Schema({
-    title: String,
-    message: String,
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
-    isRead: { type: Boolean, default: false }
-}, { timestamps: true }));
-
 const UserNotification = mongoose.models.UserNotification || mongoose.model('UserNotification', new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     title: String,

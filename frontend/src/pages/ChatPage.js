@@ -95,6 +95,10 @@ export default function ChatPage() {
       try {
         const { data } = await axios.get(`${API_URL}/api/messages/${user._id}/${receiver._id}`);
         setMessages(data);
+        
+        // Gọi API để đánh dấu tin nhắn đã đọc trên backend
+        await axios.put(`${API_URL}/api/messages/mark-read`, { userId: user._id, otherId: receiver._id });
+        window.dispatchEvent(new Event('messageUpdated'));
       } catch (error) {
         console.error("Lỗi tải tin nhắn", error);
       }

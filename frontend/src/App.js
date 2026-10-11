@@ -22,6 +22,7 @@ import PublicProfile from './pages/PublicProfile';
 import FollowPage from './pages/FollowPage';
 import ProductListPage from './pages/ProductListPage';
 import FloatingAdminChat from './components/FloatingAdminChat';
+import FloatingAIChat from './components/FloatingAIChat';
 
 // Admin Components
 import AdminLayout from './pages/admin/AdminLayout';
@@ -99,6 +100,7 @@ function App() {
 
           
           <FloatingAdminChat />
+          <FloatingAIChat />
         </div>
         </Router>
       </ConfirmProvider>

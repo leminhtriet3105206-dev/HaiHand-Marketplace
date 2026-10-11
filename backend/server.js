@@ -164,12 +164,6 @@ const Review = mongoose.models.Review || mongoose.model('Review', new mongoose.S
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' } 
 }, { timestamps: true }));
 
-const Notification = mongoose.models.Notification || mongoose.model('Notification', new mongoose.Schema({
-    title: String,
-    message: String,
-    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
-    isRead: { type: Boolean, default: false }
-}, { timestamps: true }));
 
 const UserNotification = mongoose.models.UserNotification || mongoose.model('UserNotification', new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -1957,6 +1951,26 @@ app.post('/api/users/reset-password-otp', async (req, res) => {
         otpStore.delete(email);
         res.json({ message: 'Đổi mật khẩu thành công!' });
     } catch (err) { res.status(500).json({ message: 'Lỗi hệ thống!' }); }
+});
+
+// --- API CHATBOT AI (LM STUDIO & MONGODB) ---
+const { processChatbot } = require('./services/chatbotService');
+
+app.post('/api/chatbot/ask', async (req, res) => {
+    try {
+        const { message } = req.body;
+        if (!message) {
+            return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn (message)' });
+        }
+
+        const result = await processChatbot(message);
+        res.json(result);
+    } catch (error) {
+        console.error("Lỗi Chatbot:", error);
+        res.status(500).json({ 
+            error: 'Không thể xử lý yêu cầu với AI. Hãy kiểm tra xem bạn đã bật server LM Studio ở cổng 1235 chưa!' 
+        });
+    }
 });
 
 // Socket.io logic

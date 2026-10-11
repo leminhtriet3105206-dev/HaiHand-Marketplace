@@ -11,9 +11,6 @@ const FloatingAdminChat = () => {
     
     
     const [isHidden, setIsHidden] = useState(false); 
-    const [pos, setPos] = useState({ right: 30, bottom: 30 }); 
-    const [isDragging, setIsDragging] = useState(false);
-    
     const [isOpen, setIsOpen] = useState(false);
     const [adminUser, setAdminUser] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -21,7 +18,6 @@ const FloatingAdminChat = () => {
     
     const socket = useRef();
     const scrollRef = useRef();
-    const dragInfo = useRef({ isDragging: false, startX: 0, startY: 0, startRight: 0, startBottom: 0, isClick: true });
     
     const currentUser = React.useMemo(() => {
         const stored = localStorage.getItem('user');
@@ -31,61 +27,6 @@ const FloatingAdminChat = () => {
 
     const isEmbedded = window.self !== window.top;
     const isAdmin = currentUser?.role === 'Admin';
-
-    
-    
-    
-    const handleMouseDown = (e) => {
-        dragInfo.current = {
-            isDragging: true,
-            startX: e.clientX,
-            startY: e.clientY,
-            startRight: pos.right,
-            startBottom: pos.bottom,
-            isClick: true
-        };
-        setIsDragging(true);
-    };
-
-    useEffect(() => {
-        const handleMouseMove = (e) => {
-            if (!dragInfo.current.isDragging) return;
-            const deltaX = e.clientX - dragInfo.current.startX;
-            const deltaY = e.clientY - dragInfo.current.startY;
-
-            
-            if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-                dragInfo.current.isClick = false;
-            }
-
-            
-            let newRight = dragInfo.current.startRight - deltaX;
-            let newBottom = dragInfo.current.startBottom - deltaY;
-
-            
-            if (newRight < 10) newRight = 10;
-            if (newBottom < 10) newBottom = 10;
-            
-            if (newRight > window.innerWidth - 360) newRight = window.innerWidth - 360;
-            if (newBottom > window.innerHeight - 500) newBottom = window.innerHeight - 500;
-
-            setPos({ right: newRight, bottom: newBottom });
-        };
-
-        const handleMouseUp = () => {
-            dragInfo.current.isDragging = false;
-            setIsDragging(false);
-        };
-
-        if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
-        }
-        return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, [isDragging]);
 
     
     
@@ -126,8 +67,6 @@ const FloatingAdminChat = () => {
     if (isAdmin || isEmbedded || isHidden) return null;
 
     const handleToggle = (e) => {
-        if (!dragInfo.current.isClick) return; 
-
         if (!currentUser) {
             toast.warning('Yêu cầu đăng nhập', "Bác vui lòng đăng nhập để chat với Hỗ trợ viên nhé!");
             navigate('/login');
@@ -159,7 +98,7 @@ const FloatingAdminChat = () => {
 
     return (
         
-        <div style={{ position: 'fixed', bottom: `${pos.bottom}px`, right: `${pos.right}px`, zIndex: 9999 }}>
+        <div style={{ position: 'fixed', bottom: '30px', right: '30px', zIndex: 9999 }}>
             
             
             {isOpen && (
@@ -215,19 +154,18 @@ const FloatingAdminChat = () => {
 
                 
                 <div 
-                    onMouseDown={handleMouseDown}
                     onClick={handleToggle}
                     className="shadow-lg d-flex align-items-center justify-content-center w-100 h-100"
                     style={{
                         backgroundColor: '#ffc107', 
                         borderRadius: '50%',
-                        cursor: isDragging ? 'grabbing' : 'grab', 
-                        transition: isDragging ? 'none' : 'transform 0.2s', 
+                        cursor: 'pointer', 
+                        transition: 'transform 0.2s', 
                         border: '3px solid white'
                     }}
-                    onMouseOver={(e) => !isDragging && (e.currentTarget.style.transform = 'scale(1.1)')}
-                    onMouseOut={(e) => !isDragging && (e.currentTarget.style.transform = 'scale(1)')}
-                    title="Kéo thả để di chuyển, click để Chat"
+                    onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
+                    onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+                    title="Tư vấn chăm sóc khách hàng"
                 >
                     {isOpen ? <span style={{ fontSize: '24px', fontWeight: 'bold' }}>✕</span> : <span style={{ fontSize: '28px' }}>🎧</span>}
                     

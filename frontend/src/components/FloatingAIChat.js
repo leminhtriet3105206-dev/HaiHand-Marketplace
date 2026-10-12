@@ -36,8 +36,18 @@ const FloatingAIChat = () => {
         setLoading(true);
 
         try {
+            // Lấy 6 tin nhắn gần nhất để làm ngữ cảnh hội thoại
+            const historyToSend = messages
+                .filter(m => m.text)
+                .slice(-6)
+                .map(m => ({
+                    role: m.sender === 'user' ? 'user' : 'assistant',
+                    content: m.text
+                }));
+
             const res = await axios.post(`${API_URL}/api/chatbot/ask`, {
-                message: textToSend.trim()
+                message: textToSend.trim(),
+                history: historyToSend
             });
 
             const botReply = res.data.reply || 'Xin lỗi, mình chưa tìm thấy thông tin phù hợp.';

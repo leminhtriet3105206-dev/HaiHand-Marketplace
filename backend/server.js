@@ -53,13 +53,17 @@ cloudinary.config({
 });
 
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/')
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname))
+const fs = require('fs');
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'HaiHand_Images',
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
   }
 });
 
@@ -1484,9 +1488,15 @@ app.get('/api/users/favorites/:userId', async (req, res) => {
 app.post('/api/posts', upload.array('images', 5), async (req, res) => {
   try {
     const { title, price, category, location, description, author, quantity, details } = req.body; 
+
+    if (!title || !price || !category) {
+      return res.status(400).json({ message: 'Vui lòng điền đầy đủ tiêu đề, giá và danh mục sản phẩm!' });
+    }
     
     let imagePaths = [];
-    if (req.files && req.files.length > 0) imagePaths = req.files.map(file => file.path); 
+    if (req.files && req.files.length > 0) {
+      imagePaths = req.files.map(file => file.path || file.secure_url || file.filename); 
+    }
 
     let parsedDetails = {};
     let condition = 'Cũ';
@@ -1497,26 +1507,41 @@ app.post('/api/posts', upload.array('images', 5), async (req, res) => {
         } catch(e) {}
     }
 
+    let validAuthor = undefined;
+    if (author && mongoose.Types.ObjectId.isValid(author)) {
+      validAuthor = author;
+    }
+
     const newPost = new Post({
-      title, price: Number(price), category, location, description,
-      quantity: Number(quantity) || 1, images: imagePaths, author, status: 'PENDING',
+      title,
+      price: Number(price),
+      category,
+      location: location || '',
+      description: description || '',
+      quantity: Number(quantity) || 1,
+      images: imagePaths,
+      author: validAuthor,
+      status: 'PENDING',
       condition,
       details: parsedDetails
     });
 
     await newPost.save();
 
-    
-    await Notification.create({
-        title: '📦 Có tin đăng mới chờ duyệt!',
-        message: `Vừa có một tin đăng mới: "${title}". Bác vào mục Tin đăng kiểm tra và duyệt bài nhé!`,
-        link: '/posts'
-    });
+    try {
+      await Notification.create({
+          title: '📦 Có tin đăng mới chờ duyệt!',
+          message: `Vừa có một tin đăng mới: "${title}". Bác vào mục Tin đăng kiểm tra và duyệt bài nhé!`,
+          link: '/posts'
+      });
+    } catch (notifErr) {
+      console.warn("Lỗi tạo thông báo quản trị viên:", notifErr.message);
+    }
 
     res.status(201).json({ message: 'Đăng tin thành công!', post: newPost });
   } catch (error) { 
       console.error("Lỗi đăng tin:", error);
-      res.status(500).json({ message: 'Lỗi server khi đăng tin' }); 
+      res.status(500).json({ message: error.message || 'Lỗi server khi đăng tin' }); 
   }
 });
 
@@ -1958,12 +1983,12 @@ const { processChatbot } = require('./services/chatbotService');
 
 app.post('/api/chatbot/ask', async (req, res) => {
     try {
-        const { message } = req.body;
+        const { message, history } = req.body;
         if (!message) {
             return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn (message)' });
         }
 
-        const result = await processChatbot(message);
+        const result = await processChatbot(message, history);
         res.json(result);
     } catch (error) {
         console.error("Lỗi Chatbot:", error);

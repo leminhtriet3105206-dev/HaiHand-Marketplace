@@ -7,6 +7,7 @@ const userSchema = mongoose.Schema({
     phone: { type: String, required: true }, 
     address: { type: String, required: true }, 
     role: { type: String, default: 'user' }, 
+    avatar: { type: String, default: '' },
 }, {
     timestamps: true
 });

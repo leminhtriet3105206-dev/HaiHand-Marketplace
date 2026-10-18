@@ -1,8 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useToast } from './Toast';
 
 const PostAdFAB = () => {
   const navigate = useNavigate();
+  const toast = useToast();
 
   
   const handlePostClick = () => {
@@ -10,7 +12,7 @@ const PostAdFAB = () => {
     if (user) {
       navigate('/create-post');
     } else {
-      alert("Vui lòng đăng nhập để đăng tin!");
+      toast.warning('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để đăng tin bán hàng!');
       navigate('/login');
     }
   };

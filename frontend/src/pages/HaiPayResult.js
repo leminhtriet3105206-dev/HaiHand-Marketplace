@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import { AppHeader } from '../components/AppHeader';
+import { AppFooter } from '../components/AppFooter';
 
 const HaiPayResult = () => {
     const [searchParams] = useSearchParams();
@@ -17,7 +17,7 @@ const HaiPayResult = () => {
 
             if (responseCode === '00') {
                 try {
-                    await axios.post('https://haihand-marketplace.onrender.com/api/haipay/verify', {
+                    await axios.post('http://localhost:4000/api/haipay/verify', {
                         txnRef, responseCode, amount
                     });
                     setStatus('🎉 Nạp tiền HàiPay thành công! Số dư đã được cập nhật.');
@@ -41,7 +41,7 @@ const HaiPayResult = () => {
 
     return (
         <div className="d-flex flex-column min-vh-100 bg-light">
-            <Header />
+            <AppHeader />
             <div className="container d-flex flex-column align-items-center justify-content-center my-auto py-5">
                 <div className="card p-5 shadow-lg border-0 text-center rounded-4" style={{maxWidth: '600px'}}>
                     <div className="display-4 mb-4">{status.includes('thành công') ? '✅' : '❌'}</div>
@@ -51,7 +51,7 @@ const HaiPayResult = () => {
                     </button>
                 </div>
             </div>
-            <Footer />
+            <AppFooter />
         </div>
     );
 };

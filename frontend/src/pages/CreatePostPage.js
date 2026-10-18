@@ -3,18 +3,38 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
+import { useToast } from '../components/Toast';
+
+
+const categoryDataMap = {
+    'Điện tử - Công nghệ': {
+        subCategories: ['Điện thoại thông minh', 'Máy tính bảng', 'Laptop', 'Phụ kiện', 'Khác'],
+        brands: ['Apple', 'Samsung', 'Xiaomi', 'Sony', 'Asus', 'Dell', 'HP', 'Lenovo', 'Khác']
+    },
+    'Xe cộ': {
+        subCategories: ['Xe máy', 'Ô tô', 'Xe đạp', 'Khác'],
+        brands: ['Honda', 'Yamaha', 'Suzuki', 'Toyota', 'VinFast', 'Khác']
+    },
+    'Thời trang': {
+        subCategories: ['Quần áo nam', 'Quần áo nữ', 'Giày dép', 'Phụ kiện', 'Khác'],
+        brands: ['Adidas', 'Nike', 'Zara', 'H&M', 'Khác']
+    },
+    'Nội thất': {
+        subCategories: ['Bàn ghế', 'Giường', 'Tủ', 'Khác'],
+        brands: ['IKEA', 'Hòa Phát', 'Khác']
+    }
+};
+
+const getCategoryData = (cat1) => categoryDataMap[cat1] || { subCategories: ['Khác'], brands: ['Khác'] };
 
 export default function CreatePostPage() {
+  const toast = useToast();
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
 
   const [files, setFiles] = useState([]);
-  const [previewImages, setPreviewImages] = useState([
-      // Mock initial images to match screenshot exactly
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm'
-  ]);
+  const [previewImages, setPreviewImages] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [categories, setCategories] = useState([]);
   const [provinces, setProvinces] = useState([]);
@@ -22,41 +42,36 @@ export default function CreatePostPage() {
   const [wards, setWards] = useState([]);
 
   const [formData, setFormData] = useState({
-    title: 'iPhone 14 Pro Max 256GB Tím Deep Purple VN/A Pin 98%',
-    price: '18500000',
-    category1: 'Điện tử - Công nghệ',
-    category2: 'Điện thoại thông minh',
-    brand: 'Apple',
-    condition: 'Như mới',
-    description: `- Xuất xứ: Máy chính hãng VN/A mua tại Thế Giới Di Động còn đủ hóa đơn điện tử.
-- Ngoại hình: Đang ốp và dán cường lực từ lúc đập hộp nên viền không một vết cấn, kính trước sau đẹp keng 99%.
-- Tình trạng pin: 98%, dung lượng 256GB tha hồ quay chụp.
-- Phụ kiện đi kèm: Hộp trùng IMEI, cáp Type-C to Lightning zin theo máy, tặng kèm 2 ốp lưng UAG.
-- Cam kết: Máy nguyên zin 100% chưa qua bảo hành sửa chữa, bao thợ test thoải mái.
-- Lý do bán: Lên đời 16 Pro Max nên cần nhượng lại cho ai có nhu cầu.`,
-    city: 'Hà Nội',
-    district: 'Quận Cầu Giấy',
-    ward: 'Phường Dịch Vọng Hậu',
-    phone: '098****234',
-    tradeDirect: true,
-    tradeCod: true,
-    tradeHaiPay: true,
-    commit: true
+    title: '',
+    price: '',
+    category1: '',
+    category2: '',
+    brand: '',
+    condition: '',
+    description: '',
+    city: '',
+    district: '',
+    ward: '',
+    phone: '',
+    tradeDirect: false,
+    tradeCod: false,
+    tradeHaiPay: false,
+    commit: false
   });
 
-  const user = JSON.parse(localStorage.getItem('user')) || { _id: 'mock', name: 'Minh Tuấn', avatar: 'https://i.pravatar.cc/150?u=minhtuan' };
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const user = JSON.parse(localStorage.getItem('user'));
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
     // Fetch provinces
     axios.get('https://provinces.open-api.vn/api/?depth=3')
       .then(res => setProvinces(res.data))
       .catch(err => {
-          console.warn("API Provinces failed, using mock");
-          setProvinces([
-              { name: 'Hà Nội', code: 1, districts: [{ name: 'Quận Cầu Giấy', code: 11, wards: [{name: 'Phường Dịch Vọng Hậu', code: 111}] }] },
-              { name: 'TP. Hồ Chí Minh', code: 2, districts: [] }
-          ]);
+          console.warn("Lỗi tải danh sách tỉnh thành", err);
       });
 
     // Fetch categories
@@ -102,30 +117,39 @@ export default function CreatePostPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.commit) return alert("Vui lòng xác nhận cam kết!");
+    if (files.length === 0) return toast.warning('Chú ý', "Vui lòng tải lên ít nhất 1 hình ảnh sản phẩm!");
+    if (!formData.title.trim()) return toast.warning('Chú ý', "Vui lòng nhập tiêu đề tin đăng!");
+    if (!formData.category1) return toast.warning('Chú ý', "Vui lòng chọn danh mục cấp 1!");
+    if (!formData.price || Number(formData.price) <= 0) return toast.warning('Chú ý', "Vui lòng nhập giá bán hợp lệ!");
+    if (!formData.description.trim()) return toast.warning('Chú ý', "Vui lòng nhập mô tả chi tiết sản phẩm!");
+    if (!formData.city || !formData.district || !formData.ward) return toast.warning('Chú ý', "Vui lòng chọn đầy đủ Tỉnh/Thành phố, Quận/Huyện, Phường/Xã!");
+    if (!formData.commit) return toast.warning('Chú ý', "Vui lòng xác nhận cam kết!");
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
 
     const data = new FormData();
-    data.append('author', user._id); 
-    data.append('title', formData.title); 
+    const authorId = user?._id || user?.id || '';
+    if (authorId) data.append('author', authorId); 
+    data.append('title', formData.title.trim()); 
     data.append('price', formData.price);
     data.append('category', formData.category1);
     data.append('description', formData.description);
     data.append('quantity', 1);
     data.append('location', `${formData.ward}, ${formData.district}, ${formData.city}`);
-    data.append('details', JSON.stringify({ brand: formData.brand, condition: formData.condition }));
+    data.append('details', JSON.stringify({ brand: formData.brand, condition: formData.condition || 'Cũ' }));
     
     files.forEach(file => data.append('images', file));
 
     try {
-        if(user._id !== 'mock') {
-            await axios.post(`${API_URL}/api/posts`, data);
-        }
-        alert("Đăng tin thành công!");
-        navigate('/');
+        await axios.post(`${API_URL}/api/posts`, data);
+        toast.success('Thành công', "Đăng tin thành công và đang chờ duyệt!");
+        navigate('/profile');
     } catch (error) { 
-        console.warn("Backend error, assuming success for UI mock");
-        alert("Đăng tin thành công (Chế độ giả lập)!");
-        navigate('/');
+        console.error("Lỗi đăng bài:", error);
+        const errMsg = error.response?.data?.message || "Lỗi đăng tin! Vui lòng thử lại sau.";
+        toast.error('Lỗi', errMsg);
+        setIsSubmitting(false);
     }
   };
 
@@ -235,23 +259,34 @@ export default function CreatePostPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
                         <div>
                             <label className="block text-sm font-bold text-[#1C1917] mb-1.5">Danh mục cấp 1 <span className="text-red-500">*</span></label>
-                            <select className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.category1} onChange={e => setFormData({...formData, category1: e.target.value})}>
+                            <select required className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.category1} onChange={e => {
+                                const cat1 = e.target.value;
+                                const data = getCategoryData(cat1);
+                                setFormData({
+                                    ...formData, 
+                                    category1: cat1,
+                                    category2: data.subCategories[0],
+                                    brand: data.brands[0]
+                                });
+                            }}>
+                                <option value="">-- Chọn danh mục --</option>
                                 {categories.map((c, i) => <option key={i} value={c.name || c}>{c.name || c}</option>)}
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-[#1C1917] mb-1.5">Danh mục cấp 2 <span className="text-red-500">*</span></label>
                             <select className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.category2} onChange={e => setFormData({...formData, category2: e.target.value})}>
-                                <option>Điện thoại thông minh</option>
-                                <option>Máy tính bảng</option>
+                                {getCategoryData(formData.category1).subCategories.map((sub, idx) => (
+                                    <option key={idx} value={sub}>{sub}</option>
+                                ))}
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-bold text-[#1C1917] mb-1.5">Hãng sản xuất <span className="text-red-500">*</span></label>
                             <select className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})}>
-                                <option>Apple</option>
-                                <option>Samsung</option>
-                                <option>Xiaomi</option>
+                                {getCategoryData(formData.category1).brands.map((brand, idx) => (
+                                    <option key={idx} value={brand}>{brand}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
@@ -309,18 +344,17 @@ export default function CreatePostPage() {
                         <div>
                             <label className="block text-sm font-bold text-[#1C1917] mb-1.5">Giá muốn bán (VNĐ) <span className="text-red-500">*</span></label>
                             <div className="relative">
-                                <input type="text" className="w-full h-14 pl-4 pr-10 text-xl font-bold text-red-600 rounded-xl border border-stone-200 focus:outline-none focus:border-[#FACC15] bg-stone-50 focus:bg-white transition-colors" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
+                                <input type="number" className="w-full h-14 pl-4 pr-10 text-xl font-bold text-red-600 rounded-xl border border-stone-200 focus:outline-none focus:border-[#FACC15] bg-stone-50 focus:bg-white transition-colors" value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} required />
                                 <span className="absolute right-4 top-4 font-bold text-stone-400">đ</span>
                             </div>
-                            <p className="text-[11px] text-stone-400 mt-1.5">Mười tám triệu năm trăm nghìn đồng</p>
+                            {formData.price && (
+                                <p className="text-[11px] text-stone-400 mt-1.5 font-bold">
+                                    {new Intl.NumberFormat('vi-VN').format(formData.price)} đ
+                                </p>
+                            )}
                         </div>
-                        <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex flex-col justify-center">
-                            <div className="flex items-center gap-1.5 text-xs text-stone-500 font-bold mb-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
-                                Giá tham khảo thị trường:
-                            </div>
-                            <div className="text-lg font-black text-[#1C1917]">18.0 - 19.5 Tr <span className="text-[10px] text-emerald-600 font-bold bg-emerald-100 px-1.5 py-0.5 rounded ml-1 align-middle">Giá bạn đặt rất tốt!</span></div>
-                            <p className="text-[10px] text-stone-400 mt-1">Dựa trên 45 tin bán iPhone 14 Pro Max tương đương loại và nơi</p>
+                        <div className="bg-stone-50 p-4 rounded-xl border border-stone-100 flex flex-col justify-center text-center">
+                            <span className="text-xs text-stone-400 font-bold">Tính năng gợi ý giá thị trường đang được phát triển.</span>
                         </div>
                     </div>
 
@@ -334,7 +368,7 @@ export default function CreatePostPage() {
                                         Gặp trực tiếp xem hàng & Test máy tận nơi
                                         <span className="bg-[#FACC15] text-[#1C1917] text-[9px] px-1.5 py-0.5 rounded font-black">Lựa chọn số 1 an toàn</span>
                                     </div>
-                                    <p className="text-[11px] text-stone-500 mt-0.5">Khuyến nghị giao dịch tại quán cafe hoặc địa chỉ nhà riêng tại Cầu Giấy, Hà Nội để hai bên cùng an tâm kiểm tra.</p>
+                                    <p className="text-[11px] text-stone-500 mt-0.5">Khuyến nghị giao dịch tại quán cafe hoặc địa chỉ công cộng để hai bên cùng an tâm kiểm tra.</p>
                                 </div>
                             </label>
                             
@@ -443,9 +477,13 @@ export default function CreatePostPage() {
                     <div className="flex items-center gap-3">
                         <button type="button" className="px-6 py-3 rounded-xl border border-stone-200 bg-white font-bold text-stone-700 hover:bg-stone-50 transition-colors">Lưu nháp</button>
                         <button type="button" className="px-6 py-3 rounded-xl border border-stone-200 bg-white font-bold text-stone-700 hover:bg-stone-50 transition-colors flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> Xem trước tin</button>
-                        <button type="submit" className="ml-auto px-8 py-3 rounded-xl bg-[#FACC15] font-black text-[#1C1917] hover:bg-[#EAB308] shadow-sm transition-colors flex items-center gap-2 text-lg">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                            Đăng tin ngay
+                        <button type="submit" disabled={isSubmitting} className={`ml-auto px-8 py-3 rounded-xl font-black text-[#1C1917] shadow-sm transition-colors flex items-center gap-2 text-lg ${isSubmitting ? 'bg-stone-300 cursor-not-allowed' : 'bg-[#FACC15] hover:bg-[#EAB308]'}`}>
+                            {isSubmitting ? (
+                                <svg className="animate-spin h-5 w-5 text-[#1C1917]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+                            )}
+                            {isSubmitting ? 'Đang xử lý...' : 'Đăng tin ngay'}
                         </button>
                     </div>
                 </div>
@@ -468,7 +506,7 @@ export default function CreatePostPage() {
                     <div className="p-4">
                         <div className="bg-stone-50 rounded-xl overflow-hidden border border-stone-200">
                             <div className="relative aspect-[4/3] bg-white border-b border-stone-200">
-                                <img src={previewImages[0] || 'https://via.placeholder.com/400'} className="w-full h-full object-cover" alt="preview" />
+                                <img src={previewImages[0] || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-full h-full object-cover" alt="preview" />
                                 <div className="absolute top-2 left-2 bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">Như mới</div>
                                 <div className="absolute top-2 right-2 w-7 h-7 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-stone-500">
                                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
@@ -483,7 +521,7 @@ export default function CreatePostPage() {
                                     {formData.price ? new Intl.NumberFormat('vi-VN').format(formData.price) : '0'} đ
                                 </div>
                                 <div className="flex items-center gap-2 border-t border-stone-100 pt-3">
-                                    <img src={user.avatar} className="w-6 h-6 rounded-full" alt="avt" />
+                                    <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/\\/g, '/')}`) : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-6 h-6 rounded-full" alt="avt" />
                                     <span className="text-xs font-bold text-[#1C1917] flex-1 truncate">{user.name}</span>
                                     <span className="text-[10px] text-stone-400">Vừa xong</span>
                                 </div>

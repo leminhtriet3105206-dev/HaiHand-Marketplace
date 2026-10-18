@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { useToast } from '../components/Toast';
+
 
 const LoginPage = () => {
+  const toast = useToast();
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -29,7 +32,7 @@ const LoginPage = () => {
       localStorage.setItem('user', JSON.stringify(data));
       navigate('/');
     } catch (error) {
-      alert("❌ " + (error.response?.data?.message || "Đăng nhập thất bại!"));
+      toast.error('Lỗi', "❌ " + (error.response?.data?.message || "Đăng nhập thất bại!"));
     }
   };
 
@@ -38,7 +41,7 @@ const LoginPage = () => {
   
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!forgotEmail) return alert('Vui lòng nhập Email!');
+    if (!forgotEmail) return toast.warning('Chú ý', 'Vui lòng nhập Email!');
     setIsLoading(true);
     
     try {
@@ -63,12 +66,12 @@ const LoginPage = () => {
 
         await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailParams);
         
-        alert("📩 Hệ thống HaiHand đã gửi mã xác nhận. Bác check hòm thư nhé!");
+        toast.info('Thông báo', "📩 Hệ thống HaiHand đã gửi mã xác nhận. Bác check hòm thư nhé!");
         setIsOtpSent(true); 
     } catch (error) {
         console.error("LỖI GỬI OTP:", error);
         const detail = error.response?.data || error.message;
-        alert("❌ Lỗi hệ thống: " + (typeof detail === 'string' ? detail : "Vui lòng thử lại sau!"));
+        toast.error('Lỗi', "❌ Lỗi hệ thống: " + (typeof detail === 'string' ? detail : "Vui lòng thử lại sau!"));
     }
     setIsLoading(false);
   };
@@ -78,21 +81,21 @@ const LoginPage = () => {
   
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    if (otpForm.newPassword.length < 6) return alert('❌ Mật khẩu mới phải có ít nhất 6 ký tự!');
+    if (otpForm.newPassword.length < 6) return toast.error('Lỗi', '❌ Mật khẩu mới phải có ít nhất 6 ký tự!');
     try {
       const { data } = await axios.post(`${API_URL}/api/users/reset-password-otp`, {
         email: forgotEmail,
         otp: otpForm.otp,
         newPassword: otpForm.newPassword
       });
-      alert("✅ " + data.message);
+      toast.success('Thành công', "✅ " + data.message);
       
       setIsForgotMode(false);
       setIsOtpSent(false);
       setForgotEmail('');
       setOtpForm({ otp: '', newPassword: '' });
     } catch (error) { 
-        alert("❌ " + (error.response?.data?.message || "Mã xác thực không chính xác!")); 
+        toast.error('Lỗi', "❌ " + (error.response?.data?.message || "Mã xác thực không chính xác!")); 
     }
   };
 

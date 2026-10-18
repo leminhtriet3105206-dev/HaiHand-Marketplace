@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
+import { AppHeader } from '../components/AppHeader';
+import { AppFooter } from '../components/AppFooter';
 
 const FavoritesPage = () => {
   const [favorites, setFavorites] = useState([]);
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
@@ -37,7 +37,7 @@ const FavoritesPage = () => {
     if (post.image) {
         return post.image.startsWith('http') ? post.image : `${API_URL}/uploads/${post.image}`;
     }
-    return 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
+    return 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
   };
 
   if (!user) return <div className="p-5 text-center fw-bold fs-4">Vui lòng đăng nhập để xem mục Yêu thích!</div>;
@@ -53,7 +53,7 @@ const FavoritesPage = () => {
         `}
       </style>
 
-      <Header />
+      <AppHeader />
 
       <div className="container py-5 flex-grow-1">
         <button onClick={() => navigate(-1)} className="btn btn-warning fw-bold mb-4 rounded-pill px-4 shadow-sm">
@@ -96,7 +96,7 @@ const FavoritesPage = () => {
                         className="card-img-top" 
                         alt={post.title} 
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                        onError={(e) => { e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg' }} 
+                        onError={(e) => { e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png' }} 
                     />
                   </div>
                   <div className="card-body p-3 d-flex flex-column" onClick={() => navigate(`/post/${post._id}`)} style={{ cursor: 'pointer' }}>
@@ -114,7 +114,7 @@ const FavoritesPage = () => {
         )}
       </div>
 
-      <Footer /> 
+      <AppFooter /> 
     </div>
   );
 };

@@ -56,11 +56,11 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-50">
-                                <% if (recentRevenues && recentRevenues.length === 0) { %>
+                                <% if (typeof recentRevenues === 'undefined' || recentRevenues.length === 0) { %>
                                     <tr>
                                         <td colspan="4" class="px-6 py-10 text-center text-slate-400 font-medium italic">Chưa có giao dịch chiết khấu nào.</td>
                                     </tr>
-                                <% } else if (recentRevenues) { %>
+                                <% } else { %>
                                     <% recentRevenues.forEach(rev => { %>
                                         <tr class="hover:bg-slate-50/80 transition">
                                             <td class="px-6 py-4 text-xs text-slate-500">

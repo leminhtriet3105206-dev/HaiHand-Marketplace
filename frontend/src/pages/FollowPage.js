@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import Header from '../components/Header';
+import { AppHeader } from '../components/AppHeader';
+import { AppFooter } from '../components/AppFooter';
 
 const FollowPage = () => {
     const navigate = useNavigate();
@@ -11,7 +12,7 @@ const FollowPage = () => {
     
     const [counts, setCounts] = useState({ followers: 0, following: 0 });
     
-    const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
     const user = JSON.parse(localStorage.getItem('user'));
 
     
@@ -41,7 +42,7 @@ const FollowPage = () => {
 
     return (
         <div className="bg-light min-vh-100">
-            <Header />
+            <AppHeader />
             
             <div className="bg-white border-bottom shadow-sm">
                 <div className="container d-flex gap-5">
@@ -76,7 +77,7 @@ const FollowPage = () => {
                                 <div key={item._id} className="col-md-6">
                                     <div className="bg-white p-3 rounded-4 shadow-sm d-flex align-items-center justify-content-between border hover-scale transition-all">
                                         <div className="d-flex align-items-center gap-3" onClick={() => navigate(`/public-profile/${person._id}`)} style={{cursor:'pointer'}}>
-                                            <img src={person.avatar || 'https://via.placeholder.com/55'} className="rounded-circle border" style={{width:'55px', height:'55px', objectFit:'cover'}} alt="avt"/>
+                                            <img src={person.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="rounded-circle border" style={{width:'55px', height:'55px', objectFit:'cover'}} alt="avt"/>
                                             <div>
                                                 <h6 className="fw-bold mb-0 text-dark">{person.name}</h6>
                                                 <small className="text-muted">Xem trang cá nhân</small>
@@ -92,6 +93,7 @@ const FollowPage = () => {
                     )}
                 </div>
             </div>
+            <AppFooter />
         </div>
     );
 };

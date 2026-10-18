@@ -10,7 +10,7 @@ export const ProductCard = ({ product, isFavorited, isAuthor, onFavorite }) => {
           src={product.imageUrl} 
           alt={product.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-t-lg" 
-          onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'}}
+          onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'}}
         />
         <ConditionBadge 
           condition={product.condition} 

@@ -3,8 +3,11 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
+import { useToast } from '../components/Toast';
+
 
 export default function ProductDetailPage() {
+  const toast = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
   const [post, setPost] = useState(null);
@@ -16,7 +19,7 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState('mota'); // mota, checklist, thanhtoan
 
   const currentUser = JSON.parse(localStorage.getItem('user'));
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
     const fetchPostAndReviews = async () => {
@@ -32,59 +35,20 @@ export default function ProductDetailPage() {
             setAvgRating(profileRes.data.avgRating || 0);
         }
       } catch (error) {
-        console.warn("API lỗi, đang dùng dữ liệu ảo để hiển thị UI:", error);
-        // Fallback to mock data for UI preview
-        const mockPost = {
-          _id: "HH-89240",
-          title: "iPhone 14 Pro Max 256GB Tím Deep Purple VN/A - Zin all 100%, Pin 91% chưa sửa chữa, kèm fullbox cáp zin",
-          price: 19800000,
-          description: "Mình người dùng cá nhân, mua đập hộp tại FPT Shop Cầu Giấy từ đợt mở bán đầu tiên. Nay vừa lên đời iPhone 16 Pro Max nên cần pass lại cho bạn nào có nhu cầu dùng thực sự.\n\nMáy dùng ốp lưng UAG và dán cường lực KingKong từ ngày đầu nên hình thức còn cực kỳ đẹp, 98% chỉ xước dăm nhẹ viền bóng theo thời gian khó tránh.\n\nCam kết chất lượng từ chủ máy:\n- Màn hình: Zin 100%, không trầy xước, không lưu ảnh hay ám ố.\n- Tình trạng pin: 91% dung lượng đỉnh nguyên bản.\n- Phụ kiện & Quà tặng kèm: Fullbox trùng IMEI hộp, sách hướng dẫn, que chọc sim, cáp sạc C-Lightning zin theo máy.",
-          condition: "Như mới",
-          quantity: 1,
-          category: "Điện thoại",
-          location: "Phường Dịch Vọng Hậu, Quận Cầu Giấy, Hà Nội",
-          images: [
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuD2BPluciFYZYJw23LDrVIaS8vuySYm1LHrZjVFeryRZecEqst1lLouo7ou8_xrZDgR7CH1FWAbcWJQlvdOuZ65hu1fIFVT4z0EwpCYiyGYA3UW5953mLuQncp6pk6tqTQRxp6AnmEEWhWliEtvv0kAqhywYhEmRkrx8IhDwCxD3KC6_Bdm1NvzK3XrrUepsav8P9Mi9iYLoEQ-dYacQ_4M9oYKsz1V-A5XDaI2BKsEBHBx4FcJAohm",
-            "https://lh3.googleusercontent.com/aida-public/AB6AXuAQrPfb_3cUe0g9aHE2CiRM1y_KFEl-f25iOBAUzt9DZlG40wLqGonj6H_UGBEhH64FpFqm3vNVzNiOZVvrE-1qP8G4SyGnsAPuLn8BURNmpUJwuTm7gFVRXj4MCPHaB80m6snb274BnRSwt_peh5yAnP4QItle_A6GRp-v0BKgGjO1pI1CnjAhM7xQJyNGkoNYS-nqy3Nne59ZHls2uSaTfWrnWHAL4g7Qpjw28q2qLKQPKMUITwU0"
-          ],
-          createdAt: new Date().toISOString(),
-          author: {
-            _id: "user123",
-            name: "Hoàng Nam",
-            avatar: "https://lh3.googleusercontent.com/aida-public/AB6AXuA-zPGuXVJem8xfroANf5_FLYZr20mL9sBx_w-IJsUgjPb_SjT8R3gsryBj6lQNHlpsRIMMumvRQQ4JYh14ekpQq87raEcLM5M3DIYA1zykxGLscHnqnwf6RtyRG9E-51zYB-ZlqLjUnk5G4PDg34yxHfMrQ18wuS0ZeIHmiNasgJF0jzAPlFhB7SkgVnw968RJwQro7KFvZl36CB2tPbpUhwGQUS8V2FIDBOTQJU8zOhHaVO-6nt7c",
-            phone: "0987654321"
-          }
-        };
-        setPost(mockPost);
-        setMainImage(mockPost.images[0]);
-        setAvgRating(4.9);
-        setReviews([
-          {
-            buyer: { name: "Trần Quốc Toản", avatar: "" },
-            rating: 5,
-            comment: "Chủ thớt rất nhiệt tình, qua nhà xem máy được mời cafe, máy đúng y chang miêu tả không sai một li. Tặng kèm bao da xịn nữa. 5 sao uy tín!",
-            createdAt: new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString()
-          },
-          {
-            buyer: { name: "Lê Hải Yến", avatar: "" },
-            rating: 5,
-            comment: "Mua qua tính năng HaiHand Shield giao hàng nhanh, kiểm tra pin đồng hồ 100% chuẩn chỉ. Bạn Nam rep tin nhắn rất nhanh và hướng dẫn kết nối chu đáo.",
-            createdAt: new Date(Date.now() - 21 * 24 * 3600 * 1000).toISOString()
-          }
-        ]);
+        console.error("Lỗi tải thông tin sản phẩm:", error);
       }
     };
     fetchPostAndReviews();
   }, [id, navigate, API_URL]);
 
   const getImageUrl = (imgStr) => {
-    if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
+    if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
     return imgStr.startsWith('http') ? imgStr : `${API_URL}/${imgStr.replace(/\\/g, '/')}`;
   };
 
   const handleAddToCart = async (isBuyNow = false) => {
     if (!currentUser) {
-        alert("Bạn phải đăng nhập thì mới mua được nha!");
+        toast.warning('Chú ý', "Bạn phải đăng nhập thì mới mua được nha!");
         navigate('/login');
         return;
     }
@@ -96,15 +60,15 @@ export default function ProductDetailPage() {
         });
         window.dispatchEvent(new Event('cartUpdated')); 
         if (isBuyNow) navigate('/cart');
-        else alert("🛒 Đã thêm sản phẩm vào giỏ hàng thành công!");
+        else toast.success('Thành công', "🛒 Đã thêm sản phẩm vào giỏ hàng thành công!");
     } catch (error) {
-        alert("Lỗi kết nối tới Server!");
+        toast.error('Lỗi', "Lỗi kết nối tới Server!");
     }
   };
 
   const handleChat = () => {
     if (!currentUser) {
-        alert("Vui lòng đăng nhập để nhắn tin!");
+        toast.warning('Chú ý', "Vui lòng đăng nhập để nhắn tin!");
         navigate('/login');
         return;
     }
@@ -160,10 +124,12 @@ export default function ProductDetailPage() {
             {/* Image Gallery */}
             <div className="bg-white p-2 rounded-xl border border-stone-200 shadow-sm">
               <div className="relative w-full aspect-square md:aspect-[4/3] rounded-lg overflow-hidden bg-stone-100 flex items-center justify-center">
-                <img src={getImageUrl(mainImage)} alt={post.title} className="w-full h-full object-cover" onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'}} />
-                <span className="absolute top-4 left-4 bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-200 shadow-sm">
-                  {post.condition || 'Đã qua sử dụng'}
-                </span>
+                <img src={getImageUrl(mainImage)} alt={post.title} className="w-full h-full object-cover" onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'}} />
+                {post.details?.condition && (
+                  <span className="absolute top-4 left-4 bg-emerald-100 text-emerald-700 text-xs font-bold px-2.5 py-1 rounded-full border border-emerald-200 shadow-sm">
+                    {post.details.condition}
+                  </span>
+                )}
                 <button className="absolute bottom-4 right-4 bg-white/80 p-2 rounded-full shadow-sm hover:bg-white text-stone-600">
                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" /></svg>
                 </button>
@@ -177,7 +143,7 @@ export default function ProductDetailPage() {
                       onClick={() => setMainImage(img)}
                       className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${mainImage === img ? 'border-[#FACC15]' : 'border-transparent'}`}
                     >
-                      <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="" onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'}} />
+                      <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="" onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'}} />
                     </button>
                   ))}
                 </div>
@@ -242,7 +208,7 @@ export default function ProductDetailPage() {
                     <div key={index} className="bg-stone-50 rounded-lg p-4 border border-stone-100">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <img src={rev.buyer?.avatar || 'https://via.placeholder.com/40'} className="w-10 h-10 rounded-full object-cover" alt="avt" />
+                          <img src={rev.buyer?.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-10 h-10 rounded-full object-cover" alt="avt" />
                           <div>
                             <p className="font-bold text-sm">{rev.buyer?.name || 'Khách hàng'}</p>
                             <p className="text-xs text-stone-500">{new Date(rev.createdAt).toLocaleString('vi-VN')}</p>
@@ -287,19 +253,19 @@ export default function ProductDetailPage() {
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
                   <p className="text-xs text-stone-500 mb-1">Tình trạng</p>
-                  <p className="font-bold text-emerald-700">{post.condition || 'Đã qua sử dụng'}</p>
+                  <p className="font-bold text-emerald-700">{post.details?.condition || 'Chưa cập nhật'}</p>
                 </div>
                 <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
                   <p className="text-xs text-stone-500 mb-1">Kho hàng</p>
                   <p className="font-bold text-[#1C1917]">{post.quantity ?? 1} sản phẩm</p>
                 </div>
                 <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
-                  <p className="text-xs text-stone-500 mb-1">Xuất xứ</p>
-                  <p className="font-bold text-[#1C1917]">Chính hãng</p>
+                  <p className="text-xs text-stone-500 mb-1">Hãng</p>
+                  <p className="font-bold text-[#1C1917]">{post.details?.brand || 'Chưa cập nhật'}</p>
                 </div>
                 <div className="bg-stone-50 p-3 rounded-lg border border-stone-100">
-                  <p className="text-xs text-stone-500 mb-1">Bảo hành</p>
-                  <p className="font-bold text-[#1C1917]">Không có</p>
+                  <p className="text-xs text-stone-500 mb-1">Danh mục</p>
+                  <p className="font-bold text-[#1C1917] line-clamp-1">{post.category || 'Chưa cập nhật'}</p>
                 </div>
               </div>
 
@@ -315,7 +281,7 @@ export default function ProductDetailPage() {
               <div className="border border-stone-200 rounded-xl p-4 mb-6 relative">
                 <div className="flex items-center gap-3 pb-4 border-b border-stone-100">
                   <Link to={`/public-profile/${post.author?._id}`}>
-                    <img src={post.author?.avatar || 'https://via.placeholder.com/60'} className="w-14 h-14 rounded-full object-cover border-2 border-stone-100" alt="Seller" />
+                    <img src={post.author?.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-14 h-14 rounded-full object-cover border-2 border-stone-100" alt="Seller" />
                   </Link>
                   <div>
                     <Link to={`/public-profile/${post.author?._id}`} className="hover:underline">

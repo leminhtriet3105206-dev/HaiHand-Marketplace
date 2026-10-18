@@ -8,6 +8,6 @@
     "multer": "^2.0.2"
   },
   "scripts": {
-    "start": "node app.js"
+    "start": "node --env-file=../backend/.env app.js"
   }
 }

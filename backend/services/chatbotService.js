@@ -15,9 +15,10 @@ const Post = mongoose.models.Post || mongoose.model('Post', new mongoose.Schema(
 
 // Kết nối tới LM Studio tại port 1235
 const lmStudio = new OpenAI({
-    baseURL: 'http://localhost:1235/v1',
+    baseURL: process.env.LM_STUDIO_URL || 'http://localhost:1235/v1',
     apiKey: 'lm-studio'
 });
+const MODEL_NAME = process.env.AI_MODEL || "qwen2.5-7b-instruct";
 
 // BỘ NGUYÊN TẮC HỆ THỐNG CHUẨN DOANH NGHIỆP CHO CHATBOT HAIHAND
 const SYSTEM_GUARDRAILS = `
@@ -114,7 +115,7 @@ Chỉ trả về duy nhất chuỗi JSON.
 `;
 
         const filterResponse = await lmStudio.chat.completions.create({
-            model: "qwen2.5-vl-3b-instruct",
+            model: MODEL_NAME,
             messages: [{ role: "user", content: extractPrompt }],
             temperature: 0.0
         });
@@ -229,7 +230,7 @@ ${contextData}
 
         // Gọi LLM với System Prompt chứa toàn bộ 9 nguyên tắc chuẩn doanh nghiệp
         const finalResponse = await lmStudio.chat.completions.create({
-            model: "qwen2.5-vl-3b-instruct",
+            model: MODEL_NAME,
             messages: [
                 { role: "system", content: SYSTEM_GUARDRAILS },
                 ...formattedHistory,

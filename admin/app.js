@@ -15,7 +15,7 @@ const Revenue = mongoose.models.Revenue || mongoose.model('Revenue', new mongoos
 }));
 
 mongoose
-  .connect("mongodb://admin:060531%40triet@ac-jjrhvgj-shard-00-00.g7gg6wx.mongodb.net:27017,ac-jjrhvgj-shard-00-01.g7gg6wx.mongodb.net:27017,ac-jjrhvgj-shard-00-02.g7gg6wx.mongodb.net:27017/HaiHand?ssl=true&replicaSet=atlas-u9u35j-shard-0&authSource=admin&retryWrites=true&w=majority")
+  .connect(process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI || 'mongodb://127.0.0.1:27017/HaiHand')
   .then(() => console.log("✅ Đã kết nối MongoDB (HaiHand)!"))
   .catch((err) => console.error(err));
 

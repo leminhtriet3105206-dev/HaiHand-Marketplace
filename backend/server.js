@@ -15,12 +15,27 @@ const Notification = require('./models/Notification');
 const app = express();
 
 
-app.use(cors({
+const corsOptions = {
     origin: function (origin, callback) { callback(null, true); },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
-}));
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'X-Requested-With', 'Origin'],
+    exposedHeaders: ['Content-Range', 'X-Content-Range']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', req.headers.origin || 'http://localhost:3000');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, userid');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -69,6 +84,7 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
+<<<<<<< Updated upstream
 const DB_URL = process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI || 'mongodb://127.0.0.1:27017/HaiHand';
  mongoose.connect(DB_URL)
   .then(() => console.log('✅ Đã kết nối MongoDB thành công!'))
@@ -76,6 +92,34 @@ const DB_URL = process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI || 'mong
     console.error('❌ Lỗi kết nối DB:', err.message);
     process.exit(1); 
   });
+=======
+const DB_URL = process.env.MONGODB_URI || process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/HaiHand';
+
+const connectWithFallback = async () => {
+  const primaryUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+  const localUri = 'mongodb://127.0.0.1:27017/HaiHand';
+
+  if (primaryUri && !primaryUri.includes('127.0.0.1') && !primaryUri.includes('localhost')) {
+    console.log('📡 Đang kết nối tới MongoDB Atlas...');
+    try {
+      await mongoose.connect(primaryUri, { serverSelectionTimeoutMS: 3000 });
+      console.log('✅ Đã kết nối MongoDB Atlas thành công!');
+      return true;
+    } catch (err) {
+      console.warn(`⚠️ Kết nối MongoDB Atlas thất bại: ${err.message}. Đang chuyển sang Local MongoDB...`);
+    }
+  }
+
+  try {
+    await mongoose.connect(localUri, { serverSelectionTimeoutMS: 3000 });
+    console.log('✅ Đã kết nối MongoDB cục bộ (Local Database) thành công!');
+    return true;
+  } catch (localErr) {
+    console.error('❌ Lỗi kết nối MongoDB cục bộ:', localErr.message);
+    return false;
+  }
+};
+>>>>>>> Stashed changes
 
 
 
@@ -879,6 +923,42 @@ app.post('/api/users/register', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi server khi đăng ký' }); }
 });
 
+app.get('/api/users/profile', async (req, res) => {
+  try {
+    let userId = req.query.id || req.query.userId || req.headers['userid'];
+
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+        if (decoded && (decoded.id || decoded._id)) {
+          userId = decoded.id || decoded._id;
+        }
+      } catch (tokenErr) {}
+    }
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Vui lòng cung cấp User ID hoặc Token xác thực' });
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(400).json({ message: 'User ID không hợp lệ' });
+    }
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng trong hệ thống' });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Lỗi khi lấy thông tin người dùng:', error);
+    res.status(500).json({ message: 'Lỗi server khi lấy thông tin cá nhân' });
+  }
+});
+
 app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
   try {
     const updateData = { ...req.body };
@@ -891,41 +971,55 @@ app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
 
 app.get('/api/posts', async (req, res) => {
     try {
-        
+        if (mongoose.connection.readyState !== 1) {
+            console.warn('[DB WARNING] Truy vấn /api/posts khi MongoDB chưa hoàn tất kết nối (readyState: ' + mongoose.connection.readyState + ')');
+            return res.status(200).json([]);
+        }
+
         const { page = 1, limit = 8, category, search, location, sort, minPrice, maxPrice } = req.query;
         let query = { status: 'APPROVED' }; 
 
-        if (category && category !== 'Tất cả') query.category = category;
-        if (search) query.title = { $regex: search, $options: 'i' };
-        
-        
-        if (location && location !== 'Toàn quốc') {
-            query.location = { $regex: location, $options: 'i' };
+        if (category && category !== 'Tất cả' && category !== 'Kết quả tìm kiếm') {
+            query.category = String(category).trim();
         }
 
+        if (search && String(search).trim()) {
+            const escapedSearch = String(search).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            query.title = { $regex: escapedSearch, $options: 'i' };
+        }
         
+        if (location && location !== 'Toàn quốc' && location !== 'Tất cả khu vực') {
+            const escapedLocation = String(location).trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            query.location = { $regex: escapedLocation, $options: 'i' };
+        }
+
         if (minPrice || maxPrice) {
             query.price = {};
-            if (minPrice) query.price.$gte = Number(minPrice); 
-            if (maxPrice) query.price.$lte = Number(maxPrice); 
+            const numMin = Number(minPrice);
+            const numMax = Number(maxPrice);
+            if (!isNaN(numMin) && numMin >= 0) query.price.$gte = numMin; 
+            if (!isNaN(numMax) && numMax > 0) query.price.$lte = numMax; 
         }
 
-        
         let sortOption = { createdAt: -1 }; 
         if (sort === 'price-asc') sortOption = { price: 1 };  
         if (sort === 'price-desc') sortOption = { price: -1 }; 
 
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = Math.max(1, parseInt(limit, 10) || 8);
+
         const posts = await Post.find(query)
             .populate('author', 'name avatar')
             .sort(sortOption) 
-            .limit(limit * 1)
-            .skip((page - 1) * limit)
+            .limit(limitNum)
+            .skip((pageNum - 1) * limitNum)
+            .lean()
             .exec();
 
-        res.status(200).json(posts);
+        res.status(200).json(posts || []);
     } catch (error) { 
-        console.error("Lỗi lọc bài đăng:", error);
-        res.status(500).json({ message: "Lỗi Server!" }); 
+        console.error("Lỗi lọc bài đăng (/api/posts):", error.message);
+        res.status(200).json([]); 
     }
 });
 
@@ -1554,8 +1648,11 @@ app.get('/api/posts/user/:userId', async (req, res) => {
 
 app.get('/api/users/cart/:userId', async (req, res) => {
     try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+            return res.status(200).json([]);
+        }
         const user = await User.findById(req.params.userId);
-        if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
+        if (!user || !user.cart) return res.status(200).json([]);
 
         let cartWithDetails = [];
         for (let item of user.cart) {
@@ -1563,7 +1660,7 @@ app.get('/api/users/cart/:userId', async (req, res) => {
             if (postDetail) cartWithDetails.push({ product: postDetail, quantity: item.quantity });
         }
         res.status(200).json(cartWithDetails);
-    } catch (error) { res.status(500).json({ message: "Lỗi Server" }); }
+    } catch (error) { res.status(200).json([]); }
 });
 
 app.delete('/api/users/cart/clear/:userId', async (req, res) => {
@@ -1690,9 +1787,12 @@ app.get('/api/messages/conversations/:userId', async (req, res) => {
 
 app.get('/api/messages/unread-count/:userId', async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
+      return res.status(200).json({ count: 0 });
+    }
     const count = await Message.countDocuments({ receiver: req.params.userId, isRead: false });
     res.status(200).json({ count });
-  } catch (err) { res.status(500).json({ message: 'Lỗi đếm tin' }); }
+  } catch (err) { res.status(200).json({ count: 0 }); }
 });
 
 app.get('/api/messages/:user1/:user2', async (req, res) => {

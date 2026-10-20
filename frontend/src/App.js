@@ -42,6 +42,7 @@ import FAQPage from './pages/FAQPage';
 import AboutPage from './pages/AboutPage';
 import CareersPage from './pages/CareersPage';
 import CommunityStandardsPage from './pages/CommunityStandardsPage';
+import { AuthProvider } from './context/AuthContext';
 import EnvironmentalImpactPage from './pages/EnvironmentalImpactPage';
 import FeeStructurePage from './pages/FeeStructurePage';
 
@@ -49,8 +50,9 @@ function App() {
   return (
     <ToastProvider>
       <ConfirmProvider>
-        <Router>
-          <div className="App">
+        <AuthProvider>
+          <Router>
+            <div className="App">
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
@@ -103,6 +105,7 @@ function App() {
           <FloatingAIChat />
         </div>
         </Router>
+        </AuthProvider>
       </ConfirmProvider>
     </ToastProvider>
   );

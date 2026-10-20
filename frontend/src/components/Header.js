@@ -46,7 +46,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
   });
 
   const socket = useRef();
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   
   useEffect(() => {

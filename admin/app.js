@@ -14,10 +14,15 @@ const Revenue = mongoose.models.Revenue || mongoose.model('Revenue', new mongoos
     createdAt: { type: Date, default: Date.now }
 }));
 
+const ADMIN_DB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/HaiHand";
 mongoose
+<<<<<<< Updated upstream
   .connect(process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI || 'mongodb://127.0.0.1:27017/HaiHand')
+=======
+  .connect(ADMIN_DB_URI)
+>>>>>>> Stashed changes
   .then(() => console.log("✅ Đã kết nối MongoDB (HaiHand)!"))
-  .catch((err) => console.error(err));
+  .catch((err) => console.error("Lỗi kết nối MongoDB:", err.message));
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));

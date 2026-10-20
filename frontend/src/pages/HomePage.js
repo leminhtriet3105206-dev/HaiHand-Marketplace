@@ -6,6 +6,7 @@ import { AppFooter } from '../components/AppFooter';
 import { ProductCard } from '../components/ProductCard';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../context/AuthContext';
 
 // --- Skeleton Component ---
 const ProductSkeleton = () => (
@@ -51,15 +52,17 @@ export default function HomePage() {
   const [currentBanner, setCurrentBanner] = useState(0);
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000'; 
-  const user = useMemo(() => JSON.parse(localStorage.getItem('user')), []);
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    if (user?._id) {
         axios.get(`${API_URL}/api/users/favorites/${user._id}`)
              .then(res => setFavoriteIds(res.data.map(post => post._id)))
              .catch(err => console.log(err));
+    } else {
+        setFavoriteIds([]);
     }
-  }, [user, API_URL]);
+  }, [user?._id, API_URL]);
 
   const fetchPosts = useCallback(async (currentPage = 1, currentCategory = 'Tất cả', currentKeyword = '', loc = 'Tất cả khu vực') => {
     if (currentPage === 1) setIsLoadingPosts(true);

@@ -1,53 +1,62 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from './Button';
 import { useToast } from './Toast';
+import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
 export const AppHeader = ({ onSearch }) => {
   const [keyword, setKeyword] = useState('');
   const navigate = useNavigate();
   const toast = useToast();
+  const { user, refreshProfile } = useAuth();
   const [cartCount, setCartCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const user = JSON.parse(localStorage.getItem('user'));
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
-  const fetchCartCount = async () => {
-    if (user) {
+  const fetchCartCount = useCallback(async () => {
+    if (user?._id) {
       try {
         const { data } = await axios.get(`${API_URL}/api/users/cart/${user._id}`);
         setCartCount(data.length);
       } catch (err) {
         console.error("Lỗi lấy số lượng giỏ hàng:", err);
       }
+    } else {
+      setCartCount(0);
     }
-  };
+  }, [API_URL, user?._id]);
 
-  const fetchUnreadCount = async () => {
-    if (user) {
+  const fetchUnreadCount = useCallback(async () => {
+    if (user?._id) {
       try {
         const { data } = await axios.get(`${API_URL}/api/messages/unread-count/${user._id}`);
         setUnreadCount(data.count || 0);
       } catch (err) {
         console.error("Lỗi lấy số lượng tin nhắn chưa đọc:", err);
       }
+    } else {
+      setUnreadCount(0);
     }
-  };
+  }, [API_URL, user?._id]);
+
+  useEffect(() => {
+    refreshProfile();
+  }, [refreshProfile]);
 
   useEffect(() => {
     fetchCartCount();
     fetchUnreadCount();
     window.addEventListener('cartUpdated', fetchCartCount);
-    window.addEventListener('userUpdated', fetchCartCount); // login/logout updates
+    window.addEventListener('userUpdated', fetchCartCount);
     window.addEventListener('messageUpdated', fetchUnreadCount);
     return () => {
       window.removeEventListener('cartUpdated', fetchCartCount);
       window.removeEventListener('userUpdated', fetchCartCount);
       window.removeEventListener('messageUpdated', fetchUnreadCount);
     };
-  }, []);
+  }, [fetchCartCount, fetchUnreadCount]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();

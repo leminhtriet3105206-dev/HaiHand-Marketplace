@@ -21,12 +21,16 @@ export default function CartPage() {
   const [discountCode, setDiscountCode] = useState('HAIHANDVOUCHER100K');
 
   const fetchCart = async () => {
+    if (!currentUser || !currentUser._id) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await axios.get(`${API_URL}/api/users/cart/${currentUser._id}`);
-      setCartItems(data);
+      setCartItems(data || []);
       // Auto select all by default
-      const allIds = data.map(item => item.product._id);
+      const allIds = (data || []).map(item => item.product?._id).filter(Boolean);
       setSelectedItems(new Set(allIds));
     } catch (error) {
       console.error("Lỗi tải giỏ hàng", error);
@@ -475,7 +479,7 @@ export default function CartPage() {
                 <div className="w-5 h-5 rounded-full bg-white border border-orange-300 text-orange-500 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">?</div>
                 <p className="text-xs text-orange-800 leading-relaxed">
                   Cần mua thỏa thuận riêng hoặc đặt lịch hẹn gặp lấy trực tiếp? <br/>
-                  <a href="#" className="font-bold text-[#EA580C] hover:underline">Hỏi chuyên viên hỗ trợ 24/7</a>
+                  <Link to="/help-center" className="font-bold text-[#EA580C] hover:underline">Hỏi chuyên viên hỗ trợ 24/7</Link>
                 </p>
               </div>
 

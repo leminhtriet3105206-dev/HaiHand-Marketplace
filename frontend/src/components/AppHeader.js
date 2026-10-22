@@ -1,14 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Button } from './Button';
-import { useToast } from './Toast';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
 export const AppHeader = ({ onSearch }) => {
   const [keyword, setKeyword] = useState('');
   const navigate = useNavigate();
-  const toast = useToast();
   const { user, refreshProfile } = useAuth();
   const [cartCount, setCartCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -65,14 +62,16 @@ export const AppHeader = ({ onSearch }) => {
     }
   };
 
-  const handleCreatePostClick = () => {
-    if (!user) {
-      toast.warning('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để đăng tin bán hàng!');
-      navigate('/login');
+  const handleSellerChannelClick = () => {
+    if (user?.isSeller === true && user?.sellerStatus === 'approved') {
+      window.open('/seller-channel', '_blank');
     } else {
-      navigate('/create-post');
+      window.open('/register-seller', '_blank');
     }
   };
+
+  const isApprovedSeller = user?.isSeller === true && user?.sellerStatus === 'approved';
+  const isPendingSeller = user?.sellerStatus === 'pending';
 
   return (
     <header className="sticky top-0 z-50 bg-[#FACC15] shadow-sm">
@@ -113,7 +112,7 @@ export const AppHeader = ({ onSearch }) => {
           <div className="flex items-center gap-1">
             {user ? (
               <>
-                <Link to="/haipay" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 mr-1 rounded-full bg-white/50 hover:bg-white transition-colors font-bold text-sm text-[#1C1917] border border-stone-200/50 shadow-sm">
+                <Link to="/haipay/dashboard" className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 mr-1 rounded-full bg-white/50 hover:bg-white transition-colors font-bold text-sm text-[#1C1917] border border-stone-200/50 shadow-sm">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EA580C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
                   Ví HaiPay
                 </Link>
@@ -142,9 +141,33 @@ export const AppHeader = ({ onSearch }) => {
             )}
           </div>
           
-          <Button variant="dark" className="hidden sm:flex ml-1 py-1.5 px-3" onClick={handleCreatePostClick}>
-            + Đăng tin
-          </Button>
+          <a 
+            href={isApprovedSeller ? "/seller-channel" : "/register-seller"} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            onClick={(e) => {
+              e.preventDefault();
+              handleSellerChannelClick();
+            }}
+            className="hidden sm:inline-flex items-center gap-1.5 ml-1 py-1.5 px-3 rounded-lg bg-[#1C1917] hover:bg-stone-800 text-white text-xs font-bold transition-colors shadow-xs text-decoration-none cursor-pointer"
+          >
+            {isApprovedSeller ? (
+              <>
+                <i className="fas fa-store text-orange-400"></i>
+                Kênh Người Bán
+              </>
+            ) : isPendingSeller ? (
+              <>
+                <i className="fas fa-clock text-amber-400"></i>
+                Shop Chờ Duyệt
+              </>
+            ) : (
+              <>
+                <i className="fas fa-store-alt text-amber-300"></i>
+                Kênh Người Bán
+              </>
+            )}
+          </a>
         </div>
       </div>
     </header>

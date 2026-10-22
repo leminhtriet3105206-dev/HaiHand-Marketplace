@@ -30,6 +30,7 @@ const LoginPage = () => {
     try {
       const { data } = await axios.post(`${API_URL}/api/users/login`, loginForm);
       localStorage.setItem('user', JSON.stringify(data));
+      window.dispatchEvent(new Event('userUpdated'));
       navigate('/');
     } catch (error) {
       toast.error('Lỗi', "❌ " + (error.response?.data?.message || "Đăng nhập thất bại!"));

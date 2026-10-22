@@ -16,8 +16,7 @@ const FloatingAIChat = () => {
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef(null);
 
-    const API_URL = process.env.REACT_APP_API_URL || 
-        (window.location.hostname === 'localhost' ? 'http://localhost:4000' : 'https://haihand-marketplace.onrender.com');
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
     // Tự động cuộn xuống cuối khi có tin nhắn mới
     useEffect(() => {

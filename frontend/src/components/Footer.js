@@ -25,7 +25,8 @@ const Footer = () => {
             <h6 className="fw-bold mb-4 text-uppercase" style={{ letterSpacing: '1px' }}>Khám phá</h6>
             <ul className="list-unstyled">
               <li className="mb-2"><Link to="/" className="text-secondary text-decoration-none hover-text-warning">Trang chủ</Link></li>
-              <li className="mb-2"><Link to="/create-post" className="text-secondary text-decoration-none hover-text-warning">Đăng tin ngay</Link></li>
+              <li className="mb-2"><Link to="/products" className="text-secondary text-decoration-none hover-text-warning">Sản phẩm</Link></li>
+              <li className="mb-2"><a href="/register-seller" target="_blank" rel="noopener noreferrer" className="text-secondary text-decoration-none hover-text-warning">Đăng ký bán hàng</a></li>
             </ul>
           </div>
 

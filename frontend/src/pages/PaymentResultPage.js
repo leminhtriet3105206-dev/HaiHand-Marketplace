@@ -17,8 +17,9 @@ const PaymentResultPage = () => {
                 setStatus('❌ Dữ liệu không hợp lệ!'); return;
             }
 
+            const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
             try {
-                await axios.post('http://localhost:4000/api/vnpay/verify', {
+                await axios.post(`${API_URL}/api/vnpay/verify`, {
                     orderId, responseCode, userId: user._id
                 });
                 

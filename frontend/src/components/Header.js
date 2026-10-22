@@ -46,7 +46,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
   });
 
   const socket = useRef();
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   
   useEffect(() => {
@@ -213,19 +213,13 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
           </div>
 
           <div className="d-flex align-items-center gap-3">
-            
-            <Link to="/create-post" className="btn btn-outline-light fw-bold rounded-pill d-flex align-items-center gap-1 shadow-sm px-3 border-2 hover-text-dark" style={{transition: '0.3s'}}>
-              <span className="fs-5 lh-1">+</span>
-              <span className="d-none d-xl-inline">Đăng tin</span>
-            </Link>
-
             <div className="position-relative d-flex align-items-center justify-content-center bg-white rounded-circle shadow-sm hover-scale" style={{ width: '40px', height: '40px', cursor: 'pointer', fontSize: '18px' }} onClick={() => navigate('/cart')}>
               🛒 {cartCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '10px'}}>{cartCount}</span>}
             </div>
 
             {user ? (
               <div className="d-flex align-items-center gap-3">
-                  <div onClick={() => navigate('/haipay')} className="d-none d-sm-flex align-items-center gap-1 bg-white text-dark rounded-pill px-3 py-1 shadow-sm border" style={{cursor: 'pointer'}}>
+                  <div onClick={() => navigate('/haipay/dashboard')} className="d-none d-sm-flex align-items-center gap-1 bg-white text-dark rounded-pill px-3 py-1 shadow-sm border" style={{cursor: 'pointer'}}>
                       <span style={{color: '#EA580C', fontSize: '16px'}}>💳</span>
                       <span className="fw-bold" style={{fontSize: '13px'}}>Ví HaiPay</span>
                   </div>
@@ -285,7 +279,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
                                  </div>
                                  <div><h6 className="fw-bold mb-0">{user.name}</h6><small className="text-muted">{user.email}</small></div>
                               </div>
-                              <div onClick={() => navigate('/haipay')} className="mb-2 d-flex justify-content-between align-items-center px-3 py-2 rounded-3 shadow-sm" style={{cursor: 'pointer', backgroundColor: '#e7f1ff', border: '1px solid #cfe2ff'}}>
+                              <div onClick={() => navigate('/haipay/dashboard')} className="mb-2 d-flex justify-content-between align-items-center px-3 py-2 rounded-3 shadow-sm" style={{cursor: 'pointer', backgroundColor: '#e7f1ff', border: '1px solid #cfe2ff'}}>
                                   <span className="fw-bold text-primary" style={{fontSize: '14px'}}>💳 Ví HàiPay</span>
                                   <span className="badge bg-primary">{(user.walletBalance || 0).toLocaleString('vi-VN')} đ</span>
                               </div>

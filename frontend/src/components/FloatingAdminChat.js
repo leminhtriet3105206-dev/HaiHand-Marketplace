@@ -23,7 +23,7 @@ const FloatingAdminChat = () => {
         const stored = localStorage.getItem('user');
         return stored && stored !== "undefined" ? JSON.parse(stored) : null;
     }, []);
-    const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
     const isEmbedded = window.self !== window.top;
     const isAdmin = currentUser?.role === 'Admin';
@@ -40,7 +40,7 @@ const FloatingAdminChat = () => {
             } catch (err) { console.error("Chưa có Admin CSKH"); }
         };
         fetchAdmin();
-    }, [isAdmin, isEmbedded]);
+    }, [isAdmin, isEmbedded, API_URL]);
 
     useEffect(() => {
         if (isOpen && currentUser && adminUser && !isEmbedded) {
@@ -59,7 +59,7 @@ const FloatingAdminChat = () => {
 
             return () => socket.current.disconnect();
         }
-    }, [isOpen, currentUser, adminUser, isEmbedded]);
+    }, [isOpen, currentUser, adminUser, isEmbedded, API_URL]);
 
     useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isOpen]);
 

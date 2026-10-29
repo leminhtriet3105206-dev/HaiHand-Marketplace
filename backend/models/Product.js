@@ -21,6 +21,11 @@ const productSchema = new mongoose.Schema({
     options: [String]
   }],
   details: { type: Map, of: String },
+  ragText: { type: String, default: '' },
+  textEmbedding: { type: [Number], default: undefined, select: false },
+  embeddingModel: { type: String, default: '', select: false },
+  imageEmbedding: { type: [Number], default: undefined, select: false },
+  imageEmbeddingModel: { type: String, default: '', select: false },
   status: {
     type: String,
     enum: ['active', 'inactive', 'out_of_stock', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending'],

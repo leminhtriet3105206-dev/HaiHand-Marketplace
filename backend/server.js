@@ -30,6 +30,7 @@ const {
 } = require('./utils/b2c');
 const createSellerRouter = require('./routes/seller');
 const haipayRouter = require('./routes/haipay');
+const { indexProductImage } = require('./services/imageEmbeddingService');
 
 const app = express();
 
@@ -90,7 +91,7 @@ const io = new Server(server, {
   }
 });
 
-app.use(express.json());
+app.use(express.json({ limit: '7mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -108,9 +109,9 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 
 
 cloudinary.config({
-  cloud_name: 'dbznseukv',
-  api_key: '184464981981638',
-  api_secret: '-UKbuZxsQKgmKL3-p47oQDQJDrc'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
 
@@ -2036,6 +2037,12 @@ app.post('/api/posts', protect, isSeller, upload.array('images', 5), async (req,
 
     await newPost.save();
 
+    try {
+      await indexProductImage(newPost);
+    } catch (error) {
+      console.warn(`Không tạo được image embedding cho ${newPost._id}: ${error.message}`);
+    }
+
     // Trigger 1: When a user creates a new Product/Post (and auto-approve is false), automatically create a notification for Admins
     if (!isAutoApprove && initialStatus === 'pending') {
       try {
@@ -2488,17 +2495,21 @@ const { processChatbot } = require('./services/chatbotService');
 
 app.post('/api/chatbot/ask', async (req, res) => {
   try {
-    const { message, history } = req.body;
-    if (!message) {
-      return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn (message)' });
+    const { message, history, image } = req.body;
+    if (!message && !image) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn hoặc hình ảnh' });
     }
 
-    const result = await processChatbot(message, history);
+    if (image && (!image.startsWith('data:image/') || image.length > 7_000_000)) {
+      return res.status(400).json({ error: 'Hình ảnh không hợp lệ hoặc vượt quá 5 MB' });
+    }
+
+    const result = await processChatbot(message, history, image);
     res.json(result);
   } catch (error) {
     console.error("Lỗi Chatbot:", error);
     res.status(500).json({
-      error: 'Không thể xử lý yêu cầu với AI. Hãy kiểm tra xem bạn đã bật server LM Studio ở cổng 1235 chưa!'
+      error: 'Không thể xử lý yêu cầu. Hãy kiểm tra Qwen3-VL, BGE-M3 và LM Studio ở cổng 1235.'
     });
   }
 });

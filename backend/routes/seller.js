@@ -11,6 +11,8 @@ const {
   orderSellerId,
   orderBuyerId
 } = require('../utils/b2c');
+const shippingService = require('../services/shipping');
+const { pickAddressFields, formatAddress, isCompleteAddress } = require('../models/schemas/Address');
 
 module.exports = function createSellerRouter({ upload, sendNotification, sendAdminNotification, io }) {
   const router = express.Router();
@@ -70,9 +72,11 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
             type: 'SELLER',
             link: '/admin/seller-applications',
             targetUrl: '/admin/seller-applications',
+            targetRole: 'admin',
+            recipientRole: 'admin',
             isRead: false
           });
-          if (io) io.emit('new_admin_notification', notif);
+          if (io) io.to('admin_system_room').emit('new_admin_notification', notif);
         }
       } catch (e) {
         console.error('Lỗi gửi thông báo seller:', e);
@@ -209,8 +213,22 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         phone: req.body.phone != null ? req.body.phone : current.phone,
         taxCode: req.body.taxCode != null ? req.body.taxCode : current.taxCode,
         avatar: current.avatar,
-        banner: current.banner
+        banner: current.banner,
+        pickupAddress: current.pickupAddress
       };
+      if (req.body.pickupAddress) {
+        let pa = req.body.pickupAddress;
+        if (typeof pa === 'string') {
+          try { pa = JSON.parse(pa); } catch (e) {}
+        }
+        if (typeof pa === 'object' && pa) {
+          const cleanPa = pickAddressFields(pa);
+          next.pickupAddress = cleanPa;
+          if (isCompleteAddress(cleanPa) && (!req.body.address || req.body.address === current.address)) {
+            next.address = formatAddress(cleanPa);
+          }
+        }
+      }
       if (req.files?.avatar?.[0]) next.avatar = req.files.avatar[0].path;
       if (req.files?.banner?.[0]) next.banner = req.files.banner[0].path;
       user.shopInfo = next;
@@ -303,9 +321,11 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
               type: 'PRODUCT',
               link: '/posts',
               targetUrl: '/posts',
+              targetRole: 'admin',
+              recipientRole: 'admin',
               isRead: false
             });
-            if (io) io.emit('new_admin_notification', notif);
+            if (io) io.to('admin_system_room').emit('new_admin_notification', notif);
           }
         } catch (e) {
           console.error('Lỗi gửi thông báo sản phẩm seller mới:', e);
@@ -391,7 +411,18 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     try {
       const order = await Order.findById(req.params.id).populate('buyer buyerId seller sellerId');
       if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
-      if (orderSellerId(order).toString() !== req.user._id.toString()) {
+
+      // Ownership verification using .equals() or string equality
+      const orderSeller = order.sellerId?._id || order.seller?._id || order.sellerId || order.seller || orderSellerId(order);
+      if (!orderSeller) {
+        return res.status(403).json({ message: 'Đơn này không thuộc Shop bạn' });
+      }
+
+      const isOwner = req.user._id.equals
+        ? req.user._id.equals(orderSeller)
+        : req.user._id.toString() === orderSeller.toString();
+
+      if (!isOwner) {
         return res.status(403).json({ message: 'Đơn này không thuộc Shop bạn' });
       }
 
@@ -415,9 +446,26 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         return res.status(400).json({ message: 'Không thể hủy đơn đang giao / đã hoàn tất' });
       }
 
+      // If transitioning to Shipped or Processing and order does not have a carrier shipment yet,
+      // invoke shipping service (GHN or configured carrier) to register shipment with carrier API
+      if ((next === 'Shipped' || next === 'Processing') && (!order.shippingCode || !order.shipment?.trackingCode)) {
+        try {
+          const shipmentResult = await shippingService.createShipmentForOrder(order);
+          if (shipmentResult) {
+            order.shipment = shipmentResult;
+            order.shippingCode = shipmentResult.trackingCode || shippingCode || order.shippingCode;
+            order.shippingCarrier = shipmentResult.carrier || shippingCarrier || order.shippingCarrier;
+          }
+        } catch (shipErr) {
+          console.warn('⚠️ [Shipping] Error creating carrier shipment during status update:', shipErr.message);
+          if (shippingCode) order.shippingCode = shippingCode;
+          if (shippingCarrier) order.shippingCarrier = shippingCarrier;
+        }
+      }
+
       order.status = next;
-      if (shippingCode) order.shippingCode = shippingCode;
-      if (shippingCarrier) order.shippingCarrier = shippingCarrier;
+      if (shippingCode && !order.shippingCode) order.shippingCode = shippingCode;
+      if (shippingCarrier && !order.shippingCarrier) order.shippingCarrier = shippingCarrier;
       if (next === 'Delivered') order.deliveredAt = new Date();
       if (next === 'Completed') order.completedAt = new Date();
       if (next === 'Cancelled') {
@@ -439,9 +487,89 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
 
       res.json({ message: 'Đã cập nhật đơn hàng', order });
     } catch (error) {
-      res.status(500).json({ message: 'Lỗi cập nhật đơn hàng' });
+      res.status(500).json({ message: 'Lỗi cập nhật đơn hàng: ' + error.message });
     }
   });
+
+  /**
+   * POST /api/seller/orders/:id/prepare
+   * Seller clicks "Chuẩn bị hàng" -> creates carrier shipment, registers package with carrier,
+   * obtains trackingCode and updates order status to 'Processing'.
+   */
+  router.post('/api/seller/orders/:id/prepare', protect, isSeller, async (req, res) => {
+    try {
+      const order = await Order.findById(req.params.id).populate('buyer buyerId seller sellerId');
+      if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+
+      // Ownership verification using .equals() or string equality
+      const orderSeller = order.sellerId?._id || order.seller?._id || order.sellerId || order.seller || orderSellerId(order);
+      if (!orderSeller) {
+        return res.status(403).json({ message: 'Đơn này không thuộc Shop bạn' });
+      }
+
+      const isOwner = req.user._id.equals
+        ? req.user._id.equals(orderSeller)
+        : req.user._id.toString() === orderSeller.toString();
+
+      if (!isOwner) {
+        return res.status(403).json({ message: 'Đơn này không thuộc Shop bạn' });
+      }
+
+      const current = canonicalStatus(order.status);
+      if (current !== 'Pending') {
+        return res.status(400).json({
+          message: `Đơn hàng đang ở trạng thái "${current}", chỉ có thể chuẩn bị đơn khi đang "Chờ xác nhận" (Pending).`
+        });
+      }
+
+      // Check payment status for non-COD orders
+      if (order.paymentMethod !== 'COD' && order.paymentStatus !== 'escrow') {
+        return res.status(400).json({
+          message: 'Đơn hàng chưa được thanh toán thành công, không thể tạo vận đơn giao hàng!'
+        });
+      }
+
+      // Call shipping service to create shipment (GHN or Mock)
+      const shipmentResult = await shippingService.createShipmentForOrder(order);
+
+      order.shipment = shipmentResult;
+      order.shippingCode = shipmentResult.trackingCode || '';
+      order.shippingCarrier = shipmentResult.carrier || 'Giao Hàng Nhanh';
+      order.status = 'Processing'; // Đang chuẩn bị hàng
+      await order.save();
+
+      const buyerId = orderBuyerId(order);
+      if (sendNotification && buyerId) {
+        await sendNotification(
+          buyerId,
+          '📦 Shop đang chuẩn bị hàng',
+          `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được Shop chuẩn bị với mã vận đơn ${order.shippingCode} (${order.shippingCarrier}).`,
+          'ORDER',
+          '/profile?tab=orders_buy'
+        );
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: '🎉 Chuẩn bị hàng thành công! Đã tạo mã vận đơn từ hãng vận chuyển.',
+        trackingCode: order.shippingCode,
+        carrier: order.shippingCarrier,
+        order
+      });
+    } catch (error) {
+      console.error('Prepare order error:', error);
+      return res.status(error.status || 500).json({
+        message: error.message || 'Lỗi khi tạo vận đơn giao hàng'
+      });
+    }
+  });
+
+  /**
+   * POST /api/seller/orders/:orderId/ship
+   * Tạo đơn giao hàng qua GHN (Giao Hàng Nhanh)
+   */
+  const shippingController = require('../controllers/shippingController');
+  router.post('/api/seller/orders/:orderId/ship', protect, isSeller, shippingController.createShipmentGHN);
 
   return router;
 };

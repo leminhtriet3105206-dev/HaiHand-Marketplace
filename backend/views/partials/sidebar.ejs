@@ -86,7 +86,7 @@
     };
     window.fetchAdminNotifs = async function() {
         try {
-            const res = await fetch('/api/admin/notifications');
+            const res = await fetch('/api/admin/notifications?scope=admin');
             if(!res.ok) return;
             const data = await res.json();
             

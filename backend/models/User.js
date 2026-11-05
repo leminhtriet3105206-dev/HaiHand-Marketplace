@@ -1,11 +1,13 @@
 const mongoose = require('mongoose');
+const { AddressBookSchema, AddressSnapshotSchema } = require('./schemas/Address');
 
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true }, 
     email: { type: String, required: true, unique: true }, 
     password: { type: String, required: true }, 
     phone: { type: String, default: '' }, 
-    address: { type: String, default: '' }, 
+    address: { type: String, default: '' }, // legacy free-text, kept in sync with default address
+    addresses: { type: [AddressBookSchema], default: [] },
     role: { type: String, default: 'Khách hàng' }, 
     avatar: { type: String, default: '' },
     avatarFrame: { type: String, default: 'none' },
@@ -35,7 +37,8 @@ const userSchema = new mongoose.Schema({
         avatar: { type: String, default: '' },
         banner: { type: String, default: '' },
         phone: { type: String, default: '' },
-        taxCode: { type: String, default: '' }
+        taxCode: { type: String, default: '' },
+        pickupAddress: { type: AddressSnapshotSchema, default: undefined } // shipping origin
     },
 
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],

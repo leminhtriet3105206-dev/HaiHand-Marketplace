@@ -7,12 +7,18 @@ async function protect(req, res, next) {
   const authHeader = req.headers.authorization;
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
-      userId = decoded.id || decoded._id;
-      req.tokenPayload = decoded;
-    } catch (e) {
-      return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+    const rawToken = authHeader.split(' ')[1];
+    if (rawToken && rawToken !== 'undefined' && rawToken !== 'null') {
+      try {
+        const decoded = jwt.verify(rawToken, JWT_SECRET);
+        userId = decoded.id || decoded._id;
+        req.tokenPayload = decoded;
+      } catch (e) {
+        // Nếu có fallback header userid thì cho phép kiểm tra tiếp, nếu không thì trả về 401
+        if (!req.headers.userid) {
+          return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+        }
+      }
     }
   }
 

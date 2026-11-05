@@ -330,7 +330,24 @@
         } else if (titleLower.includes('người dùng') || titleLower.includes('tài khoản')) {
             targetLink = '/users';
         }
+
+        // Prevent javascript: URLs and open redirects
+        if (!targetLink || typeof targetLink !== 'string' || !targetLink.startsWith('/') || targetLink.startsWith('//')) {
+            targetLink = '/';
+        }
+
         return targetLink;
+    }
+
+    // Helper to escape HTML characters and prevent Stored/DOM XSS
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
     }
 
     // SPA-Aware Notification Redirection Click Handler
@@ -348,7 +365,7 @@
     // Fetch notifications & populate Header Dropdown
     window.fetchAdminNotifs = async function() {
         try {
-            const res = await fetch('/api/notifications');
+            const res = await fetch('/api/notifications?scope=admin');
             if (!res.ok) return;
             const data = await res.json();
             
@@ -379,16 +396,19 @@
             }
 
             list.innerHTML = data.notifications.map(n => {
-                const targetLink = resolveAdminNotifLink(n);
-                const timeStr = new Date(n.createdAt || Date.now()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date(n.createdAt || Date.now()).toLocaleDateString('vi-VN');
+                const rawLink = resolveAdminNotifLink(n);
+                const safeLink = escapeHtml(rawLink);
+                const safeTitle = escapeHtml(n.title || 'Thông báo hệ thống');
+                const safeMessage = escapeHtml(n.message || '');
+                const timeStr = escapeHtml(new Date(n.createdAt || Date.now()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date(n.createdAt || Date.now()).toLocaleDateString('vi-VN'));
 
                 return `
-                    <a href="${targetLink}" onclick="window.handleNotifClick(event, '${targetLink}')" class="group block p-3.5 hover:bg-purple-50/70 dark:hover:bg-slate-800/80 transition duration-150 border-b border-slate-100/70 dark:border-slate-800/70 cursor-pointer ${!n.isRead ? 'bg-purple-50/35 dark:bg-purple-950/25' : ''}">
+                    <a href="${safeLink}" data-link="${safeLink}" onclick="window.handleNotifClick(event, this.getAttribute('data-link'))" class="group block p-3.5 hover:bg-purple-50/70 dark:hover:bg-slate-800/80 transition duration-150 border-b border-slate-100/70 dark:border-slate-800/70 cursor-pointer ${!n.isRead ? 'bg-purple-50/35 dark:bg-purple-950/25' : ''}">
                         <div class="flex items-center justify-between gap-2 mb-1">
-                            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition truncate">${n.title || 'Thông báo hệ thống'}</h4>
+                            <h4 class="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition truncate">${safeTitle}</h4>
                             ${!n.isRead ? '<span class="w-2 h-2 rounded-full bg-purple-600 shrink-0 shadow-sm shadow-purple-500"></span>' : ''}
                         </div>
-                        <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-snug line-clamp-2">${n.message}</p>
+                        <p class="text-[11px] text-slate-600 dark:text-slate-300 leading-snug line-clamp-2">${safeMessage}</p>
                         <div class="flex items-center justify-between text-[9px] text-slate-400 mt-2 font-mono">
                             <span>${timeStr}</span>
                             <span class="text-purple-600 dark:text-purple-400 font-sans font-semibold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
@@ -426,13 +446,22 @@
         }
     };
 
-    // Socket.io Real-Time System Notification Listener
+    // Socket.io Real-Time System Notification Listener (Dedicated admin_system_room)
     try {
         if (typeof io !== 'undefined') {
             const socket = io('http://localhost:4000', {
-                transports: ['websocket', 'polling']
+                transports: ['websocket', 'polling'],
+                auth: { role: 'admin' }
             });
 
+            // Join dedicated admin_system_room upon connection
+            socket.on('connect', function() {
+                console.log('⚡ Socket: Đã kết nối Socket.IO. Tham gia admin_system_room...');
+                socket.emit('join_admin_room', { role: 'admin' });
+                socket.emit('join', 'admin_system_room');
+            });
+
+            // Listen exclusively to admin_system_room broadcasts and ignore personal user events
             socket.on('new_admin_notification', function(notif) {
                 console.log('⚡ Socket: Nhận thông báo Admin mới trong Header Dropdown:', notif);
                 
@@ -449,20 +478,23 @@
                     headerBadge.classList.remove('hidden');
                 }
 
-                // 2. Chèn thông báo mới lên đầu danh sách trong dropdown
+                // 2. Chèn thông báo mới lên đầu danh sách trong dropdown (với HTML sanitization chống XSS)
                 const list = document.getElementById('header-notif-list');
                 if (list) {
                     const emptyPlaceholder = list.querySelector('.text-slate-400');
                     if (emptyPlaceholder) emptyPlaceholder.remove();
 
-                    const targetLink = resolveAdminNotifLink(notif);
+                    const rawLink = resolveAdminNotifLink(notif);
+                    const safeLink = escapeHtml(rawLink);
+                    const safeTitle = escapeHtml(notif.title || 'Thông báo mới');
+                    const safeMessage = escapeHtml(notif.message || '');
                     const newHtml = `
-                        <a href="${targetLink}" onclick="window.handleNotifClick(event, '${targetLink}')" class="group block p-3.5 hover:bg-purple-50/70 dark:hover:bg-slate-800/80 transition duration-150 border-b border-slate-100/70 dark:border-slate-800/70 cursor-pointer bg-purple-50/50 dark:bg-purple-950/40 animate-pulse">
+                        <a href="${safeLink}" data-link="${safeLink}" onclick="window.handleNotifClick(event, this.getAttribute('data-link'))" class="group block p-3.5 hover:bg-purple-50/70 dark:hover:bg-slate-800/80 transition duration-150 border-b border-slate-100/70 dark:border-slate-800/70 cursor-pointer bg-purple-50/50 dark:bg-purple-950/40 animate-pulse">
                             <div class="flex items-center justify-between gap-2 mb-1">
-                                <h4 class="text-xs font-bold text-purple-700 dark:text-purple-400 group-hover:underline truncate">${notif.title || 'Thông báo mới'}</h4>
+                                <h4 class="text-xs font-bold text-purple-700 dark:text-purple-400 group-hover:underline truncate">${safeTitle}</h4>
                                 <span class="text-[9px] bg-purple-600 text-white font-black px-1.5 py-0.5 rounded-full uppercase shrink-0">Mới</span>
                             </div>
-                            <p class="text-[11px] text-slate-700 dark:text-slate-200 leading-snug font-semibold line-clamp-2">${notif.message}</p>
+                            <p class="text-[11px] text-slate-700 dark:text-slate-200 leading-snug font-semibold line-clamp-2">${safeMessage}</p>
                             <div class="flex items-center justify-between text-[9px] text-slate-400 mt-2 font-mono">
                                 <span>Vừa xong</span>
                                 <span class="text-purple-600 dark:text-purple-400 font-sans font-semibold flex items-center gap-1">

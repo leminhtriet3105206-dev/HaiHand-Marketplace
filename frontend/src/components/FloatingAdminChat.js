@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import { useSocket } from '../context/SocketContext';
 import { useToast } from './Toast';
 
 
@@ -16,7 +16,7 @@ const FloatingAdminChat = () => {
     const [messages, setMessages] = useState([]);
     const [newMessage, setNewMessage] = useState('');
     
-    const socket = useRef();
+    const { socket } = useSocket();
     const scrollRef = useRef();
     
     const currentUser = React.useMemo(() => {
@@ -48,18 +48,20 @@ const FloatingAdminChat = () => {
                 .then(res => setMessages(res.data))
                 .catch(err => console.log(err));
 
-            socket.current = io(API_URL, { transports: ["websocket", "polling"] });
-            socket.current.emit('addUser', currentUser._id);
+            if (!socket) return;
 
-            socket.current.on('getMessage', (data) => {
+            const handleGetMessage = (data) => {
                 if (data.senderId === adminUser._id) {
                     setMessages(prev => [...prev, { sender: data.senderId, content: data.text, createdAt: Date.now() }]);
                 }
-            });
+            };
 
-            return () => socket.current.disconnect();
+            socket.on('getMessage', handleGetMessage);
+            return () => {
+                socket.off('getMessage', handleGetMessage);
+            };
         }
-    }, [isOpen, currentUser, adminUser, isEmbedded, API_URL]);
+    }, [isOpen, currentUser, adminUser, isEmbedded, API_URL, socket]);
 
     useEffect(() => { scrollRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, isOpen]);
 
@@ -90,7 +92,9 @@ const FloatingAdminChat = () => {
 
         try {
             const { data } = await axios.post(`${API_URL}/api/messages`, messageData);
-            socket.current.emit('sendMessage', { senderId: currentUser._id, receiverId: adminUser._id, text: newMessage });
+            if (socket) {
+                socket.emit('sendMessage', { senderId: currentUser._id, receiverId: adminUser._id, text: newMessage });
+            }
             setMessages(prev => [...prev, data]);
             setNewMessage('');
         } catch (err) { console.error("Lỗi gửi tin:", err); }

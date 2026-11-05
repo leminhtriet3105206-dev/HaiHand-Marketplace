@@ -14,6 +14,7 @@ import ChatPage from './pages/ChatPage';
 import InboxPage from './pages/InboxPage'; 
 import FavoritesPage from './pages/FavoritesPage';
 import CartPage from './pages/CartPage';
+import CheckoutPage from './pages/checkout/CheckoutPage';
 import EditPostPage from './pages/EditPostPage';
 import HaiPayReturn from './pages/HaiPayReturn';
 import HaiPayLayout from './pages/haipay/HaiPayLayout';
@@ -48,6 +49,7 @@ import AboutPage from './pages/AboutPage';
 import CareersPage from './pages/CareersPage';
 import CommunityStandardsPage from './pages/CommunityStandardsPage';
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import EnvironmentalImpactPage from './pages/EnvironmentalImpactPage';
 import FeeStructurePage from './pages/FeeStructurePage';
 
@@ -56,8 +58,9 @@ function App() {
     <ToastProvider>
       <ConfirmProvider>
         <AuthProvider>
-          <Router>
-            <div className="App">
+          <SocketProvider>
+            <Router>
+              <div className="App">
               <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<HomePage />} />
@@ -90,6 +93,7 @@ function App() {
                 <Route path="/inbox" element={<RequireAuth><InboxPage /></RequireAuth>} />
                 <Route path="/favorites" element={<RequireAuth><FavoritesPage /></RequireAuth>} />
                 <Route path="/cart" element={<RequireAuth><CartPage /></RequireAuth>} />
+                <Route path="/checkout" element={<RequireAuth><CheckoutPage /></RequireAuth>} />
                 <Route path="/edit-post/:id" element={<RequireAuth><EditPostPage /></RequireAuth>} />
                 <Route path="/followed/followed" element={<RequireAuth><FollowPage /></RequireAuth>} />
 
@@ -124,6 +128,7 @@ function App() {
           <FloatingAIChat />
         </div>
         </Router>
+          </SocketProvider>
         </AuthProvider>
       </ConfirmProvider>
     </ToastProvider>

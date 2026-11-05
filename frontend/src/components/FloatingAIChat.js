@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
 const FloatingAIChat = () => {
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
@@ -14,9 +16,11 @@ const FloatingAIChat = () => {
     ]);
     const [input, setInput] = useState('');
     const [selectedImage, setSelectedImage] = useState(null);
+    const [isDraggingImage, setIsDraggingImage] = useState(false);
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
+    const dragDepthRef = useRef(0);
 
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
@@ -77,12 +81,10 @@ const FloatingAIChat = () => {
         }
     };
 
-    const handleImageSelect = (event) => {
-        const file = event.target.files?.[0];
-        event.target.value = '';
+    const selectImageFile = (file) => {
         if (!file) return;
-        if (!file.type.startsWith('image/')) {
-            window.alert('Vui lòng chọn một tệp hình ảnh.');
+        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+            window.alert('Chỉ chấp nhận ảnh JPG, PNG hoặc WebP.');
             return;
         }
         if (file.size > 5 * 1024 * 1024) {
@@ -92,6 +94,41 @@ const FloatingAIChat = () => {
         const reader = new FileReader();
         reader.onload = () => setSelectedImage(reader.result);
         reader.readAsDataURL(file);
+    };
+
+    const handleImageSelect = (event) => {
+        selectImageFile(event.target.files?.[0]);
+        event.target.value = '';
+    };
+
+    const handleDragEnter = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (loading) return;
+        dragDepthRef.current += 1;
+        setIsDraggingImage(true);
+    };
+
+    const handleDragLeave = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+        if (dragDepthRef.current === 0) setIsDraggingImage(false);
+    };
+
+    const handleDrop = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        dragDepthRef.current = 0;
+        setIsDraggingImage(false);
+        if (loading) return;
+
+        const files = Array.from(event.dataTransfer.files || []);
+        if (files.length !== 1) {
+            window.alert('Vui lòng kéo thả đúng một hình ảnh.');
+            return;
+        }
+        selectImageFile(files[0]);
     };
 
     // Helper format chữ: biến **chữ đậm** thành <strong>
@@ -119,6 +156,14 @@ const FloatingAIChat = () => {
             {isOpen && (
                 <div 
                     className="shadow-2xl d-flex flex-column"
+                    onDragEnter={handleDragEnter}
+                    onDragOver={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        event.dataTransfer.dropEffect = 'copy';
+                    }}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
                     style={{
                         position: 'fixed',
                         bottom: '105px',
@@ -135,6 +180,26 @@ const FloatingAIChat = () => {
                         boxShadow: '0 20px 45px rgba(15, 23, 42, 0.25)'
                     }}
                 >
+                    {isDraggingImage && (
+                        <div
+                            className="d-flex flex-column align-items-center justify-content-center text-center"
+                            style={{
+                                position: 'absolute',
+                                inset: '8px',
+                                zIndex: 10,
+                                border: '2px dashed #6366f1',
+                                borderRadius: '16px',
+                                background: 'rgba(238, 242, 255, 0.96)',
+                                color: '#4338ca',
+                                pointerEvents: 'none'
+                            }}
+                            aria-live="polite"
+                        >
+                            <div style={{ fontSize: '40px' }}>🖼️</div>
+                            <strong>Thả ảnh vào đây</strong>
+                            <span style={{ fontSize: '12px' }}>Chỉ JPG, PNG hoặc WebP · tối đa 5 MB</span>
+                        </div>
+                    )}
                     {/* 1. Header (Cố định) */}
                     <div 
                         className="d-flex align-items-center justify-content-between px-3 py-3 text-white flex-shrink-0"
@@ -307,7 +372,7 @@ const FloatingAIChat = () => {
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept="image/*"
+                            accept="image/jpeg,image/png,image/webp"
                             onChange={handleImageSelect}
                             style={{ display: 'none' }}
                         />

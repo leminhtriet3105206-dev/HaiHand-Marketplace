@@ -2500,7 +2500,7 @@ app.post('/api/chatbot/ask', async (req, res) => {
       return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn hoặc hình ảnh' });
     }
 
-    if (image && (!image.startsWith('data:image/') || image.length > 7_000_000)) {
+    if (image && (!/^data:image\/(?:jpeg|png|webp);base64,/i.test(image) || image.length > 7_000_000)) {
       return res.status(400).json({ error: 'Hình ảnh không hợp lệ hoặc vượt quá 5 MB' });
     }
 

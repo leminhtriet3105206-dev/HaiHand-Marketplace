@@ -28,8 +28,9 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data } = await axios.get(`${API_URL}/api/users/${stored._id}`);
       if (data) {
-        localStorage.setItem('user', JSON.stringify(data));
-        setUser(data);
+        const merged = { ...stored, ...data, token: data.token || stored.token };
+        localStorage.setItem('user', JSON.stringify(merged));
+        setUser(merged);
       }
     } catch {
       // Fallback: keep the stored user as-is

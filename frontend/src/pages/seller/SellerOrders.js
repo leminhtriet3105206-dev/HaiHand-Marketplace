@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import axiosClient from '../../api/axiosClient';
 import { useToast } from '../../components/Toast';
 import { useConfirm } from '../../components/ConfirmModal';
+import OrderDetailModal from '../../components/OrderDetailModal';
 
 const ORDER_TABS = [
     { id: 'all', label: 'Tất cả' },
@@ -38,6 +39,10 @@ const SellerOrders = () => {
         shippingCode: ''
     });
 
+    // Loading state khi gọi API tạo đơn GHN (theo orderId để disable nút tương ứng)
+    const [shippingLoadingId, setShippingLoadingId] = useState(null);
+    const [selectedOrderDetail, setSelectedOrderDetail] = useState(null);
+
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
     const fetchOrders = useCallback(async () => {
@@ -70,15 +75,80 @@ const SellerOrders = () => {
         }
     };
 
-    const handleConfirmOrder = async (order) => {
-        const isConfirmed = await confirm({
-            title: 'Xác nhận đơn hàng',
-            message: `Xác nhận và chuẩn bị đơn hàng #${order._id.slice(-6).toUpperCase()}?`,
-            confirmText: 'Xác nhận đơn',
-            cancelText: 'Đóng'
-        });
+    /**
+     * Hàm gọi API Tạo đơn giao hàng GHN
+     */
+    const handleShipGHN = async (orderId) => {
+        if (shippingLoadingId) return;
+        setShippingLoadingId(orderId);
+
+        try {
+            const res = await axiosClient.post(`/api/seller/orders/${orderId}/ship`);
+            const { trackingCode, order_code } = res.data || {};
+            const code = trackingCode || order_code;
+
+            toast.success(`🎉 Tạo đơn GHN thành công! Mã vận đơn: ${code}`);
+
+            // Cập nhật ngay state danh sách đơn hàng để UI hiển thị mã trackingCode vừa nhận được và ẩn nút "Tạo đơn GHN"
+            setOrders((prevOrders) =>
+                prevOrders.map((ord) => {
+                    if (ord._id === orderId) {
+                        return {
+                            ...ord,
+                            trackingCode: code,
+                            shippingCode: code,
+                            shippingCarrier: 'Giao Hàng Nhanh (GHN)',
+                            status: 'Processing',
+                            canonicalStatus: 'Processing',
+                            shipment: {
+                                ...(ord.shipment || {}),
+                                trackingCode: code,
+                                provider: 'ghn'
+                            }
+                        };
+                    }
+                    return ord;
+                })
+            );
+        } catch (error) {
+            console.error('Lỗi khi gọi API tạo đơn GHN:', error);
+            // Đảm bảo chỉ truyền chuỗi String nguyên thủy vào toast.error để tránh lỗi "Objects are not valid as a React child"
+            const rawErrorMsg =
+                error.response?.data?.message ||
+                error.response?.data?.error?.message ||
+                (typeof error.response?.data?.error === 'string' ? error.response.data.error : null) ||
+                error.message ||
+                'Lỗi khi tạo đơn giao hàng GHN!';
+            const safeErrMsg =
+                typeof rawErrorMsg === 'string'
+                    ? rawErrorMsg
+                    : JSON.stringify(rawErrorMsg);
+            toast.error(safeErrMsg);
+        } finally {
+            setShippingLoadingId(null);
+        }
+    };
+
+    const handlePrepareOrder = async (order) => {
+        // Truyền chuỗi thông báo (hoặc object đã được chuẩn hóa) thay vì render trực tiếp object trong JSX
+        const confirmPromptMessage = `Hệ thống sẽ kết nối với ${order.shippingCarrier || 'Đơn vị vận chuyển (GHN)'} để tạo mã vận đơn và gửi yêu cầu lấy hàng. Bạn có chắc chắn muốn chuẩn bị đơn hàng #${order._id.slice(-6).toUpperCase()}?`;
+        const isConfirmed = await confirm(confirmPromptMessage);
         if (isConfirmed) {
-            handleUpdateStatus(order._id, 'Processing');
+            try {
+                const res = await axiosClient.post(`/api/seller/orders/${order._id}/prepare`);
+                const successMsg =
+                    typeof res.data?.message === 'string'
+                        ? res.data.message
+                        : 'Chuẩn bị hàng thành công! Đã cấp mã vận đơn.';
+                toast.success(successMsg);
+                fetchOrders();
+            } catch (error) {
+                const rawErr =
+                    error.response?.data?.message ||
+                    error.message ||
+                    'Lỗi khi chuẩn bị hàng hoặc tạo mã vận đơn!';
+                toast.error(typeof rawErr === 'string' ? rawErr : JSON.stringify(rawErr));
+            }
         }
     };
 
@@ -215,6 +285,11 @@ const SellerOrders = () => {
                                         <span className="font-mono text-sm font-black text-slate-800">
                                             #{order._id.slice(-6).toUpperCase()}
                                         </span>
+                                        {order.parentOrderId && (
+                                            <span className="text-[11px] font-mono bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                                                Mã gộp: {order.parentOrderId}
+                                            </span>
+                                        )}
                                         <span className="text-slate-300">|</span>
                                         <span className="text-xs text-slate-400">
                                             {new Date(order.createdAt).toLocaleString('vi-VN')}
@@ -256,11 +331,19 @@ const SellerOrders = () => {
                                         })}
 
                                         {/* Shipping Info */}
-                                        {order.shippingCode && (
-                                            <div className="p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl text-xs text-indigo-900 flex items-center justify-between">
-                                                <span>
-                                                    <i className="fas fa-truck mr-1.5 text-indigo-600"></i>
-                                                    <strong>{order.shippingCarrier || 'Đơn vị vận chuyển'}:</strong> {order.shippingCode}
+                                        {(order.trackingCode || order.shippingCode || order.shipment?.trackingCode) && (
+                                            <div className="p-3 bg-emerald-50/70 border border-emerald-200 rounded-xl text-xs text-emerald-900 flex items-center justify-between">
+                                                <span className="flex items-center gap-2">
+                                                    <i className="fas fa-truck text-emerald-600 text-sm"></i>
+                                                    <span>
+                                                        <strong>{order.shippingCarrier || 'Giao Hàng Nhanh (GHN)'}:</strong>{' '}
+                                                        <span className="font-mono font-bold bg-white px-2 py-0.5 rounded border border-emerald-300 text-emerald-800">
+                                                            {order.trackingCode || order.shippingCode || order.shipment?.trackingCode}
+                                                        </span>
+                                                    </span>
+                                                </span>
+                                                <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full uppercase">
+                                                    Đã cấp mã GHN
                                                 </span>
                                             </div>
                                         )}
@@ -293,20 +376,53 @@ const SellerOrders = () => {
 
                                 {/* Order Action Buttons */}
                                 <div className="border-t border-slate-100 pt-4 flex flex-wrap items-center justify-end gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedOrderDetail(order)}
+                                        className="px-4 py-2 border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                                    >
+                                        <i className="fas fa-route text-orange-500"></i>
+                                        Hành trình GHN & Chi tiết
+                                    </button>
                                     {st === 'Pending' && (
                                         <>
                                             <button
                                                 onClick={() => handleCancelOrder(order)}
-                                                className="px-4 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl transition-colors"
+                                                className="px-4 py-2 border border-rose-200 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl transition-colors cursor-pointer"
                                             >
                                                 Hủy đơn
                                             </button>
+
+                                            {/* Nút Tạo đơn GHN (Tự động ẩn khi đã có mã vận đơn) */}
+                                            {!order.trackingCode && !order.shippingCode && !order.shipment?.trackingCode && (
+                                                <button
+                                                    onClick={() => handleShipGHN(order._id)}
+                                                    disabled={shippingLoadingId === order._id}
+                                                    className={`px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                        shippingLoadingId === order._id ? 'opacity-50 cursor-not-allowed' : ''
+                                                    }`}
+                                                    title="Tạo vận đơn chính thức qua API GHN"
+                                                >
+                                                    {shippingLoadingId === order._id ? (
+                                                        <>
+                                                            <i className="fas fa-spinner fa-spin"></i>
+                                                            Đang tạo đơn GHN...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <i className="fas fa-truck-fast"></i>
+                                                            Tạo đơn GHN
+                                                        </>
+                                                    )}
+                                                </button>
+                                            )}
+
                                             <button
-                                                onClick={() => handleConfirmOrder(order)}
-                                                className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
+                                                onClick={() => handlePrepareOrder(order)}
+                                                className="px-5 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5"
                                             >
-                                                <i className="fas fa-check mr-1.5"></i>
-                                                Xác nhận & Chuẩn bị hàng
+                                                <i className="fas fa-box"></i>
+                                                Chuẩn bị hàng & Lấy mã vận đơn
                                             </button>
                                         </>
                                     )}
@@ -319,6 +435,31 @@ const SellerOrders = () => {
                                             >
                                                 Hủy đơn
                                             </button>
+
+                                            {/* Nút Tạo đơn GHN (nếu đơn đang Processing mà chưa có mã GHN) */}
+                                            {!order.trackingCode && !order.shippingCode && !order.shipment?.trackingCode && (
+                                                <button
+                                                    onClick={() => handleShipGHN(order._id)}
+                                                    disabled={shippingLoadingId === order._id}
+                                                    className={`px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer flex items-center gap-1.5 ${
+                                                        shippingLoadingId === order._id ? 'opacity-50 cursor-not-allowed' : ''
+                                                    }`}
+                                                    title="Tạo vận đơn chính thức qua API GHN"
+                                                >
+                                                    {shippingLoadingId === order._id ? (
+                                                        <>
+                                                            <i className="fas fa-spinner fa-spin"></i>
+                                                            Đang tạo đơn GHN...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <i className="fas fa-truck-fast"></i>
+                                                            Tạo đơn GHN
+                                                        </>
+                                                    )}
+                                                </button>
+                                            )}
+
                                             <button
                                                 onClick={() => handleOpenShippingModal(order)}
                                                 className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
@@ -427,6 +568,14 @@ const SellerOrders = () => {
                         </div>
                     </form>
                 </div>
+            )}
+
+            {/* Order Detail & Real-time GHN Tracking Modal */}
+            {selectedOrderDetail && (
+                <OrderDetailModal
+                    order={selectedOrderDetail}
+                    onClose={() => setSelectedOrderDetail(null)}
+                />
             )}
         </div>
     );

@@ -11,6 +11,7 @@ const productSchema = new mongoose.Schema({
   stockQuantity: { type: Number, default: 1, min: 0 },
   quantity: { type: Number, default: 1 },
   soldCount: { type: Number, default: 0 },
+  weight: { type: Number, default: 500, min: 1 }, // grams per unit, for shipping fee
   category: { type: String, required: true },
   location: { type: String, default: 'Toàn quốc' },
   description: { type: String, default: '' },

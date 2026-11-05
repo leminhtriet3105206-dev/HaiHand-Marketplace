@@ -30,6 +30,10 @@ const {
 } = require('./utils/b2c');
 const createSellerRouter = require('./routes/seller');
 const haipayRouter = require('./routes/haipay');
+const shippingRouter = require('./routes/shipping');
+const addressRouter = require('./routes/address');
+const PaymentSession = require('./models/PaymentSession');
+const { processCheckout, settlePaymentSession } = require('./controllers/checkoutController');
 
 const app = express();
 
@@ -213,41 +217,10 @@ const Follow = mongoose.models.Follow || mongoose.model('Follow', new mongoose.S
   following: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true }));
 
-const sendNotification = async (userId, title, message, type = 'SYSTEM', link = '/') => {
-  try {
-    const notif = await Notification.create({ userId, title, message, type, link });
-    if (typeof getUserSockets === 'function') {
-      const receiverSockets = getUserSockets(userId.toString());
-      if (receiverSockets && receiverSockets.length > 0) {
-        receiverSockets.forEach(userSocket => {
-          io.to(userSocket.socketId).emit('new_notification', notif);
-        });
-      }
-    }
-    return notif;
-  } catch (error) {
-    console.error('Error sending notification:', error);
-  }
-};
-
-const sendAdminNotification = async (title, message, targetUrl = '/', type = 'SYSTEM') => {
-  try {
-    const notif = await Notification.create({
-      title,
-      message,
-      type,
-      link: targetUrl,
-      targetUrl,
-      isRead: false
-    });
-    if (io) {
-      io.emit('new_admin_notification', notif);
-    }
-    return notif;
-  } catch (error) {
-    console.error('Error sending admin notification:', error);
-  }
-};
+const notificationService = require('./utils/notificationService');
+notificationService.init(io, (uId) => (typeof getUserSockets === 'function' ? getUserSockets(uId) : []));
+const sendNotification = notificationService.sendNotification;
+const sendAdminNotification = notificationService.sendAdminNotification;
 
 const session = require('express-session');
 app.use(session({
@@ -280,7 +253,15 @@ const requireAdmin = (req, res, next) => {
 };
 
 app.use(createSellerRouter({ upload, sendNotification, sendAdminNotification, io }));
+const shippingController = require('./controllers/shippingController');
+const webhookRouter = require('./routes/webhook');
+app.post('/api/seller/orders/:orderId/ship', protect, shippingController.createShipmentGHN);
+app.use('/api/webhook', webhookRouter);
 app.use('/api/haipay', haipayRouter);
+app.use('/api/shipping', shippingRouter);
+app.use('/api/users/me/addresses', addressRouter);
+app.use('/api/addresses', addressRouter);
+app.post('/api/checkout', protect, processCheckout);
 
 app.get('/login', (req, res) => res.render('login', { error: null }));
 
@@ -951,16 +932,31 @@ app.delete('/api/posts/:id', async (req, res) => {
 
 app.get('/api/admin/notifications', async (req, res) => {
   try {
-    const notifs = await Notification.find().sort({ createdAt: -1 }).limit(20);
-    const unreadCount = await Notification.countDocuments({ isRead: false });
+    const adminFilter = {
+      $or: [
+        { targetRole: 'admin' },
+        { recipientRole: 'admin' },
+        { type: { $in: ['SELLER', 'PRODUCT', 'WITHDRAWAL', 'REPORT'] } }
+      ]
+    };
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
+    const notifs = await Notification.find(adminFilter).sort({ createdAt: -1 }).limit(limit);
+    const unreadCount = await Notification.countDocuments({ ...adminFilter, isRead: false });
     res.json({ notifications: notifs, unreadCount });
-  } catch (error) { res.status(500).json({ error: "Lỗi" }); }
+  } catch (error) { res.status(500).json({ error: "Lỗi: " + error.message }); }
 });
 
 
 app.post('/api/admin/notifications/read', async (req, res) => {
   try {
-    await Notification.updateMany({ isRead: false }, { isRead: true });
+    const adminFilter = {
+      $or: [
+        { targetRole: 'admin' },
+        { recipientRole: 'admin' },
+        { type: { $in: ['SELLER', 'PRODUCT', 'WITHDRAWAL', 'REPORT'] } }
+      ]
+    };
+    await Notification.updateMany({ ...adminFilter, isRead: false }, { isRead: true });
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: "Lỗi cập nhật thông báo: " + error.message });
@@ -1010,12 +1006,14 @@ app.get('/api/admin/unread-chats', async (req, res) => {
 
 app.get('/api/admin/test-notif', async (req, res) => {
   try {
-    await Notification.create({
-      title: '🔔 Thông báo Test Hệ thống',
-      message: 'Tuyệt vời! Hệ thống chuông báo của Admin đang hoạt động rất trơn tru!',
-    });
-    res.json({ message: "Đã bắn thông báo test!" });
-  } catch (error) { res.status(500).json({ error: "Lỗi" }); }
+    const notif = await sendAdminNotification(
+      '🔔 Thông báo Test Hệ thống',
+      'Tuyệt vời! Hệ thống chuông báo của Admin đang hoạt động rất trơn tru!',
+      '/dashboard',
+      'SYSTEM'
+    );
+    res.json({ message: "Đã bắn thông báo test!", notif });
+  } catch (error) { res.status(500).json({ error: "Lỗi: " + error.message }); }
 });
 
 
@@ -1114,12 +1112,31 @@ app.post('/api/users/login', async (req, res) => {
 
 app.post('/api/users/register', async (req, res) => {
   try {
+    // 1. Strict Input Sanitization: Whitelist ONLY safe fields
     const { name, phone, address, email, password } = req.body;
     if (!name || !email || !password) return res.status(400).json({ message: 'Điền đủ Họ tên, Email, Mật khẩu!' });
-    const existingUser = await User.findOne({ email });
+
+    // 2. Privilege Escalation Guard: Reject any attempt to pass Admin roles or privileges
+    const requestedRole = req.body.role || req.body.roles;
+    if (requestedRole && /(admin|quản trị|root|superuser)/i.test(String(requestedRole))) {
+      return res.status(403).json({ message: 'Không được phép chỉ định vai trò Quản trị viên!' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) return res.status(400).json({ message: 'Email này đã được sử dụng!' });
 
-    const newUser = new User({ name, email, password, phone, address, sellerStatus: 'none', isSeller: false });
+    // 3. Force default safe role ('Khách hàng') and reset seller flags
+    const newUser = new User({
+      name: name.trim(),
+      email: cleanEmail,
+      password,
+      phone: phone ? phone.trim() : '',
+      address: address ? address.trim() : '',
+      role: 'Khách hàng', // Strictly forced safe default
+      sellerStatus: 'none',
+      isSeller: false
+    });
     await newUser.save();
     const safe = sanitizeUser(newUser);
     res.status(201).json({ message: 'Đăng ký thành công', user: { ...safe, token: signUserToken(newUser) } });
@@ -1328,227 +1345,14 @@ function buildVnpayPaymentUrl({ orderId, amount, ipAddr = '127.0.0.1', orderInfo
 }
 
 // ==========================================
-// CHECKOUT CONTROLLER (POST /api/users/:userId/checkout)
+// CHECKOUT CONTROLLER (POST /api/users/:userId/checkout & /api/checkout)
 // ==========================================
-app.post('/api/users/:userId/checkout', async (req, res) => {
-  try {
-    const { items, totalPrice, phone, address, paymentMethod } = req.body;
-    const userId = req.params.userId;
-
-    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'Mã người dùng không hợp lệ', error: 'Mã người dùng không hợp lệ' });
-    }
-
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'Không tìm thấy thông tin người dùng', error: 'Không tìm thấy người dùng' });
-    }
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ message: 'Vui lòng chọn ít nhất 1 sản phẩm để thanh toán', error: 'Giỏ hàng trống hoặc chưa chọn sản phẩm' });
-    }
-
-    // Sanitize phone & address to guarantee Mongoose schema validation passes
-    const finalPhone = (phone && typeof phone === 'string' && phone.trim()) || 
-                       (user.phone && typeof user.phone === 'string' && user.phone.trim()) || 
-                       '0123456789';
-    const finalAddress = (address && typeof address === 'string' && address.trim()) || 
-                         (user.address && typeof user.address === 'string' && user.address.trim()) || 
-                         'Địa chỉ mặc định';
-
-    const cartItems = (user && Array.isArray(user.cart)) ? user.cart : [];
-
-    // HaiPay balance check
-    if (paymentMethod === 'HAIPAY') {
-      if (!user.cccd || user.cccd.trim() === '') {
-        return res.status(400).json({ message: 'Bạn cần cập nhật CCCD (KYC) trong Hồ sơ để dùng ví HaiPay!', error: 'Bạn cần cập nhật CCCD (KYC) trong Hồ sơ để dùng ví HaiPay!' });
-      }
-      if (user.walletBalance < (Number(totalPrice) || 0)) {
-        return res.status(400).json({ message: 'Số dư ví HaiPay không đủ. Vui lòng nạp thêm!', error: 'Số dư ví HaiPay không đủ. Vui lòng nạp thêm!' });
-      }
-    }
-
-    let finalStatus = 'Pending';
-    let paymentStatus = 'unpaid';
-    if (paymentMethod === 'HAIPAY') {
-      finalStatus = 'Pending';
-      paymentStatus = 'escrow';
-    } else {
-      finalStatus = 'Pending';
-      paymentStatus = 'unpaid';
-    }
-
-    // Filter valid ObjectIds for posts query
-    const validItemIds = items.filter(id => mongoose.Types.ObjectId.isValid(id));
-    if (validItemIds.length === 0) {
-      return res.status(400).json({ message: 'Danh sách sản phẩm không hợp lệ', error: 'Danh sách sản phẩm không hợp lệ' });
-    }
-
-    const posts = await Post.find({ _id: { $in: validItemIds } });
-    if (!posts || posts.length === 0) {
-      return res.status(400).json({ message: 'Không tìm thấy sản phẩm nào trong hệ thống', error: 'Không tìm thấy sản phẩm' });
-    }
-
-    // In case any legacy post lacks author/sellerId, retrieve fallback seller user
-    let fallbackSellerUser = null;
-    const ordersBySeller = {};
-
-    for (let post of posts) {
-      let sellerId = productOwnerId(post);
-      if (!sellerId || !mongoose.Types.ObjectId.isValid(sellerId)) {
-        if (!fallbackSellerUser) {
-          fallbackSellerUser = await User.findOne({ role: /Admin|Quản trị/i }) || await User.findOne();
-        }
-        sellerId = fallbackSellerUser ? fallbackSellerUser._id.toString() : userId.toString();
-      }
-
-      if (!ordersBySeller[sellerId]) {
-        ordersBySeller[sellerId] = { items: [], orderItems: [], total: 0 };
-      }
-
-      const cartItem = cartItems.find(c => c.product && c.product.toString() === post._id.toString());
-      const qty = cartItem ? Math.max(1, Number(cartItem.quantity) || 1) : 1;
-      const price = Number(post.price) || 0;
-
-      ordersBySeller[sellerId].items.push(post._id);
-      ordersBySeller[sellerId].orderItems.push({
-        productId: post._id,
-        name: displayProductName(post),
-        price: price,
-        quantity: qty,
-        image: (post.images && post.images[0]) || ''
-      });
-      ordersBySeller[sellerId].total += price * qty;
-    }
-
-    const sellerIds = Object.keys(ordersBySeller);
-    if (sellerIds.length === 0) {
-      return res.status(400).json({ message: 'Không thể khởi tạo đơn hàng từ danh sách sản phẩm', error: 'Không thể khởi tạo đơn hàng' });
-    }
-
-    const savedOrders = [];
-    for (const sId of sellerIds) {
-      const sellerData = ordersBySeller[sId];
-      // If single seller order and frontend passed a computed final total (with vouchers/shipping), honor it
-      const orderTotal = (sellerIds.length === 1 && totalPrice != null)
-        ? Math.max(0, Number(totalPrice) || sellerData.total)
-        : Math.max(0, sellerData.total);
-
-      const newOrder = new Order({
-        buyer: userId,
-        buyerId: userId,
-        seller: sId,
-        sellerId: sId,
-        items: sellerData.items,
-        orderItems: sellerData.orderItems,
-        totalPrice: orderTotal,
-        phone: finalPhone,
-        address: finalAddress,
-        paymentMethod: paymentMethod || 'COD',
-        paymentStatus,
-        status: finalStatus
-      });
-
-      await newOrder.save();
-      savedOrders.push(newOrder);
-
-      if (paymentMethod === 'HAIPAY') {
-        await User.findByIdAndUpdate(sId, { $inc: { pendingBalance: orderTotal * 0.95 } });
-      }
-    }
-
-    // Deduct HaiPay balance from buyer
-    if (paymentMethod === 'HAIPAY') {
-      const deductAmount = Number(totalPrice) || savedOrders.reduce((sum, o) => sum + o.totalPrice, 0);
-      user.walletBalance = Math.max(0, user.walletBalance - deductAmount);
-    }
-
-    // Deduct inventory & remove purchased items from cart for immediate orders
-    if (paymentMethod === 'HAIPAY' || paymentMethod === 'COD') {
-      for (let validId of validItemIds) {
-        const post = await Post.findById(validId);
-        if (post) {
-          const cartItem = cartItems.find(c => c.product && c.product.toString() === validId.toString());
-          const qty = cartItem ? Math.max(1, Number(cartItem.quantity) || 1) : 1;
-          const currentStock = post.stockQuantity ?? post.quantity ?? 0;
-          const nextStock = Math.max(0, currentStock - qty);
-          post.stockQuantity = nextStock;
-          post.quantity = nextStock;
-          if (nextStock === 0) post.status = 'out_of_stock';
-          await post.save();
-        }
-      }
-
-      // Filter purchased items out of user cart
-      const purchasedIdsStr = validItemIds.map(id => id.toString());
-      user.cart = cartItems.filter(c => c.product && !purchasedIdsStr.includes(c.product.toString()));
-      await user.save();
-    }
-
-    // Pre-generate VNPAY URL if payment method is VNPAY
-    let paymentUrl = null;
-    if (paymentMethod === 'VNPAY' && savedOrders.length > 0) {
-      try {
-        const primaryOrder = savedOrders[0];
-        const vnpAmount = (totalPrice != null && Number(totalPrice) > 0) 
-          ? Number(totalPrice) 
-          : primaryOrder.totalPrice;
-        const ipAddr = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || req.socket?.remoteAddress || '127.0.0.1';
-        paymentUrl = buildVnpayPaymentUrl({
-          orderId: primaryOrder._id.toString(),
-          amount: vnpAmount,
-          ipAddr
-        });
-      } catch (vnpErr) {
-        console.error('Checkout VNPAY URL Generation Warning:', vnpErr);
-      }
-    }
-
-    // Send notifications safely in non-blocking try-catch
-    for (const order of savedOrders) {
-      try {
-        const sId = orderSellerId(order);
-        if (sId && mongoose.Types.ObjectId.isValid(sId)) {
-          await sendNotification(
-            sId,
-            '🎉 Đơn hàng mới!',
-            `Bạn vừa nhận được một đơn hàng mới trị giá ${(order.totalPrice || 0).toLocaleString('vi-VN')} đ.`,
-            'ORDER',
-            '/seller-channel/orders'
-          );
-        }
-      } catch (notifErr) {
-        console.warn('Seller notification warning:', notifErr.message);
-      }
-    }
-
-    try {
-      await sendNotification(
-        userId,
-        '📦 Đặt hàng thành công',
-        `Đơn hàng của bạn đã được ghi nhận. Đang chờ Shop xác nhận.`,
-        'ORDER',
-        '/profile?tab=orders_buy'
-      );
-    } catch (notifErr) {
-      console.warn('Buyer notification warning:', notifErr.message);
-    }
-
-    return res.status(200).json({
-      message: 'Đặt hàng thành công!',
-      order: savedOrders[0],
-      paymentUrl,
-      newBalance: user.walletBalance,
-      allOrders: savedOrders
-    });
-
-  } catch (error) {
-    console.error("Checkout Error:", error);
-    return res.status(500).json({
-      message: error.message || 'Lỗi khi đặt hàng',
-      error: error.message || 'Lỗi khi đặt hàng'
-    });
+app.post('/api/users/:userId/checkout', protect, (req, res, next) => {
+  if (!req.user._id.equals(req.params.userId) && req.user.role !== 'Admin') {
+    return res.status(403).json({ message: 'Không thể tiến hành đặt hàng thay cho tài khoản khác' });
   }
+  req.body.userId = req.params.userId;
+  return processCheckout(req, res, next);
 });
 
 app.get('/api/users/public-profile/:userId', async (req, res) => {
@@ -1632,28 +1436,229 @@ app.get('/api/users/follow-status', async (req, res) => {
 
 app.get('/api/notifications', async (req, res) => {
   try {
-    const userId = req.headers['userid'] || req.query.userId;
-    const query = userId ? { userId } : {};
+    const { role, scope, type, limit } = req.query;
 
-    const notifs = await Notification.find(query).sort({ createdAt: -1 }).limit(30);
-    const unreadCount = await Notification.countDocuments({ ...query, isRead: false });
-    res.json({ notifications: notifs, unreadCount });
-  } catch (error) { res.status(500).json({ error: "Lỗi" }); }
+    // 1. Admin portal scope: Return ONLY admin/system-level notifications
+    if (scope === 'admin' || role === 'admin') {
+      const adminFilter = {
+        $or: [
+          { targetRole: 'admin' },
+          { recipientRole: 'admin' },
+          { type: { $in: ['SELLER', 'PRODUCT', 'WITHDRAWAL', 'REPORT'] } }
+        ]
+      };
+      if (type) {
+        adminFilter.type = type;
+      }
+      const maxLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 30));
+      const notifs = await Notification.find(adminFilter).sort({ createdAt: -1 }).limit(maxLimit);
+      const unreadCount = await Notification.countDocuments({ ...adminFilter, isRead: false });
+
+      return res.json({
+        notifications: notifs,
+        unreadCount,
+        unreadByType: {}
+      });
+    }
+
+    let userId = req.headers['userid'] || req.query.userId;
+    if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], process.env.JWT_SECRET || 'secret123');
+        userId = decoded.id || decoded._id;
+      } catch (e) {}
+    }
+
+    if (!userId) {
+      return res.json({ notifications: [], unreadCount: 0, unreadByType: {} });
+    }
+
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+
+    // Base query for personal user notifications (strictly exclude admin notifications)
+    const baseQuery = {
+      $or: [
+        { userId: userObjectId },
+        { user: userObjectId },
+        { shopId: userObjectId }
+      ],
+      targetRole: { $ne: 'admin' },
+      recipientRole: { $ne: 'admin' }
+    };
+
+    // Filter by role context if requested
+    if (role === 'seller') {
+      baseQuery.$and = [
+        {
+          $or: [
+            { recipientRole: 'seller' },
+            { targetRole: 'seller' },
+            { shopId: userObjectId },
+            { type: { $in: ['NEW_ORDER', 'SELLER'] } }
+          ]
+        }
+      ];
+    } else if (role === 'buyer') {
+      baseQuery.$and = [
+        {
+          $or: [
+            { recipientRole: 'buyer' },
+            { targetRole: 'buyer' },
+            { recipientRole: { $exists: false } },
+            { type: { $in: ['ORDER', 'ORDER_STATUS', 'PAYMENT', 'MESSAGE', 'SYSTEM'] } }
+          ]
+        }
+      ];
+    }
+
+    // Optional type filter
+    if (type) {
+      baseQuery.type = type;
+    }
+
+    const maxLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 30));
+    const notifs = await Notification.find(baseQuery).sort({ createdAt: -1 }).limit(maxLimit);
+    const unreadCount = await Notification.countDocuments({ ...baseQuery, isRead: false });
+
+    // Aggregate unread notifications grouped by type for sidebar badges
+    const unreadGroupQuery = {
+      $or: [
+        { userId: userObjectId },
+        { user: userObjectId },
+        { shopId: userObjectId }
+      ],
+      targetRole: { $ne: 'admin' },
+      recipientRole: { $ne: 'admin' },
+      isRead: false
+    };
+    if (role === 'seller') {
+      unreadGroupQuery.$and = [
+        {
+          $or: [
+            { recipientRole: 'seller' },
+            { targetRole: 'seller' },
+            { shopId: userObjectId },
+            { type: { $in: ['NEW_ORDER', 'SELLER'] } }
+          ]
+        }
+      ];
+    }
+
+    const unreadGroupAgg = await Notification.aggregate([
+      { $match: unreadGroupQuery },
+      { $group: { _id: '$type', count: { $sum: 1 } } }
+    ]);
+
+    const unreadByType = {};
+    unreadGroupAgg.forEach(item => {
+      if (item._id) unreadByType[item._id] = item.count;
+    });
+
+    res.json({
+      notifications: notifs,
+      unreadCount,
+      unreadByType
+    });
+  } catch (error) {
+    console.error('Lỗi lấy danh sách thông báo:', error);
+    res.status(500).json({ error: "Lỗi lấy danh sách thông báo: " + error.message });
+  }
 });
 
 app.put('/api/notifications/:id/read', async (req, res) => {
   try {
-    await Notification.findByIdAndUpdate(req.params.id, { isRead: true });
-    res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: "Lỗi" }); }
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ error: "ID thông báo không hợp lệ" });
+    }
+    const updated = await Notification.findByIdAndUpdate(req.params.id, { isRead: true }, { new: true });
+    res.json({ success: true, notification: updated });
+  } catch (error) {
+    res.status(500).json({ error: "Lỗi cập nhật thông báo" });
+  }
 });
 
 app.put('/api/notifications/read-all', async (req, res) => {
   try {
-    const userId = req.headers['userid'] || req.body.userId;
-    await Notification.updateMany({ userId, isRead: false }, { isRead: true });
-    res.json({ success: true });
-  } catch (error) { res.status(500).json({ error: "Lỗi" }); }
+    let userId = req.headers['userid'] || req.body.userId || req.query.userId;
+    if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], process.env.JWT_SECRET || 'secret123');
+        userId = decoded.id || decoded._id;
+      } catch (e) {}
+    }
+
+    if (!userId) {
+      return res.status(400).json({ error: "Thiếu userId" });
+    }
+
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+    const { role, type } = req.body;
+
+    const filter = {
+      $or: [
+        { userId: userObjectId },
+        { user: userObjectId },
+        { shopId: userObjectId }
+      ],
+      targetRole: { $ne: 'admin' },
+      recipientRole: { $ne: 'admin' },
+      isRead: false
+    };
+
+    if (type) {
+      filter.type = type;
+    }
+
+    if (role === 'seller') {
+      filter.$and = [
+        {
+          $or: [
+            { recipientRole: 'seller' },
+            { shopId: userObjectId },
+            { type: { $in: ['NEW_ORDER', 'SELLER'] } }
+          ]
+        }
+      ];
+    }
+
+    const result = await Notification.updateMany(filter, { isRead: true });
+    res.json({ success: true, modifiedCount: result.modifiedCount });
+  } catch (error) {
+    res.status(500).json({ error: "Lỗi cập nhật tất cả thông báo" });
+  }
+});
+
+app.put('/api/notifications/read-by-type', async (req, res) => {
+  try {
+    let userId = req.headers['userid'] || req.body.userId || req.query.userId;
+    if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], process.env.JWT_SECRET || 'secret123');
+        userId = decoded.id || decoded._id;
+      } catch (e) {}
+    }
+
+    const type = req.body.type || req.query.type;
+    if (!userId || !type) {
+      return res.status(400).json({ error: "Thiếu userId hoặc type" });
+    }
+
+    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+    const filter = {
+      $or: [
+        { userId: userObjectId },
+        { user: userObjectId },
+        { shopId: userObjectId }
+      ],
+      type,
+      isRead: false
+    };
+
+    const result = await Notification.updateMany(filter, { isRead: true });
+    res.json({ success: true, modifiedCount: result.modifiedCount });
+  } catch (error) {
+    res.status(500).json({ error: "Lỗi cập nhật thông báo theo loại" });
+  }
 });
 // ------------------------------------------
 
@@ -1690,10 +1695,12 @@ app.post('/api/users/:userId/withdraw', async (req, res) => {
     });
 
 
-    await Notification.create({
-      title: '💸 Yêu cầu rút tiền mới!',
-      message: `Khách hàng ${user.name} vừa yêu cầu rút ${amount.toLocaleString('vi-VN')}đ. Bác mau vào kiểm tra và chuyển khoản nhé!`,
-    });
+    await sendAdminNotification(
+      '💸 Yêu cầu rút tiền mới!',
+      `Khách hàng ${user.name} vừa yêu cầu rút ${amount.toLocaleString('vi-VN')}đ. Bác mau vào kiểm tra và chuyển khoản nhé!`,
+      '/admin/withdrawals',
+      'WITHDRAWAL'
+    );
 
     res.status(200).json({ message: 'Tạo lệnh rút tiền thành công!', user });
   } catch (error) {
@@ -1761,11 +1768,12 @@ app.post('/api/reports', async (req, res) => {
     await Report.create({ reporter: reporterId, post: postId, reason });
 
 
-    await Notification.create({
-      title: '🚩 Có báo cáo mới!',
-      message: `Một bài đăng vừa bị người dùng báo cáo vi phạm. Hãy kiểm tra ngay!`,
-      link: '/admin/reports'
-    });
+    await sendAdminNotification(
+      '🚩 Có báo cáo mới!',
+      'Một bài đăng vừa bị người dùng báo cáo vi phạm. Hãy kiểm tra ngay!',
+      '/admin/reports',
+      'REPORT'
+    );
 
     res.json({ message: "Đã gửi báo cáo thành công!" });
   } catch (e) { res.status(500).json({ error: "Lỗi" }); }
@@ -1845,9 +1853,18 @@ app.get('/api/users/:id', async (req, res) => {
 
 
 
-app.get('/api/orders/seller/:sellerId', async (req, res) => {
+app.get('/api/orders/seller/:sellerId', protect, async (req, res) => {
   try {
     const sellerId = req.params.sellerId;
+    const isOwner = req.user._id.equals
+      ? req.user._id.equals(sellerId)
+      : req.user._id.toString() === sellerId.toString();
+    const isAdmin = req.user.role === 'Admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'Bạn không có quyền xem đơn hàng của Shop này' });
+    }
+
     const orders = await Order.find({ $or: [{ seller: sellerId }, { sellerId }] })
       .populate('buyer buyerId', 'name email phone address')
       .populate('items', 'title name price images image')
@@ -1857,10 +1874,21 @@ app.get('/api/orders/seller/:sellerId', async (req, res) => {
 });
 
 
-app.put('/api/orders/:orderId/confirm', async (req, res) => {
+app.put('/api/orders/:orderId/confirm', protect, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId).populate('seller sellerId buyer buyerId');
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+
+    const sellerRef = orderSellerId(order);
+    const isSellerOwner = sellerRef && (
+      req.user._id.equals ? req.user._id.equals(sellerRef) : req.user._id.toString() === sellerRef.toString()
+    );
+    const isAdmin = req.user.role === 'Admin';
+
+    if (!isSellerOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Đơn hàng này không thuộc Shop của bạn' });
+    }
+
     const current = canonicalStatus(order.status);
     if (!['Pending'].includes(current)) {
       return res.status(400).json({ message: 'Trạng thái đơn hàng không hợp lệ để xác nhận' });
@@ -1879,10 +1907,26 @@ app.put('/api/orders/:orderId/confirm', async (req, res) => {
 });
 
 
-app.put('/api/orders/:orderId/cancel', async (req, res) => {
+app.put('/api/orders/:orderId/cancel', protect, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+
+    const buyerRef = orderBuyerId(order);
+    const sellerRef = orderSellerId(order);
+
+    const isBuyerOwner = buyerRef && (
+      req.user._id.equals ? req.user._id.equals(buyerRef) : req.user._id.toString() === buyerRef.toString()
+    );
+    const isSellerOwner = sellerRef && (
+      req.user._id.equals ? req.user._id.equals(sellerRef) : req.user._id.toString() === sellerRef.toString()
+    );
+    const isAdmin = req.user.role === 'Admin';
+
+    if (!isBuyerOwner && !isSellerOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Bạn không có quyền hủy đơn hàng này' });
+    }
+
     const current = canonicalStatus(order.status);
     if (current === 'Cancelled') return res.status(400).json({ message: 'Đơn này đã bị hủy từ trước rồi!' });
     if (['Shipped', 'Delivered', 'Completed'].includes(current)) {
@@ -1893,9 +1937,9 @@ app.put('/api/orders/:orderId/cancel', async (req, res) => {
       await User.findByIdAndUpdate(orderBuyerId(order), {
         $inc: { walletBalance: order.totalPrice }
       });
-      const sellerRef = orderSellerId(order);
-      if (sellerRef) {
-        await User.findByIdAndUpdate(sellerRef, {
+      const sellerIdRef = orderSellerId(order);
+      if (sellerIdRef) {
+        await User.findByIdAndUpdate(sellerIdRef, {
           $inc: { pendingBalance: -(order.totalPrice * 0.95) }
         });
       }
@@ -1930,10 +1974,21 @@ app.put('/api/orders/:orderId/cancel', async (req, res) => {
 });
 
 
-app.put('/api/orders/:orderId/receive', async (req, res) => {
+app.put('/api/orders/:orderId/receive', protect, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+
+    const buyerRef = orderBuyerId(order);
+    const isBuyerOwner = buyerRef && (
+      req.user._id.equals ? req.user._id.equals(buyerRef) : req.user._id.toString() === buyerRef.toString()
+    );
+    const isAdmin = req.user.role === 'Admin';
+
+    if (!isBuyerOwner && !isAdmin) {
+      return res.status(403).json({ message: 'Bạn không phải là người mua của đơn hàng này' });
+    }
+
     const current = canonicalStatus(order.status);
     if (!['Shipped', 'Delivered'].includes(current)) {
       return res.status(400).json({ message: 'Đơn hàng chưa được giao, không thể xác nhận!' });
@@ -1947,9 +2002,18 @@ app.put('/api/orders/:orderId/receive', async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Lỗi xác nhận' }); }
 });
 
-app.get('/api/users/:userId/orders', async (req, res) => {
+app.get('/api/users/:userId/orders', protect, async (req, res) => {
   try {
     const userId = req.params.userId;
+    const isOwner = req.user._id.equals
+      ? req.user._id.equals(userId)
+      : req.user._id.toString() === userId.toString();
+    const isAdmin = req.user.role === 'Admin';
+
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'Bạn không có quyền xem đơn hàng của người dùng này' });
+    }
+
     const orders = await Order.find({ $or: [{ buyer: userId }, { buyerId: userId }] })
       .populate('items')
       .sort({ createdAt: -1 });
@@ -2235,13 +2299,26 @@ let onlineUsers = [];
 io.on('connection', (socket) => {
 
   socket.on('addUser', (userId) => {
-
+    if (userId) {
+      socket.join('user_' + userId.toString());
+      socket.userId = userId.toString();
+    }
     onlineUsers = onlineUsers.filter(u => u.userId !== userId);
-
     onlineUsers.push({ userId, socketId: socket.id });
-
-
     io.emit('getUsers', onlineUsers);
+  });
+
+  if (socket.handshake.auth?.role === 'admin' || socket.handshake.query?.role === 'admin') {
+    socket.join('admin_system_room');
+  }
+
+  socket.on('join_admin_room', (data) => {
+    socket.join('admin_system_room');
+    console.log(`🛡️ Socket ${socket.id} joined admin_system_room`);
+  });
+
+  socket.on('join', (room) => {
+    if (room) socket.join(room);
   });
 
 
@@ -2321,8 +2398,31 @@ app.post('/api/haipay/verify', async (req, res) => {
       const userId = parts[1];
       const actualAmount = parseInt(amount || req.body.amount) / 100;
 
-      const updatedUser = await User.findByIdAndUpdate(userId, { $inc: { walletBalance: actualAmount } }, { new: true });
-      res.status(200).json({ message: 'Nạp tiền thành công!', user: updatedUser });
+      // Idempotency Check: Prevent duplicate credit via replay attack
+      const existingTx = await Transaction.findOne({ txnRef });
+      if (existingTx) {
+        const currentUser = await User.findById(userId);
+        return res.status(200).json({ message: 'Giao dịch đã được ghi nhận trước đó!', user: currentUser });
+      }
+
+      try {
+        await Transaction.create({
+          user: userId,
+          type: 'Nạp tiền',
+          amount: actualAmount,
+          status: 'Thành công',
+          txnRef,
+          description: `Nạp tiền ví HaiPay qua VNPay (Mã GD: ${txnRef})`
+        });
+        const updatedUser = await User.findByIdAndUpdate(userId, { $inc: { walletBalance: actualAmount } }, { new: true });
+        return res.status(200).json({ message: 'Nạp tiền thành công!', user: updatedUser });
+      } catch (dupErr) {
+        if (dupErr.code === 11000) {
+          const currentUser = await User.findById(userId);
+          return res.status(200).json({ message: 'Giao dịch đã được ghi nhận!', user: currentUser });
+        }
+        throw dupErr;
+      }
     } else {
       res.status(400).json({ message: 'Giao dịch thất bại!' });
     }
@@ -2360,50 +2460,66 @@ app.post('/api/vnpay/verify', async (req, res) => {
       }
     }
 
+    // 1. Check if orderId matches PaymentSession (Multi-Vendor Checkout parentOrderId)
+    const session = await PaymentSession.findOne({ parentOrderId: orderId });
+    if (session) {
+      if (responseCode === '00') {
+        const result = await settlePaymentSession(orderId, {
+          gatewayPayload: { vnp_Params, responseCode },
+          paymentMethod: 'VNPAY'
+        });
+        return res.status(200).json({
+          message: 'Giao dịch VNPay thành công!',
+          parentOrderId: orderId,
+          ordersCount: result.orders?.length || 0
+        });
+      } else {
+        session.status = 'failed';
+        session.gatewayPayload = { vnp_Params, responseCode };
+        await session.save();
+
+        await Order.updateMany(
+          { _id: { $in: session.orderIds } },
+          { $set: { status: 'Cancelled', cancelReason: 'Thanh toán VNPay không thành công hoặc khách hủy' } }
+        );
+        return res.status(400).json({ message: 'Giao dịch thất bại hoặc đã bị khách hủy!' });
+      }
+    }
+
+    // 2. Legacy fallback for single order
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
     if (responseCode === '00') {
-      if (order.status === 'Đã thanh toán (Admin giữ tiền)') {
-        return res.status(200).json({ message: 'Giao dịch đã được xử lý thành công trước đó!' });
-      }
-
-      order.status = 'Đã thanh toán (Admin giữ tiền)';
+      order.paymentStatus = 'escrow';
+      order.status = 'Pending';
+      order.paidAt = new Date();
       await order.save();
 
       const user = await User.findById(order.buyer);
       if (user && user.cart && user.cart.length > 0) {
-        for (let cartItem of user.cart) {
-          const post = await Post.findById(cartItem.product);
-          if (post) {
-            post.quantity = Math.max(0, post.quantity - cartItem.quantity);
-            if (post.quantity === 0) post.status = 'SOLD';
-            await post.save();
-          }
-        }
-
-        await User.findOneAndUpdate(
-          { _id: order.buyer },
-          { $set: { cart: [] } },
-          { __v: false }
-        );
+        const purchasedIds = (order.items || []).map((id) => id.toString());
+        user.cart = user.cart.filter((c) => c.product && !purchasedIds.includes(c.product.toString()));
+        await user.save();
       }
 
-      await UserNotification.create({
+      await Notification.create({
         user: order.seller,
         title: '🎉 Bạn có đơn hàng mới!',
-        message: `Khách hàng vừa thanh toán thành công đơn hàng #${order._id.toString().slice(-6).toUpperCase()}. Hãy vào Quản lý đơn -> Đơn Bán để chuẩn bị giao hàng nhé!`,
-        link: '/profile'
+        message: `Khách hàng vừa thanh toán đơn hàng #${order._id.toString().slice(-6).toUpperCase()}. Hãy chuẩn bị hàng nhé!`,
+        link: '/seller-channel/orders'
       });
 
       return res.status(200).json({ message: 'Giao dịch VNPay thành công!' });
     } else {
-      await Order.findByIdAndDelete(orderId);
+      order.status = 'Cancelled';
+      order.cancelReason = 'Thanh toán VNPay thất bại hoặc bị hủy';
+      await order.save();
       return res.status(400).json({ message: 'Giao dịch thất bại hoặc đã bị khách hủy!' });
     }
   } catch (error) {
     console.error("Lỗi Verify VNPay:", error);
-    res.status(500).json({ error: 'Lỗi hệ thống khi xác nhận thanh toán!' });
+    res.status(500).json({ error: 'Lỗi hệ thống khi xác nhận thanh toán: ' + error.message });
   }
 });
 
@@ -2428,12 +2544,42 @@ app.get('/api/vnpay/vnpay_ipn', async (req, res) => {
           const parts = orderId.split('_');
           const userId = parts[1];
           const amount = parseInt(vnp_Params['vnp_Amount']) / 100;
-          await User.findByIdAndUpdate(userId, { $inc: { walletBalance: amount } });
-        } else if (orderId && mongoose.isValidObjectId(orderId)) {
-          const order = await Order.findById(orderId);
-          if (order && order.status !== 'Đã thanh toán (Admin giữ tiền)') {
-            order.status = 'Đã thanh toán (Admin giữ tiền)';
-            await order.save();
+
+          // Idempotency Check: Prevent duplicate credit via webhook retry/replay attack
+          const existingTx = await Transaction.findOne({ txnRef: orderId });
+          if (!existingTx) {
+            try {
+              await Transaction.create({
+                user: userId,
+                type: 'Nạp tiền',
+                amount,
+                status: 'Thành công',
+                txnRef: orderId,
+                description: `Nạp tiền ví HaiPay qua VNPay IPN (Mã GD: ${orderId})`
+              });
+              await User.findByIdAndUpdate(userId, { $inc: { walletBalance: amount } });
+            } catch (dupErr) {
+              if (dupErr.code !== 11000) {
+                console.error("Lỗi ghi nhận Transaction IPN:", dupErr);
+              }
+            }
+          }
+        } else if (orderId) {
+          // Check if parentOrderId matches PaymentSession
+          const session = await PaymentSession.findOne({ parentOrderId: orderId });
+          if (session) {
+            await settlePaymentSession(orderId, {
+              gatewayPayload: vnp_Params,
+              paymentMethod: 'VNPAY'
+            });
+          } else if (mongoose.isValidObjectId(orderId)) {
+            const order = await Order.findById(orderId);
+            if (order && order.paymentStatus !== 'escrow') {
+              order.paymentStatus = 'escrow';
+              order.status = 'Pending';
+              order.paidAt = new Date();
+              await order.save();
+            }
           }
         }
         res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
@@ -2449,38 +2595,89 @@ app.get('/api/vnpay/vnpay_ipn', async (req, res) => {
 });
 
 
-const otpStore = new Map();
+const bcrypt = require('bcryptjs');
+const OtpToken = require('./models/OtpToken');
+const { sendOtpEmail } = require('./utils/otpService');
 
 app.post('/api/users/send-otp', async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await mongoose.model('User').findOne({ email });
+    if (!email || !email.trim()) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp email!' });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await mongoose.model('User').findOne({ email: cleanEmail });
 
     if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký tài khoản!' });
 
-    // Fix Bug 3: Server generates OTP securely instead of trusting client
-    const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-    otpStore.set(email, { otp: generatedOtp, expire: Date.now() + 5 * 60 * 1000 });
+    // Generate cryptographically secure 6-digit numeric OTP
+    const generatedOtp = crypto.randomInt(100000, 1000000).toString();
+    const otpHash = await bcrypt.hash(generatedOtp, 10);
 
-    // Return OTP to frontend for EmailJS injection (workaround since EmailJS is on frontend)
-    res.json({ message: 'Backend đã tạo OTP!', otp: generatedOtp });
-  } catch (err) { res.status(500).json({ message: 'Lỗi Backend!' }); }
+    // Invalidate existing reset OTP tokens for this email
+    await OtpToken.deleteMany({ identifier: cleanEmail, purpose: 'RESET_PASSWORD' });
+
+    // Store hashed OTP in MongoDB with 5-minute TTL
+    await OtpToken.create({
+      identifier: cleanEmail,
+      otpHash,
+      purpose: 'RESET_PASSWORD',
+      attempts: 0
+    });
+
+    // Dispatch OTP securely via server-side mailer (never returned in HTTP response)
+    await sendOtpEmail({ email: cleanEmail, otp: generatedOtp, purpose: 'RESET_PASSWORD' });
+
+    res.json({ success: true, message: 'Mã xác thực OTP đã được gửi đến email của bạn!' });
+  } catch (err) {
+    console.error('Lỗi khi gửi OTP đặt lại mật khẩu:', err);
+    res.status(500).json({ message: 'Lỗi máy chủ khi gửi OTP!' });
+  }
 });
 
 app.post('/api/users/reset-password-otp', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
-    const record = otpStore.get(email);
-    if (!record || record.otp !== otp || Date.now() > record.expire) {
-      return res.status(400).json({ message: 'Mã OTP sai hoặc đã hết hạn!' });
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ email, mã OTP và mật khẩu mới!' });
     }
-    const user = await mongoose.model('User').findOne({ email });
-    // Mật khẩu nên được hash bằng bcrypt, nhưng để tương thích ngược tạm thời gán thẳng (Cần refactor Auth flow nếu muốn an toàn 100%)
-    user.password = newPassword;
+    const cleanEmail = email.trim().toLowerCase();
+
+    // Find active token in MongoDB
+    const tokenRecord = await OtpToken.findOne({ identifier: cleanEmail, purpose: 'RESET_PASSWORD' });
+    if (!tokenRecord) {
+      return res.status(400).json({ message: 'Mã OTP đã hết hạn hoặc không tồn tại!' });
+    }
+
+    if (tokenRecord.attempts >= 5) {
+      await OtpToken.deleteOne({ _id: tokenRecord._id });
+      return res.status(400).json({ message: 'Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu mã OTP mới!' });
+    }
+
+    const isMatch = await bcrypt.compare(String(otp).trim(), tokenRecord.otpHash);
+    if (!isMatch) {
+      tokenRecord.attempts += 1;
+      await tokenRecord.save();
+      return res.status(400).json({ message: 'Mã OTP không chính xác!' });
+    }
+
+    const user = await mongoose.model('User').findOne({ email: cleanEmail });
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng!' });
+    }
+
+    // Securely hash new password before persistence
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
-    otpStore.delete(email);
-    res.json({ message: 'Đổi mật khẩu thành công!' });
-  } catch (err) { res.status(500).json({ message: 'Lỗi hệ thống!' }); }
+
+    // Consume token immediately after successful reset
+    await OtpToken.deleteOne({ _id: tokenRecord._id });
+
+    res.json({ success: true, message: 'Đổi mật khẩu thành công!' });
+  } catch (err) {
+    console.error('Lỗi khi đặt lại mật khẩu bằng OTP:', err);
+    res.status(500).json({ message: 'Lỗi hệ thống khi đặt lại mật khẩu!' });
+  }
 });
 
 // --- API CHATBOT AI (LM STUDIO & MONGODB) ---
@@ -2520,9 +2717,32 @@ const getUserSockets = (userId) => {
 };
 
 io.on("connection", (socket) => {
+  const handshakeUserId = socket.handshake.auth?.userId || socket.handshake.query?.userId;
+  if (handshakeUserId) {
+    socket.join('user_' + handshakeUserId.toString());
+    addUser(handshakeUserId, socket.id);
+  }
+
   socket.on("addUser", (userId) => {
+    if (userId) {
+      socket.join('user_' + userId.toString());
+      socket.userId = userId.toString();
+    }
     addUser(userId, socket.id);
     io.emit("getUsers", users);
+  });
+
+  if (socket.handshake.auth?.role === 'admin' || socket.handshake.query?.role === 'admin') {
+    socket.join('admin_system_room');
+  }
+
+  socket.on("join_admin_room", (data) => {
+    socket.join('admin_system_room');
+    console.log(`🛡️ Socket ${socket.id} joined admin_system_room`);
+  });
+
+  socket.on("join", (room) => {
+    if (room) socket.join(room);
   });
 
   socket.on("sendMessage", ({ senderId, receiverId, text, post, images }) => {

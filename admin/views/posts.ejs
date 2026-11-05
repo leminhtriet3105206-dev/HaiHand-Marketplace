@@ -1,159 +1,238 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HaiHand Admin - Quản lý tin đăng</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #f4f7f6; font-family: 'Inter', sans-serif; }
-        .card-table { border: none; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.04); background: white; }
-        .product-img { width: 55px; height: 55px; object-fit: cover; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .status-badge { font-size: 11px; padding: 6px 12px; border-radius: 50px; font-weight: 600; text-transform: uppercase; }
-        .btn-action { border-radius: 8px; font-size: 13px; font-weight: 600; padding: 6px 15px; }
-        .table thead th { background-color: #f8f9fa; border-top: none; color: #6c757d; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
-    </style>
-</head>
-<body class="flex min-h-screen">
-
-    <%- include('partials/sidebar') %>
-
-    <div class="flex-1 p-10 h-screen overflow-y-auto w-full">
-        <div class="container-fluid px-0">
-            <div class="row align-items-center mb-4">
-                <div class="col">
-                    <h2 class="fw-bold m-0 text-dark">Kiểm duyệt tin đăng</h2>
-                    <p class="text-muted small">Nơi đảm bảo nội dung sạch cho cộng đồng HaiHand</p>
-                </div>
-                <div class="col-auto">
-                    <div class="input-group shadow-sm" style="width: 350px;">
-                        <span class="input-group-text bg-white border-end-0 text-muted">🔍</span>
-                        <input type="text" id="adminSearch" class="form-control border-start-0 py-2 ps-0" placeholder="Tìm sản phẩm, người bán..." onkeyup="filterPosts()">
-                    </div>
-                </div>
+<!-- POSTS VIEW (Inner Content Only for AdminLayout Outlet) -->
+<div class="space-y-6">
+    
+    <!-- Title & Search Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2.5">
+                <h2 class="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                    📦 Kiểm Duyệt Tin Đăng & Sản Phẩm
+                </h2>
+                <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800">
+                    <%= typeof posts !== 'undefined' ? posts.length : 0 %> Bài đăng
+                </span>
             </div>
+            <p class="text-slate-500 dark:text-slate-400 text-xs mt-1 font-medium">
+                Kiểm duyệt chất lượng sản phẩm, giá cả và nội dung an toàn cho cộng đồng HaiHand.
+            </p>
+        </div>
 
-            <div class="card card-table overflow-hidden">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" id="postTable">
-                        <thead>
-                            <tr>
-                                <th class="ps-4 py-3">Sản phẩm</th>
-                                <th>Người bán</th>
-                                <th>Giá niêm yết</th>
-                                <th>Danh mục</th>
-                                <th>Trạng thái</th>
-                                <th class="text-center">Quản lý</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <% posts.forEach(post => { %>
-                            <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center py-2">
-                                        <% 
-                                            
-                                            let imgSrc = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
-                                            if (post.images && post.images.length > 0) {
-                                                imgSrc = post.images[0].startsWith('http') ? post.images[0] : '/' + post.images[0].replace(/\\/g, '/');
-                                            } else if (post.image) {
-                                                imgSrc = post.image.startsWith('http') ? post.image : '/uploads/' + post.image;
-                                            }
-                                        %>
-                                        <img src="<%= imgSrc %>" class="product-img me-3" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'">
-                                        <div>
-                                            <div class="fw-bold text-dark"><%= post.title %></div>
-                                            <small class="text-muted"><i class="me-1">📍</i><%= post.location %></small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="small fw-bold"><%= post.author ? post.author.name : 'Vô danh' %></div>
-                                    </div>
-                                    <small class="text-muted"><%= post.author ? post.author.email : '' %></small>
-                                </td>
-                                <td>
-                                    <span class="text-danger fw-bold">
-                                        <%= new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(post.price) %>
-                                    </span>
-                                </td>
-                                <td><span class="badge bg-light text-secondary border px-2"><%= post.category %></span></td>
-                                <td>
-                                    <% if(post.status === 'PENDING') { %>
-                                        <span class="badge bg-warning-subtle text-warning status-badge">⌛ Đang chờ</span>
-                                    <% } else { %>
-                                        <span class="badge bg-success-subtle text-success status-badge">✅ Đã duyệt</span>
-                                    <% } %>
-                                </td>
-                                <td class="text-center">
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <% if(post.status === 'PENDING') { %>
-                                            <button class="btn btn-sm btn-success btn-action" onclick="approvePost('<%= post._id %>')">Duyệt bài</button>
-                                        <% } %>
-                                        <button class="btn btn-sm btn-outline-danger btn-action" onclick="deletePost('<%= post._id %>')">Gỡ bỏ</button>
-                                    </div>
-                                </td>
-                            </tr>
-                            <% }) %>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="noResults" class="text-center py-5 d-none">
-                    <div class="display-1 text-muted opacity-25 mb-3">📦</div>
-                    <h5 class="text-muted">Không tìm thấy dữ liệu nào!</h5>
-                </div>
-            </div>
+        <div class="relative w-full sm:w-80">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400 dark:text-slate-500">
+                <i class="fas fa-search text-xs"></i>
+            </span>
+            <input 
+                type="text" 
+                id="postSearch" 
+                onkeyup="filterPosts()" 
+                placeholder="Tìm tên sản phẩm, người bán..." 
+                class="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs font-medium rounded-2xl border border-slate-200 dark:border-slate-700 focus:border-purple-400 dark:focus:border-purple-500 focus:ring-4 focus:ring-purple-500/15 outline-none transition-all placeholder-slate-400 dark:placeholder-slate-500 shadow-sm"
+            />
         </div>
     </div>
 
-    <script>
-        function filterPosts() {
-            const input = document.getElementById("adminSearch").value.toLowerCase();
-            const rows = document.querySelectorAll("#postTable tbody tr");
-            let hasData = false;
-            rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                if (text.includes(input)) {
-                    row.style.display = "";
-                    hasData = true;
-                } else {
-                    row.style.display = "none";
-                }
+    <!-- Posts Table Card with Full Light / Dark Mode Adaptation -->
+    <div class="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-200/80 dark:border-slate-800 overflow-hidden transition-colors duration-200">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse" id="postTable">
+                <thead>
+                    <tr class="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200/80 dark:border-slate-800 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px] tracking-wider">
+                        <th class="p-4 px-6">Sản phẩm</th>
+                        <th class="p-4 px-6">Người bán</th>
+                        <th class="p-4 px-6 text-right">Giá niêm yết</th>
+                        <th class="p-4 px-6 text-center">Trạng thái</th>
+                        <th class="p-4 px-6 text-center">Quản lý</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
+                    <% if (typeof posts !== 'undefined' && posts && posts.length > 0) { %>
+                        <% posts.forEach(post => { %>
+                        <tr class="hover:bg-purple-50/40 dark:hover:bg-slate-800/50 transition-colors post-row group">
+                            <!-- Product thumbnail & title -->
+                            <td class="p-4 px-6">
+                                <div class="flex items-center space-x-3">
+                                    <% 
+                                        let imgSrc = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
+                                        if (post.images && post.images.length > 0) {
+                                            imgSrc = post.images[0].startsWith('http') ? post.images[0] : '/' + post.images[0].replace(/\\/g, '/');
+                                        } else if (post.image) {
+                                            imgSrc = post.image.startsWith('http') ? post.image : '/' + post.image.replace(/\\/g, '/');
+                                        }
+                                    %>
+                                    <img src="<%= imgSrc %>" onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'" class="w-12 h-12 object-cover rounded-xl shadow-sm border border-slate-200/60 dark:border-slate-700 shrink-0" />
+                                    <div>
+                                        <p class="font-bold text-slate-800 dark:text-slate-100 text-sm group-hover:text-purple-600 dark:group-hover:text-purple-400 transition leading-tight line-clamp-1 max-w-[240px]">
+                                            <%= post.title || post.name || 'Không có tiêu đề' %>
+                                        </p>
+                                        <p class="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 font-mono">
+                                            Mã: #<%= post._id.toString().slice(-6).toUpperCase() %>
+                                        </p>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Seller Info -->
+                            <td class="p-4 px-6">
+                                <p class="font-bold text-slate-700 dark:text-slate-200"><%= post.author?.name || 'Ẩn danh' %></p>
+                                <p class="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5"><%= post.author?.phone || 'Chưa có SĐT' %></p>
+                            </td>
+
+                            <!-- Price -->
+                            <td class="p-4 px-6 text-right font-black text-slate-900 dark:text-white text-sm">
+                                <%= (post.price || 0).toLocaleString('vi-VN') %> đ
+                            </td>
+
+                            <!-- Status -->
+                            <td class="p-4 px-6 text-center">
+                                <span id="post-status-badge-<%= post._id %>">
+                                <% if (post.status === 'APPROVED' || post.status === 'active') { %>
+                                    <span class="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold">
+                                        ĐÃ DUYỆT
+                                    </span>
+                                <% } else if (post.status === 'inactive') { %>
+                                    <span class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700 px-3 py-1 rounded-full text-[10px] font-bold">
+                                        ĐÃ GỠ
+                                    </span>
+                                <% } else { %>
+                                    <span class="bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/60 dark:border-amber-800 px-3 py-1 rounded-full text-[10px] font-bold animate-pulse">
+                                        CHỜ DUYỆT
+                                    </span>
+                                <% } %>
+                                </span>
+                            </td>
+
+                            <!-- Actions -->
+                            <td class="p-4 px-6 text-center space-x-1.5 whitespace-nowrap" id="post-actions-<%= post._id %>">
+                                <% if (post.status !== 'APPROVED' && post.status !== 'active') { %>
+                                    <button 
+                                        type="button"
+                                        onclick="approvePost('<%= post._id %>')" 
+                                        class="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl transition text-xs shadow-sm cursor-pointer"
+                                    >
+                                        <i class="fas fa-check text-[10px]"></i>
+                                        <span>Duyệt</span>
+                                    </button>
+                                <% } %>
+                                <% if (post.status !== 'inactive') { %>
+                                    <button 
+                                        type="button"
+                                        onclick="hidePost('<%= post._id %>')" 
+                                        class="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200/60 dark:border-rose-800/60 px-3 py-1.5 rounded-xl font-bold transition text-xs cursor-pointer"
+                                    >
+                                        <i class="fas fa-eye-slash text-[10px]"></i>
+                                        <span>Gỡ</span>
+                                    </button>
+                                <% } else { %>
+                                    <button 
+                                        type="button"
+                                        onclick="approvePost('<%= post._id %>')" 
+                                        class="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200/60 dark:border-purple-800/60 px-3 py-1.5 rounded-xl font-bold transition text-xs cursor-pointer"
+                                    >
+                                        <i class="fas fa-redo text-[10px]"></i>
+                                        <span>Khôi phục</span>
+                                    </button>
+                                <% } %>
+                            </td>
+                        </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="5" class="p-16 text-center text-slate-400 dark:text-slate-500 italic">Chưa có bài viết hoặc tin đăng nào.</td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="noResults" class="hidden text-center py-12">
+            <div class="text-4xl mb-2">🔍</div>
+            <p class="text-slate-500 dark:text-slate-400 font-medium">Không tìm thấy sản phẩm nào phù hợp!</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function filterPosts() {
+        const input = document.getElementById("postSearch").value.toLowerCase();
+        const rows = document.querySelectorAll(".post-row");
+        let hasData = false;
+        rows.forEach(row => {
+            const text = row.innerText.toLowerCase();
+            if (text.includes(input)) {
+                row.style.display = "";
+                hasData = true;
+            } else {
+                row.style.display = "none";
+            }
+        });
+        document.getElementById("noResults").classList.toggle("hidden", hasData || rows.length === 0);
+        document.getElementById("postTable").classList.toggle("hidden", !hasData && rows.length > 0);
+    }
+
+    async function approvePost(postId) {
+        const badgeContainer = document.getElementById(`post-status-badge-${postId}`);
+        const actionsContainer = document.getElementById(`post-actions-${postId}`);
+        try {
+            const res = await fetch(`/api/admin/posts/approve/${postId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
             });
-            document.getElementById("noResults").classList.toggle("d-none", hasData);
-        }
-
-        
-        async function deletePost(id) {
-            if(!confirm("❗ Bẩm lão đại, ngài có chắc chắn muốn XÓA vĩnh viễn tin này chứ? Hành động này không thể hoàn tác!")) {
-                return;
-            }
-            
-            try {
-                const response = await fetch(`/api/posts/${id}`, {
-                    method: 'DELETE'
-                });
-
-                if (response.ok) {
-                    alert("⚔️ Bẩm, đã trảm bài đăng thành công!");
-                    window.location.reload(); 
-                } else {
-                    alert("Lỗi: Kẻ địch quá mạnh, không thể gỡ bỏ! (Hãy đảm bảo Server đã có API DELETE /api/posts/:id)");
+            const data = await res.json();
+            if (data.success) {
+                if (badgeContainer) {
+                    badgeContainer.innerHTML = `<span class="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800 px-3 py-1 rounded-full text-[10px] font-bold">ĐÃ DUYỆT</span>`;
                 }
-            } catch (error) {
-                console.error("Lỗi Server:", error);
-                alert("Đã xảy ra sự cố sập cầu dao khi kết nối với server!");
+                if (actionsContainer) {
+                    actionsContainer.innerHTML = `
+                        <button 
+                            type="button"
+                            onclick="hidePost('${postId}')" 
+                            class="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200/60 dark:border-rose-800/60 px-3 py-1.5 rounded-xl font-bold transition text-xs cursor-pointer"
+                        >
+                            <i class="fas fa-eye-slash text-[10px]"></i>
+                            <span>Gỡ</span>
+                        </button>
+                    `;
+                }
+            } else {
+                alert(data.message || 'Lỗi khi duyệt bài đăng');
             }
+        } catch (e) {
+            console.error('Lỗi khi duyệt bài:', e);
         }
+    }
 
-        
-        function approvePost(id) {
-            if (confirm("Phê duyệt bài đăng này để hiển thị công khai trên HaiHand?")) {
-                window.location.href = "/posts/approve/" + id;
+    async function hidePost(postId) {
+        const badgeContainer = document.getElementById(`post-status-badge-${postId}`);
+        const actionsContainer = document.getElementById(`post-actions-${postId}`);
+        try {
+            const res = await fetch(`/api/admin/posts/hide/${postId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (badgeContainer) {
+                    badgeContainer.innerHTML = `<span class="bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700 px-3 py-1 rounded-full text-[10px] font-bold">ĐÃ GỠ</span>`;
+                }
+                if (actionsContainer) {
+                    actionsContainer.innerHTML = `
+                        <button 
+                            type="button"
+                            onclick="approvePost('${postId}')" 
+                            class="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/40 hover:bg-purple-100 dark:hover:bg-purple-900/60 border border-purple-200/60 dark:border-purple-800/60 px-3 py-1.5 rounded-xl font-bold transition text-xs cursor-pointer"
+                        >
+                            <i class="fas fa-redo text-[10px]"></i>
+                            <span>Khôi phục</span>
+                        </button>
+                    `;
+                }
+            } else {
+                alert(data.message || 'Lỗi khi gỡ bài đăng');
             }
+        } catch (e) {
+            console.error('Lỗi khi gỡ bài:', e);
         }
-    </script>
-</body>
-</html>
+    }
+</script>

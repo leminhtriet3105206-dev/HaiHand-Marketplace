@@ -315,20 +315,25 @@ export default function ProductListPage() {
                   ))}
                 </div>
 
-                {/* Banner missing item */}
-                <div className="bg-[#FEF3C7] rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between border border-[#FDE68A] shadow-sm mb-8 gap-4">
+                {/* B2C Merchant Banner */}
+                <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-6 flex flex-col sm:flex-row items-center justify-between border border-amber-200/80 shadow-xs mb-8 gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#FACC15] rounded-full flex items-center justify-center shrink-0 shadow-sm text-xl text-[#1C1917]">
-                       🔍
+                    <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shrink-0 shadow-xs text-xl text-white">
+                       🏪
                     </div>
                     <div>
-                      <h4 className="font-bold text-[#1C1917] text-lg">Không tìm thấy chiếc máy ưng ý?</h4>
-                      <p className="text-sm text-stone-600 mt-1">Đăng tin "Cần mua" với ngân sách mong muốn. Hơn 50.000 người bán sẽ chủ động liên hệ gửi bạn máy phù hợp nhất!</p>
+                      <h4 className="font-bold text-[#1C1917] text-lg">Bạn là nhà phân phối hoặc chủ cửa hàng?</h4>
+                      <p className="text-sm text-stone-600 mt-1">Đăng ký mở gian hàng B2C chính hãng trên HaiHand để tiếp cận hàng ngàn khách hàng tiềm năng mỗi ngày!</p>
                     </div>
                   </div>
-                  <button onClick={() => navigate('/create-post')} className="bg-[#1C1917] text-white font-bold py-2.5 px-6 rounded-lg hover:bg-stone-800 transition-colors whitespace-nowrap">
-                    Đăng tin cần mua 📢
-                  </button>
+                  <a 
+                    href="/register-seller" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="bg-[#1C1917] text-white font-bold py-2.5 px-6 rounded-lg hover:bg-stone-800 transition-colors whitespace-nowrap text-decoration-none shadow-xs"
+                  >
+                    Mở Gian Hàng B2C 🚀
+                  </a>
                 </div>
 
                 {/* Pagination */}

@@ -6,6 +6,7 @@ import { AppFooter } from '../components/AppFooter';
 import { ProductCard } from '../components/ProductCard';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../context/AuthContext';
 
 // --- Skeleton Component ---
 const ProductSkeleton = () => (
@@ -51,15 +52,17 @@ export default function HomePage() {
   const [currentBanner, setCurrentBanner] = useState(0);
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000'; 
-  const user = useMemo(() => JSON.parse(localStorage.getItem('user')), []);
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    if (user?._id) {
         axios.get(`${API_URL}/api/users/favorites/${user._id}`)
              .then(res => setFavoriteIds(res.data.map(post => post._id)))
              .catch(err => console.log(err));
+    } else {
+        setFavoriteIds([]);
     }
-  }, [user, API_URL]);
+  }, [user?._id, API_URL]);
 
   const fetchPosts = useCallback(async (currentPage = 1, currentCategory = 'Tất cả', currentKeyword = '', loc = 'Tất cả khu vực') => {
     if (currentPage === 1) setIsLoadingPosts(true);
@@ -192,9 +195,16 @@ export default function HomePage() {
              <p className="text-stone-500 max-w-md leading-relaxed text-lg">
                Giải phóng không gian sống, chuyển giao vật dụng thân yêu cho người cần với hơn 50.000+ người mua đang tìm kiếm mỗi ngày.
              </p>
-             <div className="pt-2 flex flex-wrap gap-3">
-               <Button variant="primary" className="transition-transform duration-300 hover:-translate-y-0.5" onClick={() => { if (!user) { toast.warning('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để đăng tin bán hàng!'); navigate('/login'); } else { navigate('/create-post'); } }}>Đăng tin bán ngay (Miễn phí)</Button>
-               <Button variant="secondary" className="transition-transform duration-300 hover:-translate-y-0.5" onClick={() => handleCategoryClick('Tất cả')}>Khám phá tin mới</Button>
+             <div className="pt-2 flex flex-wrap gap-3 items-center">
+               <Button variant="primary" className="transition-transform duration-300 hover:-translate-y-0.5" onClick={() => handleCategoryClick('Tất cả')}>Khám phá ngay</Button>
+               <a 
+                 href="/register-seller" 
+                 target="_blank" 
+                 rel="noopener noreferrer" 
+                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm bg-stone-900 text-white hover:bg-stone-800 transition-transform duration-300 hover:-translate-y-0.5 shadow-sm text-decoration-none"
+               >
+                 <i className="fas fa-store text-amber-400"></i> Đăng ký bán hàng B2C
+               </a>
              </div>
            </div>
            <div className="w-full md:w-[45%] lg:w-[50%] relative shrink-0 min-h-[250px] md:min-h-full group">

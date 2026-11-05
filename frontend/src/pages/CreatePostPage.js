@@ -117,20 +117,27 @@ export default function CreatePostPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (files.length === 0) return toast.warning('Chú ý', "Vui lòng tải lên ít nhất 1 hình ảnh sản phẩm!");
+    if (!formData.title.trim()) return toast.warning('Chú ý', "Vui lòng nhập tiêu đề tin đăng!");
+    if (!formData.category1) return toast.warning('Chú ý', "Vui lòng chọn danh mục cấp 1!");
+    if (!formData.price || Number(formData.price) <= 0) return toast.warning('Chú ý', "Vui lòng nhập giá bán hợp lệ!");
+    if (!formData.description.trim()) return toast.warning('Chú ý', "Vui lòng nhập mô tả chi tiết sản phẩm!");
+    if (!formData.city || !formData.district || !formData.ward) return toast.warning('Chú ý', "Vui lòng chọn đầy đủ Tỉnh/Thành phố, Quận/Huyện, Phường/Xã!");
     if (!formData.commit) return toast.warning('Chú ý', "Vui lòng xác nhận cam kết!");
     if (isSubmitting) return;
 
     setIsSubmitting(true);
 
     const data = new FormData();
-    data.append('author', user._id); 
-    data.append('title', formData.title); 
+    const authorId = user?._id || user?.id || '';
+    if (authorId) data.append('author', authorId); 
+    data.append('title', formData.title.trim()); 
     data.append('price', formData.price);
     data.append('category', formData.category1);
     data.append('description', formData.description);
     data.append('quantity', 1);
     data.append('location', `${formData.ward}, ${formData.district}, ${formData.city}`);
-    data.append('details', JSON.stringify({ brand: formData.brand, condition: formData.condition }));
+    data.append('details', JSON.stringify({ brand: formData.brand, condition: formData.condition || 'Cũ' }));
     
     files.forEach(file => data.append('images', file));
 
@@ -140,7 +147,8 @@ export default function CreatePostPage() {
         navigate('/profile');
     } catch (error) { 
         console.error("Lỗi đăng bài:", error);
-        toast.error('Lỗi', "Lỗi đăng tin!");
+        const errMsg = error.response?.data?.message || "Lỗi đăng tin! Vui lòng thử lại sau.";
+        toast.error('Lỗi', errMsg);
         setIsSubmitting(false);
     }
   };
@@ -251,7 +259,7 @@ export default function CreatePostPage() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
                         <div>
                             <label className="block text-sm font-bold text-[#1C1917] mb-1.5">Danh mục cấp 1 <span className="text-red-500">*</span></label>
-                            <select className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.category1} onChange={e => {
+                            <select required className="w-full h-11 px-4 rounded-xl border border-stone-200 bg-stone-50 appearance-none focus:outline-none focus:border-[#FACC15]" value={formData.category1} onChange={e => {
                                 const cat1 = e.target.value;
                                 const data = getCategoryData(cat1);
                                 setFormData({

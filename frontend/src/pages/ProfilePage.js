@@ -1,38 +1,60 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { persistUser } from '../api/axiosClient';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { useToast } from '../components/Toast';
-import { useConfirm } from '../components/ConfirmModal';
-
 
 export default function ProfilePage() {
   const toast = useToast();
-  const confirm = useConfirm();
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
-  const initialTab = queryParams.get('tab') || 'posts';
+  const initialTab = queryParams.get('tab') || 'orders_buy';
 
   const [user, setUser] = useState(null);
-  const [myPosts, setMyPosts] = useState([]);
-  const [myOrders, setMyOrders] = useState([]); 
-  const [mySales, setMySales] = useState([]);   
-  const [myReviews, setMyReviews] = useState([]); 
-  const [avgRating, setAvgRating] = useState(0);  
+  const [myOrders, setMyOrders] = useState([]);
+  const [myReviews, setMyReviews] = useState([]);
+  const [avgRating, setAvgRating] = useState(0);
 
-  const [activeTab, setActiveTab] = useState(initialTab); 
-  const [postFilter, setPostFilter] = useState('all'); 
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
 
-  // Edit forms (simple toggle for now)
+  // Edit profile form
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', cccd: '', avatarFrame: 'none', profileTitle: 'Người Mới' });
+  const [editForm, setEditForm] = useState({
+    name: '',
+    phone: '',
+    address: '',
+    cccd: '',
+    bio: '',
+    username: '',
+    taxId: '',
+    gender: '',
+    dob: '',
+    avatarFrame: 'none',
+    profileTitle: 'Người Mới'
+  });
   const [selectedImage, setSelectedImage] = useState(null);
   const fileInputRef = useRef(null);
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+
+  useEffect(() => {
+    const tabFromUrl = queryParams.get('tab');
+    if (tabFromUrl) {
+      if (tabFromUrl === 'seller_register') {
+        navigate('/register-seller', { replace: true });
+        return;
+      }
+      if (tabFromUrl === 'posts' || tabFromUrl === 'orders_sell') {
+        setActiveTab('orders_buy');
+      } else {
+        setActiveTab(tabFromUrl);
+      }
+    }
+  }, [location.search, navigate]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -62,16 +84,12 @@ export default function ProfilePage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [postsRes, ordersRes, salesRes, profileRes] = await Promise.all([
-                axios.get(`${API_URL}/api/posts/user/${currentUser._id}`).catch(() => ({data: []})),
-                axios.get(`${API_URL}/api/users/${currentUser._id}/orders`).catch(() => ({data: []})),
-                axios.get(`${API_URL}/api/orders/seller/${currentUser._id}`).catch(() => ({data: []})),
-                axios.get(`${API_URL}/api/users/public-profile/${currentUser._id}`).catch(() => ({data: {reviews: [], avgRating: 5}}))
+            const [ordersRes, profileRes] = await Promise.all([
+                axios.get(`${API_URL}/api/users/${currentUser._id}/orders`).catch(() => ({ data: [] })),
+                axios.get(`${API_URL}/api/users/public-profile/${currentUser._id}`).catch(() => ({ data: { reviews: [], avgRating: 5 } }))
             ]);
 
-            setMyPosts(postsRes.data);
-            setMyOrders(ordersRes.data);
-            setMySales(salesRes.data);
+            setMyOrders(ordersRes.data || []);
             setMyReviews(profileRes.data.reviews || []);
             setAvgRating(profileRes.data.avgRating || 0);
         } catch (error) {
@@ -81,7 +99,7 @@ export default function ProfilePage() {
         }
     };
     fetchData();
-  }, []);
+  }, [API_URL, navigate]);
 
   const getImageUrl = (imgStr) => {
     if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
@@ -95,12 +113,13 @@ export default function ProfilePage() {
         Object.keys(editForm).forEach(key => formData.append(key, editForm[key]));
         if (selectedImage) formData.append('avatar', selectedImage);
         const { data } = await axios.put(`${API_URL}/api/users/profile/${user._id}`, formData);
-        localStorage.setItem('user', JSON.stringify(data)); 
+        persistUser(data);
         setUser(data);
         setIsEditing(false);
-        window.dispatchEvent(new Event('userUpdated')); 
-        toast.success('Thành công', '🎉 Đã lưu thành công!');
-    } catch (e) { toast.error('Lỗi', 'Lỗi cập nhật!'); }
+        toast.success('Thành công', 'Đã lưu thông tin tài khoản!');
+    } catch (e) {
+        toast.error('Lỗi', 'Lỗi khi cập nhật hồ sơ!');
+    }
   };
 
   const handleAvatarChange = async (e) => {
@@ -110,106 +129,96 @@ export default function ProfilePage() {
           const formData = new FormData();
           formData.append('avatar', file);
           const { data } = await axios.put(`${API_URL}/api/users/profile/${user._id}`, formData);
-          localStorage.setItem('user', JSON.stringify(data));
+          persistUser(data);
           setUser(data);
-          window.dispatchEvent(new Event('userUpdated'));
+          toast.success('Thành công', 'Đã đổi ảnh đại diện!');
       } catch (err) {
-          toast.info('Thông báo', 'Có lỗi xảy ra khi tải ảnh lên');
+          toast.error('Lỗi', 'Có lỗi xảy ra khi tải ảnh lên');
       }
   };
 
-  const handleDeletePost = async (postId) => { 
-      const isConfirmed = await confirm("Xóa bài viết này?");
-      if(isConfirmed) { 
-          try { 
-              await axios.delete(`${API_URL}/api/posts/${postId}`); 
-              setMyPosts(myPosts.filter(p => p._id !== postId)); 
-              toast.info('Thông báo', "Đã xóa!"); 
-          } catch (e) { toast.error('Lỗi', "Lỗi!"); } 
-      } 
-  };
-
-  if (!user || loading) return (
-      <div className="bg-[#FFFBEB] min-h-screen flex flex-col">
-          <AppHeader />
-          <div className="flex-1 flex justify-center items-center">
-             <div className="w-10 h-10 border-4 border-stone-200 border-t-[#FACC15] rounded-full animate-spin"></div>
-          </div>
-          <AppFooter />
-      </div>
-  );
-
   const getStatusBadge = (status) => {
-    if(status === 'Chờ xác nhận') return 'bg-orange-100 text-[#EA580C]';
-    if(status === 'Đang giao hàng' || status === 'Đang giao') return 'bg-blue-100 text-blue-700';
-    if(status === 'Hoàn thành') return 'bg-emerald-100 text-emerald-700';
-    return 'bg-stone-100 text-stone-600'; 
+      switch (status) {
+          case 'Pending':
+          case 'Chờ xác nhận':
+              return 'bg-amber-100 text-amber-800 border-amber-200';
+          case 'Processing':
+          case 'Đang chuẩn bị':
+              return 'bg-blue-100 text-blue-800 border-blue-200';
+          case 'Shipped':
+          case 'Đang giao hàng':
+              return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+          case 'Delivered':
+          case 'Đã giao hàng':
+          case 'Completed':
+          case 'Hoàn thành':
+              return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+          case 'Cancelled':
+          case 'Đã hủy':
+              return 'bg-rose-100 text-rose-800 border-rose-200';
+          default:
+              return 'bg-stone-100 text-stone-800 border-stone-200';
+      }
   };
 
   const getFrameStyles = (frame) => {
-    switch(frame) {
-        case 'bronze': return 'border-[#cd7f32] shadow-[0_0_10px_rgba(205,127,50,0.6)]';
-        case 'silver': return 'border-[#c0c0c0] shadow-[0_0_10px_rgba(192,192,192,0.6)]';
-        case 'gold': return 'border-[#ffd700] shadow-[0_0_15px_rgba(255,215,0,0.6)]';
-        case 'diamond': return 'border-[#b9f2ff] shadow-[0_0_15px_rgba(185,242,255,0.8)]';
-        default: return 'border-stone-50';
-    }
+      switch(frame) {
+          case 'bronze': return 'border-amber-700 shadow-amber-700/30';
+          case 'silver': return 'border-slate-300 shadow-slate-400/40';
+          case 'gold': return 'border-yellow-400 shadow-yellow-500/50';
+          case 'diamond': return 'border-cyan-400 shadow-cyan-500/50';
+          default: return 'border-white';
+      }
   };
 
+  const points = (user?.totalSpent || 0) + (myOrders.length * 100);
   let accountLevel = "Hạng Đồng";
-  let nextLevelProgress = 0;
-  let nextLevelName = "Người Bán Bạc";
-  
-  if (mySales.length >= 30) {
+  let nextLevelProgress = 20;
+  let nextLevelName = "Hạng Bạc";
+
+  if (points > 10000) {
       accountLevel = "Hạng Kim Cương";
       nextLevelProgress = 100;
-      nextLevelName = "Max Level";
-  } else if (mySales.length >= 15) {
+      nextLevelName = "Tối đa";
+  } else if (points > 5000) {
       accountLevel = "Hạng Vàng";
-      nextLevelProgress = Math.round(((mySales.length - 15) / 15) * 100);
+      nextLevelProgress = Math.min(100, Math.round(((points - 5000) / 5000) * 100));
       nextLevelName = "Hạng Kim Cương";
-  } else if (mySales.length >= 5) {
+  } else if (points > 1000) {
       accountLevel = "Hạng Bạc";
-      nextLevelProgress = Math.round(((mySales.length - 5) / 10) * 100);
+      nextLevelProgress = Math.min(100, Math.round(((points - 1000) / 4000) * 100));
       nextLevelName = "Hạng Vàng";
   } else {
       accountLevel = "Hạng Đồng";
-      nextLevelProgress = Math.round((mySales.length / 5) * 100);
+      nextLevelProgress = Math.min(100, Math.round((points / 1000) * 100));
       nextLevelName = "Hạng Bạc";
   }
 
+  if (!user) return null;
+
+  const isApprovedSeller = user.isSeller === true && user.sellerStatus === 'approved';
+  const isPendingSeller = user.sellerStatus === 'pending';
+
   return (
-    <div className="bg-[#FFFBEB] min-h-screen font-sans text-[#1C1917] flex flex-col">
+    <div className="min-h-screen bg-[#FDFBF7] flex flex-col font-sans">
       <AppHeader />
       
-      <main className="max-w-[1200px] mx-auto w-full px-4 py-6 flex-1">
-        {/* Breadcrumb */}
-        <div className="flex items-center justify-between mb-4">
-            <nav className="flex items-center gap-2 text-sm text-stone-500">
-                <Link to="/" className="hover:text-[#1C1917]">Trang chủ</Link>
-                <span>›</span>
-                <span className="text-[#1C1917] font-semibold">Tài khoản & Hồ sơ cá nhân</span>
-            </nav>
-            <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 px-3 py-1 rounded-full text-xs font-bold border border-emerald-100">
-                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
-                Hồ sơ trực tuyến 5 phút trước
-            </div>
-        </div>
-
-        {/* Header Profile Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-6 mb-6">
+      <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 py-8">
+        
+        {/* Profile Header Card */}
+        <div className="bg-white rounded-2xl shadow-xs border border-stone-200 p-6 mb-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 
                 <div className="flex items-center gap-6">
                     <div className="relative">
                         <div className={`w-24 h-24 rounded-full overflow-hidden border-4 bg-stone-100 shadow-sm ${getFrameStyles(user.avatarFrame)}`}>
-                            <img src={user.avatar ? (user.avatar.startsWith('http') ? user.avatar : `${API_URL}/${user.avatar.replace(/\\/g, '/')}`) : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} alt="Avatar" className="w-full h-full object-cover" />
+                            <img src={getImageUrl(user.avatar)} alt="Avatar" className="w-full h-full object-cover" />
                         </div>
                         {isEditing && (
                             <>
                                 <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
                                 <button onClick={() => fileInputRef.current.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-[#FACC15] text-[#1C1917] rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-[#EAB308] z-10">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                    <i className="fas fa-camera text-xs"></i>
                                 </button>
                             </>
                         )}
@@ -220,40 +229,51 @@ export default function ProfilePage() {
                             <h1 className="text-2xl font-black text-[#1C1917]">{user.name}</h1>
                             <span className="text-stone-400 text-sm">@{user.email?.split('@')[0]}</span>
                             {(user.profileTitle && user.profileTitle !== 'Người Mới') && (
-                                <span className="bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 px-3 py-0.5 rounded-full text-xs font-black shadow-sm">
+                                <span className="bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 px-3 py-0.5 rounded-full text-xs font-black shadow-xs">
                                     🏆 {user.profileTitle}
                                 </span>
                             )}
-                            <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
-                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg> Tài khoản hoạt động tích cực
-                            </span>
+                            {isApprovedSeller ? (
+                                <span className="bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <i className="fas fa-store text-[10px]"></i> Đối tác Seller B2C
+                                </span>
+                            ) : isPendingSeller ? (
+                                <span className="bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <i className="fas fa-clock text-[10px]"></i> Chờ duyệt Shop
+                                </span>
+                            ) : (
+                                <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                                    <i className="fas fa-user-check text-[10px]"></i> Thành viên mua sắm
+                                </span>
+                            )}
                         </div>
                         <div className="flex flex-wrap items-center gap-4 text-xs text-stone-500 font-medium mb-4">
-                            <span className="flex items-center gap-1"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg> {user.phone} <span className="text-emerald-600">(Đã xác minh)</span></span>
-                            <span className="flex items-center gap-1"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg> {user.email}</span>
-                            <span className="flex items-center gap-1"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> {user.address}</span>
+                            <span className="flex items-center gap-1">
+                                <i className="fas fa-phone text-slate-400"></i> {user.phone || 'Chưa cập nhật SĐT'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <i className="fas fa-envelope text-slate-400"></i> {user.email}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <i className="fas fa-map-marker-alt text-slate-400"></i> {user.address || 'Chưa cập nhật địa chỉ'}
+                            </span>
                         </div>
                         
                         {!isEditing && (
-                            <div className="flex flex-wrap items-center gap-8 bg-stone-50 px-4 py-3 rounded-xl border border-stone-100 shadow-sm">
+                            <div className="flex flex-wrap items-center gap-6 sm:gap-8 bg-stone-50 px-4 py-3 rounded-xl border border-stone-100">
                                 <div>
-                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đang đăng bán</p>
-                                    <p className="text-xl font-black text-[#1C1917]">{myPosts.length} <span className="text-xs font-medium text-stone-400">tin</span></p>
-                                </div>
-                                <div className="w-px h-8 bg-stone-200 hidden md:block"></div>
-                                <div>
-                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đã thanh lý</p>
-                                    <p className="text-xl font-black text-[#EA580C]">{mySales.length} <span className="text-xs font-medium text-stone-400">món</span></p>
+                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đơn mua hàng</p>
+                                    <p className="text-xl font-black text-[#1C1917]">{myOrders.length} <span className="text-xs font-medium text-stone-400">đơn</span></p>
                                 </div>
                                 <div className="w-px h-8 bg-stone-200 hidden md:block"></div>
                                 <div>
                                     <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đánh giá</p>
-                                    <p className="text-xl font-black text-emerald-600">{myReviews.length > 0 ? myReviews.length : 0} <span className="text-xs font-medium text-stone-400">nhận xét</span></p>
+                                    <p className="text-xl font-black text-emerald-600">{myReviews.length} <span className="text-xs font-medium text-stone-400">lượt</span></p>
                                 </div>
                                 <div className="w-px h-8 bg-stone-200 hidden md:block"></div>
                                 <div>
-                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đơn mua</p>
-                                    <p className="text-xl font-black text-[#1C1917]">{myOrders.length} <span className="text-xs font-medium text-stone-400">đơn</span></p>
+                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Ví HaiPay</p>
+                                    <p className="text-xl font-black text-orange-600">{(user.walletBalance || 0).toLocaleString('vi-VN')} <span className="text-xs font-medium text-stone-400">đ</span></p>
                                 </div>
                             </div>
                         )}
@@ -262,14 +282,37 @@ export default function ProfilePage() {
 
                 {!isEditing && (
                     <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto mt-4 md:mt-0">
-                        <button className="w-full bg-[#FACC15] text-[#1C1917] font-bold py-2.5 px-6 rounded-lg hover:bg-[#EAB308] flex items-center justify-center gap-2 transition-colors shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg> Tạo tin đăng mới
+                        {isApprovedSeller ? (
+                            <button 
+                                onClick={() => window.open('/seller-channel', '_blank')} 
+                                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-orange-500/20 cursor-pointer"
+                            >
+                                <i className="fas fa-store"></i> Vào Kênh Người Bán
+                            </button>
+                        ) : isPendingSeller ? (
+                            <a 
+                                href="/register-seller" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="w-full bg-amber-50 border border-amber-200 text-amber-800 font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 text-decoration-none"
+                            >
+                                <i className="fas fa-clock text-amber-600"></i> Hồ sơ Shop đang duyệt
+                            </a>
+                        ) : (
+                            <a 
+                                href="/register-seller" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="w-full bg-[#FACC15] hover:bg-[#EAB308] text-[#1C1917] font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-xs text-decoration-none"
+                            >
+                                <i className="fas fa-store-alt"></i> Đăng ký mở Shop B2C
+                            </a>
+                        )}
+                        <button onClick={() => setIsEditing(true)} className="w-full bg-stone-50 text-stone-700 font-bold py-2.5 px-6 rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 transition-colors border border-stone-200">
+                            <i className="fas fa-user-edit text-stone-500"></i> Chỉnh sửa thông tin
                         </button>
-                        <button onClick={() => setIsEditing(true)} className="w-full bg-stone-50 text-stone-700 font-bold py-2.5 px-6 rounded-lg hover:bg-stone-100 flex items-center justify-center gap-2 transition-colors border border-stone-200 shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-stone-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg> Chỉnh sửa hồ sơ
-                        </button>
-                        <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} className="w-full bg-red-50 text-red-600 font-bold py-2.5 px-6 rounded-lg hover:bg-red-100 flex items-center justify-center gap-2 transition-colors border border-red-200 shadow-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg> Đăng xuất
+                        <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} className="w-full bg-red-50 text-red-600 font-bold py-2.5 px-6 rounded-xl hover:bg-red-100 flex items-center justify-center gap-2 transition-colors border border-red-200">
+                            <i className="fas fa-sign-out-alt"></i> Đăng xuất
                         </button>
                     </div>
                 )}
@@ -282,274 +325,162 @@ export default function ProfilePage() {
             {/* Left Content Area */}
             <div className={`w-full ${isEditing ? 'lg:w-full' : 'lg:w-[65%]'} flex flex-col gap-4`}>
                 
-                {/* Tabs */}
+                {/* Clean Buyer Tabs */}
                 {!isEditing && (
                     <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-                    <button onClick={() => setActiveTab('posts')} className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-lg font-bold text-sm transition-colors ${activeTab === 'posts' ? 'bg-orange-100 text-[#EA580C] border border-orange-200' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                        Tin đang đăng bán <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === 'posts' ? 'bg-[#EA580C] text-white' : 'bg-stone-200 text-stone-600'}`}>{myPosts.length}</span>
-                    </button>
-                    <button onClick={() => setActiveTab('orders_buy')} className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-lg font-bold text-sm transition-colors ${activeTab === 'orders_buy' ? 'bg-orange-100 text-[#EA580C] border border-orange-200' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-                        Lịch sử mua hàng <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === 'orders_buy' ? 'bg-[#EA580C] text-white' : 'bg-stone-200 text-stone-600'}`}>{myOrders.length}</span>
-                    </button>
-                    <button onClick={() => setActiveTab('orders_sell')} className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-lg font-bold text-sm transition-colors ${activeTab === 'orders_sell' ? 'bg-orange-100 text-[#EA580C] border border-orange-200' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                        Quản lý đơn bán <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === 'orders_sell' ? 'bg-[#EA580C] text-white' : 'bg-stone-200 text-stone-600'}`}>{mySales.length}</span>
-                    </button>
-                    <button onClick={() => setActiveTab('reviews')} className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-lg font-bold text-sm transition-colors ${activeTab === 'reviews' ? 'bg-orange-100 text-[#EA580C] border border-orange-200' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'}`}>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg>
-                        Đánh giá cộng đồng <span className={`px-1.5 py-0.5 rounded-full text-[10px] ${activeTab === 'reviews' ? 'bg-[#EA580C] text-white' : 'bg-stone-200 text-stone-600'}`}>{myReviews.length}</span>
-                    </button>
+                        <button 
+                            onClick={() => setActiveTab('orders_buy')} 
+                            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl font-bold text-sm transition-colors ${
+                                activeTab === 'orders_buy' 
+                                    ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20' 
+                                    : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
+                            }`}
+                        >
+                            <i className="fas fa-shopping-bag"></i>
+                            Đơn mua của tôi 
+                            <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === 'orders_buy' ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-600'}`}>
+                                {myOrders.length}
+                            </span>
+                        </button>
+
+                        <button 
+                            onClick={() => setActiveTab('reviews')} 
+                            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl font-bold text-sm transition-colors ${
+                                activeTab === 'reviews' 
+                                    ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20' 
+                                    : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
+                            }`}
+                        >
+                            <i className="fas fa-star"></i>
+                            Đánh giá ({myReviews.length})
+                        </button>
                     </div>
                 )}
 
+                {/* Edit Profile Form */}
                 {isEditing && (
-                    <form onSubmit={handleUpdateProfile} className="bg-white p-6 rounded-xl border border-stone-200 shadow-sm animate-fade-in mb-4 max-w-4xl mx-auto w-full">
-                        <h3 className="font-bold text-lg mb-4">Chỉnh sửa hồ sơ</h3>
+                    <form onSubmit={handleUpdateProfile} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs animate-fade-in mb-4 max-w-4xl mx-auto w-full">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Chỉnh sửa hồ sơ cá nhân</h3>
                         
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-stone-500 mb-1">Họ và tên *</label>
-                                    <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required />
+                                    <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm font-semibold" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-stone-500 mb-1">Số điện thoại *</label>
-                                    <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} required />
+                                    <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm font-medium" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} required />
                                 </div>
                             </div>
                     
                             <div>
-                                <label className="block text-xs font-bold text-stone-500 mb-1">Địa chỉ</label>
-                                <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} />
+                                <label className="block text-xs font-bold text-stone-500 mb-1">Địa chỉ nhận hàng mặc định</label>
+                                <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm font-medium" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} />
                             </div>
                     
                             <div>
-                                <label className="block text-xs font-bold text-stone-500 mb-1">Giới thiệu về trang</label>
-                                <textarea className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15] min-h-[100px]" value={editForm.bio} onChange={e => setEditForm({...editForm, bio: e.target.value})} placeholder="Mô tả ngắn gọn về cửa hàng hoặc bản thân..." />
-                            </div>
-                    
-                            <div>
-                                <label className="block text-xs font-bold text-stone-500 mb-1">Tên gọi nhớ</label>
-                                <input type="text" className="w-full border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.username} onChange={e => setEditForm({...editForm, username: e.target.value})} placeholder="Ví dụ: cuahangdocu123" />
-                                <p className="text-[10px] text-stone-400 mt-1">Tên gọi nhớ sẽ giúp người khác dễ dàng tìm thấy bạn.</p>
+                                <label className="block text-xs font-bold text-stone-500 mb-1">Giới thiệu ngắn</label>
+                                <textarea className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 min-h-[80px] text-sm" value={editForm.bio} onChange={e => setEditForm({...editForm, bio: e.target.value})} placeholder="Giới thiệu về bạn..." />
                             </div>
                     
                             <div className="pt-4 mt-4 border-t border-stone-100">
-                                <h4 className="font-bold text-sm text-stone-800 mb-1">Thông tin bảo mật</h4>
-                                <p className="text-xs text-stone-500 mb-4">Những thông tin dưới đây mang tính bảo mật. Chỉ bạn mới có thể thấy và chỉnh sửa những thông tin này.</p>
-                                
-                                <div className="space-y-3">
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                        <label className="w-48 text-xs font-bold text-stone-600">Email</label>
-                                        <input type="email" className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-100 text-stone-500" value={user?.email || ''} disabled />
+                                <h4 className="font-bold text-sm text-stone-800 mb-1">Thông tin định danh</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-600 mb-1">CCCD / CMND</label>
+                                        <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm" value={editForm.cccd} onChange={e => setEditForm({...editForm, cccd: e.target.value})} />
                                     </div>
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                        <label className="w-48 text-xs font-bold text-stone-600">CCCD / CMND / Hộ chiếu</label>
-                                        <input type="text" className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.cccd} onChange={e => setEditForm({...editForm, cccd: e.target.value})} />
-                                    </div>
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                        <label className="w-48 text-xs font-bold text-stone-600">Mã số thuế</label>
-                                        <input type="text" className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.taxId} onChange={e => setEditForm({...editForm, taxId: e.target.value})} />
-                                    </div>
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                        <label className="w-48 text-xs font-bold text-stone-600">Giới tính</label>
-                                        <select className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.gender} onChange={e => setEditForm({...editForm, gender: e.target.value})}>
-                                            <option value="">Chọn giới tính</option>
-                                            <option value="Nam">Nam</option>
-                                            <option value="Nữ">Nữ</option>
-                                            <option value="Khác">Khác</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                        <label className="w-48 text-xs font-bold text-stone-600">Ngày sinh</label>
-                                        <input type="date" className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.dob} onChange={e => setEditForm({...editForm, dob: e.target.value})} />
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="pt-4 mt-4 border-t border-stone-100">
-                                <h4 className="font-bold text-sm text-[#EA580C] mb-1">Trang trí hồ sơ chuyên nghiệp</h4>
-                                <p className="text-xs text-stone-500 mb-4">Mở khóa khung và danh hiệu tùy theo Cấp độ tài khoản của bạn ({accountLevel}).</p>
-                                
-                                <div className="space-y-3">
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                        <label className="w-48 text-xs font-bold text-stone-600">Khung Avatar</label>
-                                        <select className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.avatarFrame} onChange={e => setEditForm({...editForm, avatarFrame: e.target.value})}>
-                                            <option value="none">Không dùng khung</option>
-                                            <option value="bronze">Khung Đồng</option>
-                                            <option value="silver" disabled={accountLevel === 'Hạng Đồng'}>Khung Bạc {accountLevel === 'Hạng Đồng' && '(Khóa)'}</option>
-                                            <option value="gold" disabled={accountLevel === 'Hạng Đồng' || accountLevel === 'Hạng Bạc'}>Khung Vàng {(accountLevel === 'Hạng Đồng' || accountLevel === 'Hạng Bạc') && '(Khóa)'}</option>
-                                            <option value="diamond" disabled={accountLevel !== 'Hạng Kim Cương'}>Khung Kim Cương {accountLevel !== 'Hạng Kim Cương' && '(Khóa)'}</option>
-                                        </select>
-                                    </div>
-                                    <div className="flex flex-col md:flex-row md:items-center gap-2">
-                                        <label className="w-48 text-xs font-bold text-stone-600">Danh hiệu</label>
-                                        <select className="flex-1 border border-stone-200 rounded-lg p-2.5 bg-stone-50 focus:outline-none focus:border-[#FACC15]" value={editForm.profileTitle} onChange={e => setEditForm({...editForm, profileTitle: e.target.value})}>
-                                            <option value="Người Mới">Người Mới</option>
-                                            <option value="Thành Viên Tích Cực" disabled={accountLevel === 'Hạng Đồng'}>Thành Viên Tích Cực</option>
-                                            <option value="Uy Tín" disabled={accountLevel === 'Hạng Đồng' || accountLevel === 'Hạng Bạc'}>Uy Tín</option>
-                                            <option value="Đối Tác Vàng" disabled={accountLevel !== 'Hạng Kim Cương'}>Đối Tác Vàng</option>
-                                        </select>
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-600 mb-1">Mã số thuế</label>
+                                        <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm font-mono" value={editForm.taxId} onChange={e => setEditForm({...editForm, taxId: e.target.value})} />
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
                         <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-stone-100">
-                            <button type="button" onClick={() => setIsEditing(false)} className="px-5 py-2 font-bold text-stone-500 hover:text-stone-800">Hủy</button>
-                            <button type="submit" className="px-6 py-2 bg-[#1C1917] text-white font-bold rounded-lg hover:bg-stone-800">Lưu thay đổi</button>
+                            <button type="button" onClick={() => setIsEditing(false)} className="px-5 py-2.5 font-bold text-stone-500 hover:text-stone-800 text-sm">Hủy</button>
+                            <button type="submit" className="px-6 py-2.5 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 shadow-sm text-sm">Lưu thay đổi</button>
                         </div>
                     </form>
                 )}
 
-                {!isEditing && activeTab === 'posts' && (
-                    <>
-                        {/* Filters */}
-                        <div className="flex flex-col sm:flex-row justify-between gap-3 mb-2">
-                            <div className="flex gap-2 text-sm font-bold bg-white p-1.5 rounded-lg border border-stone-200 shadow-sm overflow-x-auto custom-scrollbar">
-                                <button onClick={() => setPostFilter('all')} className={`px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${postFilter === 'all' ? 'bg-[#1C1917] text-white' : 'text-stone-500 hover:bg-stone-100'}`}>Tất cả ({myPosts.length})</button>
-                                <button onClick={() => setPostFilter('active')} className={`px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${postFilter === 'active' ? 'bg-[#1C1917] text-white' : 'text-stone-500 hover:bg-stone-100'}`}>Đang hiển thị ({myPosts.filter(p => p.status === 'APPROVED').length})</button>
-                                <button onClick={() => setPostFilter('pending')} className={`px-3 py-1.5 rounded-md whitespace-nowrap transition-colors ${postFilter === 'pending' ? 'bg-[#1C1917] text-white' : 'text-stone-500 hover:bg-stone-100'}`}>Chờ duyệt ({myPosts.filter(p => p.status === 'PENDING').length})</button>
+                {/* TAB 1: BUYER ORDERS */}
+                {!isEditing && activeTab === 'orders_buy' && (
+                    <div className="flex flex-col gap-4">
+                        {myOrders.length === 0 ? (
+                            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-12 text-center text-stone-500 animate-fade-in">
+                                <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl text-stone-400">
+                                    <i className="fas fa-shopping-bag"></i>
+                                </div>
+                                <h3 className="font-bold text-base text-stone-800">Chưa có đơn mua nào</h3>
+                                <p className="text-xs text-stone-400 mt-1">Khám phá các sản phẩm chất lượng trên sàn HaiHand ngay!</p>
+                                <button onClick={() => navigate('/products')} className="mt-4 px-6 py-2.5 bg-orange-500 text-white text-xs font-bold rounded-xl hover:bg-orange-600 shadow-sm transition-all">
+                                    Khám phá sản phẩm
+                                </button>
                             </div>
-                            <div className="relative">
-                                <span className="absolute left-3 top-2.5 text-stone-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                </span>
-                                <input type="text" placeholder="Tìm theo tên sản phẩm..." className="w-full sm:w-64 h-9 pl-9 pr-3 text-sm border border-stone-200 rounded-lg bg-white focus:outline-none focus:border-[#FACC15]" />
-                            </div>
-                        </div>
+                        ) : (
+                            myOrders.map(order => {
+                                const st = order.canonicalStatus || order.status;
+                                const items = order.orderItems && order.orderItems.length > 0
+                                    ? order.orderItems
+                                    : (order.items || []);
 
-                        {/* List */}
-                        <div className="flex flex-col gap-4">
-                            {myPosts.filter(p => postFilter === 'all' || (postFilter === 'active' && p.status === 'APPROVED') || (postFilter === 'pending' && p.status === 'PENDING')).map(post => (
-                                <div key={post._id} className={`bg-white rounded-xl border ${post.status === 'PENDING' ? 'border-orange-200 bg-orange-50/30' : 'border-stone-200'} shadow-sm p-4 hover:border-stone-300 transition-colors relative`}>
-                                    <div className={`flex flex-col sm:flex-row gap-4 ${post.status === 'PENDING' ? 'opacity-70' : ''}`}>
-                                        
-                                        <div className="w-full sm:w-36 h-36 bg-stone-100 rounded-lg overflow-hidden border border-stone-200 shrink-0 relative cursor-pointer" onClick={() => navigate(`/post/${post._id}`)}>
-                                            <span className="absolute top-2 left-2 bg-white/90 text-emerald-700 text-[10px] font-bold px-1.5 rounded shadow-sm z-10">{post.condition || 'Cũ'}</span>
-                                            <img src={getImageUrl(post.images?.[0] || post.image)} alt={post.title} className={`w-full h-full object-cover ${post.status === 'PENDING' ? 'grayscale brightness-50' : ''}`} />
-                                            {post.status === 'PENDING' && (
-                                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 z-20">
-                                                    <span className="bg-orange-500 text-white text-xs font-bold px-2 py-1 rounded-lg shadow-lg uppercase tracking-wider">Chờ Duyệt</span>
-                                                </div>
-                                            )}
-                                            <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] font-bold px-1.5 rounded flex items-center gap-1 shadow-sm z-10">
-                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg> {post.location?.split(',')[0] || 'Hà Nội'}
+                                return (
+                                    <div key={order._id} className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5 animate-fade-in hover:border-orange-300 transition-colors">
+                                        <div className="flex justify-between items-center mb-4 pb-3 border-b border-stone-100">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-mono font-bold text-slate-700">Mã đơn: #{order._id.substring(0, 8).toUpperCase()}</span>
+                                                <span className="text-slate-300">|</span>
+                                                <span className="text-xs text-slate-400">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</span>
+                                            </div>
+                                            <span className={`text-xs font-bold px-3 py-1 rounded-full border ${getStatusBadge(st)}`}>
+                                                {st}
                                             </span>
                                         </div>
-                                        
-                                        <div className="flex-1 flex flex-col justify-between">
-                                            <div>
-                                                <div className="flex justify-between items-start gap-2 mb-1">
-                                                    <h3 className="font-bold text-[#1C1917] line-clamp-2 leading-snug cursor-pointer hover:underline" onClick={() => navigate(`/post/${post._id}`)}>{post.title}</h3>
-                                                    {post.status === 'APPROVED' ? (
-                                                        <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Đang hiển thị
-                                                        </span>
-                                                    ) : (
-                                                        <span className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">
-                                                            <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span> Đang chờ duyệt
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-baseline gap-2 mb-3">
-                                                    <span className="text-lg font-black text-[#EA580C]">{new Intl.NumberFormat('vi-VN').format(post.price)} đ</span>
-                                                    {post.oldPrice && <span className="text-xs text-stone-400 line-through">{new Intl.NumberFormat('vi-VN').format(post.oldPrice)} đ</span>}
-                                                </div>
-                                                <div className="flex flex-wrap items-center gap-3 text-[11px] text-stone-500 font-medium">
-                                                    <span className="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg> {post.views || 0} lượt xem</span>
-                                                    <span className="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg> {post.chats || 0} lượt chat</span>
-                                                    <span className="flex items-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> {post.timeAgo || 'Vừa đăng'}</span>
-                                                </div>
-                                            </div>
-                                            
-                                            <div className="flex justify-between items-center mt-4 pt-3 border-t border-stone-100">
-                                                <div className="flex gap-2">
-                                                    <button onClick={() => navigate(`/edit-post/${post._id}`)} className="px-4 py-1.5 bg-stone-100 text-stone-600 text-xs font-bold rounded hover:bg-stone-200 flex items-center gap-1">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg> Sửa tin
-                                                    </button>
-                                                    {post.status === 'APPROVED' && (
-                                                        <button className="px-4 py-1.5 bg-[#FACC15] text-[#1C1917] text-xs font-bold rounded hover:bg-[#EAB308] flex items-center gap-1">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 11l7-7 7 7M5 19l7-7 7 7" /></svg> Đẩy tin (Boost)
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                <button onClick={() => handleDeletePost(post._id)} className="flex items-center gap-1 text-xs font-bold text-red-500 hover:underline">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> Hủy tin / Đã bán
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
 
-                {!isEditing && activeTab.startsWith('orders') && (
-                    <div className="flex flex-col gap-4">
-                        {(activeTab === 'orders_buy' ? myOrders : mySales).map(order => (
-                            <div key={order._id} className="bg-white rounded-xl border border-stone-200 shadow-sm p-4 animate-fade-in hover:border-[#EA580C]/30 transition-colors">
-                                <div className="flex justify-between items-center mb-4 pb-3 border-b border-stone-100">
-                                    <span className="text-xs font-bold text-stone-500">Mã đơn: #{order._id.substring(0, 8).toUpperCase()}</span>
-                                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${getStatusBadge(order.status)} shadow-sm`}>{order.status}</span>
-                                </div>
-                                
-                                {/* Order Tracker */}
-                                <div className="flex items-center justify-between w-full max-w-sm mx-auto mb-8 mt-4 relative">
-                                    <div className="absolute top-1/2 left-0 w-full h-1 bg-stone-100 -translate-y-1/2 z-0 rounded-full"></div>
-                                    <div className="absolute top-1/2 left-0 h-1 bg-emerald-500 -translate-y-1/2 z-0 transition-all duration-500 rounded-full" style={{ width: ['Chờ xác nhận', 'Đang giao hàng', 'Hoàn thành'].indexOf(order.status) === -1 ? '0%' : `${(['Chờ xác nhận', 'Đang giao hàng', 'Hoàn thành'].indexOf(order.status) / 2) * 100}%` }}></div>
-                                    
-                                    {['Chờ xác nhận', 'Đang giao hàng', 'Hoàn thành'].map((s, i) => {
-                                        const currentIndex = ['Chờ xác nhận', 'Đang giao hàng', 'Hoàn thành'].indexOf(order.status);
-                                        const isCompleted = i <= currentIndex;
-                                        return (
-                                            <div key={s} className="relative z-10 flex flex-col items-center">
-                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold border-2 transition-colors duration-500 ${isCompleted ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm' : 'bg-white border-stone-200 text-stone-300'}`}>
-                                                    {isCompleted ? '✓' : i + 1}
+                                        {/* Items */}
+                                        <div className="space-y-3">
+                                            {items.map((item, idx) => (
+                                                <div key={idx} className="flex gap-4 p-2 hover:bg-stone-50 rounded-xl transition-colors">
+                                                    <div className="w-16 h-16 bg-stone-100 rounded-xl overflow-hidden shrink-0 border border-stone-200">
+                                                        <img src={getImageUrl(item.image || (item.images && item.images[0]))} alt={item.title || item.name} className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div className="flex-1 flex flex-col justify-center min-w-0">
+                                                        <h4 className="font-bold text-sm text-[#1C1917] truncate">{item.title || item.name || 'Sản phẩm B2C'}</h4>
+                                                        <p className="text-xs text-stone-400 mt-0.5">Số lượng: x{item.quantity || 1}</p>
+                                                        <p className="text-sm font-bold text-orange-600 mt-0.5">{(item.price || 0).toLocaleString('vi-VN')} đ</p>
+                                                    </div>
                                                 </div>
-                                                <span className={`text-[10px] font-bold whitespace-nowrap absolute -bottom-5 transition-colors duration-500 ${isCompleted ? 'text-emerald-700' : 'text-stone-400'}`}>{s}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                            ))}
+                                        </div>
 
-                                {order.items?.map((item, idx) => (
-                                    <div key={idx} className="flex gap-4 mb-3 p-2 hover:bg-stone-50 rounded-lg transition-colors cursor-pointer" onClick={() => item.product?._id && navigate(`/post/${item.product._id}`)}>
-                                        <div className="w-20 h-20 bg-stone-100 rounded-lg overflow-hidden shrink-0 border border-stone-200 shadow-sm">
-                                            <img src={getImageUrl(item.product?.image || item.product?.images?.[0])} alt={item.product?.title} className="w-full h-full object-cover" />
-                                        </div>
-                                        <div className="flex-1 flex flex-col justify-center">
-                                            <h4 className="font-bold text-sm text-[#1C1917] line-clamp-1 group-hover:text-[#EA580C] transition-colors">{item.product?.title || 'Sản phẩm không xác định'}</h4>
-                                            <p className="text-xs text-stone-500 mt-1">Số lượng: x{item.quantity}</p>
-                                            <p className="text-sm font-bold text-[#EA580C] mt-1">{new Intl.NumberFormat('vi-VN').format(item.price)} đ</p>
+                                        {order.shippingCode && (
+                                            <div className="mt-3 p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl text-xs text-indigo-900 flex items-center justify-between">
+                                                <span>
+                                                    <i className="fas fa-truck mr-1.5 text-indigo-600"></i>
+                                                    <strong>Vận chuyển ({order.shippingCarrier || 'Bưu cục'}):</strong> {order.shippingCode}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between items-center mt-4 pt-3 border-t border-stone-100">
+                                            <span className="text-xs font-bold text-stone-500">Tổng thanh toán:</span>
+                                            <span className="text-lg font-black text-orange-600">
+                                                {(order.totalPrice || order.totalAmount || 0).toLocaleString('vi-VN')} đ
+                                            </span>
                                         </div>
                                     </div>
-                                ))}
-                                <div className="flex justify-between items-center mt-3 pt-3 border-t border-stone-100 bg-[#FFFBEB] -mx-4 -mb-4 p-4 rounded-b-xl border-t-dashed border-t-orange-200">
-                                    <span className="text-sm font-bold text-stone-600">Tổng thanh toán:</span>
-                                    <span className="text-xl font-black text-[#EA580C]">{new Intl.NumberFormat('vi-VN').format(order.totalAmount)} đ</span>
-                                </div>
-                                {order.status === 'Chờ xác nhận' && activeTab === 'orders_sell' && (
-                                    <div className="flex justify-end gap-2 mt-4">
-                                        <button className="px-5 py-2 bg-[#1C1917] text-white text-sm font-bold rounded-lg hover:bg-stone-800 shadow-sm transition-colors">Xác nhận đơn</button>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                        {(activeTab === 'orders_buy' ? myOrders : mySales).length === 0 && (
-                            <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-8 text-center text-stone-500 animate-fade-in">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mx-auto mb-4 text-stone-200" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
-                                <p className="font-medium">Chưa có đơn hàng nào.</p>
-                            </div>
+                                );
+                            })
                         )}
                     </div>
                 )}
 
+                {/* TAB 2: REVIEWS */}
                 {!isEditing && activeTab === 'reviews' && (
-                    <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-6">
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6">
                         {myReviews.map((rev, i) => (
                             <div key={i} className="mb-4 pb-4 border-b border-stone-100 last:border-0 last:mb-0 last:pb-0">
                                 <div className="flex items-center justify-between mb-2">
@@ -560,12 +491,17 @@ export default function ProfilePage() {
                                             <p className="text-xs text-stone-400">{new Date(rev.createdAt || Date.now()).toLocaleDateString('vi-VN')}</p>
                                         </div>
                                     </div>
-                                    <div className="text-[#FACC15] text-sm">{"★".repeat(rev.rating)}</div>
+                                    <div className="text-amber-500 text-sm">{"★".repeat(rev.rating || 5)}</div>
                                 </div>
                                 <p className="text-sm text-stone-700 italic">"{rev.comment}"</p>
                             </div>
                         ))}
-                        {myReviews.length === 0 && <p className="text-center text-stone-500 py-10">Chưa có đánh giá nào.</p>}
+                        {myReviews.length === 0 && (
+                            <div className="text-center py-10">
+                                <i className="fas fa-star text-3xl text-stone-300 mb-2 block"></i>
+                                <p className="text-sm font-medium text-stone-500">Chưa có đánh giá nào.</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -575,89 +511,79 @@ export default function ProfilePage() {
                 <div className="w-full lg:w-[35%] flex flex-col gap-4">
                     
                     {/* Account Rank Card */}
-                <div className="bg-white rounded-xl border border-stone-200 shadow-sm overflow-hidden">
-                    <div className="p-4 border-b border-stone-100 flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EA580C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
-                            <h3 className="font-bold text-[#1C1917]">Cấp độ tài khoản</h3>
-                        </div>
-                        <span className="bg-[#FEF3C7] text-[#D97706] text-xs font-bold px-2 py-0.5 rounded border border-[#FDE68A]">{accountLevel}</span>
-                    </div>
-                    <div className="p-4">
-                        <div className="flex justify-between text-xs font-bold text-stone-600 mb-2">
-                            <span>Tiến trình lên <strong>{nextLevelName}</strong></span>
-                            <span className="text-[#EA580C]">{nextLevelProgress}%</span>
-                        </div>
-                        <div className="w-full bg-stone-100 rounded-full h-1.5 mb-2">
-                            <div className="bg-[#EA580C] h-1.5 rounded-full" style={{width: `${nextLevelProgress}%`}}></div>
-                        </div>
-                        <p className="text-[10px] text-stone-400 mb-4">Hoàn thành thêm giao dịch để nhận huy hiệu.</p>
-                        <button className="w-full bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-bold py-2 rounded-lg transition-colors flex justify-center items-center gap-1">
-                            Chi tiết đặc quyền thành viên <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                    </div>
-                </div>
-
-                {/* HaiPay Wallet Card */}
-                <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-4">
-                    <div className="flex justify-between items-center mb-3">
-                        <div className="flex items-center gap-2">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EA580C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-                            <h3 className="font-bold text-[#1C1917]">Số dư Ví HaiPay</h3>
-                        </div>
-                        <span onClick={() => navigate('/haipay')} className="text-xs font-bold text-[#EA580C] cursor-pointer hover:underline">Chi tiết ví</span>
-                    </div>
-                    <div className="mb-4">
-                        <p className="text-3xl font-black text-[#1C1917] tracking-tight">{new Intl.NumberFormat('vi-VN').format(user.walletBalance || 0)} <span className="text-xl underline">đ</span></p>
-                        <p className="text-xs text-stone-500 mt-1 font-medium">Số dư khả dụng: <strong className="text-[#1C1917]">{new Intl.NumberFormat('vi-VN').format(user.walletBalance || 0)} đ</strong></p>
-                    </div>
-                    <div className="flex gap-2">
-                        <button onClick={() => navigate('/haipay')} className="flex-1 bg-[#FACC15] hover:bg-[#EAB308] text-[#1C1917] font-bold py-2 text-sm rounded-lg transition-colors">
-                            Rút về ngân hàng
-                        </button>
-                        <button onClick={() => navigate('/haipay')} className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-2 text-sm rounded-lg transition-colors">
-                            Lịch sử ví
-                        </button>
-                    </div>
-                </div>
-
-                {/* Support Card */}
-                <div className="bg-white rounded-xl border border-stone-200 shadow-sm p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EA580C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        <h3 className="font-bold text-[#1C1917] uppercase text-sm tracking-wide">Hỗ trợ & Tranh chấp C2C</h3>
-                    </div>
-                    <p className="text-xs text-stone-500 mb-4 leading-relaxed">
-                        Trung tâm hỗ trợ mua bán C2C HaiHand: Hỗ trợ kiểm tra hàng, đối soát thanh toán VNPay, Ví HaiPay, COD nhanh chóng.
-                    </p>
-                    <div className="flex flex-col gap-2">
-                        <button className="flex items-center justify-between p-2.5 border border-stone-100 rounded-lg hover:border-stone-200 hover:bg-stone-50 transition-colors group">
-                            <div className="flex items-center gap-2 text-sm font-bold text-stone-600 group-hover:text-[#EA580C]">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg> Gửi khiếu nại đơn hàng
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+                        <div className="p-4 border-b border-stone-100 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <i className="fas fa-medal text-orange-500 text-base"></i>
+                                <h3 className="font-bold text-[#1C1917] text-sm">Hạng thành viên</h3>
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                        </button>
-                        <button className="flex items-center justify-between p-2.5 border border-stone-100 rounded-lg hover:border-stone-200 hover:bg-stone-50 transition-colors group">
-                            <div className="flex items-center gap-2 text-sm font-bold text-stone-600 group-hover:text-[#EA580C]">
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" /></svg> Trò chuyện trợ lý 24/7
+                            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full">{accountLevel}</span>
+                        </div>
+                        <div className="p-4">
+                            <div className="flex justify-between text-xs font-bold text-stone-600 mb-2">
+                                <span>Tiến trình lên <strong>{nextLevelName}</strong></span>
+                                <span className="text-orange-600">{nextLevelProgress}%</span>
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-stone-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                        </button>
+                            <div className="w-full bg-stone-100 rounded-full h-1.5 mb-2">
+                                <div className="bg-orange-500 h-1.5 rounded-full" style={{width: `${nextLevelProgress}%`}}></div>
+                            </div>
+                            <p className="text-[10px] text-stone-400">Tích lũy chi tiêu để thăng hạng và hưởng thêm ưu đãi voucher B2C.</p>
+                        </div>
                     </div>
-                </div>
 
-                {/* Tips Card */}
-                <div className="bg-[#FFFBEB] rounded-xl border border-[#FDE68A] p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EA580C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
-                        <h3 className="font-bold text-[#EA580C] text-sm">Mẹo tăng tốc bán đồ cũ</h3>
+                    {/* HaiPay Wallet Card */}
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5">
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="flex items-center gap-2">
+                                <i className="fas fa-wallet text-orange-500 text-base"></i>
+                                <h3 className="font-bold text-[#1C1917] text-sm">Ví điện tử HaiPay</h3>
+                            </div>
+                            <button onClick={() => navigate('/haipay/dashboard')} className="text-xs font-bold text-orange-600 hover:underline">
+                                Xem ví →
+                            </button>
+                        </div>
+                        <div className="mb-4">
+                            <p className="text-2xl font-black text-[#1C1917] tracking-tight">
+                                {(user.walletBalance || 0).toLocaleString('vi-VN')} <span className="text-base font-bold">đ</span>
+                            </p>
+                            <p className="text-xs text-stone-500 mt-1 font-medium">Bảo chứng thanh toán và hoàn tiền an toàn 100%</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => navigate('/haipay/dashboard')} className="flex-1 bg-[#FACC15] hover:bg-[#EAB308] text-[#1C1917] font-bold py-2 text-xs rounded-xl transition-colors">
+                                Nạp tiền / Rút tiền
+                            </button>
+                            <button onClick={() => navigate('/haipay/dashboard')} className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-2 text-xs rounded-xl transition-colors">
+                                Lịch sử ví
+                            </button>
+                        </div>
                     </div>
-                    <p className="text-xs text-orange-800 leading-relaxed">
-                        Chụp đủ 4 góc sản phẩm, kèm ảnh chụp chi tiết lỗi nhỏ (vết xước, cấn viền) giúp tỉ lệ chốt đơn tăng 3.4 lần và không bị hoàn hàng!
-                    </p>
-                </div>
 
-            </div>
+                    {/* Support Card */}
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5">
+                        <div className="flex items-center gap-2 mb-2">
+                            <i className="fas fa-headset text-orange-500 text-base"></i>
+                            <h3 className="font-bold text-[#1C1917] text-sm">Trung tâm Hỗ trợ B2C</h3>
+                        </div>
+                        <p className="text-xs text-stone-500 mb-4 leading-relaxed">
+                            Tổng đài hỗ trợ người mua & người bán HaiHand 24/7. Hỗ trợ đối soát thanh toán và xử lý sự cố giao nhận.
+                        </p>
+                        <div className="flex flex-col gap-2">
+                            <button onClick={() => navigate('/dispute-resolution')} className="flex items-center justify-between p-2.5 border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors group">
+                                <span className="text-xs font-bold text-stone-600 group-hover:text-orange-600 flex items-center gap-2">
+                                    <i className="fas fa-shield-alt text-amber-500"></i> Chính sách giải quyết khiếu nại
+                                </span>
+                                <i className="fas fa-chevron-right text-stone-300 text-[10px]"></i>
+                            </button>
+                            <button onClick={() => navigate('/chat')} className="flex items-center justify-between p-2.5 border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors group">
+                                <span className="text-xs font-bold text-stone-600 group-hover:text-orange-600 flex items-center gap-2">
+                                    <i className="fas fa-comments text-blue-500"></i> Hỗ trợ trực tuyến
+                                </span>
+                                <i className="fas fa-chevron-right text-stone-300 text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
             )}
 
         </div>

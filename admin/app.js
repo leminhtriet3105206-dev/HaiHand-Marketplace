@@ -63,6 +63,8 @@ const Notification = mongoose.models.Notification || mongoose.model('Notificatio
   type: { type: String, default: 'SYSTEM' },
   link: { type: String, default: '/' },
   targetUrl: { type: String, default: '/' },
+  targetRole: { type: String, enum: ['buyer', 'seller', 'admin', 'all'], default: 'admin' },
+  recipientRole: { type: String, enum: ['buyer', 'seller', 'admin', 'all'], default: 'admin' },
   isRead: { type: Boolean, default: false }
 }, { timestamps: true, strict: false }), 'notifications');
 
@@ -154,10 +156,28 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const checkLogin = (req, res, next) => {
-  if (req.session.user) {
-    res.locals.user = req.session.user;
-    next();
-  } else res.redirect("/login");
+  const isApi = req.originalUrl.startsWith("/api/") || req.path.startsWith("/api/");
+  const user = req.session && req.session.user;
+
+  if (!user) {
+    if (isApi) {
+      return res.status(401).json({ success: false, error: "Chưa xác thực: Vui lòng đăng nhập với tài khoản Admin." });
+    }
+    return res.redirect("/login");
+  }
+
+  // Strict role verification & account status check
+  if (user.role !== "Admin" || user.status === "locked" || user.isBanned === true) {
+    if (isApi) {
+      return res.status(403).json({ success: false, error: "Quyền truy cập bị từ chối: Yêu cầu quyền quản trị viên hợp lệ." });
+    }
+    return req.session.destroy(() => {
+      res.redirect("/login");
+    });
+  }
+
+  res.locals.user = user;
+  return next();
 };
 
 
@@ -280,19 +300,48 @@ app.post("/login", async (req, res) => {
 
 app.post("/register", async (req, res) => {
   try {
-    const { name, email, username, password, role } = req.body;
-    const newUser = new User({
-      name: name || username,
-      email: email,
-      phone: "",
-      username: username,
-      password: password,
-      role: role || "Khách hàng",
+    // 1. Strict Input Sanitization: Whitelist ONLY safe fields
+    const { name, email, username, password } = req.body;
+
+    if (!email || !username || !password) {
+      return res.status(400).render("login", { error: "Vui lòng điền đầy đủ Email, Tên đăng nhập và Mật khẩu!" });
+    }
+
+    // 2. Privilege Escalation Guard: Reject any payload attempting to self-assign Admin privileges
+    const requestedRole = req.body.role || req.body.roles;
+    if (requestedRole && /(admin|quản trị|root|superuser)/i.test(String(requestedRole))) {
+      return res.status(403).render("login", {
+        error: "Cảnh báo bảo mật: Bạn không có quyền tự cấp vai trò Quản trị viên (Admin)!"
+      });
+    }
+
+    // 3. Prevent duplicate accounts
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanUsername = username.trim();
+    const existing = await User.findOne({
+      $or: [{ email: cleanEmail }, { username: cleanUsername }]
     });
+    if (existing) {
+      return res.status(400).render("login", { error: "Email hoặc Tên đăng nhập này đã được sử dụng!" });
+    }
+
+    // 4. Force default safe role ('Khách hàng'), completely ignoring any user-supplied role
+    const newUser = new User({
+      name: (name || cleanUsername).trim(),
+      email: cleanEmail,
+      phone: req.body.phone ? String(req.body.phone).trim() : "",
+      username: cleanUsername,
+      password: password,
+      role: "Khách hàng", // Enforce safe default role
+      isSeller: false,
+      sellerStatus: "none",
+      status: "active"
+    });
+
     await newUser.save();
     res.redirect("/login");
   } catch (err) {
-    res.render("login", { error: "Đăng ký thất bại: " + err.message });
+    res.status(500).render("login", { error: "Đăng ký thất bại: " + err.message });
   }
 });
 
@@ -585,52 +634,70 @@ app.get("/admin/chat", checkLogin, (req, res) => {
   res.render("admin-chat", { active: 'chat' });
 });
 
-// 6. Notifications & Chat Badges APIs
-app.get("/api/admin/notifications", async (req, res) => {
+// Helper filter to isolate admin/system-level notifications from personal user notifications
+const getAdminNotifFilter = () => ({
+  $or: [
+    { targetRole: 'admin' },
+    { recipientRole: 'admin' },
+    { type: { $in: ['SELLER', 'PRODUCT', 'WITHDRAWAL', 'REPORT'] } }
+  ]
+});
+
+// 6. Notifications & Chat Badges APIs (Protected with checkLogin)
+app.get("/api/admin/notifications", checkLogin, async (req, res) => {
   try {
-    const notifications = await safeQuery('notifs', () => Notification.find()
+    const adminFilter = getAdminNotifFilter();
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
+    const notifications = await safeQuery('notifs', () => Notification.find(adminFilter)
       .sort({ createdAt: -1 })
-      .limit(30), []);
-    const unreadCount = await safeQuery('unreadNotifs', () => Notification.countDocuments({ isRead: false }), 0);
+      .limit(limit), []);
+    const unreadCount = await safeQuery('unreadNotifs', () => Notification.countDocuments({ ...adminFilter, isRead: false }), 0);
     res.json({ notifications, unreadCount });
   } catch (e) {
     res.json({ notifications: [], unreadCount: 0 });
   }
 });
 
-app.get("/api/notifications", async (req, res) => {
+app.get("/api/notifications", checkLogin, async (req, res) => {
   try {
-    const notifications = await safeQuery('notifs', () => Notification.find()
+    // Admin dashboard must ONLY display system-level notifications
+    const adminFilter = getAdminNotifFilter();
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
+    const notifications = await safeQuery('notifs', () => Notification.find(adminFilter)
       .sort({ createdAt: -1 })
-      .limit(30), []);
-    const unreadCount = await safeQuery('unreadNotifs', () => Notification.countDocuments({ isRead: false }), 0);
+      .limit(limit), []);
+    const unreadCount = await safeQuery('unreadNotifs', () => Notification.countDocuments({ ...adminFilter, isRead: false }), 0);
     res.json({ notifications, unreadCount });
   } catch (e) {
     res.json({ notifications: [], unreadCount: 0 });
   }
 });
 
-app.post("/api/admin/notifications/read", async (req, res) => {
+app.post("/api/admin/notifications/read", checkLogin, async (req, res) => {
   try {
-    await Notification.updateMany({ isRead: false }, { isRead: true });
+    const adminFilter = getAdminNotifFilter();
+    await Notification.updateMany({ ...adminFilter, isRead: false }, { isRead: true });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-app.get("/api/admin/unread-chats", async (req, res) => {
+app.get("/api/admin/unread-chats", checkLogin, async (req, res) => {
   res.json({ count: 0 });
 });
 
-app.get("/api/admin/test-notif", async (req, res) => {
+app.get("/api/admin/test-notif", checkLogin, async (req, res) => {
   try {
     const notif = new Notification({
       title: 'Đăng ký bán hàng B2C mới',
       message: 'Người dùng vừa nộp hồ sơ mở shop cần duyệt.',
       type: 'SELLER',
       link: '/admin/seller-applications',
-      targetUrl: '/admin/seller-applications'
+      targetUrl: '/admin/seller-applications',
+      targetRole: 'admin',
+      recipientRole: 'admin',
+      isRead: false
     });
     await notif.save();
     res.json({ success: true, notif });
@@ -762,8 +829,8 @@ app.get("/users/delete/:id", checkLogin, async (req, res) => {
   }
 });
 
-// Settings API for Auto-Approve Posts logic
-app.get("/api/admin/settings/auto-approve", async (req, res) => {
+// Settings API for Auto-Approve Posts logic (Protected with checkLogin)
+app.get("/api/admin/settings/auto-approve", checkLogin, async (req, res) => {
   try {
     const setting = await GlobalSetting.getGlobal();
     res.json({ autoApprovePosts: setting.autoApprovePosts === true });

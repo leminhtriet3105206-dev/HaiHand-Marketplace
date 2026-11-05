@@ -66,6 +66,9 @@ router.post('/send-otp', async (req, res) => {
       expiresIn: 300
     });
   } catch (error) {
+    if (error.statusCode === 429) {
+      return res.status(429).json({ message: error.message });
+    }
     console.error('Send OTP Error:', error);
     return res.status(500).json({ message: 'Lỗi khi gửi mã OTP: ' + error.message });
   }
@@ -95,6 +98,15 @@ router.post('/register', async (req, res) => {
     let user = await User.findOne({ email: cleanEmail });
 
     if (user) {
+      // Enforce password verification for existing account to prevent unauthorized wallet hijacking
+      if (!password) {
+        return res.status(400).json({ message: 'Tài khoản đã tồn tại. Vui lòng nhập mật khẩu tài khoản để kích hoạt ví!' });
+      }
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(400).json({ message: 'Mật khẩu tài khoản không chính xác!' });
+      }
+
       // Activate wallet for existing user
       user.isWalletActive = true;
       if (phone) user.walletPhone = phone.trim();
@@ -174,17 +186,26 @@ router.post('/login', async (req, res) => {
       return res.status(404).json({ message: 'Tài khoản không tồn tại trong hệ thống' });
     }
 
-    // Verify password if provided
-    if (password) {
-      const isPasswordValid = await bcrypt.compare(password, user.password);
-      if (!isPasswordValid) {
-        return res.status(400).json({ message: 'Mật khẩu không chính xác' });
-      }
+    // Unconditionally verify password to prevent passwordless login bypass (VULN-06)
+    if (!password || typeof password !== 'string') {
+      return res.status(400).json({ message: 'Vui lòng nhập mật khẩu tài khoản' });
     }
 
-    // Step A: If no OTP provided yet, auto-generate & send OTP
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(400).json({ message: 'Mật khẩu không chính xác' });
+    }
+
+    // Step A: If password is valid but no OTP provided yet, auto-generate & send OTP
     if (!otp) {
-      await createAndSaveOtp(user.email, 'LOGIN');
+      try {
+        await createAndSaveOtp(user.email, 'LOGIN');
+      } catch (otpErr) {
+        if (otpErr.statusCode === 429) {
+          return res.status(429).json({ message: otpErr.message });
+        }
+        throw otpErr;
+      }
       return res.status(200).json({
         requireOtp: true,
         email: user.email,

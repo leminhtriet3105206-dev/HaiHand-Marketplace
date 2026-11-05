@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { persistUser } from '../api/axiosClient';
+import axiosClient, { persistUser } from '../api/axiosClient';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { useToast } from '../components/Toast';
+import OrderDetailModal from '../components/OrderDetailModal';
 
 export default function ProfilePage() {
   const toast = useToast();
@@ -20,6 +21,7 @@ export default function ProfilePage() {
 
   const [activeTab, setActiveTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   // Edit profile form
   const [isEditing, setIsEditing] = useState(false);
@@ -84,9 +86,23 @@ export default function ProfilePage() {
     const fetchData = async () => {
         setLoading(true);
         try {
+            // Lấy JWT token từ user đang đăng nhập hoặc localStorage
+            const token = currentUser?.token || localStorage.getItem('token') || '';
+            const authConfig = {
+                headers: {
+                    ...(token ? { Authorization: 'Bearer ' + token } : {}),
+                    userid: currentUser._id
+                },
+                withCredentials: true
+            };
+
             const [ordersRes, profileRes] = await Promise.all([
-                axios.get(`${API_URL}/api/users/${currentUser._id}/orders`).catch(() => ({ data: [] })),
-                axios.get(`${API_URL}/api/users/public-profile/${currentUser._id}`).catch(() => ({ data: { reviews: [], avgRating: 5 } }))
+                axios
+                    .get(`${API_URL}/api/users/${currentUser._id}/orders`, authConfig)
+                    .catch(() => ({ data: [] })),
+                axios
+                    .get(`${API_URL}/api/users/public-profile/${currentUser._id}`, authConfig)
+                    .catch(() => ({ data: { reviews: [], avgRating: 5 } }))
             ]);
 
             setMyOrders(ordersRes.data || []);
@@ -112,7 +128,7 @@ export default function ProfilePage() {
         const formData = new FormData();
         Object.keys(editForm).forEach(key => formData.append(key, editForm[key]));
         if (selectedImage) formData.append('avatar', selectedImage);
-        const { data } = await axios.put(`${API_URL}/api/users/profile/${user._id}`, formData);
+        const { data } = await axiosClient.put(`/api/users/profile/${user._id}`, formData);
         persistUser(data);
         setUser(data);
         setIsEditing(false);
@@ -128,7 +144,7 @@ export default function ProfilePage() {
       try {
           const formData = new FormData();
           formData.append('avatar', file);
-          const { data } = await axios.put(`${API_URL}/api/users/profile/${user._id}`, formData);
+          const { data } = await axiosClient.put(`/api/users/profile/${user._id}`, formData);
           persistUser(data);
           setUser(data);
           toast.success('Thành công', 'Đã đổi ảnh đại diện!');
@@ -466,10 +482,20 @@ export default function ProfilePage() {
                                         )}
 
                                         <div className="flex justify-between items-center mt-4 pt-3 border-t border-stone-100">
-                                            <span className="text-xs font-bold text-stone-500">Tổng thanh toán:</span>
-                                            <span className="text-lg font-black text-orange-600">
-                                                {(order.totalPrice || order.totalAmount || 0).toLocaleString('vi-VN')} đ
-                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedOrder(order)}
+                                                className="px-3.5 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition-colors"
+                                            >
+                                                <i className="fas fa-route mr-1.5"></i>
+                                                Theo dõi vận đơn & Chi tiết
+                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-stone-500">Tổng thanh toán:</span>
+                                                <span className="text-lg font-black text-orange-600">
+                                                    {(order.totalPrice || order.totalAmount || 0).toLocaleString('vi-VN')} đ
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
                                 );
@@ -589,6 +615,13 @@ export default function ProfilePage() {
         </div>
       </main>
       
+      {selectedOrder && (
+        <OrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
+
       <AppFooter />
     </div>
   );

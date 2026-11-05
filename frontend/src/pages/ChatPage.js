@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import { useSocket } from '../context/SocketContext';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { useToast } from '../components/Toast';
@@ -34,7 +34,7 @@ export default function ChatPage() {
   const [filter, setFilter] = useState('all'); // all, buy, sell, unread
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
-  const socket = useRef();
+  const { socket } = useSocket();
   const scrollRef = useRef();
   const fileInputRef = useRef();
   
@@ -42,12 +42,9 @@ export default function ChatPage() {
   useEffect(() => { selectedReceiverRef.current = selectedReceiver; }, [selectedReceiver]);
 
   useEffect(() => {
-    // We do not redirect to login if backend is down for UI demo
-    if (user) {
-        socket.current = io(API_URL, { transports: ["websocket", "polling"], reconnection: true });
-        socket.current.emit('addUser', user._id);
-        socket.current.on('getUsers', (users) => { setOnlineUsers(users.map(u => u.userId)); });
-        socket.current.on('getMessage', (data) => {
+    if (user && socket) {
+        const handleGetUsers = (users) => { setOnlineUsers(users.map(u => u.userId)); };
+        const handleGetMessage = (data) => {
             const currentReceiver = selectedReceiverRef.current;
             if (currentReceiver && data.senderId === currentReceiver._id) {
                 setMessages((prev) => [...prev, {
@@ -59,10 +56,17 @@ export default function ChatPage() {
                 window.dispatchEvent(new Event('messageUpdated'));
             }
             fetchInboxList(); 
-        });
-        return () => socket.current.disconnect();
+        };
+
+        socket.on('getUsers', handleGetUsers);
+        socket.on('getMessage', handleGetMessage);
+
+        return () => {
+            socket.off('getUsers', handleGetUsers);
+            socket.off('getMessage', handleGetMessage);
+        };
     }
-  }, [user?._id, API_URL, user]);
+  }, [user?._id, API_URL, user, socket]);
 
   const fetchInboxList = async () => {
     setLoading(true);
@@ -95,6 +99,10 @@ export default function ChatPage() {
       try {
         const { data } = await axios.get(`${API_URL}/api/messages/${user._id}/${receiver._id}`);
         setMessages(data);
+        
+        // Gọi API để đánh dấu tin nhắn đã đọc trên backend
+        await axios.put(`${API_URL}/api/messages/mark-read`, { userId: user._id, otherId: receiver._id });
+        window.dispatchEvent(new Event('messageUpdated'));
       } catch (error) {
         console.error("Lỗi tải tin nhắn", error);
       }
@@ -127,8 +135,8 @@ export default function ChatPage() {
             await axios.post(`${API_URL}/api/messages`, {
                 senderId: user._id, receiverId: selectedReceiver._id, text: newMessage, postId: currentLinkedPost?._id || null
             });
-            if(socket.current) {
-                socket.current.emit('sendMessage', {
+            if (socket) {
+                socket.emit('sendMessage', {
                     senderId: user._id, receiverId: selectedReceiver._id, text: newMessage, post: currentLinkedPost, images: []
                 });
             }
@@ -169,8 +177,8 @@ export default function ChatPage() {
             return newArr;
         });
 
-        if(socket.current) {
-            socket.current.emit('sendMessage', {
+        if (socket) {
+            socket.emit('sendMessage', {
                 senderId: user._id, receiverId: selectedReceiver._id, text: '', post: currentLinkedPost, images: data.images || []
             });
         }

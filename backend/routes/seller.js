@@ -12,6 +12,7 @@ const {
   orderBuyerId
 } = require('../utils/b2c');
 const shippingService = require('../services/shipping');
+const { cancelOrderWithRefundAndRestock } = require('../controllers/checkoutController');
 const { pickAddressFields, formatAddress, isCompleteAddress } = require('../models/schemas/Address');
 
 module.exports = function createSellerRouter({ upload, sendNotification, sendAdminNotification, io }) {
@@ -447,6 +448,29 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
 
       if (next === 'Cancelled' && ['Shipped', 'Delivered', 'Completed'].includes(current)) {
         return res.status(400).json({ message: 'Không thể hủy đơn đang giao / đã hoàn tất' });
+      }
+
+      if (next === 'Cancelled') {
+        const cancelResult = await cancelOrderWithRefundAndRestock(order, {
+          cancelledBy: 'seller',
+          reason: req.body.cancelReason || 'Người bán hủy đơn'
+        });
+        if (!cancelResult.success) {
+          return res.status(cancelResult.statusCode || 400).json({ message: cancelResult.message });
+        }
+
+        const buyerId = orderBuyerId(order);
+        if (sendNotification && buyerId) {
+          await sendNotification(
+            buyerId,
+            'Đơn hàng đã bị hủy',
+            `Đơn #${order._id.toString().slice(-6).toUpperCase()} đã bị hủy bởi người bán.${cancelResult.refundedAmount > 0 ? ' Tiền đã được hoàn vào ví HaiPay của bạn.' : ''}`,
+            'ORDER',
+            '/profile?tab=orders_buy'
+          );
+        }
+
+        return res.json({ message: 'Đã cập nhật đơn hàng', order: cancelResult.order });
       }
 
       // If transitioning to Shipped or Processing and order does not have a carrier shipment yet,

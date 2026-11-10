@@ -34,7 +34,7 @@ const haipayRouter = require('./routes/haipay');
 const shippingRouter = require('./routes/shipping');
 const addressRouter = require('./routes/address');
 const PaymentSession = require('./models/PaymentSession');
-const { processCheckout, settlePaymentSession } = require('./controllers/checkoutController');
+const { processCheckout, settlePaymentSession, cancelOrderWithRefundAndRestock } = require('./controllers/checkoutController');
 
 const app = express();
 
@@ -1928,46 +1928,20 @@ app.put('/api/orders/:orderId/cancel', protect, async (req, res) => {
       return res.status(403).json({ message: 'Bạn không có quyền hủy đơn hàng này' });
     }
 
-    const current = canonicalStatus(order.status);
-    if (current === 'Cancelled') return res.status(400).json({ message: 'Đơn này đã bị hủy từ trước rồi!' });
-    if (['Shipped', 'Delivered', 'Completed'].includes(current)) {
-      return res.status(400).json({ message: 'Đơn hàng đang giao hoặc đã hoàn thành, không thể hủy!' });
-    }
-
-    if (isEscrow(order) || order.paymentStatus === 'escrow') {
-      await User.findByIdAndUpdate(orderBuyerId(order), {
-        $inc: { walletBalance: order.totalPrice }
-      });
-      const sellerIdRef = orderSellerId(order);
-      if (sellerIdRef) {
-        await User.findByIdAndUpdate(sellerIdRef, {
-          $inc: { pendingBalance: -(order.totalPrice * 0.95) }
-        });
-      }
-      order.paymentStatus = 'refunded';
-    }
-
-    const qtyByProduct = {};
-    (order.orderItems || []).forEach((item) => {
-      if (item.productId) qtyByProduct[item.productId.toString()] = item.quantity || 1;
+    const cancelledByRole = isAdmin ? 'admin' : (isSellerOwner ? 'seller' : 'buyer');
+    const cancelResult = await cancelOrderWithRefundAndRestock(order, {
+      cancelledBy: cancelledByRole,
+      reason: req.body?.cancelReason || req.body?.reason || ''
     });
-    for (let postId of (order.items || [])) {
-      const post = await Post.findById(postId);
-      if (post) {
-        const add = qtyByProduct[postId.toString()] || 1;
-        const nextStock = (post.stockQuantity ?? post.quantity ?? 0) + add;
-        post.stockQuantity = nextStock;
-        post.quantity = nextStock;
-        if (post.status === 'out_of_stock' || post.status === 'SOLD') post.status = 'active';
-        await post.save();
-      }
+
+    if (!cancelResult.success) {
+      return res.status(cancelResult.statusCode || 400).json({ message: cancelResult.message });
     }
 
-    order.status = 'Cancelled';
-    order.cancelledAt = new Date();
-    await order.save();
-
-    res.status(200).json({ message: '✅ Đã hủy đơn, hoàn tiền vào ví (nếu có) và trả hàng lại vào kho thành công!' });
+    res.status(200).json({
+      message: '✅ Đã hủy đơn, hoàn tiền vào ví (nếu có) và trả hàng lại vào kho thành công!',
+      order: cancelResult.order
+    });
   } catch (error) {
     console.error("Lỗi hủy đơn:", error);
     res.status(500).json({ message: 'Lỗi hệ thống khi hủy đơn' });

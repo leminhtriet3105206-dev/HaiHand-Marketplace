@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'secret123';
 
 const CATALOG_VISIBLE = ['active', 'APPROVED'];
+const PENDING_PRODUCT_STATUSES = ['pending', 'PENDING', 'Pending', 'Chờ duyệt'];
 
 const STATUS_TO_CANONICAL = {
   'Chờ xác nhận': 'Pending',
@@ -30,17 +31,23 @@ function canonicalStatus(status) {
 function productOwnerId(product) {
   if (!product) return '';
   const id = product.sellerId || product.author;
-  return id ? id.toString() : '';
+  if (!id) return '';
+  const raw = id._id ? id._id : id;
+  return raw ? raw.toString() : '';
 }
 
 function orderBuyerId(order) {
   if (!order) return null;
-  return order.buyerId || order.buyer;
+  const b = order.buyerId || order.buyer;
+  if (!b) return null;
+  return b._id ? b._id : b;
 }
 
 function orderSellerId(order) {
   if (!order) return null;
-  return order.sellerId || order.seller;
+  const s = order.sellerId || order.seller;
+  if (!s) return null;
+  return s._id ? s._id : s;
 }
 
 function isEscrow(order) {
@@ -75,6 +82,7 @@ function displayProductName(product) {
 module.exports = {
   JWT_SECRET,
   CATALOG_VISIBLE,
+  PENDING_PRODUCT_STATUSES,
   canonicalStatus,
   productOwnerId,
   orderBuyerId,

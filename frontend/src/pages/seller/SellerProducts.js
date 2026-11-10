@@ -63,6 +63,7 @@ const SellerProducts = () => {
 
         if (filterStatus === 'all') return matchesSearch;
         if (filterStatus === 'active') return matchesSearch && (p.status === 'active' || p.status === 'APPROVED');
+        if (filterStatus === 'pending') return matchesSearch && ['pending', 'PENDING', 'Pending', 'Chờ duyệt'].includes(p.status);
         if (filterStatus === 'inactive') return matchesSearch && p.status === 'inactive';
         if (filterStatus === 'out_of_stock') return matchesSearch && (p.status === 'out_of_stock' || (p.stockQuantity || p.quantity || 0) <= 0);
         return matchesSearch;
@@ -104,6 +105,7 @@ const SellerProducts = () => {
                     {[
                         { id: 'all', label: 'Tất cả' },
                         { id: 'active', label: 'Đang bán' },
+                        { id: 'pending', label: 'Chờ duyệt' },
                         { id: 'out_of_stock', label: 'Hết hàng' },
                         { id: 'inactive', label: 'Đã ẩn' }
                     ].map((tab) => (
@@ -156,6 +158,7 @@ const SellerProducts = () => {
                                 {filteredProducts.map((p) => {
                                     const stock = Number(p.stockQuantity != null ? p.stockQuantity : p.quantity) || 0;
                                     const isOut = stock <= 0 || p.status === 'out_of_stock';
+                                    const isPending = ['pending', 'PENDING', 'Pending', 'Chờ duyệt'].includes(p.status);
                                     const isInactive = p.status === 'inactive';
                                     const firstImg = (p.images && p.images[0]) || p.image;
 
@@ -230,6 +233,10 @@ const SellerProducts = () => {
                                                 ) : isOut ? (
                                                     <span className="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full">
                                                         Hết hàng
+                                                    </span>
+                                                ) : isPending ? (
+                                                    <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2.5 py-1 rounded-full">
+                                                        Chờ duyệt
                                                     </span>
                                                 ) : (
                                                     <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">

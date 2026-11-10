@@ -18,7 +18,7 @@ const productSchema = new mongoose.Schema({
   variants: [{ name: String, options: [String] }],
   status: {
     type: String,
-    enum: ['active', 'inactive', 'out_of_stock', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending', 'Chờ duyệt'],
+    enum: ['active', 'inactive', 'out_of_stock', 'pending', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending', 'Chờ duyệt'],
     default: 'active'
   },
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

@@ -11,6 +11,7 @@ const productSchema = new mongoose.Schema({
   stockQuantity: { type: Number, default: 1, min: 0 },
   quantity: { type: Number, default: 1 },
   soldCount: { type: Number, default: 0 },
+  weight: { type: Number, default: 500, min: 1 }, // grams per unit, for shipping fee
   category: { type: String, required: true },
   location: { type: String, default: 'Toàn quốc' },
   description: { type: String, default: '' },
@@ -23,14 +24,15 @@ const productSchema = new mongoose.Schema({
   details: { type: Map, of: String },
   status: {
     type: String,
-    enum: ['active', 'inactive', 'out_of_stock', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending'],
+    enum: ['active', 'inactive', 'out_of_stock', 'pending', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending', 'Chờ duyệt'],
     default: 'active'
   }
 }, { timestamps: true });
 
 const LEGACY_STATUS = {
-  PENDING: 'inactive',
-  Pending: 'inactive',
+  PENDING: 'pending',
+  Pending: 'pending',
+  'Chờ duyệt': 'pending',
   APPROVED: 'active',
   SOLD: 'out_of_stock',
   DELETED: 'inactive'
@@ -48,7 +50,7 @@ productSchema.pre('validate', function (next) {
     this.stockQuantity = this.quantity;
   }
   if (LEGACY_STATUS[this.status]) this.status = LEGACY_STATUS[this.status];
-  if (Number(this.stockQuantity) === 0 && this.status === 'active') {
+  if (Number(this.stockQuantity) === 0 && (this.status === 'active' || this.status === 'pending')) {
     this.status = 'out_of_stock';
   }
   if (typeof next === 'function') next();

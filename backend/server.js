@@ -254,9 +254,7 @@ const requireAdmin = (req, res, next) => {
 };
 
 app.use(createSellerRouter({ upload, sendNotification, sendAdminNotification, io }));
-const shippingController = require('./controllers/shippingController');
 const webhookRouter = require('./routes/webhook');
-app.post('/api/seller/orders/:orderId/ship', protect, shippingController.createShipmentGHN);
 app.use('/api/webhook', webhookRouter);
 app.use('/api/haipay', haipayRouter);
 app.use('/api/shipping', shippingRouter);

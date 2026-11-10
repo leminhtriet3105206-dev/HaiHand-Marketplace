@@ -18,7 +18,10 @@ const productSchema = new mongoose.Schema({
   images: [{ type: String }],
   condition: { type: String, default: 'Mới' },
   variants: [{
-    name: String,
+    name: { type: String, default: '' },
+    price: { type: Number },
+    stock: { type: Number, default: 0 },
+    sku: { type: String, default: '' },
     options: [String]
   }],
   details: { type: Map, of: String },

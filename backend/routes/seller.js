@@ -22,13 +22,24 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
 
   const parseVariants = (raw) => {
     if (!raw) return [];
-    if (Array.isArray(raw)) return raw;
-    try {
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-      return [];
+    let list = raw;
+    if (!Array.isArray(list)) {
+      try {
+        const parsed = JSON.parse(raw);
+        list = Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
     }
+    return list
+      .filter((v) => v && typeof v === 'object')
+      .map((v) => ({
+        name: v.name != null ? String(v.name).trim() : '',
+        ...(v.price !== undefined && v.price !== null && v.price !== '' ? { price: Number(v.price) || 0 } : {}),
+        stock: v.stock !== undefined && v.stock !== null && v.stock !== '' ? Math.max(0, Number(v.stock) || 0) : 0,
+        sku: v.sku != null ? String(v.sku).trim() : '',
+        options: Array.isArray(v.options) ? v.options.map((opt) => String(opt)) : []
+      }));
   };
 
   router.post('/api/users/apply-seller', protect, async (req, res) => {

@@ -5,6 +5,8 @@ const Order = require('../models/Order');
 const { Post } = require('../models/Product');
 const {
   PENDING_PRODUCT_STATUSES,
+  fetchPlatformFeePercent,
+  calculateOrderSplit,
   sanitizeUser,
   canonicalStatus,
   productOwnerId,
@@ -171,10 +173,11 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       const products = await Post.find({ $or: [{ sellerId }, { author: sellerId }] });
       const orders = await Order.find({ $or: [{ sellerId }, { seller: sellerId }] });
 
+      const feePercent = await fetchPlatformFeePercent();
       const pending = orders.filter((o) => canonicalStatus(o.status) === 'Pending').length;
       const processing = orders.filter((o) => ['Processing', 'Shipped', 'Delivered'].includes(canonicalStatus(o.status))).length;
       const completed = orders.filter((o) => canonicalStatus(o.status) === 'Completed');
-      const revenue = completed.reduce((sum, o) => sum + (o.totalPrice || 0) * 0.95, 0);
+      const revenue = completed.reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
       const totalSales = completed.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
       res.json({

@@ -4,6 +4,47 @@ const JWT_SECRET = process.env.JWT_SECRET || 'secret123';
 
 const CATALOG_VISIBLE = ['active', 'APPROVED'];
 const PENDING_PRODUCT_STATUSES = ['pending', 'PENDING', 'Pending', 'Chờ duyệt'];
+const DEFAULT_COMMISSION_PERCENT = 5;
+
+function getPlatformFeePercent(setting) {
+  if (!setting) return DEFAULT_COMMISSION_PERCENT;
+  const raw = setting.commissionRate ?? setting.platformFeePercentage ?? DEFAULT_COMMISSION_PERCENT;
+  const num = Number(raw);
+  if (Number.isNaN(num) || num < 0 || num > 50) return DEFAULT_COMMISSION_PERCENT;
+  return num;
+}
+
+async function fetchPlatformFeePercent() {
+  try {
+    const Settings = require('../models/Settings');
+    const setting = await Settings.findOne();
+    return getPlatformFeePercent(setting);
+  } catch (e) {
+    return DEFAULT_COMMISSION_PERCENT;
+  }
+}
+
+function calculateOrderSplit(orderOrTotal, feePercentOverride) {
+  const isObj = typeof orderOrTotal === 'object' && orderOrTotal !== null;
+  const totalAmount = Math.max(0, Number(isObj ? (orderOrTotal.totalPrice ?? orderOrTotal.totalAmount ?? 0) : orderOrTotal) || 0);
+
+  if (isObj && typeof orderOrTotal.sellerReceive === 'number' && !Number.isNaN(orderOrTotal.sellerReceive) && orderOrTotal.sellerReceive >= 0 && orderOrTotal.sellerReceive <= totalAmount) {
+    const sellerReceive = Math.round(orderOrTotal.sellerReceive);
+    const platformFee = Math.max(0, totalAmount - sellerReceive);
+    const feePercent = typeof orderOrTotal.commissionRate === 'number'
+      ? orderOrTotal.commissionRate
+      : (feePercentOverride != null ? Number(feePercentOverride) : DEFAULT_COMMISSION_PERCENT);
+    return { totalAmount, feePercent, platformFee, sellerReceive };
+  }
+
+  const feePercent = isObj && typeof orderOrTotal.commissionRate === 'number' && !Number.isNaN(orderOrTotal.commissionRate)
+    ? orderOrTotal.commissionRate
+    : getPlatformFeePercent({ commissionRate: feePercentOverride });
+
+  const platformFee = Math.round(totalAmount * (feePercent / 100));
+  const sellerReceive = Math.max(0, totalAmount - platformFee);
+  return { totalAmount, feePercent, platformFee, sellerReceive };
+}
 
 const STATUS_TO_CANONICAL = {
   'Chờ xác nhận': 'Pending',
@@ -83,6 +124,10 @@ module.exports = {
   JWT_SECRET,
   CATALOG_VISIBLE,
   PENDING_PRODUCT_STATUSES,
+  DEFAULT_COMMISSION_PERCENT,
+  getPlatformFeePercent,
+  fetchPlatformFeePercent,
+  calculateOrderSplit,
   canonicalStatus,
   productOwnerId,
   orderBuyerId,

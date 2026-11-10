@@ -20,6 +20,8 @@ const Settings = require('./models/Settings');
 const {
   CATALOG_VISIBLE,
   PENDING_PRODUCT_STATUSES,
+  fetchPlatformFeePercent,
+  calculateOrderSplit,
   canonicalStatus,
   productOwnerId,
   orderBuyerId,
@@ -795,47 +797,119 @@ app.post('/orders/update-status/:id', requireAdmin, async (req, res) => {
 });
 
 
+const ELIGIBLE_RELEASE_STATUSES = [
+  'Delivered',
+  'Completed',
+  'Hoàn thành',
+  'Đã giao thành công',
+  'Đã giao hàng'
+];
+
 app.post('/api/admin/release-funds/:orderId', requireAdmin, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
 
+    if (order.paymentMethod === 'COD' || (order.paymentStatus === 'unpaid' && !isEscrow(order))) {
+      return res.status(400).json({
+        message: "Đơn hàng COD hoặc chưa thanh toán qua ví ký quỹ (escrow) không thể giải ngân từ sàn!"
+      });
+    }
+
+    if (order.paymentStatus === 'released') {
+      return res.status(409).json({
+        message: "Đơn hàng này đã được giải ngân trước đó!"
+      });
+    }
+
+    if (order.paymentStatus !== 'escrow' && !isEscrow(order)) {
+      return res.status(400).json({
+        message: `Chỉ có thể giải ngân cho đơn hàng đang ở trạng thái ký quỹ (escrow), hiện tại: ${order.paymentStatus}`
+      });
+    }
 
     const current = canonicalStatus(order.status);
-    if (!['Completed', 'Delivered', 'Hoàn thành'].includes(current) && order.status !== 'Hoàn thành') {
+    if (!['Completed', 'Delivered'].includes(current)) {
       return res.status(400).json({ message: "Chỉ giải ngân khi đơn hàng đã Delivered / Completed!" });
     }
 
-    const platformFee = order.totalPrice * 0.05;
-    const sellerReceive = order.totalPrice - platformFee;
     const sellerRef = orderSellerId(order);
+    if (!sellerRef) {
+      return res.status(400).json({ message: "Đơn hàng thiếu thông tin người bán (seller)" });
+    }
 
-    const seller = await User.findById(sellerRef);
-    if (!seller) return res.status(404).json({ message: 'Không tìm thấy Seller' });
-    seller.pendingBalance = Math.max(0, (seller.pendingBalance || 0) - sellerReceive);
-    seller.walletBalance = (seller.walletBalance || 0) + sellerReceive;
-    await seller.save();
+    const feePercent = await fetchPlatformFeePercent();
+    const { platformFee, sellerReceive } = calculateOrderSplit(order, feePercent);
+    const now = new Date();
+
+    // Atomic conditional transition: only transition if paymentStatus is currently 'escrow'
+    const releasedOrder = await Order.findOneAndUpdate(
+      {
+        _id: order._id,
+        paymentStatus: 'escrow',
+        status: { $in: ELIGIBLE_RELEASE_STATUSES }
+      },
+      {
+        $set: {
+          paymentStatus: 'released',
+          status: 'Completed',
+          completedAt: order.completedAt || now,
+          commissionRate: feePercent,
+          sellerReceive
+        }
+      },
+      { new: true }
+    );
+
+    if (!releasedOrder) {
+      return res.status(409).json({
+        message: "Đơn hàng đã được giải ngân hoặc không đủ điều kiện giải ngân!"
+      });
+    }
+
+    const updatedSeller = await User.findByIdAndUpdate(
+      sellerRef,
+      {
+        $inc: {
+          pendingBalance: -sellerReceive,
+          walletBalance: sellerReceive
+        }
+      },
+      { new: true }
+    );
+    if (!updatedSeller) {
+      return res.status(404).json({ message: 'Không tìm thấy Seller' });
+    }
+
+    await Transaction.create({
+      user: sellerRef,
+      type: 'Giải ngân',
+      amount: sellerReceive,
+      status: 'Thành công',
+      txnRef: `RELEASE_${order._id}`,
+      description: `Giải ngân đơn hàng #${order._id.toString().slice(-6).toUpperCase()} (Đã trừ ${feePercent}% phí sàn)`
+    });
 
     const newRevenue = new Revenue({
       orderId: order._id,
       commissionAmount: platformFee,
-      description: `Thu chiết khấu 5% từ đơn hàng #${order._id.toString().slice(-6).toUpperCase()}`
+      description: `Thu chiết khấu ${feePercent}% từ đơn hàng #${order._id.toString().slice(-6).toUpperCase()}`
     });
     await newRevenue.save();
-
-    order.status = 'Completed';
-    order.paymentStatus = 'released';
-    order.completedAt = order.completedAt || new Date();
-    await order.save();
 
     await UserNotification.create({
       user: sellerRef,
       title: '💰 Tiền đã về ví HaiPay!',
-      message: `Tuyệt vời! Bạn vừa được giải ngân ${sellerReceive.toLocaleString('vi-VN')}đ từ đơn hàng #${order._id.toString().slice(-6).toUpperCase()} (Đã trừ 5% phí sàn).`,
+      message: `Tuyệt vời! Bạn vừa được giải ngân ${sellerReceive.toLocaleString('vi-VN')}đ từ đơn hàng #${order._id.toString().slice(-6).toUpperCase()} (Đã trừ ${feePercent}% phí sàn).`,
       link: '/haipay'
     });
 
-    res.json({ message: "Giải ngân và bắn thông báo thành công!" });
+    res.json({
+      message: "Giải ngân và bắn thông báo thành công!",
+      order: releasedOrder,
+      sellerReceive,
+      platformFee
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Lỗi hệ thống khi giải ngân" });

@@ -9,7 +9,16 @@ const { sendNotification } = require('../utils/notificationService');
 const shippingService = require('../services/shipping');
 const { pickAddressFields, isCompleteAddress, formatAddress } = require('../models/schemas/Address');
 const { addAddressToUser } = require('../routes/address');
-const { productOwnerId, displayProductName, orderSellerId, orderBuyerId, canonicalStatus, isEscrow } = require('../utils/b2c');
+const {
+  productOwnerId,
+  displayProductName,
+  orderSellerId,
+  orderBuyerId,
+  canonicalStatus,
+  isEscrow,
+  fetchPlatformFeePercent,
+  calculateOrderSplit
+} = require('../utils/b2c');
 const { buildVnpayPaymentUrl, normalizeIp } = require('../utils/vnpay');
 
 /**
@@ -38,18 +47,22 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
   }
 
   // Find all child orders
+  const feePercent = await fetchPlatformFeePercent();
   const orders = await Order.find({ _id: { $in: session.orderIds } });
   for (const order of orders) {
+    const { sellerReceive } = calculateOrderSplit(order, feePercent);
     order.paymentStatus = 'escrow'; // Platform holds funds
     order.paidAt = new Date();
     order.status = 'Pending'; // Ready for seller to prepare
+    if (order.commissionRate == null) order.commissionRate = feePercent;
+    if (order.sellerReceive == null) order.sellerReceive = sellerReceive;
     await order.save();
 
     // Increase seller pendingBalance
     const sId = orderSellerId(order);
     if (sId) {
       await User.findByIdAndUpdate(sId, {
-        $inc: { pendingBalance: order.totalPrice * 0.95 }
+        $inc: { pendingBalance: sellerReceive }
       });
     }
 
@@ -310,8 +323,10 @@ async function processCheckout(req, res) {
     // 6. Create Order documents
     const savedOrders = [];
     const formattedAddressStr = formatAddress(targetAddress);
+    const currentFeePercent = await fetchPlatformFeePercent();
 
     for (const pkg of sellerPackages) {
+      const { sellerReceive } = calculateOrderSplit(pkg.totalPrice, currentFeePercent);
       const newOrder = new Order({
         parentOrderId,
         buyer: buyer._id,
@@ -323,6 +338,8 @@ async function processCheckout(req, res) {
         itemsSubtotal: pkg.itemsSubtotal,
         shippingFee: pkg.shippingFee,
         totalPrice: pkg.totalPrice,
+        commissionRate: currentFeePercent,
+        sellerReceive,
         phone: targetAddress.phone,
         address: formattedAddressStr,
         shippingAddress: targetAddress,
@@ -336,7 +353,7 @@ async function processCheckout(req, res) {
       savedOrders.push(newOrder);
     }
 
-    // 7. Create PaymentSession
+    // 7. Create PaymentSession (status starts as 'pending' so settlePaymentSession atomically settles HAIPAY/VNPAY)
     const paymentSession = new PaymentSession({
       parentOrderId,
       buyer: buyer._id,
@@ -349,8 +366,7 @@ async function processCheckout(req, res) {
       shippingTotal: totalShippingFee,
       amount: finalAmount,
       method: paymentMethod,
-      status: paymentMethod === 'HAIPAY' ? 'paid' : (paymentMethod === 'COD' ? 'pending' : 'pending'),
-      paidAt: paymentMethod === 'HAIPAY' ? new Date() : undefined
+      status: 'pending'
     });
     await paymentSession.save();
 
@@ -576,19 +592,8 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
   let refundTransaction = null;
 
   if (wasEscrow && totalAmount > 0) {
-    let feeRate = 0.05;
-    try {
-      const Settings = require('../models/Settings');
-      const setting = await Settings.findOne();
-      if (setting && (setting.commissionRate != null || setting.platformFeePercentage != null)) {
-        const pct = Number(setting.commissionRate ?? setting.platformFeePercentage ?? 5);
-        if (!Number.isNaN(pct) && pct >= 0 && pct <= 100) {
-          feeRate = pct / 100;
-        }
-      }
-    } catch (e) {}
-
-    const sellerShare = Math.round(totalAmount * (1 - feeRate));
+    const feePercent = await fetchPlatformFeePercent();
+    const { sellerReceive: sellerShare } = calculateOrderSplit(order, feePercent);
     const buyerId = orderBuyerId(order);
     const sellerId = orderSellerId(order);
 

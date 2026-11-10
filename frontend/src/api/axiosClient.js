@@ -19,6 +19,15 @@ axiosClient.interceptors.request.use((config) => {
       }
     }
   } catch (e) { }
+
+  // Always attach anonymousId for recommendation & tracking APIs
+  try {
+    const anonId = localStorage.getItem('haihand_anon_id');
+    if (anonId && anonId !== 'undefined') {
+      config.headers['x-anonymous-id'] = anonId;
+    }
+  } catch (e) { }
+
   return config;
 });
 

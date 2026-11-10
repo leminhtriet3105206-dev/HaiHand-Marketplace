@@ -9,6 +9,7 @@ const {
   updateCoViewMatrix,
   mergeUserIdentity
 } = require('../services/behaviorAnalysisService');
+const { invalidateUserRecoCache } = require('../services/recommendationService');
 const {
   ALLOWED_EVENT_TYPES,
   ALLOWED_SOURCES,
@@ -178,6 +179,9 @@ router.post('/track', resolveUserIdentity, async (req, res) => {
 
     // Insert events into DB
     const savedDocs = await UserEvent.insertMany(validEventsToSave, { ordered: false });
+
+    // Invalidate recommendation cache so subsequent fetch gets freshly updated results
+    invalidateUserRecoCache({ userId: req.userId, anonymousId: req.anonymousId });
 
     // Non-blocking asynchronous update of Profile and Co-view
     setImmediate(async () => {

@@ -183,5 +183,27 @@ describe('Behavior Analysis & Recommendation Engine Tests', () => {
       expect(RECOMMENDATION.MAX_PER_SELLER).toBe(2);
     });
   });
+
+  describe('7. Related to Recent Items Service Interface', () => {
+    test('exports getRelatedToRecent function and handles empty state gracefully', async () => {
+      const { getRelatedToRecent } = require('../services/recommendationService');
+      expect(typeof getRelatedToRecent).toBe('function');
+      const res = await getRelatedToRecent({ userId: null, anonymousId: null, baseProductIds: [] });
+      expect(Array.isArray(res)).toBe(true);
+    });
+
+    test('extracts keywords from fallbackTitle like "Thức ăn cho rùa" without crashing', async () => {
+      const { getRelatedToRecent } = require('../services/recommendationService');
+      const res = await getRelatedToRecent({
+        userId: null,
+        anonymousId: 'anon_test',
+        baseProductIds: [],
+        fallbackTitle: 'Thức ăn cho rùa',
+        fallbackCategory: 'Thú cưng',
+        limit: 5
+      });
+      expect(Array.isArray(res)).toBe(true);
+    });
+  });
 });
 

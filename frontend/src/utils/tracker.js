@@ -13,12 +13,98 @@ const ANON_ID_KEY = 'haihand_anon_id';
 const SESSION_ID_KEY = 'haihand_session_id';
 const VIEW_CACHE_PREFIX = 'hh_view_';
 
+// LocalStorage key & limits for recently viewed
+const LOCAL_RECENTLY_VIEWED_KEY = 'hh_recently_viewed';
+const MAX_LOCAL_RECENTLY_VIEWED = 20;
+
 // 30 minutes view deduplication window
 const VIEW_DEDUPE_MS = 30 * 60 * 1000;
 
 /**
- * Generate cryptographically strong or pseudo-random UUID v4
+ * ============================================================
+ * LOCAL RECENTLY VIEWED — localStorage-first, instant display
+ * ============================================================
  */
+
+/**
+ * Save a compact snapshot of a product to the local recently-viewed list.
+ * Called right after the user views a product (no waiting for API).
+ * Also fires a DOM event so any mounted component can react immediately.
+ */
+export function addToLocalRecentlyViewed(post) {
+  try {
+    if (!post) return;
+    const id = post._id || post.id;
+    if (!id) return;
+
+    // Build a slim snapshot — just enough to render a ProductCard
+    const snapshot = {
+      _id: id,
+      id,
+      title: post.title || post.name || '',
+      name: post.name || post.title || '',
+      price: post.price || 0,
+      images: Array.isArray(post.images) ? post.images.slice(0, 1) : (post.image ? [post.image] : []),
+      image: post.image || (Array.isArray(post.images) && post.images[0]) || '',
+      category: post.category || '',
+      condition: post.condition || '',
+      location: post.location || '',
+      status: post.status || 'active',
+      stockQuantity: post.stockQuantity != null ? post.stockQuantity : 1,
+      quantity: post.quantity != null ? post.quantity : 1,
+      soldCount: post.soldCount || 0,
+      author: post.author || null,
+      sellerId: post.sellerId || null,
+      createdAt: post.createdAt || new Date().toISOString(),
+      recoSource: 'recently_viewed',
+      recoReason: 'Sản phẩm bạn vừa xem',
+      _viewedAt: Date.now()
+    };
+
+    // Load existing list, deduplicate, prepend newest
+    const existing = getLocalRecentlyViewed(MAX_LOCAL_RECENTLY_VIEWED + 1);
+    const deduped = existing.filter(p => (p._id || p.id) !== id);
+    const updated = [snapshot, ...deduped].slice(0, MAX_LOCAL_RECENTLY_VIEWED);
+    localStorage.setItem(LOCAL_RECENTLY_VIEWED_KEY, JSON.stringify(updated));
+
+    // Notify all mounted components
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('haihand:recently_viewed_updated', {
+        detail: { product: snapshot }
+      }));
+    }
+  } catch (e) {
+    // Silent — tracking must never crash the app
+  }
+}
+
+/**
+ * Read the local recently-viewed list (newest first).
+ */
+export function getLocalRecentlyViewed(limit = 10) {
+  try {
+    const stored = localStorage.getItem(LOCAL_RECENTLY_VIEWED_KEY);
+    if (!stored) return [];
+    const list = JSON.parse(stored);
+    return Array.isArray(list) ? list.slice(0, limit) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+/**
+ * Clear the local recently-viewed list (e.g., on logout)
+ */
+export function clearLocalRecentlyViewed() {
+  try {
+    localStorage.removeItem(LOCAL_RECENTLY_VIEWED_KEY);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('haihand:recently_viewed_updated', { detail: { product: null } }));
+    }
+  } catch (e) {}
+}
+
+
 function generateUUID() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -198,6 +284,8 @@ export function trackEvent({
 
 /**
  * Deduplicated Product View Tracker (1 view per product per 30 minutes)
+ * Also saves to localStorage immediately so the "recently viewed" section
+ * can show the product without waiting for an API round-trip.
  */
 export function trackProductView(product, source = 'detail') {
   if (!product || isTrackingOptedOut()) return;
@@ -210,8 +298,13 @@ export function trackProductView(product, source = 'detail') {
     const lastViewedAt = sessionStorage.getItem(cacheKey);
     const now = Date.now();
 
+    // Always update the local recently-viewed list (newest on top)
+    // regardless of deduplication — so the section is always fresh.
+    addToLocalRecentlyViewed(product);
+
     if (lastViewedAt && now - parseInt(lastViewedAt, 10) < VIEW_DEDUPE_MS) {
-      // Deduplicated within 30 minutes, skip sending view event
+      // Deduplicated within 30 minutes — skip sending backend event but
+      // local list is already updated above.
       return;
     }
 
@@ -235,6 +328,9 @@ export function trackProductView(product, source = 'detail') {
 
 /**
  * Real dwell time tracker using visibilitychange
+ * - Sends product_dwell event to backend when dwell ≥ 5 seconds (capped at 5 min)
+ * - Also updates local recently-viewed after dwell ≥ 5s to signal "real interest"
+ *   and fires haihand:product_viewed so HomePage refreshes the section in real-time.
  * Returns a cleanup function to be invoked on component unmount
  */
 export function startProductDwellTracker(product, source = 'detail') {
@@ -246,6 +342,8 @@ export function startProductDwellTracker(product, source = 'detail') {
   let visibleStartTime = document.visibilityState === 'visible' ? Date.now() : null;
   let accumulatedDwellMs = 0;
   let hasSent = false;
+  // Minimum dwell: 5 seconds to count as "real interest"
+  const MIN_DWELL_S = 5;
 
   const flushDwell = () => {
     if (hasSent) return;
@@ -258,8 +356,23 @@ export function startProductDwellTracker(product, source = 'detail') {
     const dwellSeconds = Math.round(accumulatedDwellMs / 1000);
 
     // Only send dwell if viewed between 5 seconds and 300 seconds (5 mins)
-    if (dwellSeconds >= 5) {
+    if (dwellSeconds >= MIN_DWELL_S) {
       hasSent = true;
+
+      // Re-push to top of local recently-viewed to reflect genuine interest
+      addToLocalRecentlyViewed(product);
+
+      // Fire DOM event so HomePage section refreshes without navigation
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('haihand:product_viewed', {
+          detail: {
+            product,
+            dwellSeconds: Math.min(300, dwellSeconds),
+            source
+          }
+        }));
+      }
+
       trackEvent({
         type: 'product_dwell',
         productId: pId,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ConditionBadge } from './ConditionBadge';
+import { getFallbackProductImage } from '../utils/productMapper';
 
 export const ProductCard = ({ product, isFavorited, isAuthor, onFavorite }) => {
   return (
@@ -10,7 +11,10 @@ export const ProductCard = ({ product, isFavorited, isAuthor, onFavorite }) => {
           src={product.imageUrl} 
           alt={product.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-t-lg" 
-          onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'}}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = getFallbackProductImage(product.title, product.category);
+          }}
         />
         <ConditionBadge 
           condition={product.condition} 

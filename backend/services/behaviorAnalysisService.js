@@ -245,10 +245,9 @@ async function updateProfileIncremental(events = []) {
           if (ev.type === 'purchase') {
             purchasedIds.add(pidStr);
           } else if (['product_view', 'product_dwell', 'favorite_add', 'cart_add'].includes(ev.type)) {
-            // Keep recent viewed/interacted
-            if (!recentIds.has(pidStr)) {
-              recentIds.add(pidStr);
-            }
+            // Re-order to latest: delete first if present, then add to end
+            recentIds.delete(pidStr);
+            recentIds.add(pidStr);
           }
 
           // Condition and Location preference from meta (if available)

@@ -415,6 +415,20 @@ export default function ProductDetailPage() {
             limit={5}
           />
         </div>
+
+        {/* Recently Viewed Products */}
+        <div className="mt-8">
+          <RecommendationSection
+            title="Sản phẩm bạn đã xem gần đây"
+            subtitle="Dễ dàng xem lại các sản phẩm bạn vừa ghé qua"
+            icon="🕒"
+            fetchUrl="/api/recommendations/recently-viewed"
+            localFirst={true}
+            sourceName="recently_viewed_detail"
+            currentUser={currentUser}
+            limit={5}
+          />
+        </div>
       </main>
       
       <AppFooter />

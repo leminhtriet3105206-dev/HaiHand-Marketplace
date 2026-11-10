@@ -1230,7 +1230,60 @@ app.get('/api/posts', async (req, res) => {
     let query = { status: { $in: CATALOG_VISIBLE } };
 
     if (category && category !== 'Tất cả' && category !== 'Kết quả tìm kiếm') {
-      query.category = String(category).trim();
+      let cleanCat = String(category).trim();
+
+      // Khắc phục triệt để trường hợp URL bị cắt bởi ký tự '&' chưa encode
+      if (req.query[' Phụ kiện'] !== undefined || req.query['Phụ kiện'] !== undefined) {
+        if (cleanCat.includes('Điện thoại')) cleanCat = 'Điện thoại & Phụ kiện';
+        else if (cleanCat.includes('Thời trang')) cleanCat = 'Thời trang & Phụ kiện';
+        else if (cleanCat.includes('Xe cộ')) cleanCat = 'Xe cộ & Phụ tùng';
+      }
+      if (req.query[' Công nghệ'] !== undefined || req.query['Công nghệ'] !== undefined) {
+        cleanCat = 'Điện tử & Công nghệ';
+      }
+      if (req.query[' Nội thất'] !== undefined || req.query['Nội thất'] !== undefined) {
+        cleanCat = 'Đồ gia dụng & Nội thất';
+      }
+      if (req.query[' Bé'] !== undefined || req.query['Bé'] !== undefined) {
+        cleanCat = 'Đồ chơi, Mẹ & Bé';
+      }
+      if (req.query[' Dã ngoại'] !== undefined || req.query['Dã ngoại'] !== undefined) {
+        cleanCat = 'Thể thao & Dã ngoại';
+      }
+      if (req.query[' Đồ dùng'] !== undefined || req.query['Đồ dùng'] !== undefined) {
+        cleanCat = 'Thú cưng & Đồ dùng';
+      }
+
+      const CATEGORY_MAP = {
+        'Đồ điện tử': ['Điện tử & Công nghệ', 'Đồ điện tử'],
+        'Điện tử': ['Điện tử & Công nghệ', 'Đồ điện tử'],
+        'Điện tử & Công nghệ': ['Điện tử & Công nghệ'],
+        'Điện tử - Công nghệ': ['Điện tử & Công nghệ'],
+        'Laptop & Máy tính': ['Điện tử & Công nghệ'],
+        'Điện thoại & Phụ kiện': ['Điện thoại & Phụ kiện'],
+        'Điện thoại & Tablet': ['Điện thoại & Phụ kiện'],
+        'Điện thoại': ['Điện thoại & Phụ kiện', 'Điện thoại'],
+        'Xe cộ': ['Xe cộ & Phụ tùng', 'Xe cộ'],
+        'Xe cộ & Phụ tùng': ['Xe cộ & Phụ tùng'],
+        'Xe máy & Phương tiện': ['Xe cộ & Phụ tùng'],
+        'Thời trang': ['Thời trang & Phụ kiện', 'Thời trang'],
+        'Thời trang & Phụ kiện': ['Thời trang & Phụ kiện'],
+        'Đồ gia dụng': ['Đồ gia dụng & Nội thất', 'Đồ gia dụng'],
+        'Đồ gia dụng & Nội thất': ['Đồ gia dụng & Nội thất'],
+        'Nội thất': ['Đồ gia dụng & Nội thất'],
+        'Bất Động Sản': ['Đồ gia dụng & Nội thất', 'Bất Động Sản'],
+        'Thú cưng': ['Thú cưng & Đồ dùng', 'Thú cưng'],
+        'Thú cưng & Đồ dùng': ['Thú cưng & Đồ dùng'],
+        'Đồ chơi': ['Đồ chơi, Mẹ & Bé', 'Đồ chơi'],
+        'Đồ chơi, Mẹ': ['Đồ chơi, Mẹ & Bé', 'Đồ chơi'],
+        'Mẹ & Bé': ['Đồ chơi, Mẹ & Bé'],
+        'Đồ chơi, Mẹ & Bé': ['Đồ chơi, Mẹ & Bé'],
+        'Thể thao': ['Thể thao & Dã ngoại', 'Thể thao'],
+        'Dã ngoại': ['Thể thao & Dã ngoại'],
+        'Thể thao & Dã ngoại': ['Thể thao & Dã ngoại']
+      };
+      const mapped = CATEGORY_MAP[cleanCat] || [cleanCat];
+      query.category = mapped.length === 1 ? mapped[0] : { $in: mapped };
     }
 
     if (search && String(search).trim()) {
@@ -2421,12 +2474,83 @@ io.on('connection', (socket) => {
   });
 });
 
+const STANDARD_CATEGORIES = [
+  {
+    name: 'Thú cưng & Đồ dùng',
+    icon: '🐾',
+    image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&auto=format&fit=crop',
+    description: 'Chó, mèo, rùa cảnh, thức ăn hạt, pate, phụ kiện chăm sóc'
+  },
+  {
+    name: 'Điện thoại & Phụ kiện',
+    icon: '📱',
+    image: 'https://images.unsplash.com/photo-1512054502232-10a0a035d672?w=300&auto=format&fit=crop',
+    description: 'Smartphone, máy tính bảng, ốp lưng, tai nghe, sạc cáp'
+  },
+  {
+    name: 'Điện tử & Công nghệ',
+    icon: '💻',
+    image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=200&auto=format&fit=crop',
+    description: 'Laptop, máy tính bàn, máy ảnh, loa, màn hình'
+  },
+  {
+    name: 'Xe cộ & Phụ tùng',
+    icon: '🚲',
+    image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=200&auto=format&fit=crop',
+    description: 'Xe đạp địa hình, xe đạp điện, xe máy, phụ tùng xe'
+  },
+  {
+    name: 'Thời trang & Phụ kiện',
+    icon: '👕',
+    image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=200&auto=format&fit=crop',
+    description: 'Quần áo nam nữ, giày dép, túi xách, đồng hồ'
+  },
+  {
+    name: 'Đồ gia dụng & Nội thất',
+    icon: '🛋️',
+    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&auto=format&fit=crop',
+    description: 'Bàn ghế, tủ quần áo, thiết bị nhà bếp, đồ sinh hoạt'
+  },
+  {
+    name: 'Đồ chơi, Mẹ & Bé',
+    icon: '🧸',
+    image: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=200&auto=format&fit=crop',
+    description: 'Labubu, mô hình sưu tầm, xe đẩy, đồ chơi phát triển'
+  },
+  {
+    name: 'Thể thao & Dã ngoại',
+    icon: '⚽',
+    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=300&auto=format&fit=crop',
+    description: 'Dụng cụ thể hình, cắm trại, nhạc cụ, sách vở'
+  }
+];
+
 app.get('/api/categories', async (req, res) => {
   try {
-    const categories = await Category.find();
-    res.status(200).json(categories);
+    let categories = await Category.find();
+    if (!categories || categories.length === 0) {
+      Category.insertMany(STANDARD_CATEGORIES.map(c => ({
+        name: c.name,
+        image: c.image,
+        description: c.description
+      }))).catch(() => {});
+      return res.status(200).json(STANDARD_CATEGORIES);
+    }
+    // Chỉ trả về các danh mục chuẩn theo đúng thứ tự thiết kế và enrich icon
+    const enriched = STANDARD_CATEGORIES.map(sc => {
+      const match = categories.find(c => c.name === sc.name);
+      if (match) {
+        const obj = match.toObject ? match.toObject() : match;
+        return {
+          ...obj,
+          icon: sc.icon
+        };
+      }
+      return sc;
+    });
+    res.status(200).json(enriched);
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi lấy danh mục' });
+    res.status(200).json(STANDARD_CATEGORIES);
   }
 });
 

@@ -5,7 +5,8 @@ const {
   getRecentlyViewed,
   getForYou,
   getSimilarProducts,
-  getAlsoViewed
+  getAlsoViewed,
+  getRelatedToRecent
 } = require('../services/recommendationService');
 
 /**
@@ -82,6 +83,35 @@ router.get('/recommendations/also-viewed/:productId', resolveUserIdentity, async
     return res.status(200).json(items);
   } catch (error) {
     console.warn('[RecoRoute] also-viewed silent fallback:', error.message);
+    return res.status(200).json([]);
+  }
+});
+
+/**
+ * 5. GET /api/recommendations/related-to-recent
+ * Products related to user's recently viewed items (by category, co-views, price fit)
+ */
+router.get('/recommendations/related-to-recent', resolveUserIdentity, async (req, res) => {
+  try {
+    const limit = Math.min(30, Math.max(1, parseInt(req.query.limit, 10) || 12));
+    let baseProductIds = [];
+    if (req.query.productIds) {
+      baseProductIds = String(req.query.productIds).split(',').map((s) => s.trim()).filter(Boolean);
+    } else if (req.query.productId) {
+      baseProductIds = [String(req.query.productId).trim()];
+    }
+
+    const items = await getRelatedToRecent({
+      userId: req.userId,
+      anonymousId: req.anonymousId,
+      baseProductIds,
+      fallbackTitle: req.query.title || '',
+      fallbackCategory: req.query.category || '',
+      limit
+    });
+    return res.status(200).json(items);
+  } catch (error) {
+    console.warn('[RecoRoute] related-to-recent silent fallback:', error.message);
     return res.status(200).json([]);
   }
 });

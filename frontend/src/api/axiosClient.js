@@ -9,14 +9,16 @@ const axiosClient = axios.create({
 axiosClient.interceptors.request.use((config) => {
   try {
     const stored = localStorage.getItem('user');
-    if (stored && stored !== 'undefined') {
-      const user = JSON.parse(stored);
-      if (user?.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
-      }
-      if (user?._id) {
-        config.headers.userid = user._id;
-      }
+    const user = stored && stored !== 'undefined' ? JSON.parse(stored) : null;
+    const token =
+      user?.token ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('haipay_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    if (user?._id) {
+      config.headers.userid = user._id;
     }
   } catch (e) { }
   return config;

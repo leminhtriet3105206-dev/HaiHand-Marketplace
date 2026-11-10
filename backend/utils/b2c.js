@@ -1,6 +1,19 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret123';
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'test') {
+  process.env.JWT_SECRET = 'haihand_test_jwt_secret_key_2026';
+}
+
+if (!process.env.JWT_SECRET) {
+  console.error('❌ [CRITICAL SECURITY] Thiếu biến môi trường JWT_SECRET! Hệ thống dừng khởi động để ngăn chặn giả mạo JWT.');
+  process.exit(1);
+}
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+function getJwtSecret() {
+  return process.env.JWT_SECRET || JWT_SECRET;
+}
 
 const CATALOG_VISIBLE = ['active', 'APPROVED'];
 const PENDING_PRODUCT_STATUSES = ['pending', 'PENDING', 'Pending', 'Chờ duyệt'];
@@ -110,7 +123,7 @@ function signUserToken(user) {
       isSeller: !!user.isSeller,
       sellerStatus: user.sellerStatus || 'none'
     },
-    JWT_SECRET,
+    getJwtSecret(),
     { expiresIn: '7d' }
   );
 }
@@ -122,6 +135,7 @@ function displayProductName(product) {
 
 module.exports = {
   JWT_SECRET,
+  getJwtSecret,
   CATALOG_VISIBLE,
   PENDING_PRODUCT_STATUSES,
   DEFAULT_COMMISSION_PERCENT,

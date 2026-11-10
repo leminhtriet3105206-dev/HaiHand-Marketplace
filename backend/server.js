@@ -14,7 +14,7 @@ const Notification = require('./models/Notification');
 const User = require('./models/User');
 const Order = require('./models/Order');
 const { Product, Post } = require('./models/Product');
-const { protect, isSeller } = require('./middleware/auth');
+const { protect, protectStrict, isSeller } = require('./middleware/auth');
 const Transaction = require('./models/Transaction');
 const Settings = require('./models/Settings');
 const {
@@ -29,6 +29,7 @@ const {
   isEscrow,
   sanitizeUser,
   signUserToken,
+  getJwtSecret,
   displayProductName
 } = require('./utils/b2c');
 const createSellerRouter = require('./routes/seller');
@@ -241,7 +242,7 @@ const requireAdmin = (req, res, next) => {
     const token = authHeader.split(' ')[1];
     try {
       const jwt = require('jsonwebtoken');
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+      const decoded = jwt.verify(token, getJwtSecret());
       if (decoded.role === 'Admin') {
         req.adminId = decoded.id;
         return next();
@@ -309,7 +310,7 @@ app.post('/api/admin/login', async (req, res) => {
     const admin = await User.findOne({ username, password, role: 'Admin' });
     if (admin) {
       const jwt = require('jsonwebtoken');
-      const token = jwt.sign({ id: admin._id, role: admin.role }, process.env.JWT_SECRET || 'secret123', { expiresIn: '1d' });
+      const token = jwt.sign({ id: admin._id, role: admin.role }, getJwtSecret(), { expiresIn: '1d' });
       res.status(200).json({ message: 'Đăng nhập thành công', token, user: admin });
     } else {
       res.status(401).json({ message: 'Sai tên đăng nhập hoặc mật khẩu!' });
@@ -328,7 +329,7 @@ const requireAdminJWT = (req, res, next) => {
   const token = authHeader.split(' ')[1];
   try {
     const jwt = require('jsonwebtoken');
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+    const decoded = jwt.verify(token, getJwtSecret());
     if (decoded.role !== 'Admin') return res.status(403).json({ message: 'Bạn không có quyền quản trị!' });
     req.adminId = decoded.id;
     next();
@@ -1225,7 +1226,7 @@ app.get('/api/users/profile', async (req, res) => {
       const token = authHeader.split(' ')[1];
       try {
         const jwt = require('jsonwebtoken');
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+        const decoded = jwt.verify(token, getJwtSecret());
         if (decoded && (decoded.id || decoded._id)) {
           userId = decoded.id || decoded._id;
         }
@@ -1537,7 +1538,8 @@ app.get('/api/notifications', async (req, res) => {
     let userId = req.headers['userid'] || req.query.userId;
     if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       try {
-        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], process.env.JWT_SECRET || 'secret123');
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], getJwtSecret());
         userId = decoded.id || decoded._id;
       } catch (e) {}
     }
@@ -1655,7 +1657,8 @@ app.put('/api/notifications/read-all', async (req, res) => {
     let userId = req.headers['userid'] || req.body.userId || req.query.userId;
     if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       try {
-        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], process.env.JWT_SECRET || 'secret123');
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], getJwtSecret());
         userId = decoded.id || decoded._id;
       } catch (e) {}
     }
@@ -1706,7 +1709,8 @@ app.put('/api/notifications/read-by-type', async (req, res) => {
     let userId = req.headers['userid'] || req.body.userId || req.query.userId;
     if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
       try {
-        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], process.env.JWT_SECRET || 'secret123');
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], getJwtSecret());
         userId = decoded.id || decoded._id;
       } catch (e) {}
     }
@@ -1743,17 +1747,28 @@ app.get('/api/users/:userId/transactions', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi lấy lịch sử' }); }
 });
 
-app.post('/api/users/:userId/withdraw', async (req, res) => {
+app.post('/api/users/:userId/withdraw', protectStrict, async (req, res) => {
   try {
-    const { amount, bankName, bankAccount } = req.body;
-    const user = await User.findById(req.params.userId);
+    if (!req.user._id.equals(req.params.userId) && req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Không có quyền rút tiền từ ví của người khác' });
+    }
+    const { bankName, bankAccount } = req.body;
+    const amount = Number(req.body.amount);
+    if (!Number.isFinite(amount) || amount < 50000) {
+      return res.status(400).json({ message: 'Số tiền rút tối thiểu là 50.000đ!' });
+    }
 
-    if (!user) return res.status(404).json({ message: 'Không tìm thấy user' });
-    if (amount < 50000) return res.status(400).json({ message: 'Số tiền rút tối thiểu là 50.000đ!' });
-    if (user.walletBalance < amount) return res.status(400).json({ message: 'Số dư ví không đủ để rút!' });
+    const existingUser = await User.findById(req.params.userId);
+    if (!existingUser) return res.status(404).json({ message: 'Không tìm thấy user' });
 
-    user.walletBalance -= amount;
-    await user.save();
+    const user = await User.findOneAndUpdate(
+      { _id: req.params.userId, walletBalance: { $gte: amount } },
+      { $inc: { walletBalance: -amount } },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(400).json({ message: 'Số dư ví không đủ để rút!' });
+    }
 
     await Transaction.create({
       user: user._id, type: 'Rút tiền', amount: amount, status: 'Đang xử lý',
@@ -2401,9 +2416,14 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-app.post('/api/haipay/deposit', async (req, res) => {
+app.post('/api/haipay/deposit', protectStrict, async (req, res) => {
   try {
-    const { amount, userId } = req.body;
+    const { amount } = req.body;
+    const requestedUserId = req.body.userId;
+    if (requestedUserId && !req.user._id.equals(requestedUserId) && req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Không có quyền nạp tiền cho tài khoản khác' });
+    }
+    const userId = req.user._id.toString();
     let date = new Date();
     let createDate = moment(date).format('YYYYMMDDHHmmss');
     let txnRef = `NAP_${userId}_${createDate}`;

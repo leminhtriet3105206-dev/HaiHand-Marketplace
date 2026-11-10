@@ -1,23 +1,85 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { JWT_SECRET } = require('../utils/b2c');
+const { getJwtSecret } = require('../utils/b2c');
+
+const STRICT_PATH_PATTERNS = [
+  /^\/api\/seller(\/|$)/i,
+  /^\/api\/users\/apply-seller(\/|$)/i,
+  /^\/api\/checkout(\/|$)/i,
+  /^\/api\/users\/[^/]+\/checkout(\/|$)/i,
+  /^\/api\/orders(\/|$)/i,
+  /^\/api\/users\/[^/]+\/orders(\/|$)/i,
+  /^\/api\/users\/[^/]+\/withdraw(\/|$)/i,
+  /^\/api\/haipay(\/|$)/i
+];
+
+function isStrictProtectedRoute(req) {
+  const fullPath = String(req.originalUrl || req.url || '').split('?')[0];
+  return STRICT_PATH_PATTERNS.some((re) => re.test(fullPath));
+}
+
+/**
+ * Strict JWT authentication middleware:
+ * Requires a valid Authorization: Bearer <token> header.
+ * Never accepts spoofable headers/body/query `userid` fallbacks.
+ */
+async function protectStrict(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Vui lòng đăng nhập bằng Token hợp lệ (Bearer JWT)' });
+  }
+
+  const rawToken = authHeader.split(' ')[1];
+  if (!rawToken || rawToken === 'undefined' || rawToken === 'null') {
+    return res.status(401).json({ message: 'Token xác thực không hợp lệ' });
+  }
+
+  let decoded;
+  try {
+    decoded = jwt.verify(rawToken, getJwtSecret());
+  } catch (e) {
+    return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+  }
+
+  const userId = decoded?.id || decoded?._id;
+  if (!userId) {
+    return res.status(401).json({ message: 'Token không chứa thông tin định danh người dùng' });
+  }
+
+  const user = await User.findById(userId).select('-password');
+  if (!user) {
+    return res.status(401).json({ message: 'Không tìm thấy người dùng' });
+  }
+
+  req.tokenPayload = decoded;
+  req.user = user;
+  return next();
+}
 
 async function protect(req, res, next) {
+  // Sensitive Seller, Checkout, Order, and Wallet routes strictly require Bearer JWT
+  if (isStrictProtectedRoute(req)) {
+    return protectStrict(req, res, next);
+  }
+
   let userId = null;
   const authHeader = req.headers.authorization;
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    try {
-      const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
-      userId = decoded.id || decoded._id;
-      req.tokenPayload = decoded;
-    } catch (e) {
-      return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+    const rawToken = authHeader.split(' ')[1];
+    if (rawToken && rawToken !== 'undefined' && rawToken !== 'null') {
+      try {
+        const decoded = jwt.verify(rawToken, getJwtSecret());
+        userId = decoded.id || decoded._id;
+        req.tokenPayload = decoded;
+      } catch (e) {
+        return res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
+      }
     }
   }
 
   if (!userId) {
-    userId = req.headers.userid || req.headers.userid || req.body?.userId || req.query?.userId;
+    userId = req.headers.userid || req.body?.userId || req.query?.userId;
   }
 
   if (!userId) {
@@ -30,7 +92,7 @@ async function protect(req, res, next) {
   }
 
   req.user = user;
-  next();
+  return next();
 }
 
 function isSeller(req, res, next) {
@@ -47,7 +109,7 @@ function isAdmin(req, res, next) {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
-      const decoded = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+      const decoded = jwt.verify(authHeader.split(' ')[1], getJwtSecret());
       if (decoded.role === 'Admin') {
         req.adminId = decoded.id;
         return next();
@@ -70,4 +132,4 @@ function isAdmin(req, res, next) {
   return res.status(403).json({ message: 'Bạn không có quyền quản trị' });
 }
 
-module.exports = { protect, isSeller, isAdmin };
+module.exports = { protect, protectStrict, isSeller, isAdmin };

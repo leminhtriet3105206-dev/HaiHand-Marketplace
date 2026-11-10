@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import axiosClient, { persistUser } from '../api/axiosClient';
 import { useNavigate } from 'react-router-dom';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
@@ -29,14 +29,14 @@ const HaiPayPage = () => {
     if (!user?._id) return;
     try {
         
-        const userRes = await axios.get(`${API_URL}/api/users/${user._id}`);
+        const userRes = await axiosClient.get(`/api/users/${user._id}`);
         if (userRes.data) {
-            setUser(userRes.data);
-            localStorage.setItem('user', JSON.stringify(userRes.data));
+            const merged = persistUser(userRes.data);
+            setUser(merged || userRes.data);
         }
         
         
-        const transRes = await axios.get(`${API_URL}/api/users/${user._id}/transactions`);
+        const transRes = await axiosClient.get(`/api/users/${user._id}/transactions`);
         setTransactions(transRes.data);
     } catch (error) {
         console.error("Lỗi đồng bộ ví:", error);
@@ -55,7 +55,7 @@ const HaiPayPage = () => {
 
     try {
         
-        const { data } = await axios.post(`${API_URL}/api/haipay/deposit`, {
+        const { data } = await axiosClient.post(`/api/haipay/deposit`, {
             amount: amount,
             userId: user._id
         });
@@ -80,7 +80,7 @@ const HaiPayPage = () => {
     if (isConfirmed) {
         try {
             
-            const res = await axios.post(`${API_URL}/api/users/${user._id}/withdraw`, {
+            const res = await axiosClient.post(`/api/users/${user._id}/withdraw`, {
                 amount: amount,
                 bankName,
                 bankAccount
@@ -88,8 +88,8 @@ const HaiPayPage = () => {
             
             toast.success('Thành công', "✅ " + res.data.message);
             
-            setUser(res.data.user);
-            localStorage.setItem('user', JSON.stringify(res.data.user));
+            const merged = persistUser(res.data.user);
+            setUser(merged || res.data.user);
             
             setWithdrawAmount(''); 
             setBankAccount('');

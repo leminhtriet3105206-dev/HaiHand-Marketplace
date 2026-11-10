@@ -723,14 +723,6 @@ app.get('/orders', requireAdmin, async (req, res) => {
   }
 });
 
-app.post('/orders/update-status/:id', requireAdmin, async (req, res) => {
-  try {
-    const { status } = req.body;
-    await Order.findByIdAndUpdate(req.params.id, { status });
-    res.redirect('/orders');
-  } catch (error) { res.redirect('/orders'); }
-});
-
 app.get('/categories', requireAdmin, async (req, res) => {
   try {
     const categories = await Category.find();
@@ -2356,57 +2348,6 @@ app.put('/api/messages/mark-read', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi' }); }
 });
 
-let onlineUsers = [];
-
-io.on('connection', (socket) => {
-
-  socket.on('addUser', (userId) => {
-    if (userId) {
-      socket.join('user_' + userId.toString());
-      socket.userId = userId.toString();
-    }
-    onlineUsers = onlineUsers.filter(u => u.userId !== userId);
-    onlineUsers.push({ userId, socketId: socket.id });
-    io.emit('getUsers', onlineUsers);
-  });
-
-  if (socket.handshake.auth?.role === 'admin' || socket.handshake.query?.role === 'admin') {
-    socket.join('admin_system_room');
-  }
-
-  socket.on('join_admin_room', (data) => {
-    socket.join('admin_system_room');
-    console.log(`🛡️ Socket ${socket.id} joined admin_system_room`);
-  });
-
-  socket.on('join', (room) => {
-    if (room) socket.join(room);
-  });
-
-
-  socket.on('sendMessage', (msgData) => {
-    const receiver = onlineUsers.find(u => u.userId === msgData.receiverId);
-    if (receiver) {
-      io.to(receiver.socketId).emit('getMessage', msgData);
-      io.to(receiver.socketId).emit('updateInbox');
-    }
-  });
-
-
-  socket.on('disconnect', async () => {
-    const disconnectedUser = onlineUsers.find(u => u.socketId === socket.id);
-    if (disconnectedUser) {
-      try {
-        await User.findByIdAndUpdate(disconnectedUser.userId, { lastActive: Date.now() });
-      } catch (e) { }
-    }
-    onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
-
-
-    io.emit('getUsers', onlineUsers);
-  });
-});
-
 app.get('/api/categories', async (req, res) => {
   try {
     const categories = await Category.find();
@@ -2812,21 +2753,30 @@ io.on("connection", (socket) => {
     if (room) socket.join(room);
   });
 
-  socket.on("sendMessage", ({ senderId, receiverId, text, post, images }) => {
+  socket.on("sendMessage", (msgData = {}) => {
+    const { senderId, receiverId, text, post, images } = msgData;
     const receiverSockets = getUserSockets(receiverId);
     if (receiverSockets && receiverSockets.length > 0) {
       receiverSockets.forEach(userSocket => {
         io.to(userSocket.socketId).emit("getMessage", {
+          ...msgData,
           senderId,
           text,
           post,
           images
         });
+        io.to(userSocket.socketId).emit("updateInbox");
       });
     }
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
+    const disconnectedUser = users.find(u => u.socketId === socket.id);
+    if (disconnectedUser && disconnectedUser.userId) {
+      try {
+        await User.findByIdAndUpdate(disconnectedUser.userId, { lastActive: Date.now() });
+      } catch (e) { }
+    }
     removeUser(socket.id);
     io.emit("getUsers", users);
   });

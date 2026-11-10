@@ -781,7 +781,26 @@ app.post("/admin/approve-seller/:id", checkLogin, async (req, res) => {
       user.isSeller = true;
       user.sellerStatus = 'approved';
       user.sellerApprovedAt = new Date();
+      user.sellerRejectionReason = '';
+      if (!user.shopInfo || !user.shopInfo.shopName) {
+        user.shopInfo = {
+          ...(user.shopInfo || {}),
+          shopName: user.name,
+          avatar: (user.shopInfo && user.shopInfo.avatar) || user.avatar || ''
+        };
+      }
       await user.save();
+
+      await Notification.create({
+        userId: user._id,
+        title: '🎉 Shop đã được duyệt!',
+        message: 'Admin đã duyệt đăng ký bán hàng. Bạn có thể vào Kênh Người Bán để đăng sản phẩm.',
+        type: 'SELLER',
+        link: '/seller-channel',
+        targetUrl: '/seller-channel',
+        recipientRole: 'seller',
+        isRead: false
+      });
     }
   } catch (e) { }
   res.redirect("/admin/seller-applications");
@@ -791,9 +810,22 @@ app.post("/admin/reject-seller/:id", checkLogin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (user) {
+      const reason = (req.body && req.body.reason) ? String(req.body.reason).trim() : 'Hồ sơ chưa đủ điều kiện';
       user.isSeller = false;
       user.sellerStatus = 'rejected';
+      user.sellerRejectionReason = reason;
       await user.save();
+
+      await Notification.create({
+        userId: user._id,
+        title: 'Hồ sơ mở Shop bị từ chối',
+        message: reason,
+        type: 'SELLER',
+        link: '/register-seller',
+        targetUrl: '/register-seller',
+        recipientRole: 'buyer',
+        isRead: false
+      });
     }
   } catch (e) { }
   res.redirect("/admin/seller-applications");

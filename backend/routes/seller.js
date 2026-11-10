@@ -189,6 +189,12 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       const processing = orders.filter((o) => ['Processing', 'Shipped', 'Delivered'].includes(canonicalStatus(o.status))).length;
       const completed = orders.filter((o) => canonicalStatus(o.status) === 'Completed');
       const revenue = completed.reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
+      const releasedRevenue = completed
+        .filter((o) => o.paymentStatus === 'released' || o.paymentMethod === 'COD')
+        .reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
+      const escrowRevenue = orders
+        .filter((o) => o.paymentStatus === 'escrow' && canonicalStatus(o.status) !== 'Cancelled')
+        .reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
       const totalSales = completed.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
       res.json({
@@ -202,6 +208,9 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
           completedOrders: completed.length,
           totalSales,
           revenue,
+          releasedRevenue,
+          escrowRevenue,
+          platformFeePercentage: feePercent,
           walletBalance: req.user.walletBalance || 0,
           pendingBalance: req.user.pendingBalance || 0
         }

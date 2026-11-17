@@ -2,8 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
-const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-
 const FloatingAIChat = () => {
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
@@ -15,12 +13,8 @@ const FloatingAIChat = () => {
         }
     ]);
     const [input, setInput] = useState('');
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [isDraggingImage, setIsDraggingImage] = useState(false);
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef(null);
-    const fileInputRef = useRef(null);
-    const dragDepthRef = useRef(0);
 
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
@@ -33,14 +27,12 @@ const FloatingAIChat = () => {
 
     const handleSend = async (messageText) => {
         const textToSend = messageText || input;
-        if ((!textToSend.trim() && !selectedImage) || loading) return;
+        if (!textToSend.trim() || loading) return;
 
-        const imageToSend = selectedImage;
-        const messageToSend = textToSend.trim() || 'Tìm sản phẩm tương tự hình ảnh này';
-        const userMsg = { sender: 'user', text: messageToSend, image: imageToSend, products: [] };
+        const messageToSend = textToSend.trim();
+        const userMsg = { sender: 'user', text: messageToSend, products: [] };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
-        setSelectedImage(null);
         setLoading(true);
 
         try {
@@ -55,8 +47,7 @@ const FloatingAIChat = () => {
 
             const res = await axios.post(`${API_URL}/api/chatbot/ask`, {
                 message: messageToSend,
-                history: historyToSend,
-                image: imageToSend
+                history: historyToSend
             });
 
             const botReply = res.data.reply || 'Xin lỗi, mình chưa tìm thấy thông tin phù hợp.';
@@ -79,56 +70,6 @@ const FloatingAIChat = () => {
         } finally {
             setLoading(false);
         }
-    };
-
-    const selectImageFile = (file) => {
-        if (!file) return;
-        if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
-            window.alert('Chỉ chấp nhận ảnh JPG, PNG hoặc WebP.');
-            return;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-            window.alert('Hình ảnh phải nhỏ hơn 5 MB.');
-            return;
-        }
-        const reader = new FileReader();
-        reader.onload = () => setSelectedImage(reader.result);
-        reader.readAsDataURL(file);
-    };
-
-    const handleImageSelect = (event) => {
-        selectImageFile(event.target.files?.[0]);
-        event.target.value = '';
-    };
-
-    const handleDragEnter = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        if (loading) return;
-        dragDepthRef.current += 1;
-        setIsDraggingImage(true);
-    };
-
-    const handleDragLeave = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
-        if (dragDepthRef.current === 0) setIsDraggingImage(false);
-    };
-
-    const handleDrop = (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        dragDepthRef.current = 0;
-        setIsDraggingImage(false);
-        if (loading) return;
-
-        const files = Array.from(event.dataTransfer.files || []);
-        if (files.length !== 1) {
-            window.alert('Vui lòng kéo thả đúng một hình ảnh.');
-            return;
-        }
-        selectImageFile(files[0]);
     };
 
     // Helper format chữ: biến **chữ đậm** thành <strong>
@@ -156,14 +97,6 @@ const FloatingAIChat = () => {
             {isOpen && (
                 <div 
                     className="shadow-2xl d-flex flex-column"
-                    onDragEnter={handleDragEnter}
-                    onDragOver={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
-                        event.dataTransfer.dropEffect = 'copy';
-                    }}
-                    onDragLeave={handleDragLeave}
-                    onDrop={handleDrop}
                     style={{
                         position: 'fixed',
                         bottom: '105px',
@@ -180,26 +113,6 @@ const FloatingAIChat = () => {
                         boxShadow: '0 20px 45px rgba(15, 23, 42, 0.25)'
                     }}
                 >
-                    {isDraggingImage && (
-                        <div
-                            className="d-flex flex-column align-items-center justify-content-center text-center"
-                            style={{
-                                position: 'absolute',
-                                inset: '8px',
-                                zIndex: 10,
-                                border: '2px dashed #6366f1',
-                                borderRadius: '16px',
-                                background: 'rgba(238, 242, 255, 0.96)',
-                                color: '#4338ca',
-                                pointerEvents: 'none'
-                            }}
-                            aria-live="polite"
-                        >
-                            <div style={{ fontSize: '40px' }}>🖼️</div>
-                            <strong>Thả ảnh vào đây</strong>
-                            <span style={{ fontSize: '12px' }}>Chỉ JPG, PNG hoặc WebP · tối đa 5 MB</span>
-                        </div>
-                    )}
                     {/* 1. Header (Cố định) */}
                     <div 
                         className="d-flex align-items-center justify-content-between px-3 py-3 text-white flex-shrink-0"
@@ -256,14 +169,6 @@ const FloatingAIChat = () => {
                                     </div>
                                 )}
                                 <div style={{ maxWidth: '85%' }}>
-                                    {msg.image && (
-                                        <img
-                                            src={msg.image}
-                                            alt="Hình ảnh tìm kiếm"
-                                            className="rounded-3 mb-2 shadow-sm"
-                                            style={{ width: '160px', maxHeight: '140px', objectFit: 'cover' }}
-                                        />
-                                    )}
                                     <div 
                                         className="p-3 shadow-sm"
                                         style={{
@@ -369,41 +274,6 @@ const FloatingAIChat = () => {
                         onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
                         className="p-2 bg-white border-top d-flex gap-2 align-items-center flex-shrink-0"
                     >
-                        <input
-                            ref={fileInputRef}
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp"
-                            onChange={handleImageSelect}
-                            style={{ display: 'none' }}
-                        />
-                        <button
-                            type="button"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={loading}
-                            className="btn rounded-circle bg-light d-flex justify-content-center align-items-center flex-shrink-0"
-                            style={{ width: '38px', height: '38px', border: 'none' }}
-                            title="Tìm sản phẩm bằng hình ảnh"
-                        >
-                            📷
-                        </button>
-                        {selectedImage && (
-                            <div className="position-relative flex-shrink-0">
-                                <img
-                                    src={selectedImage}
-                                    alt="Ảnh đã chọn"
-                                    className="rounded-2"
-                                    style={{ width: '38px', height: '38px', objectFit: 'cover' }}
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setSelectedImage(null)}
-                                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border-0"
-                                    aria-label="Bỏ ảnh đã chọn"
-                                >
-                                    ×
-                                </button>
-                            </div>
-                        )}
                         <input 
                             type="text" 
                             className="form-control rounded-pill bg-light border-0 px-3" 
@@ -415,7 +285,7 @@ const FloatingAIChat = () => {
                         />
                         <button 
                             type="submit" 
-                            disabled={loading || (!input.trim() && !selectedImage)}
+                            disabled={loading || !input.trim()}
                             className="btn rounded-circle text-white shadow-sm d-flex justify-content-center align-items-center flex-shrink-0" 
                             style={{ 
                                 width: '38px', 

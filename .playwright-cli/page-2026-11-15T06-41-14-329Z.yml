@@ -1,0 +1,871 @@
+- generic [active] [ref=f1e1]:
+  - link "Jump to content" [ref=f1e2] [cursor=pointer]:
+    - /url: "#bodyContent"
+  - banner [ref=f1e4]:
+    - generic [ref=f1e5]:
+      - navigation "Site" [ref=f1e6]:
+        - generic "Main menu" [ref=f1e7]:
+          - button "Main menu" [ref=f1e8] [cursor=pointer]
+          - generic [ref=f1e11]: Main menu
+          - option "Qafár af"
+          - option "Arbërisht"
+          - option "аԥсшәа"
+          - option "Abron"
+          - option "bahasa ambon"
+          - option "Acèh"
+          - option "Kwéyòl Sent Lisi"
+          - option "عراقي"
+          - option "адыгабзэ"
+          - option "адыгабзэ"
+          - option "تونسي / Tûnsî"
+          - option "تونسي"
+          - option "Tûnsî"
+          - option "Afrikaans"
+          - option "Aghem"
+          - option "Aanteegan an' Baabyuudan"
+          - option "Akan"
+          - option "Gegë"
+          - option "Alemannisch"
+          - option "алтай тил"
+          - option "አማርኛ"
+          - option "Pangcah"
+          - option "aragonés"
+          - option "Ænglisc"
+          - option "Obolo"
+          - option "अंगिका"
+          - option "شامي"
+          - option "العربية"
+          - option "ܐܪܡܝܐ"
+          - option "mapudungun"
+          - option "جازايرية"
+          - option "الدارجة"
+          - option "مصرى"
+          - option "অসমীয়া"
+          - option "American sign language"
+          - option "asturianu"
+          - option "Atikamekw"
+          - option "авар"
+          - option "Kotava"
+          - option "अवधी"
+          - option "Aymar aru"
+          - option "azərbaycanca"
+          - option "تۆرکجه"
+          - option "башҡортса"
+          - option "Tuki"
+          - option "Basa Bali"
+          - option "ᬩᬲᬩᬮᬶ"
+          - option "Boarisch"
+          - option "Basaa"
+          - option "žemaitėška"
+          - option "Bamum"
+          - option "Batak Toba"
+          - option "Batak Toba"
+          - option "Ghomála'"
+          - option "جهلسری بلوچی"
+          - option "wawle"
+          - option "Bikol Central"
+          - option "Bajau Sama"
+          - option "беларуская"
+          - option "беларуская (тарашкевіца)"
+          - option "беларуская (тарашкевіца)"
+          - option "Betawi"
+          - option "Bafut"
+          - option "ରେମସାମ୍"
+          - option "български"
+          - option "हरियाणवी"
+          - option "روچ کپتین بلوچی"
+          - option "भोजपुरी"
+          - option "भोजपुरी"
+          - option "Bislama"
+          - option "Banjar"
+          - option "Baka"
+          - option "Bakoko"
+          - option "Kom"
+          - option "ပအိုဝ်ႏဘာႏသာႏ"
+          - option "bamanankan"
+          - option "বাংলা"
+          - option "བོད་ཡིག"
+          - option "bòo pìkkà"
+          - option "বিষ্ণুপ্রিয়া মণিপুরী"
+          - option "بختیاری"
+          - option "Mka'a"
+          - option "brezhoneg"
+          - option "Bráhuí"
+          - option "bosanski"
+          - option "Batak Mandailing"
+          - option "Iriga Bicolano"
+          - option "Basa Ugi"
+          - option "ᨅᨔ ᨕᨘᨁᨗ"
+          - option "буряад"
+          - option "Medumba"
+          - option "català"
+          - option "Kaqchikel"
+          - option "Carolinian"
+          - option "Chavacano de Zamboanga"
+          - option "𑄌𑄋𑄴𑄟𑄳𑄦"
+          - option "閩東語 / Mìng-dĕ̤ng-ngṳ̄"
+          - option "閩東語（傳統漢字）"
+          - option "Mìng-dĕ̤ng-ngṳ̄ (Bàng-uâ-cê)"
+          - option "нохчийн"
+          - option "Cebuano"
+          - option "Chamoru"
+          - option "chinuk wawa"
+          - option "Chahta anumpa"
+          - option "ᏣᎳᎩ"
+          - option "Tsetsêhestâhese"
+          - option "کوردی"
+          - option "Hakha Chin"
+          - option "corsu"
+          - option "ϯⲙⲉⲧⲣⲉⲙⲛ̀ⲭⲏⲙⲓ"
+          - option "Capiceño"
+          - option "莆仙語 / Pó-sing-gṳ̂"
+          - option "莆仙语（简体）"
+          - option "莆仙語（繁體）"
+          - option "Pó-sing-gṳ̂ (Báⁿ-uā-ci̍)"
+          - option "Nēhiyawēwin / ᓀᐦᐃᔭᐍᐏᐣ"
+          - option "qırımtatarca"
+          - option "къырымтатарджа (Кирилл)"
+          - option "qırımtatarca (Latin)"
+          - option "tatarşa"
+          - option "čeština"
+          - option "kaszëbsczi"
+          - option "словѣньскъ / ⰔⰎⰑⰂⰡⰐⰠⰔⰍⰟ"
+          - option "чӑвашла"
+          - option "Cymraeg"
+          - option "dansk"
+          - option "dagbanli"
+          - option "Deutsch"
+          - option "Österreichisches Deutsch"
+          - option "Schweizer Hochdeutsch"
+          - option "Deutsch (Sie-Form)"
+          - option "Dagaare"
+          - option "Thuɔŋjäŋ"
+          - option "Zazaki"
+          - option "долган тыла"
+          - option "dolnoserbski"
+          - option "ଦେଶିଆ"
+          - option "Kadazandusun"
+          - option "डोटेली"
+          - option "Duala"
+          - option "ދިވެހިބަސް"
+          - option "ཇོང་ཁ"
+          - option "eʋegbe"
+          - option "Efịk"
+          - option "Emiliàn"
+          - option "Ελληνικά"
+          - option "emiliàn e rumagnòl"
+          - option "English" [selected]
+          - option "Canadian English"
+          - option "British English"
+          - option "American English"
+          - option "Esperanto"
+          - option "español"
+          - option "español de América Latina"
+          - option "español (formal)"
+          - option "eesti"
+          - option "Eton"
+          - option "Ejagham"
+          - option "euskara"
+          - option "Ewondo"
+          - option "estremeñu"
+          - option "فارسی"
+          - option "mfantse"
+          - option "Fulfulde"
+          - option "suomi"
+          - option "meänkieli"
+          - option "võro"
+          - option "Na Vosa Vakaviti"
+          - option "kvääni"
+          - option "Fe'fe'"
+          - option "føroyskt"
+          - option "fɔ̀ngbè"
+          - option "français"
+          - option "français cadien"
+          - option "arpetan"
+          - option "Nordfriisk"
+          - option "Oostfräisk"
+          - option "furlan"
+          - option "poor’íŋ belé’ŋ"
+          - option "Frysk"
+          - option "Gaeilge"
+          - option "Ga"
+          - option "Gagauz"
+          - option "贛語"
+          - option "赣语（简体）"
+          - option "贛語（繁體）"
+          - option "kréyòl Gwadloup"
+          - option "kriyòl gwiyannen"
+          - option "Gàidhlig"
+          - option "گوجری"
+          - option "गुज्जरी"
+          - option "galego"
+          - option "на̄ни"
+          - option "گیلکی"
+          - option "Avañe'ẽ"
+          - option "गोंयची कोंकणी / Gõychi Konknni"
+          - option "गोंयची कोंकणी"
+          - option "Gõychi Konknni"
+          - option "Bahasa Hulontalo"
+          - option "𐌲𐌿𐍄𐌹𐍃𐌺"
+          - option "Ghanaian Pidgin"
+          - option "Ἀρχαία ἑλληνικὴ"
+          - option "Alemannisch"
+          - option "ગુજરાતી"
+          - option "wayuunaiki"
+          - option "farefare"
+          - option "gungbe"
+          - option "Gaelg"
+          - option "Gbaya"
+          - option "Hausa"
+          - option "客家語 / Hak-kâ-ngî"
+          - option "客家语（简体）"
+          - option "客家語（繁體）"
+          - option "Hak-kâ-ngî (Pha̍k-fa-sṳ)"
+          - option "Hawaiʻi"
+          - option "עברית"
+          - option "हिन्दी"
+          - option "Fiji Hindi"
+          - option "Fiji Hindi"
+          - option "Ilonggo"
+          - option "kihunde"
+          - option "ہندکو"
+          - option "Hiri Motu"
+          - option "𑢹𑣉𑣉 𑣎𑣋𑣜"
+          - option "Ho"
+          - option "hrvatski"
+          - option "Hunsrik"
+          - option "hornjoserbsce"
+          - option "湘語"
+          - option "Kreyòl ayisyen"
+          - option "magyar"
+          - option "magyar (formal)"
+          - option "հայերեն"
+          - option "Արեւմտահայերէն"
+          - option "Otsiherero"
+          - option "interlingua"
+          - option "Jaku Iban"
+          - option "ibibio"
+          - option "Bahasa Indonesia"
+          - option "Interlingue"
+          - option "Igbo"
+          - option "Igala"
+          - option "ꆇꉙ"
+          - option "Iñupiatun"
+          - option "ᐃᓄᒃᑎᑐᑦ"
+          - option "inuktitut"
+          - option "Ilokano"
+          - option "гӀалгӀай"
+          - option "Ido"
+          - option "íslenska"
+          - option "Isu"
+          - option "medžuslovjansky"
+          - option "меджусловјанскы"
+          - option "medžuslovjansky"
+          - option "italiano"
+          - option "ᐃᓄᒃᑎᑐᑦ / inuktitut"
+          - option "日本語"
+          - option "Patois"
+          - option "la .lojban."
+          - option "jysk"
+          - option "Jawa"
+          - option "ꦗꦮ"
+          - option "ქართული"
+          - option "Qaraqalpaqsha"
+          - option "Taqbaylit"
+          - option "Karai-karai"
+          - option "Jju"
+          - option "адыгэбзэ"
+          - option "адыгэбзэ"
+          - option "Kabɩyɛ"
+          - option "Tyap"
+          - option "kabuverdianu"
+          - option "Kera"
+          - option "Kongo"
+          - option "Kumoring"
+          - option "गेम्येहाक़ गिपन"
+          - option "کھوار"
+          - option "Gĩkũyũ"
+          - option "Kırmancki"
+          - option "Kwanyama"
+          - option "хакас"
+          - option "ဖၠုံလိက်"
+          - option "қазақша"
+          - option "قازاقشا (تٴوتە)"
+          - option "قازاقشا (جۇنگو)"
+          - option "қазақша (кирил)"
+          - option "қазақша (Қазақстан)"
+          - option "qazaqşa (latın)"
+          - option "qazaqşa (Türkïya)"
+          - option "kalaallisut"
+          - option "ភាសាខ្មែរ"
+          - option "ಕನ್ನಡ"
+          - option "Yerwa Kanuri"
+          - option "한국어"
+          - option "조선말"
+          - option "перем коми"
+          - option "kanuri"
+          - option "къарачай-малкъар"
+          - option "Krio"
+          - option "Kinaray-a"
+          - option "karjal"
+          - option "کٲشُر"
+          - option "کٲشُر"
+          - option "कॉशुर"
+          - option "Bafia"
+          - option "Ripoarisch"
+          - option "စှီၤ"
+          - option "kurdî"
+          - option "کوردی (عەرەبی)"
+          - option "kurdî (latînî)"
+          - option "къумукъ"
+          - option "Kʋsaal"
+          - option "коми"
+          - option "kernowek"
+          - option "кыргызча"
+          - option "Latina"
+          - option "Ladino"
+          - option "Lëtzebuergesch"
+          - option "лакку"
+          - option "Nomaande"
+          - option "лезги"
+          - option "Lingua Franca Nova"
+          - option "Luganda"
+          - option "Limburgs"
+          - option "Ligure"
+          - option "Līvõ kēļ"
+          - option "Lampung Api"
+          - option "لەکی"
+          - option "Lakȟótiyapi"
+          - option "Ladin"
+          - option "lombard"
+          - option "lingála"
+          - option "Lamnso'"
+          - option "ລາວ"
+          - option "Silozi"
+          - option "لۊری شومالی"
+          - option "lietuvių"
+          - option "latgaļu"
+          - option "ciluba"
+          - option "Mizo ţawng"
+          - option "لئری دوٙمینی"
+          - option "latviešu"
+          - option "文言"
+          - option "Lazuri"
+          - option "Madhurâ"
+          - option "मगही"
+          - option "मैथिली"
+          - option "Basa Banyumasan"
+          - option "vùn màsànà"
+          - option "Maka"
+          - option "мокшень"
+          - option "Malagasy"
+          - option "Ebon"
+          - option "олык марий"
+          - option "Māori"
+          - option "Minangkabau"
+          - option "македонски"
+          - option "മലയാളം"
+          - option "монгол"
+          - option "manju gisun"
+          - option "manju gisun"
+          - option "ᠮᠠᠨᠵᡠ ᡤᡳᠰᡠᠨ"
+          - option "ꯃꯤꯇꯩ ꯂꯣꯟ"
+          - option "ဘာသာမန်"
+          - option "молдовеняскэ"
+          - option "moore"
+          - option "मराठी"
+          - option "Mara"
+          - option "кырык мары"
+          - option "Bahasa Melayu"
+          - option "بهاس ملايو"
+          - option "Malti"
+          - option "Mundang"
+          - option "Baso Palembang"
+          - option "Mvskoke"
+          - option "Mirandés"
+          - option "မြန်မာဘာသာ"
+          - option "эрзянь"
+          - option "مازِرونی"
+          - option "Dorerin Naoero"
+          - option "Nāhuatl"
+          - option "閩南語 / Bân-lâm-gí"
+          - option "閩南語"
+          - option "閩南語（傳統漢字）"
+          - option "Bân-lâm-gí (Pe̍h-ōe-jī)"
+          - option "Bân-lâm-gí (Tâi-lô)"
+          - option "Napulitano"
+          - option "norsk bokmål"
+          - option "Plattdüütsch"
+          - option "Nedersaksies"
+          - option "नेपाली"
+          - option "नेपाल भाषा"
+          - option "Oshiwambo"
+          - option "Ngémba"
+          - option "Li Niha"
+          - option "కొలామి"
+          - option "Niuē"
+          - option "Nederlands"
+          - option "Nederlands (informeel)"
+          - option "Ngombala"
+          - option "Kwasio"
+          - option "nawdm"
+          - option "norsk nynorsk"
+          - option "Ngiemboon"
+          - option "Nda'nda'"
+          - option "norsk"
+          - option "ᨣᩤᩴᨾᩮᩬᩥᨦ"
+          - option "ногайша"
+          - option "Novial"
+          - option "ߒߞߏ"
+          - option "isiNdebele seSewula"
+          - option "Nouormand"
+          - option "Sesotho sa Leboa"
+          - option "Nupe"
+          - option "Diné bizaad"
+          - option "Chi-Chewa"
+          - option "runyankore"
+          - option "Orunyoro"
+          - option "Nyunga"
+          - option "occitan"
+          - option "Ojibwemowin"
+          - option "livvinkarjala"
+          - option "Oromoo"
+          - option "ଓଡ଼ିଆ"
+          - option "ирон"
+          - option "Wažáže íe"
+          - option "لسان عثمانى"
+          - option "ਪੰਜਾਬੀ"
+          - option "Pangasinan"
+          - option "Kapampangan"
+          - option "Papiamentu"
+          - option "Papiamento"
+          - option "Picard"
+          - option "Naijá"
+          - option "Deitsch"
+          - option "Plautdietsch"
+          - option "Pälzisch"
+          - option "पालि"
+          - option "Norfuk / Pitkern"
+          - option "polski"
+          - option "Piemontèis"
+          - option "پنجابی"
+          - option "Ποντιακά"
+          - option "Nawat"
+          - option "prūsiskan"
+          - option "پښتو"
+          - option "português"
+          - option "português do Brasil"
+          - option "pinayuanan"
+          - option "Runa Simi"
+          - option "Qatzijob\\ʼal"
+          - option "Runa shimi"
+          - option "Rumagnôl"
+          - option "Tarifit"
+          - option "ရခိုင်"
+          - option "rumantsch"
+          - option "romaňi čhib"
+          - option "kaalengo tšimb"
+          - option "romani čhib"
+          - option "ikirundi"
+          - option "română"
+          - option "armãneashti"
+          - option "tarandíne"
+          - option "руски"
+          - option "русский"
+          - option "русиньскый"
+          - option "armãneashti"
+          - option "Vlăheşte"
+          - option "Влахесте"
+          - option "Vlăheşte"
+          - option "мыхаӀбишды"
+          - option "Ikinyarwanda"
+          - option "मारवाड़ी"
+          - option "沖縄口"
+          - option "संस्कृतम्"
+          - option "саха тыла"
+          - option "Sasak"
+          - option "ᱥᱟᱱᱛᱟᱲᱤ"
+          - option "sardu"
+          - option "sicilianu"
+          - option "Scots"
+          - option "سنڌي"
+          - option "Sassaresu"
+          - option "کوردی خوارگ"
+          - option "davvisámegiella"
+          - option "davvisámegiella (Suoma bealde)"
+          - option "davvisámegiella (Norgga bealde)"
+          - option "davvisámegiella (Ruoŧa bealde)"
+          - option "Cmique Itom"
+          - option "Koyraboro Senni"
+          - option "Sängö"
+          - option "žemaitėška"
+          - option "srpskohrvatski / српскохрватски"
+          - option "српскохрватски (ћирилица)"
+          - option "srpskohrvatski (latinica)"
+          - option "Taclḥit"
+          - option "Taclḥit"
+          - option "ⵜⴰⵛⵍⵃⵉⵜ"
+          - option "တႆး"
+          - option "tacawit"
+          - option "tacawit"
+          - option "සිංහල"
+          - option "Simple English"
+          - option "кӣллт са̄мь кӣлл"
+          - option "bidumsámegiella"
+          - option "ubmejesámiengiälla"
+          - option "slovenčina"
+          - option "سرائیکی"
+          - option "سرائیکی"
+          - option "slovenščina"
+          - option "Schläsch"
+          - option "Gagana Samoa"
+          - option "åarjelsaemien"
+          - option "julevsámegiella"
+          - option "anarâškielâ"
+          - option "nuõrttsääʹmǩiõll"
+          - option "chiShona"
+          - option "Soomaaliga"
+          - option "shqip"
+          - option "српски / srpski"
+          - option "српски (ћирилица)"
+          - option "srpski (latinica)"
+          - option "Sranantongo"
+          - option "sardu campidanesu"
+          - option "mbia cheë"
+          - option "SiSwati"
+          - option "Sesotho"
+          - option "Seeltersk"
+          - option "себертатар"
+          - option "Sunda"
+          - option "svenska"
+          - option "ლუშნუ"
+          - option "Kiswahili"
+          - option "ꠍꠤꠟꠐꠤ"
+          - option "ślůnski"
+          - option "Sakizaya"
+          - option "தமிழ்"
+          - option "Tayal"
+          - option "ತುಳು"
+          - option "ᥖᥭᥰ ᥖᥬᥲ ᥑᥨᥒᥰ"
+          - option "తెలుగు"
+          - option "tetun"
+          - option "тоҷикӣ"
+          - option "тоҷикӣ"
+          - option "tojikī"
+          - option "ไทย"
+          - option "काेचिला थारु"
+          - option "ትግርኛ"
+          - option "ትግሬ"
+          - option "Türkmençe"
+          - option "Tagalog"
+          - option "tolışi"
+          - option "толыши"
+          - option "Setswana"
+          - option "lea faka-Tonga"
+          - option "toki pona"
+          - option "Tok Pisin"
+          - option "Tanapag"
+          - option "Türkçe"
+          - option "Ṫuroyo"
+          - option "Seediq"
+          - option "Xitsonga"
+          - option "татарча / tatarça"
+          - option "татарча"
+          - option "tatarça"
+          - option "Orutooro"
+          - option "chiTumbuka"
+          - option "Tunen"
+          - option "Twi"
+          - option "reo tahiti"
+          - option "тыва дыл"
+          - option "ⵜⴰⵎⴰⵣⵉⵖⵜ"
+          - option "удмурт"
+          - option "ئۇيغۇرچە / Uyghurche"
+          - option "ئۇيغۇرچە"
+          - option "Uyghurche"
+          - option "українська"
+          - option "اردو"
+          - option "oʻzbekcha / ўзбекча"
+          - option "ўзбекча"
+          - option "oʻzbekcha"
+          - option "Tshivenda"
+          - option "vèneto"
+          - option "vepsän kel’"
+          - option "Tiếng Việt"
+          - option "West-Vlams"
+          - option "Mainfränkisch"
+          - option "emakhuwa"
+          - option "Volapük"
+          - option "Vaďďa"
+          - option "võro"
+          - option "Vute"
+          - option "walon"
+          - option "wolaytta"
+          - option "Winaray"
+          - option "Pidgin (Cameroon)"
+          - option "Fakaʻuvea"
+          - option "waale"
+          - option "Wolof"
+          - option "吴语"
+          - option "吴语（简体）"
+          - option "吳語（正體）"
+          - option "Wyandot"
+          - option "хальмг"
+          - option "isiXhosa"
+          - option "მარგალური"
+          - option "saisiyat"
+          - option "Nugunu"
+          - option "Yambeta"
+          - option "Yangben"
+          - option "Yemba"
+          - option "ייִדיש"
+          - option "Yorùbá"
+          - option "Nhẽẽgatú"
+          - option "maaya t’aan"
+          - option "粵語"
+          - option "粵语（简体）"
+          - option "粵語（繁體）"
+          - option "Vahcuengh"
+          - option "Zeêuws"
+          - option "ⵜⴰⵎⴰⵣⵉⵖⵜ ⵜⴰⵏⴰⵡⴰⵢⵜ"
+          - option "tamaziɣt tanawayt"
+          - option "中文"
+          - option "文言"
+          - option "中文（中国大陆）"
+          - option "中文（简体）"
+          - option "中文（繁體）"
+          - option "中文（香港）"
+          - option "Bân-lâm-gú"
+          - option "中文（澳門）"
+          - option "中文（马来西亚）"
+          - option "中文（新加坡）"
+          - option "中文（臺灣）"
+          - option "粵語"
+          - option "isiZulu"
+      - link [ref=f1e12] [cursor=pointer]:
+        - /url: /wiki/Main_Page
+        - img "Wikimedia Commons" [ref=f1e15]
+    - generic [ref=f1e16]:
+      - search [ref=f1e17]:
+        - link "Search" [ref=f1e18] [cursor=pointer]:
+          - /url: /wiki/Special:MediaSearch
+      - navigation "Personal tools" [ref=f1e21]:
+        - generic [ref=f1e22]:
+          - list [ref=f1e25]:
+            - listitem [ref=f1e26]:
+              - link "English" [ref=f1e27] [cursor=pointer]:
+                - /url: "#"
+          - navigation "Appearance" [ref=f1e30]:
+            - generic "Change the appearance of the page's font size, width, and color" [ref=f1e31]:
+              - button "Appearance" [ref=f1e32] [cursor=pointer]
+              - generic [ref=f1e35]: Appearance
+          - list [ref=f1e38]:
+            - listitem [ref=f1e39]:
+              - link "Donate" [ref=f1e40] [cursor=pointer]:
+                - /url: https://donate.wikimedia.org/?wmf_source=donate&wmf_medium=sidebar&wmf_campaign=commons.wikimedia.org&uselang=en
+            - listitem [ref=f1e41]:
+              - link "Create account" [ref=f1e42] [cursor=pointer]:
+                - /url: /w/index.php?title=Special:CreateAccount&returnto=Special%3AMediaSearch&returntoquery=search%3Dred-whiskered%2Bbulbul%26type%3Dimage
+            - listitem [ref=f1e43]:
+              - link "Log in" [ref=f1e44] [cursor=pointer]:
+                - /url: /w/index.php?title=Special:UserLogin&returnto=Special%3AMediaSearch&returntoquery=search%3Dred-whiskered%2Bbulbul%26type%3Dimage
+  - generic [ref=f1e46]:
+    - main [ref=f1e48]:
+      - generic [ref=f1e49]:
+        - heading "Search media" [level=1] [ref=f1e50]
+        - generic [ref=f1e51]:
+          - link "Switch to Special:Search" [ref=f1e53] [cursor=pointer]:
+            - /url: https://commons.wikimedia.org/w/index.php?title=Special%3ASearch&search=red-whiskered+bulbul
+          - link "Help" [ref=f1e55] [cursor=pointer]:
+            - /url: https://www.mediawiki.org/wiki/Special:MyLanguage/Help:MediaSearch
+      - generic [ref=f1e57]:
+        - generic:
+          - navigation "Namespaces"
+        - generic [ref=f1e58]:
+          - navigation "Views"
+          - navigation "Page tools" [ref=f1e59]:
+            - generic [ref=f1e60]:
+              - button "Tools" [ref=f1e61] [cursor=pointer]
+              - generic [ref=f1e64]: Tools
+      - generic "Search media" [ref=f1e65]:
+        - generic [ref=f1e66]:
+          - generic [ref=f1e68]:
+            - generic [ref=f1e69]:
+              - generic [ref=f1e70]: Search media
+              - textbox "Search media Search media" [ref=f1e72]:
+                - /placeholder: Search for images, audio, video and more
+                - text: red-whiskered bulbul
+            - button "Search" [ref=f1e74]
+          - generic [ref=f1e76]:
+            - tablist [ref=f1e79]:
+              - tab "Images" [selected] [ref=f1e80]
+              - tab "Audio" [ref=f1e81]
+              - tab "Video" [ref=f1e82]
+              - tab "Other Media" [ref=f1e83]
+              - tab "Categories and Pages" [ref=f1e84]
+            - tabpanel "Images" [ref=f1e86]:
+              - generic [ref=f1e87]: 823 results
+              - generic [ref=f1e90]:
+                - generic [ref=f1e91]:
+                  - link "Red-whiskered bulbul (Pycnonotus jocosus) Reunion.jpg" [ref=f1e92] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_(Pycnonotus_jocosus)_Reunion.jpg
+                    - img "Red-whiskered bulbul (Pycnonotus jocosus) Reunion.jpg"
+                  - link "Red-whiskered bulbul (Pycnonotus jocosus fuscicaudatus).jpg" [ref=f1e93] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_(Pycnonotus_jocosus_fuscicaudatus).jpg
+                    - img "Red-whiskered bulbul (Pycnonotus jocosus fuscicaudatus).jpg"
+                  - link "Red-whiskered bulbul (Pycononotus jocosus fuscicaudatus) with grasshopper.jpg" [ref=f1e94] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_(Pycononotus_jocosus_fuscicaudatus)_with_grasshopper.jpg
+                    - img "Red-whiskered bulbul (Pycononotus jocosus fuscicaudatus) with grasshopper.jpg"
+                  - link "Red whiskered bulbul.jpg" [ref=f1e95] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red_whiskered_bulbul.jpg
+                    - img "Red whiskered bulbul.jpg"
+                  - link "Red-whiskered Bulbul-web.jpg" [ref=f1e96] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul-web.jpg
+                    - img "Red-whiskered Bulbul-web.jpg"
+                  - link "Red whiskered Bulbul (Pycnonotus jocosus).jpg" [ref=f1e97] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red_whiskered_Bulbul_(Pycnonotus_jocosus).jpg
+                    - img "Red whiskered Bulbul (Pycnonotus jocosus).jpg"
+                  - link "Red-whiskered bulbuls (Pycnonotus jocosus) Mauritius.jpg" [ref=f1e98] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbuls_(Pycnonotus_jocosus)_Mauritius.jpg
+                    - img "Red-whiskered bulbuls (Pycnonotus jocosus) Mauritius.jpg"
+                  - link "Red-whiskered Bulbul in Mahabaleshwar August 2025 by Tisha Mukherjee 01.jpg" [ref=f1e99] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_in_Mahabaleshwar_August_2025_by_Tisha_Mukherjee_01.jpg
+                    - img "Red-whiskered Bulbul in Mahabaleshwar August 2025 by Tisha Mukherjee 01.jpg"
+                  - link "Red-whiskered bulbul (Pycnonotus jocosus) from nigiris DSC 1483.jpg" [ref=f1e100] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_(Pycnonotus_jocosus)_from_nigiris_DSC_1483.jpg
+                    - img "Red-whiskered bulbul (Pycnonotus jocosus) from nigiris DSC 1483.jpg"
+                  - link "Red-whiskered bulbul (Pycnonotus jocosus) from anaimalai hills DSC 2117.jpg" [ref=f1e101] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_(Pycnonotus_jocosus)_from_anaimalai_hills_DSC_2117.jpg
+                    - img "Red-whiskered bulbul (Pycnonotus jocosus) from anaimalai hills DSC 2117.jpg"
+                  - link "Red-whiskered bulbul (Pycnonotus jocosus) from anaimalai hills DSC 2119.jpg" [ref=f1e102] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_(Pycnonotus_jocosus)_from_anaimalai_hills_DSC_2119.jpg
+                    - img "Red-whiskered bulbul (Pycnonotus jocosus) from anaimalai hills DSC 2119.jpg"
+                  - link "Red-whiskered Bulbul in it's natural habitate.jpg" [ref=f1e103] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_in_it%27s_natural_habitate.jpg
+                    - img "Red-whiskered Bulbul in it's natural habitate.jpg"
+                  - link "Red-whiskered bulbul (সিপাহি বুলবুলি).jpg" [ref=f1e104] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_(%E0%A6%B8%E0%A6%BF%E0%A6%AA%E0%A6%BE%E0%A6%B9%E0%A6%BF_%E0%A6%AC%E0%A7%81%E0%A6%B2%E0%A6%AC%E0%A7%81%E0%A6%B2%E0%A6%BF).jpg
+                    - img "Red-whiskered bulbul (সিপাহি বুলবুলি).jpg"
+                  - link "022 Red-whiskered bulbul in Jim Corbett National Park Photo by Giles Laurent.jpg" [ref=f1e105] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:022_Red-whiskered_bulbul_in_Jim_Corbett_National_Park_Photo_by_Giles_Laurent.jpg
+                    - img "022 Red-whiskered bulbul in Jim Corbett National Park Photo by Giles Laurent.jpg"
+                  - link "086 Red-whiskered bulbul in Jim Corbett National Park Photo by Giles Laurent.jpg" [ref=f1e106] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:086_Red-whiskered_bulbul_in_Jim_Corbett_National_Park_Photo_by_Giles_Laurent.jpg
+                    - img "086 Red-whiskered bulbul in Jim Corbett National Park Photo by Giles Laurent.jpg"
+                  - link "Red-whiskered-bulbul-from-kottayam-kerala-1.jpg" [ref=f1e107] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered-bulbul-from-kottayam-kerala-1.jpg
+                    - img "Red-whiskered-bulbul-from-kottayam-kerala-1.jpg"
+                  - link "Red-whiskered bulbul at T S Chanakya, Navi Mumbai (March,24).jpg" [ref=f1e108] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_at_T_S_Chanakya,_Navi_Mumbai_(March,24).jpg
+                    - img "Red-whiskered bulbul at T S Chanakya, Navi Mumbai (March,24).jpg"
+                  - link "Red-whiskered Bulbul Sheikalmudi Feb26 A7CR 10006.jpg" [ref=f1e109] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_Sheikalmudi_Feb26_A7CR_10006.jpg
+                    - img "Red-whiskered Bulbul Sheikalmudi Feb26 A7CR 10006.jpg"
+                  - link "Red-whiskered Bulbul (Pycnonotus jocosus).jpg" [ref=f1e110] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_(Pycnonotus_jocosus).jpg
+                    - img "Red-whiskered Bulbul (Pycnonotus jocosus).jpg"
+                  - link "Red-whiskered bulbul by Tisha Mukherjee 01.jpg" [ref=f1e111] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_by_Tisha_Mukherjee_01.jpg
+                    - img "Red-whiskered bulbul by Tisha Mukherjee 01.jpg"
+                  - link "Pycnonotus jocosus (1).jpg" [ref=f1e112] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Pycnonotus_jocosus_(1).jpg
+                    - img "Pycnonotus jocosus (1).jpg"
+                  - link "Red-whiskered bulbul by Tisha Mukherjee 02.jpg" [ref=f1e113] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_by_Tisha_Mukherjee_02.jpg
+                    - img "Red-whiskered bulbul by Tisha Mukherjee 02.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 08.jpg" [ref=f1e114] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_08.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 08.jpg"
+                  - link "Red-whiskered bulbul by Tisha Mukherjee 03.jpg" [ref=f1e115] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_by_Tisha_Mukherjee_03.jpg
+                    - img "Red-whiskered bulbul by Tisha Mukherjee 03.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 09.jpg" [ref=f1e116] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_09.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 09.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 07.jpg" [ref=f1e117] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_07.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 07.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 23.jpg" [ref=f1e118] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_23.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 23.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 25.jpg" [ref=f1e119] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_25.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 25.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 26.jpg" [ref=f1e120] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_26.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 26.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 21.jpg" [ref=f1e121] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_21.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 21.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 06.jpg" [ref=f1e122] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_06.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 06.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 19.jpg" [ref=f1e123] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_19.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 19.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 10.jpg" [ref=f1e124] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_10.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 10.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 12.jpg" [ref=f1e125] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_12.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 12.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 15.jpg" [ref=f1e126] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_15.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 15.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 17.jpg" [ref=f1e127] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_17.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 17.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 24.jpg" [ref=f1e128] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_24.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 24.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 14.jpg" [ref=f1e129] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_14.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 14.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 05.jpg" [ref=f1e130] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_05.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 05.jpg"
+                  - link "Red-whiskered Bulbul by Tisha Mukherjee 20.jpg" [ref=f1e131] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Red-whiskered_Bulbul_by_Tisha_Mukherjee_20.jpg
+                    - img "Red-whiskered Bulbul by Tisha Mukherjee 20.jpg"
+                - button "Load more" [ref=f1e133]
+                - button "Load more" [ref=f1e136] [cursor=pointer]
+    - contentinfo [ref=f1e138]:
+      - list:
+        - listitem [ref=f1e139]:
+          - link "Privacy policy" [ref=f1e140] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy
+        - listitem [ref=f1e141]:
+          - link "About Wikimedia Commons" [ref=f1e142] [cursor=pointer]:
+            - /url: /wiki/Commons:Welcome
+        - listitem [ref=f1e143]:
+          - link "Disclaimers" [ref=f1e144] [cursor=pointer]:
+            - /url: /wiki/Commons:General_disclaimer
+        - listitem [ref=f1e145]:
+          - link "Legal & safety contacts" [ref=f1e146] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Legal:Wikimedia_Foundation_Legal_and_Safety_Contact_Information
+        - listitem [ref=f1e147]:
+          - link "Code of Conduct" [ref=f1e148] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Universal_Code_of_Conduct
+        - listitem [ref=f1e149]:
+          - link "Developers" [ref=f1e150] [cursor=pointer]:
+            - /url: https://developer.wikimedia.org
+        - listitem [ref=f1e151]:
+          - link "Statistics" [ref=f1e152] [cursor=pointer]:
+            - /url: https://stats.wikimedia.org/#/commons.wikimedia.org
+        - listitem [ref=f1e153]:
+          - link "Cookie statement" [ref=f1e154] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Cookie_statement
+        - listitem [ref=f1e155]:
+          - link "Mobile view" [ref=f1e156] [cursor=pointer]:
+            - /url: //commons.wikimedia.org/w/index.php?title=Special:MediaSearch&search=red-whiskered+bulbul&type=image&mobileaction=toggle_view_mobile
+      - list [ref=f1e157]:
+        - listitem [ref=f1e158]:
+          - link [ref=f1e159] [cursor=pointer]:
+            - /url: https://www.wikimedia.org/
+            - img "Wikimedia Foundation" [ref=f1e161]
+        - listitem [ref=f1e162]:
+          - link [ref=f1e163] [cursor=pointer]:
+            - /url: https://www.mediawiki.org/
+            - img "Powered by MediaWiki" [ref=f1e165]
+  - generic [ref=f1e166]:
+    - list

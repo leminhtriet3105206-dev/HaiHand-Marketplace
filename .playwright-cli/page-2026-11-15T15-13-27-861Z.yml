@@ -1,0 +1,89 @@
+- generic [active] [ref=f7e1]:
+  - banner [ref=f7e2]:
+    - generic [ref=f7e3]:
+      - link [ref=f7e4] [cursor=pointer]:
+        - /url: /?FORM=Z9FD1
+        - heading "Back to Bing search" [level=1] [ref=f7e5]
+      - search [ref=f7e6]:
+        - button "Search" [ref=f7e9] [cursor=pointer]
+        - searchbox "Enter your search here - Search suggestions will show as you type" [ref=f7e10]: high heels shoes site:commons.wikimedia.org
+        - button "Search using an image" [ref=f7e13] [cursor=pointer]
+    - complementary "Account Rewards and Preferences" [ref=f7e14]:
+      - button "Microsoft Rewards" [ref=f7e15] [cursor=pointer]:
+        - generic [ref=f7e16]: Rewards
+      - link [ref=f7e32] [cursor=pointer]:
+        - /url: javascript:void(0)
+        - button "Sign in" [ref=f7e35]
+      - button "Settings and quick links" [ref=f7e36] [cursor=pointer]
+    - navigation "Search Filter" [ref=f7e37]:
+      - list [ref=f7e38]:
+        - listitem [ref=f7e39]:
+          - link "All" [ref=f7e40] [cursor=pointer]:
+            - /url: /search?q=high+heels+shoes+site%3acommons.wikimedia.org&FORM=HDRSC1
+        - listitem [ref=f7e41]:
+          - link "AI Mode" [ref=f7e42] [cursor=pointer]:
+            - /url: /copilotsearch?q=high+heels+shoes+site%3acommons.wikimedia.org&FORM=CSSCOP
+        - listitem [ref=f7e45]:
+          - link "Images" [ref=f7e46] [cursor=pointer]:
+            - /url: /images?FORM=HDRSC2
+        - listitem [ref=f7e47]:
+          - list [ref=f7e48]:
+            - listitem [ref=f7e49]:
+              - link "Create" [ref=f7e50] [cursor=pointer]:
+                - /url: /images/create/ai-image-generator?FORM=IRPGEN
+            - listitem [ref=f7e55]:
+              - link "Collections" [ref=f7e56] [cursor=pointer]:
+                - /url: /saves?FORM=IRPCOL
+        - listitem [ref=f7e60]:
+          - link "Videos" [ref=f7e61] [cursor=pointer]:
+            - /url: /videos/search?q=high+heels+shoes+site%3acommons.wikimedia.org&FORM=HDRSC3
+        - listitem [ref=f7e62]:
+          - link "Maps" [ref=f7e63] [cursor=pointer]:
+            - /url: /maps?q=high+heels+shoes+site%3acommons.wikimedia.org&FORM=HDRSC4
+        - listitem [ref=f7e64]:
+          - button "More" [ref=f7e65] [cursor=pointer]
+      - generic [ref=f7e69]:
+        - generic [ref=f7e70]:
+          - list:
+            - listitem [ref=f7e71]:
+              - generic [ref=f7e72]: "SafeSearch:"
+            - listitem [ref=f7e73]:
+              - button "Moderate SafeSearch:" [ref=f7e74] [cursor=pointer]:
+                - generic [ref=f7e75]: Moderate
+        - button "Filter" [ref=f7e78] [cursor=pointer]
+  - main [ref=f7e81]:
+    - navigation [aria-hidden] [ref=f7e82]
+    - list [ref=f7e89]:
+      - listitem [ref=f7e90]:
+        - generic [ref=f7e91]:
+          - link "Image result for high heels shoes site:commons.wikimedia.org" [ref=f7e93] [cursor=pointer]:
+            - /url: /images/search?view=detailV2&ccid=j59YBEdH&id=324798979D9A0B22A7A2203F5C9659DC626A2055&thid=OIP.j59YBEdHCMjUWl9dbf_7YgHaGp&mediaurl=https%3a%2f%2fgocnhobecon.com%2fwp-content%2fuploads%2f2025%2f08%2fmeme-cho-cuoi.webp&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8f9f5804474708c8d45a5f5d6dfffb62%3frik%3dVSBqYtxZllw%252fIA%26pid%3dImgRaw%26r%3d0&exph=629&expw=700&q=high+heels+shoes+site%3acommons.wikimedia.org&FORM=IRPRST&ck=A8533F082FD90361EEC7C4B898D78659&selectedIndex=0&itb=0
+            - img "Image result for high heels shoes site:commons.wikimedia.org" [ref=f7e95]
+          - generic [ref=f7e96]:
+            - link "180+ ảnh meme con chó với vô vàn biểu cảm hài hước cực chất" [ref=f7e97] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=j59YBEdH&id=324798979D9A0B22A7A2203F5C9659DC626A2055&thid=OIP.j59YBEdHCMjUWl9dbf_7YgHaGp&mediaurl=https%3a%2f%2fgocnhobecon.com%2fwp-content%2fuploads%2f2025%2f08%2fmeme-cho-cuoi.webp&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8f9f5804474708c8d45a5f5d6dfffb62%3frik%3dVSBqYtxZllw%252fIA%26pid%3dImgRaw%26r%3d0&exph=629&expw=700&q=high+heels+shoes+site%3acommons.wikimedia.org&FORM=IRPRST&ck=A8533F082FD90361EEC7C4B898D78659&selectedIndex=0&itb=0
+            - generic:
+              - generic:
+                - list:
+                  - listitem:
+                    - link "180+ ảnh meme con chó với vô vàn biểu cảm hài hước cực c…" [ref=f7e98] [cursor=pointer]:
+                      - /url: /images/search?view=detailV2&ccid=j59YBEdH&id=324798979D9A0B22A7A2203F5C9659DC626A2055&thid=OIP.j59YBEdHCMjUWl9dbf_7YgHaGp&mediaurl=https%3a%2f%2fgocnhobecon.com%2fwp-content%2fuploads%2f2025%2f08%2fmeme-cho-cuoi.webp&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8f9f5804474708c8d45a5f5d6dfffb62%3frik%3dVSBqYtxZllw%252fIA%26pid%3dImgRaw%26r%3d0&exph=629&expw=700&q=high+heels+shoes+site%3acommons.wikimedia.org&FORM=IRPRST&ck=A8533F082FD90361EEC7C4B898D78659&selectedIndex=0&itb=0
+  - button "Feedback" [ref=f7e101] [cursor=pointer]
+  - contentinfo [ref=f7e103]:
+    - generic [ref=f7e104]:
+      - generic [ref=f7e105]: © 2026 Microsoft
+      - list:
+        - listitem [ref=f7e106]:
+          - link "Privacy" [ref=f7e107] [cursor=pointer]:
+            - /url: http://go.microsoft.com/fwlink/?LinkId=521839
+        - listitem [ref=f7e108]:
+          - link "Terms" [ref=f7e109] [cursor=pointer]:
+            - /url: http://go.microsoft.com/fwlink/?LinkID=246338
+        - listitem [ref=f7e110]:
+          - link "Advertise" [ref=f7e111] [cursor=pointer]:
+            - /url: https://go.microsoft.com/fwlink/?linkid=868922
+        - listitem [ref=f7e112]:
+          - link "Help" [ref=f7e113] [cursor=pointer]:
+            - /url: https://support.microsoft.com/topic/82d20721-2d6f-4012-a13d-d1910ccf203f
+        - listitem [ref=f7e114]:
+          - button "Feedback" [ref=f7e115] [cursor=pointer]

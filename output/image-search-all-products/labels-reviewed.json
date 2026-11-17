@@ -1,0 +1,662 @@
+[
+  {
+    "image": "queries/69d86a68a937bd538ab3192b.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d86a68a937bd538ab3192b"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:House%20and%20level%20crossing%20on%20Finney%20Lane%20-%20geograph.org.uk%20-%205086073.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d86b92a937bd538ab31a30.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d86b92a937bd538ab31a30"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Maria%20Woerth%20Teixlbucht%20Sueduferstrasse%20197%20Villa%20Fichteneck%20NW-Ansicht%2019042017%207776.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d86ef5a937bd538ab31d67.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d86ef5a937bd538ab31d67"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Knabo-vagabondo%20dormanta%20sur%20motorciklo%20Honda%20Wave%20(Nha%20Trang)%2001.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d86fcaa937bd538ab31df7.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d86fcaa937bd538ab31df7"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ballpoint%20Pen%20DS.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d87073a937bd538ab31e7f.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d87073a937bd538ab31e7f"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:White%20dog%20sleeping%20on%20the%20floor%20with%20puppies%20after%20nursing%20in%20Don%20Det%20Laos.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d870f5a937bd538ab31eeb.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d870f5a937bd538ab31eeb"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Night%20light%20ball.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d871c7a937bd538ab31f93.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d871c7a937bd538ab31f93"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Study%20Desk%2C%20Eavan%20Boland%20Library.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d87254a937bd538ab31ffb.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d87254a937bd538ab31ffb"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Computer%20mouse%201%202015-02-28.JPG",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d872e9a937bd538ab3206b.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d872e9a937bd538ab3206b"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Rii%20RT-MWK01%20mini%20wireless%20keyboard%20HS6.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d87411a937bd538ab32193.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d87411a937bd538ab32193"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Self-winding%20wristwatch%20(transparent%20backside).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d875b2a937bd538ab32315.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d875b2a937bd538ab32315"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Electric%20Rice%20Cooker%201956.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d876d9a937bd538ab323ed.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d876d9a937bd538ab323ed"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Handheld%20Fan%20CIMB%20Bank.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69d87928a937bd538ab32650.jpg",
+    "message": "",
+    "expectedIds": [
+      "69d87928a937bd538ab32650"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:High%20heels%20shoes.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcad5de8f5f531d474dc87.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcad5de8f5f531d474dc87"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Shirt%2C%20men's%20(AM%202015.44.1-1).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcaeffe8f5f531d474de4c.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcaeffe8f5f531d474de4c"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Flip%20Flops%20on%20feet.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcafa1e8f5f531d474deba.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcafa1e8f5f531d474deba"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Baroque%20Women's%20Dress%20(Czech%20Republic).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcb078e8f5f531d474df80.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcb078e8f5f531d474df80"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Men's%20trousers%20inside%20out.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcb12ae8f5f531d474e085.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcb12ae8f5f531d474e085"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Pink%20Flower%20Hair%20Clip%20in%20Red%20Hair%20(16891073643).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcb45ee8f5f531d474e3e7.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcb45ee8f5f531d474e3e7"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Shark%20S800%20Butterfly%20Motorbike%20helmet.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcb4e6e8f5f531d474e45d.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcb4e6e8f5f531d474e45d"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Panasonic%20HOME%20REFRIGERATOR%20NR-C320WP-N.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcb5e5e8f5f531d474e535.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcb5e5e8f5f531d474e535"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sofa%20MET%20DP-12204-001.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcb6dce8f5f531d474e73d.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcb6dce8f5f531d474e73d"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Sofa%20MET%20DP-12204-001.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcb7d0e8f5f531d474e844.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcb7d0e8f5f531d474e844"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:DAIKIN%20AIR%20CONDITIONER%20INDOOR%20UNIT.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcb897e8f5f531d474e90e.png",
+    "message": "",
+    "expectedIds": [
+      "69dcb897e8f5f531d474e90e"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_(Pycnonotus_jocosus)_Reunion.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcc0c7295b6e59ef3af97d.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcc0c7295b6e59ef3af97d"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Townhouses%20on%20Troubridge%20Drive%2C%20West%20Lakes.png",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcc199295b6e59ef3afa5c.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcc199295b6e59ef3afa5c"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Ampere-o-meter-vintage-HDR-0h.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcc258295b6e59ef3afb4a.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcc258295b6e59ef3afb4a"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Heat%20press%20for%20fabirc%20screen%20printing.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcc2d5295b6e59ef3afbf6.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcc2d5295b6e59ef3afbf6"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Apple%20Watch%20Ultra%20-%202.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcc334295b6e59ef3afc9e.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcc334295b6e59ef3afc9e"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Electric%20steam%20iron.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcc908295b6e59ef3b0176.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcc908295b6e59ef3b0176"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Self-winding%20wristwatch%20(transparent%20backside).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcc997295b6e59ef3b0272.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcc997295b6e59ef3b0272"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:True%20Hepa%20Vacuum%20Cleaner.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dcca28295b6e59ef3b034e.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dcca28295b6e59ef3b034e"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Light%20green%20ceramic%20bowl%201.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dccb35295b6e59ef3b0511.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dccb35295b6e59ef3b0511"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hyundai%20HD%2065.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dccbdd295b6e59ef3b0637.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dccbdd295b6e59ef3b0637"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Network%20router%20ZyXel%20USG20.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69de0869e0f64faf1ab9f632.jpg",
+    "message": "",
+    "expectedIds": [
+      "69de0869e0f64faf1ab9f632"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Lollipop%20in%20the%20package.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69de10ec3e4ad1438017e838.jpg",
+    "message": "",
+    "expectedIds": [
+      "69de10ec3e4ad1438017e838"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Vintage%20Alco%20Cigarette%20Lighter%2C%20Made%20in%20Japan%2C%20Engraved%20%2215th%20Field%20Hospital%2C%20Fort%20Bragg%2C%20North%20Carolina%22%20(10253815574).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69de23e17a871f2c9e8f5084.png",
+    "message": "",
+    "expectedIds": [
+      "69de23e17a871f2c9e8f5084"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:A_rooster_in_nature.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69de24957a871f2c9e8f5109.jpg",
+    "message": "",
+    "expectedIds": [
+      "69de24957a871f2c9e8f5109"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Oto%20massage%20chair.JPG",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69de25ce7a871f2c9e8f525b.jpg",
+    "message": "",
+    "expectedIds": [
+      "69de25ce7a871f2c9e8f525b"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Giant%20Gourami%202%20-%20Osphronemus%20goramy.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69de26217a871f2c9e8f529c.jpg",
+    "message": "",
+    "expectedIds": [
+      "69de26217a871f2c9e8f529c"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Syrian%20Hamster%20Cage.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69de26cc7a871f2c9e8f53b9.png",
+    "message": "",
+    "expectedIds": [
+      "69de26cc7a871f2c9e8f53b9"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Bulls_Wild_Cup_1_(Modell_2010)_20100814.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/69dedd5681dc9f396b74049e.jpg",
+    "message": "",
+    "expectedIds": [
+      "69dedd5681dc9f396b74049e"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Wardrobe%20MET%20DP235302.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af1739fc91caafe16621efd.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af1739fc91caafe16621efd"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Pile%20of%20Kibble%20Dog%20Food%20(51049786351).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af173a0c91caafe16621f05.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af173a0c91caafe16621f05"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Phone%20charger%202026.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af173a0c91caafe16621f06.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af173a0c91caafe16621f06"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:ActiveSound%20wireless%20earbuds%20by%20Hykker%20(POJM200483).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dbb2e06332d9bb40e89.png",
+    "message": "",
+    "expectedIds": [
+      "6af17dbb2e06332d9bb40e89"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Badminton_racket.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dbc2e06332d9bb40e8c.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dbc2e06332d9bb40e8c"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Zagedan%20Ridge%2C%20Camping%20tent%2C%20Caucasus%20Mountains.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dbc2e06332d9bb40e8d.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dbc2e06332d9bb40e8d"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Hand%20Weights%20(5443448742).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dbc2e06332d9bb40e8e.png",
+    "message": "",
+    "expectedIds": [
+      "6af17dbc2e06332d9bb40e8e"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Yoga_mat.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dbd2e06332d9bb40e92.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dbd2e06332d9bb40e92"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:MVP-sports-snacks-water-bottle%20(15093546478).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dbd2e06332d9bb40e95.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dbd2e06332d9bb40e95"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Pile%20of%20light%20gray%20LEGO%20bricks%20at%20a%20LEGO%20store.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dbf2e06332d9bb40e9d.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dbf2e06332d9bb40e9d"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Samsung%20Galaxy%20S23%20Ultra%2C%20512%20GB%2C%20Lavender%2020230416%20HOF00318%20RAW-Export%20cens.png",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dbf2e06332d9bb40e9e.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dbf2e06332d9bb40e9e"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:ActiveSound%20wireless%20earbuds%20by%20Hykker%20(POJM200483).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc02e06332d9bb40ea3.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc02e06332d9bb40ea3"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Huawei%20Smartwatch%20Fit%202.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc02e06332d9bb40ea4.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc02e06332d9bb40ea4"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:PSP%20Honda%20motorbikes%20parked.JPG",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc12e06332d9bb40ea9.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc12e06332d9bb40ea9"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:MacBook%20Air%20M1.png",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc12e06332d9bb40eaa.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc12e06332d9bb40eaa"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:EIZO%20Foris%20FG2421%20VGA%20computer%20monitor%20displaying%20test%20pattern.png",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc12e06332d9bb40eab.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc12e06332d9bb40eab"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:A%20wireless%20computer%20mouse.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc12e06332d9bb40eac.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc12e06332d9bb40eac"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Beats%20By%20Dr.%20Dre%20Pill%20Portable%20Bluetooth%20Speaker%20Black%20N2.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc12e06332d9bb40ead.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc12e06332d9bb40ead"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Mechanical%20keyboard%20example.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc22e06332d9bb40eaf.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc22e06332d9bb40eaf"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Robot%20vacuum%20cleaner%20concept%20study%201994.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc22e06332d9bb40eb0.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc22e06332d9bb40eb0"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Brown%20and%20beige%2C%20Computer%20desk%2C%20Rostov-on-Don%2C%20Russia.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc22e06332d9bb40eb2.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc22e06332d9bb40eb2"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Windbreaker%20Jacket%2C%20Hood%20Outside%20Transparency.png",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc22e06332d9bb40eb3.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc22e06332d9bb40eb3"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:NIKE%20Court%20Zoom%20Lite%203%20Hard%20Court%20Sneakers%20For%20Men.jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc22e06332d9bb40eb4.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc22e06332d9bb40eb4"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Self-winding%20wristwatch%20(transparent%20backside).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  },
+  {
+    "image": "queries/6af17dc22e06332d9bb40eb5.jpg",
+    "message": "",
+    "expectedIds": [
+      "6af17dc22e06332d9bb40eb5"
+    ],
+    "sourceUrl": "https://commons.wikimedia.org/wiki/File:Laptop%20backpacks%20from%20Mr.%20DIY%20at%20Ayala%20Center%20Cebu%20(2025-02-24).jpg",
+    "labelLevel": "object_type",
+    "reviewNote": "Ảnh ngoài mạng cùng loại vật thể; chưa xác nhận đúng thương hiệu, mẫu hoặc món hàng đang bán."
+  }
+]

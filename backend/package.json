@@ -6,6 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "rag:index": "node scripts/index-rag-products.js",
+    "image:export-training": "node scripts/export-image-training-data.js",
+    "image:eval": "node scripts/evaluate-image-search.js",
     "test": "jest --testPathIgnorePatterns=test/chatbotRelevance.test.js && node --test test/chatbotRelevance.test.js"
   },
   "keywords": [],
@@ -32,6 +34,7 @@
     "nodemailer": "^8.0.5",
     "openai": "^7.32.0",
     "qs": "^6.15.0",
+    "sharp": "^0.35.5",
     "socket.io": "^4.8.3"
   },
   "devDependencies": {

@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ConditionBadge } from './ConditionBadge';
 
-export const ProductCard = ({ product, isFavorited, isAuthor, onFavorite }) => {
+export const ProductCard = ({ product, isFavorited, isAuthor, onFavorite, hideFavorite = false }) => {
   return (
     <article className="bg-[#FFFFFF] border border-[#E7E5E4] rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col group">
       <Link to={`/post/${product.id}`} className="relative w-full aspect-square overflow-hidden bg-stone-50 block">
@@ -16,7 +16,7 @@ export const ProductCard = ({ product, isFavorited, isAuthor, onFavorite }) => {
           condition={product.condition} 
           className="absolute top-2 left-2 shadow-sm" 
         />
-        {!isAuthor && (
+        {!isAuthor && !hideFavorite && (
           <button 
             aria-label={isFavorited ? "Bỏ yêu thích" : "Yêu thích"}
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onFavorite(e); }}

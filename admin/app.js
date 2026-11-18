@@ -68,9 +68,9 @@ const Notification = mongoose.models.Notification || mongoose.model('Notificatio
   isRead: { type: Boolean, default: false }
 }, { timestamps: true, strict: false }), 'notifications');
 
-const ADMIN_DB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+const ADMIN_DB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
 if (!ADMIN_DB_URI) {
-  console.error("❌ Thiếu biến môi trường MONGO_URI trong Admin!");
+  console.error("❌ Thiếu biến môi trường MONGO_URI, MONGODB_URI hoặc MONGODB_ATLAS_URI trong Admin!");
 } else {
   mongoose
     .connect(ADMIN_DB_URI)

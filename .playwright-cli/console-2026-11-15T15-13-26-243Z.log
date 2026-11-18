@@ -1,0 +1,16 @@
+[     664ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[     666ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[     666ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[     667ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[     667ms] [VERBOSE] Rendering was performed in a subtree hidden by content-visibility. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[    1103ms] [ERROR] Permissions policy violation: unload is not allowed in this document. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[    1217ms] [ERROR] Permissions policy violation: unload is not allowed in this document. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[    1223ms] [ERROR] Permissions policy violation: unload is not allowed in this document. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[    1235ms] [ERROR] Permissions policy violation: unload is not allowed in this document. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[    1237ms] [ERROR] Permissions policy violation: unload is not allowed in this document. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[    1237ms] [ERROR] Permissions policy violation: unload is not allowed in this document. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[    1241ms] [ERROR] Permissions policy violation: unload is not allowed in this document. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[    1242ms] [ERROR] Permissions policy violation: unload is not allowed in this document. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[    1244ms] [ERROR] Permissions policy violation: unload is not allowed in this document. @ https://www.bing.com/images/search?q=high+heels+shoes+site%3Acommons.wikimedia.org:9
+[  158979ms] [WARNING] This page is using the deprecated ResourceLoader module "vuex".
+[1.42] Use Pinia instead. See migration guidelines: https://w.wiki/7pLU @ https://commons.wikimedia.org/w/load.php?lang=en&modules=startup&only=scripts&raw=1&skin=vector-2022:12

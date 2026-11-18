@@ -1,0 +1,842 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - heading "So sánh tìm kiếm ảnh HaiHand" [level=1] [ref=e3]
+    - paragraph [ref=e4]: Ảnh tham chiếu đã xác minh cùng loại vật thể. Nhãn thẻ giữ từ lần chấm thủ công trước; thẻ mới chưa chấm được ghi “unreviewed”.
+  - main [ref=e5]:
+    - generic [ref=e6]:
+      - generic [ref=e7]: "Đã chạy: 51"
+      - generic [ref=e8]: "Đúng ID trên cặp dương: 34 → 35/46"
+      - generic [ref=e9]: "Thẻ cùng loại: 43 → 42"
+      - generic [ref=e10]: "Thẻ sai loại/ảnh: 6 → 3"
+      - generic [ref=e11]: "Thẻ mới chưa chấm: 1"
+    - generic [ref=e12]:
+      - heading "nhà cấp 4 — chưa thấy ID" [level=2] [ref=e13]
+      - generic [ref=e14]:
+        - figure "Ảnh truy vấn" [ref=e15]
+        - figure "Ảnh tin trong Atlas" [ref=e17]
+      - generic [ref=e19]:
+        - generic [ref=e20]:
+          - heading "Trước (0)" [level=3] [ref=e21]
+          - paragraph [ref=e22]: Không có thẻ
+        - generic [ref=e23]:
+          - heading "Sau (0)" [level=3] [ref=e24]
+          - paragraph [ref=e25]: Không có thẻ
+    - generic [ref=e26]:
+      - heading "biệt thự ✓ đúng ID" [level=2] [ref=e27]
+      - generic [ref=e28]:
+        - figure "Ảnh truy vấn" [ref=e29]
+        - figure "Ảnh tin trong Atlas" [ref=e31]
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - heading "Trước (1)" [level=3] [ref=e35]
+          - generic [ref=e37]:
+            - text: biệt thự
+            - generic [ref=e38]: 69d86b92a937bd538ab31a30 · same_type · 0.824
+        - generic [ref=e39]:
+          - heading "Sau (1)" [level=3] [ref=e40]
+          - generic [ref=e42]:
+            - text: biệt thự
+            - generic [ref=e43]: 69d86b92a937bd538ab31a30 · same_type · 0.824
+    - generic [ref=e44]:
+      - heading "wave ✓ đúng ID" [level=2] [ref=e45]
+      - generic [ref=e46]:
+        - figure "Ảnh truy vấn" [ref=e47]
+        - figure "Ảnh tin trong Atlas" [ref=e49]
+      - generic [ref=e51]:
+        - generic [ref=e52]:
+          - heading "Trước (1)" [level=3] [ref=e53]
+          - generic [ref=e55]:
+            - text: wave
+            - generic [ref=e56]: 69d86ef5a937bd538ab31d67 · same_type · 0.841
+        - generic [ref=e57]:
+          - heading "Sau (1)" [level=3] [ref=e58]
+          - generic [ref=e60]:
+            - text: wave
+            - generic [ref=e61]: 69d86ef5a937bd538ab31d67 · same_type · 0.841
+    - generic [ref=e62]:
+      - heading "bút bi thiên long ✓ đúng ID" [level=2] [ref=e63]
+      - generic [ref=e64]:
+        - figure "Ảnh truy vấn" [ref=e65]
+        - figure "Ảnh tin trong Atlas" [ref=e67]
+      - generic [ref=e69]:
+        - generic [ref=e70]:
+          - heading "Trước (1)" [level=3] [ref=e71]
+          - generic [ref=e73]:
+            - text: bút bi thiên long
+            - generic [ref=e74]: 69d86fcaa937bd538ab31df7 · same_type · 0.806
+        - generic [ref=e75]:
+          - heading "Sau (1)" [level=3] [ref=e76]
+          - generic [ref=e78]:
+            - text: bút bi thiên long
+            - generic [ref=e79]: 69d86fcaa937bd538ab31df7 · same_type · 0.806
+    - generic [ref=e80]:
+      - heading "pet — chưa thấy ID" [level=2] [ref=e81]
+      - generic [ref=e82]:
+        - figure "Ảnh truy vấn" [ref=e83]
+        - figure "Ảnh tin trong Atlas" [ref=e85]
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - heading "Trước (0)" [level=3] [ref=e89]
+          - paragraph [ref=e90]: Không có thẻ
+        - generic [ref=e91]:
+          - heading "Sau (0)" [level=3] [ref=e92]
+          - paragraph [ref=e93]: Không có thẻ
+    - generic [ref=e94]:
+      - heading "đèn ngủ ✓ đúng ID" [level=2] [ref=e95]
+      - generic [ref=e96]:
+        - figure "Ảnh truy vấn" [ref=e97]
+        - figure "Ảnh tin trong Atlas" [ref=e99]
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - heading "Trước (1)" [level=3] [ref=e103]
+          - generic [ref=e105]:
+            - text: đèn ngủ
+            - generic [ref=e106]: 69d870f5a937bd538ab31eeb · same_type · 0.862
+        - generic [ref=e107]:
+          - heading "Sau (1)" [level=3] [ref=e108]
+          - generic [ref=e110]:
+            - text: đèn ngủ
+            - generic [ref=e111]: 69d870f5a937bd538ab31eeb · same_type · 0.862
+    - generic [ref=e112]:
+      - heading "bàn học lười — chưa thấy ID" [level=2] [ref=e113]
+      - generic [ref=e114]:
+        - figure "Ảnh truy vấn" [ref=e115]
+        - figure "Ảnh tin trong Atlas" [ref=e117]
+      - generic [ref=e119]:
+        - generic [ref=e120]:
+          - heading "Trước (1)" [level=3] [ref=e121]
+          - generic [ref=e123]:
+            - text: Bộ 10 cuốn truyện tranh thiếu nhi cổ tích song ngữ Việt Anh phát triển IQ
+            - generic [ref=e124]: 6af17dbe2e06332d9bb40e9b · wrong_type · 0.790
+        - generic [ref=e125]:
+          - heading "Sau (0)" [level=3] [ref=e126]
+          - paragraph [ref=e127]: Không có thẻ
+    - generic [ref=e128]:
+      - heading "chuột máy tính không dây — chưa thấy ID" [level=2] [ref=e129]
+      - generic [ref=e130]:
+        - figure "Ảnh truy vấn" [ref=e131]
+        - figure "Ảnh tin trong Atlas" [ref=e133]
+      - generic [ref=e135]:
+        - generic [ref=e136]:
+          - heading "Trước (1)" [level=3] [ref=e137]
+          - generic [ref=e139]:
+            - text: Chuột không dây công thái học Logitech MX Master 3S Silent cuộn vô cực MagSpeed
+            - generic [ref=e140]: 6af17dc12e06332d9bb40eab · same_type · 0.840
+        - generic [ref=e141]:
+          - heading "Sau (1)" [level=3] [ref=e142]
+          - generic [ref=e144]:
+            - text: Chuột không dây công thái học Logitech MX Master 3S Silent cuộn vô cực MagSpeed
+            - generic [ref=e145]: 6af17dc12e06332d9bb40eab · same_type · 0.840
+    - generic [ref=e146]:
+      - heading "bàn phím không dây — chưa thấy ID" [level=2] [ref=e147]
+      - generic [ref=e148]:
+        - figure "Ảnh truy vấn" [ref=e149]
+        - figure "Ảnh tin trong Atlas" [ref=e151]
+      - generic [ref=e153]:
+        - generic [ref=e154]:
+          - heading "Trước (1)" [level=3] [ref=e155]
+          - generic [ref=e157]:
+            - text: Bàn phím cơ không dây Keychron K2 V2 nhôm Led RGB switch Gateron Brown
+            - generic [ref=e158]: 6af17dc12e06332d9bb40ead · same_type · 0.817
+        - generic [ref=e159]:
+          - heading "Sau (0)" [level=3] [ref=e160]
+          - paragraph [ref=e161]: Không có thẻ
+    - generic [ref=e162]:
+      - heading "đồng hồ 3 kim ✓ đúng ID" [level=2] [ref=e163]
+      - generic [ref=e164]:
+        - figure "Ảnh truy vấn" [ref=e165]
+        - figure "Ảnh tin trong Atlas" [ref=e167]
+      - generic [ref=e169]:
+        - generic [ref=e170]:
+          - heading "Trước (2)" [level=3] [ref=e171]
+          - generic [ref=e173]:
+            - text: đồng hồ 3 kim
+            - generic [ref=e174]: 69d87411a937bd538ab32193 · same_type · 0.835
+          - generic [ref=e176]:
+            - text: Đồng hồ nam dây thép không gỉ Casio Edifice Chronograph 6 kim chống nước 100m
+            - generic [ref=e177]: 6af17dc22e06332d9bb40eb4 · related · 0.804
+        - generic [ref=e178]:
+          - heading "Sau (1)" [level=3] [ref=e179]
+          - generic [ref=e181]:
+            - text: đồng hồ 3 kim
+            - generic [ref=e182]: 69d87411a937bd538ab32193 · same_type · 0.835
+    - generic [ref=e183]:
+      - heading "nồi cơm điện ✓ đúng ID" [level=2] [ref=e184]
+      - generic [ref=e185]:
+        - figure "Ảnh truy vấn" [ref=e186]
+        - figure "Ảnh tin trong Atlas" [ref=e188]
+      - generic [ref=e190]:
+        - generic [ref=e191]:
+          - heading "Trước (1)" [level=3] [ref=e192]
+          - generic [ref=e194]:
+            - text: nồi cơm điện
+            - generic [ref=e195]: 69d875b2a937bd538ab32315 · same_type · 0.841
+        - generic [ref=e196]:
+          - heading "Sau (1)" [level=3] [ref=e197]
+          - generic [ref=e199]:
+            - text: nồi cơm điện
+            - generic [ref=e200]: 69d875b2a937bd538ab32315 · same_type · 0.841
+    - generic [ref=e201]:
+      - heading "máy quạt cầm tay ✓ đúng ID" [level=2] [ref=e202]
+      - generic [ref=e203]:
+        - figure "Ảnh truy vấn" [ref=e204]
+        - figure "Ảnh tin trong Atlas" [ref=e206]
+      - generic [ref=e208]:
+        - generic [ref=e209]:
+          - heading "Trước (1)" [level=3] [ref=e210]
+          - generic [ref=e212]:
+            - text: máy quạt cầm tay
+            - generic [ref=e213]: 69d876d9a937bd538ab323ed · same_type · 0.847
+        - generic [ref=e214]:
+          - heading "Sau (1)" [level=3] [ref=e215]
+          - generic [ref=e217]:
+            - text: máy quạt cầm tay
+            - generic [ref=e218]: 69d876d9a937bd538ab323ed · same_type · 0.847
+    - generic [ref=e219]:
+      - heading "giày cao gót ✓ đúng ID" [level=2] [ref=e220]
+      - generic [ref=e221]:
+        - figure "Ảnh truy vấn" [ref=e222]
+        - figure "Ảnh tin trong Atlas" [ref=e224]
+      - generic [ref=e226]:
+        - generic [ref=e227]:
+          - heading "Trước (1)" [level=3] [ref=e228]
+          - generic [ref=e230]:
+            - text: giày cao gót
+            - generic [ref=e231]: 69d87928a937bd538ab32650 · same_type · 0.830
+        - generic [ref=e232]:
+          - heading "Sau (1)" [level=3] [ref=e233]
+          - generic [ref=e235]:
+            - text: giày cao gót
+            - generic [ref=e236]: 69d87928a937bd538ab32650 · same_type · 0.830
+    - generic [ref=e237]:
+      - heading "áo sơ mi tay dài nam ✓ đúng ID" [level=2] [ref=e238]
+      - generic [ref=e239]:
+        - figure "Ảnh truy vấn" [ref=e240]
+        - figure "Ảnh tin trong Atlas" [ref=e242]
+      - generic [ref=e244]:
+        - generic [ref=e245]:
+          - heading "Trước (1)" [level=3] [ref=e246]
+          - generic [ref=e248]:
+            - text: áo sơ mi tay dài nam
+            - generic [ref=e249]: 69dcad5de8f5f531d474dc87 · same_type · 0.834
+        - generic [ref=e250]:
+          - heading "Sau (1)" [level=3] [ref=e251]
+          - generic [ref=e253]:
+            - text: áo sơ mi tay dài nam
+            - generic [ref=e254]: 69dcad5de8f5f531d474dc87 · same_type · 0.834
+    - generic [ref=e255]:
+      - heading "dép tông lào ✓ đúng ID" [level=2] [ref=e256]
+      - generic [ref=e257]:
+        - figure "Ảnh truy vấn" [ref=e258]
+        - figure "Ảnh tin trong Atlas" [ref=e260]
+      - generic [ref=e262]:
+        - generic [ref=e263]:
+          - heading "Trước (2)" [level=3] [ref=e264]
+          - generic [ref=e266]:
+            - text: dép tông lào
+            - generic [ref=e267]: 69dcaeffe8f5f531d474de4c · same_type · 0.834
+          - generic [ref=e269]:
+            - text: dép tổ ong
+            - generic [ref=e270]: 69dba90473b1b1204ed9bf5c · related · 0.794
+        - generic [ref=e271]:
+          - heading "Sau (1)" [level=3] [ref=e272]
+          - generic [ref=e274]:
+            - text: dép tông lào
+            - generic [ref=e275]: 69dcaeffe8f5f531d474de4c · same_type · 0.834
+    - generic [ref=e276]:
+      - heading "đầm ✓ đúng ID" [level=2] [ref=e277]
+      - generic [ref=e278]:
+        - figure "Ảnh truy vấn" [ref=e279]
+        - figure "Ảnh tin trong Atlas" [ref=e281]
+      - generic [ref=e283]:
+        - generic [ref=e284]:
+          - heading "Trước (1)" [level=3] [ref=e285]
+          - generic [ref=e287]:
+            - text: đầm
+            - generic [ref=e288]: 69dcafa1e8f5f531d474deba · same_type · 0.782
+        - generic [ref=e289]:
+          - heading "Sau (1)" [level=3] [ref=e290]
+          - generic [ref=e292]:
+            - text: đầm
+            - generic [ref=e293]: 69dcafa1e8f5f531d474deba · same_type · 0.782
+    - generic [ref=e294]:
+      - heading "quần tây nam đủ màu sắc ✓ đúng ID" [level=2] [ref=e295]
+      - generic [ref=e296]:
+        - figure "Ảnh truy vấn" [ref=e297]
+        - figure "Ảnh tin trong Atlas" [ref=e299]
+      - generic [ref=e301]:
+        - generic [ref=e302]:
+          - heading "Trước (1)" [level=3] [ref=e303]
+          - generic [ref=e305]:
+            - text: quần tây nam đủ màu sắc
+            - generic [ref=e306]: 69dcb078e8f5f531d474df80 · same_type · 0.787
+        - generic [ref=e307]:
+          - heading "Sau (1)" [level=3] [ref=e308]
+          - generic [ref=e310]:
+            - text: quần tây nam đủ màu sắc
+            - generic [ref=e311]: 69dcb078e8f5f531d474df80 · same_type · 0.787
+    - generic [ref=e312]:
+      - heading "kẹp tóc nữ — chưa thấy ID" [level=2] [ref=e313]
+      - generic [ref=e314]:
+        - figure "Ảnh truy vấn" [ref=e315]
+        - figure "Ảnh tin trong Atlas" [ref=e317]
+      - generic [ref=e319]:
+        - generic [ref=e320]:
+          - heading "Trước (0)" [level=3] [ref=e321]
+          - paragraph [ref=e322]: Không có thẻ
+        - generic [ref=e323]:
+          - heading "Sau (0)" [level=3] [ref=e324]
+          - paragraph [ref=e325]: Không có thẻ
+    - generic [ref=e326]:
+      - heading "nón full face 99% ✓ đúng ID" [level=2] [ref=e327]
+      - generic [ref=e328]:
+        - figure "Ảnh truy vấn" [ref=e329]
+        - figure "Ảnh tin trong Atlas" [ref=e331]
+      - generic [ref=e333]:
+        - generic [ref=e334]:
+          - heading "Trước (1)" [level=3] [ref=e335]
+          - generic [ref=e337]:
+            - text: nón full face 99%
+            - generic [ref=e338]: 69dcb45ee8f5f531d474e3e7 · same_type · 0.819
+        - generic [ref=e339]:
+          - heading "Sau (1)" [level=3] [ref=e340]
+          - generic [ref=e342]:
+            - text: nón full face 99%
+            - generic [ref=e343]: 69dcb45ee8f5f531d474e3e7 · same_type · 0.819
+    - generic [ref=e344]:
+      - heading "tủ lạnh panasonic 120l ✓ đúng ID" [level=2] [ref=e345]
+      - generic [ref=e346]:
+        - figure "Ảnh truy vấn" [ref=e347]
+        - figure "Ảnh tin trong Atlas" [ref=e349]
+      - generic [ref=e351]:
+        - generic [ref=e352]:
+          - heading "Trước (1)" [level=3] [ref=e353]
+          - generic [ref=e355]:
+            - text: tủ lạnh panasonic 120l
+            - generic [ref=e356]: 69dcb4e6e8f5f531d474e45d · same_type · 0.871
+        - generic [ref=e357]:
+          - heading "Sau (1)" [level=3] [ref=e358]
+          - generic [ref=e360]:
+            - text: tủ lạnh panasonic 120l
+            - generic [ref=e361]: 69dcb4e6e8f5f531d474e45d · same_type · 0.871
+    - generic [ref=e362]:
+      - heading "sofa cũ màu xám lông chuột — chưa thấy ID" [level=2] [ref=e363]
+      - generic [ref=e364]:
+        - figure "Ảnh truy vấn" [ref=e365]
+        - figure "Ảnh tin trong Atlas" [ref=e367]
+      - generic [ref=e369]:
+        - generic [ref=e370]:
+          - heading "Trước (1)" [level=3] [ref=e371]
+          - generic [ref=e373]:
+            - text: sofa cũ
+            - generic [ref=e374]: 69dcb6dce8f5f531d474e73d · same_type · 0.798
+        - generic [ref=e375]:
+          - heading "Sau (1)" [level=3] [ref=e376]
+          - generic [ref=e378]:
+            - text: sofa cũ
+            - generic [ref=e379]: 69dcb6dce8f5f531d474e73d · same_type · 0.798
+    - generic [ref=e380]:
+      - heading "sofa cũ ✓ đúng ID" [level=2] [ref=e381]
+      - generic [ref=e382]:
+        - figure "Ảnh truy vấn" [ref=e383]
+        - figure "Ảnh tin trong Atlas" [ref=e385]
+      - generic [ref=e387]:
+        - generic [ref=e388]:
+          - heading "Trước (1)" [level=3] [ref=e389]
+          - generic [ref=e391]:
+            - text: sofa cũ
+            - generic [ref=e392]: 69dcb6dce8f5f531d474e73d · same_type · 0.798
+        - generic [ref=e393]:
+          - heading "Sau (1)" [level=3] [ref=e394]
+          - generic [ref=e396]:
+            - text: sofa cũ
+            - generic [ref=e397]: 69dcb6dce8f5f531d474e73d · same_type · 0.798
+    - generic [ref=e398]:
+      - heading "máy lạnh daikin ✓ đúng ID" [level=2] [ref=e399]
+      - generic [ref=e400]:
+        - figure "Ảnh truy vấn" [ref=e401]
+        - figure "Ảnh tin trong Atlas" [ref=e403]
+      - generic [ref=e405]:
+        - generic [ref=e406]:
+          - heading "Trước (1)" [level=3] [ref=e407]
+          - generic [ref=e409]:
+            - text: máy lạnh daikin
+            - generic [ref=e410]: 69dcb7d0e8f5f531d474e844 · same_type · 0.875
+        - generic [ref=e411]:
+          - heading "Sau (1)" [level=3] [ref=e412]
+          - generic [ref=e414]:
+            - text: máy lạnh daikin
+            - generic [ref=e415]: 69dcb7d0e8f5f531d474e844 · same_type · 0.875
+    - generic [ref=e416]:
+      - heading "chào mào đại bàng ✓ đúng ID" [level=2] [ref=e417]
+      - generic [ref=e418]:
+        - figure "Ảnh truy vấn" [ref=e419]
+        - figure "Ảnh tin trong Atlas" [ref=e421]
+      - generic [ref=e423]:
+        - generic [ref=e424]:
+          - heading "Trước (1)" [level=3] [ref=e425]
+          - generic [ref=e427]:
+            - text: chào mào đại bàng
+            - generic [ref=e428]: 69dcb897e8f5f531d474e90e · same_type · 0.877
+        - generic [ref=e429]:
+          - heading "Sau (1)" [level=3] [ref=e430]
+          - generic [ref=e432]:
+            - text: chào mào đại bàng
+            - generic [ref=e433]: 69dcb897e8f5f531d474e90e · same_type · 0.877
+    - generic [ref=e434]:
+      - heading "Nhà đẹp Hxh thông Gò dầu ngay Tân Sơn Nhì 4.2x12.5 -3.5 tấm chỉ 7,5 tỷ — chưa thấy ID" [level=2] [ref=e435]
+      - generic [ref=e436]:
+        - figure "Ảnh truy vấn" [ref=e437]
+        - figure "Ảnh tin trong Atlas" [ref=e439]
+      - generic [ref=e441]:
+        - generic [ref=e442]:
+          - heading "Trước (2)" [level=3] [ref=e443]
+          - generic [ref=e445]:
+            - text: biệt thự
+            - generic [ref=e446]: 69d86b92a937bd538ab31a30 · same_type · 0.870
+          - generic [ref=e448]:
+            - text: nhà cấp 4
+            - generic [ref=e449]: 69d86a68a937bd538ab3192b · same_type · 0.831
+        - generic [ref=e450]:
+          - heading "Sau (2)" [level=3] [ref=e451]
+          - generic [ref=e453]:
+            - text: biệt thự
+            - generic [ref=e454]: 69d86b92a937bd538ab31a30 · same_type · 0.870
+          - generic [ref=e456]:
+            - text: nhà cấp 4
+            - generic [ref=e457]: 69d86a68a937bd538ab3192b · same_type · 0.831
+    - generic [ref=e458]:
+      - heading "Đồng hồ đo Ampe Đen, Trắng ✓ đúng ID" [level=2] [ref=e459]
+      - generic [ref=e460]:
+        - figure "Ảnh truy vấn" [ref=e461]
+        - figure "Ảnh tin trong Atlas" [ref=e463]
+      - generic [ref=e465]:
+        - generic [ref=e466]:
+          - heading "Trước (1)" [level=3] [ref=e467]
+          - generic [ref=e469]:
+            - text: Đồng hồ đo Ampe Đen, Trắng
+            - generic [ref=e470]: 69dcc199295b6e59ef3afa5c · same_type · 0.851
+        - generic [ref=e471]:
+          - heading "Sau (1)" [level=3] [ref=e472]
+          - generic [ref=e474]:
+            - text: Đồng hồ đo Ampe Đen, Trắng
+            - generic [ref=e475]: 69dcc199295b6e59ef3afa5c · same_type · 0.851
+    - generic [ref=e476]:
+      - heading "Máy ép nhiệt Wuxi Pengda khổ 1m6 ✓ đúng ID" [level=2] [ref=e477]
+      - generic [ref=e478]:
+        - figure "Ảnh truy vấn" [ref=e479]
+        - figure "Ảnh tin trong Atlas" [ref=e481]
+      - generic [ref=e483]:
+        - generic [ref=e484]:
+          - heading "Trước (1)" [level=3] [ref=e485]
+          - generic [ref=e487]:
+            - text: Máy ép nhiệt Wuxi Pengda khổ 1m6
+            - generic [ref=e488]: 69dcc258295b6e59ef3afb4a · same_type · 0.839
+        - generic [ref=e489]:
+          - heading "Sau (1)" [level=3] [ref=e490]
+          - generic [ref=e492]:
+            - text: Máy ép nhiệt Wuxi Pengda khổ 1m6
+            - generic [ref=e493]: 69dcc258295b6e59ef3afb4a · same_type · 0.839
+    - generic [ref=e494]:
+      - heading "Apple Watch Ultra 3 Bạc 99% Fullbox VN BH 12/26 ✓ đúng ID" [level=2] [ref=e495]
+      - generic [ref=e496]:
+        - figure "Ảnh truy vấn" [ref=e497]
+        - figure "Ảnh tin trong Atlas" [ref=e499]
+      - generic [ref=e501]:
+        - generic [ref=e502]:
+          - heading "Trước (1)" [level=3] [ref=e503]
+          - generic [ref=e505]:
+            - text: Apple Watch Ultra 3 Bạc 99% Fullbox VN BH 12/26
+            - generic [ref=e506]: 69dcc2d5295b6e59ef3afbf6 · same_type · 0.853
+        - generic [ref=e507]:
+          - heading "Sau (1)" [level=3] [ref=e508]
+          - generic [ref=e510]:
+            - text: Apple Watch Ultra 3 Bạc 99% Fullbox VN BH 12/26
+            - generic [ref=e511]: 69dcc2d5295b6e59ef3afbf6 · same_type · 0.853
+    - generic [ref=e512]:
+      - heading "Bàn ủi hơi nước Silver Star ES-94A ✓ đúng ID" [level=2] [ref=e513]
+      - generic [ref=e514]:
+        - figure "Ảnh truy vấn" [ref=e515]
+        - figure "Ảnh tin trong Atlas" [ref=e517]
+      - generic [ref=e519]:
+        - generic [ref=e520]:
+          - heading "Trước (0)" [level=3] [ref=e521]
+          - paragraph [ref=e522]: Không có thẻ
+        - generic [ref=e523]:
+          - heading "Sau (1)" [level=3] [ref=e524]
+          - generic [ref=e526]:
+            - text: Bàn ủi hơi nước Silver Star ES-94A
+            - generic [ref=e527]: 69dcc334295b6e59ef3afc9e · same_type · 0.835
+    - generic [ref=e528]:
+      - heading "Đồng hồ đeo tay Tommy Hilfiger TH1790748 Nam — chưa thấy ID" [level=2] [ref=e529]
+      - generic [ref=e530]:
+        - figure "Ảnh truy vấn" [ref=e531]
+        - figure "Ảnh tin trong Atlas" [ref=e533]
+      - generic [ref=e535]:
+        - generic [ref=e536]:
+          - heading "Trước (2)" [level=3] [ref=e537]
+          - generic [ref=e539]:
+            - text: đồng hồ 3 kim
+            - generic [ref=e540]: 69d87411a937bd538ab32193 · same_type · 0.835
+          - generic [ref=e542]:
+            - text: Đồng hồ nam dây thép không gỉ Casio Edifice Chronograph 6 kim chống nước 100m
+            - generic [ref=e543]: 6af17dc22e06332d9bb40eb4 · same_type · 0.804
+        - generic [ref=e544]:
+          - heading "Sau (1)" [level=3] [ref=e545]
+          - generic [ref=e547]:
+            - text: đồng hồ 3 kim
+            - generic [ref=e548]: 69d87411a937bd538ab32193 · same_type · 0.835
+    - generic [ref=e549]:
+      - heading "Máy hút bụi Electrolux Đỏ ✓ đúng ID" [level=2] [ref=e550]
+      - generic [ref=e551]:
+        - figure "Ảnh truy vấn" [ref=e552]
+        - figure "Ảnh tin trong Atlas" [ref=e554]
+      - generic [ref=e556]:
+        - generic [ref=e557]:
+          - heading "Trước (1)" [level=3] [ref=e558]
+          - generic [ref=e560]:
+            - text: Máy hút bụi Electrolux Đỏ
+            - generic [ref=e561]: 69dcc997295b6e59ef3b0272 · same_type · 0.834
+        - generic [ref=e562]:
+          - heading "Sau (1)" [level=3] [ref=e563]
+          - generic [ref=e565]:
+            - text: Máy hút bụi Electrolux Đỏ
+            - generic [ref=e566]: 69dcc997295b6e59ef3b0272 · same_type · 0.834
+    - generic [ref=e567]:
+      - heading "Chén làm bánh bèo Gốm sứ dư 30 cái mới ✓ đúng ID" [level=2] [ref=e568]
+      - generic [ref=e569]:
+        - figure "Ảnh truy vấn" [ref=e570]
+        - figure "Ảnh tin trong Atlas" [ref=e572]
+      - generic [ref=e574]:
+        - generic [ref=e575]:
+          - heading "Trước (1)" [level=3] [ref=e576]
+          - generic [ref=e578]:
+            - text: Chén làm bánh bèo Gốm sứ dư 30 cái mới
+            - generic [ref=e579]: 69dcca28295b6e59ef3b034e · same_type · 0.825
+        - generic [ref=e580]:
+          - heading "Sau (1)" [level=3] [ref=e581]
+          - generic [ref=e583]:
+            - text: Chén làm bánh bèo Gốm sứ dư 30 cái mới
+            - generic [ref=e584]: 69dcca28295b6e59ef3b034e · same_type · 0.825
+    - generic [ref=e585]:
+      - heading "Google Pixel 10 Pro Fold 256GB Monstone — chưa thấy ID" [level=2] [ref=e586]
+      - generic [ref=e587]:
+        - figure "Ảnh truy vấn" [ref=e588]
+        - figure "Ảnh tin trong Atlas" [ref=e590]
+      - generic [ref=e592]:
+        - generic [ref=e593]:
+          - heading "Trước (0)" [level=3] [ref=e594]
+          - paragraph [ref=e595]: Không có thẻ
+        - generic [ref=e596]:
+          - heading "Sau (0)" [level=3] [ref=e597]
+          - paragraph [ref=e598]: Không có thẻ
+    - generic [ref=e599]:
+      - heading "Hyundai hd 65 đời 2009. tải 2.3Tấn thùng dài 4,6m ✓ đúng ID" [level=2] [ref=e600]
+      - generic [ref=e601]:
+        - figure "Ảnh truy vấn" [ref=e602]
+        - figure "Ảnh tin trong Atlas" [ref=e604]
+      - generic [ref=e606]:
+        - generic [ref=e607]:
+          - heading "Trước (1)" [level=3] [ref=e608]
+          - generic [ref=e610]:
+            - text: Hyundai hd 65 đời 2009. tải 2.3Tấn thùng dài 4,6m
+            - generic [ref=e611]: 69dccb35295b6e59ef3b0511 · same_type · 0.834
+        - generic [ref=e612]:
+          - heading "Sau (1)" [level=3] [ref=e613]
+          - generic [ref=e615]:
+            - text: Hyundai hd 65 đời 2009. tải 2.3Tấn thùng dài 4,6m
+            - generic [ref=e616]: 69dccb35295b6e59ef3b0511 · same_type · 0.834
+    - generic [ref=e617]:
+      - heading "Bộ định tuyến WiFi TP-Link Archer C50 — chưa thấy ID" [level=2] [ref=e618]
+      - generic [ref=e619]:
+        - figure "Ảnh truy vấn" [ref=e620]
+        - figure "Ảnh tin trong Atlas" [ref=e622]
+      - generic [ref=e624]:
+        - generic [ref=e625]:
+          - heading "Trước (0)" [level=3] [ref=e626]
+          - paragraph [ref=e627]: Không có thẻ
+        - generic [ref=e628]:
+          - heading "Sau (0)" [level=3] [ref=e629]
+          - paragraph [ref=e630]: Không có thẻ
+    - generic [ref=e631]:
+      - heading "kẹo mút ✓ đúng ID" [level=2] [ref=e632]
+      - generic [ref=e633]:
+        - figure "Ảnh truy vấn" [ref=e634]
+        - figure "Ảnh tin trong Atlas" [ref=e636]
+      - generic [ref=e638]:
+        - generic [ref=e639]:
+          - heading "Trước (1)" [level=3] [ref=e640]
+          - generic [ref=e642]:
+            - text: kẹo mút
+            - generic [ref=e643]: 69de0869e0f64faf1ab9f632 · same_type · 0.803
+        - generic [ref=e644]:
+          - heading "Sau (1)" [level=3] [ref=e645]
+          - generic [ref=e647]:
+            - text: kẹo mút
+            - generic [ref=e648]: 69de0869e0f64faf1ab9f632 · same_type · 0.803
+    - generic [ref=e649]:
+      - heading "bật lửa ✓ đúng ID" [level=2] [ref=e650]
+      - generic [ref=e651]:
+        - figure "Ảnh truy vấn" [ref=e652]
+        - figure "Ảnh tin trong Atlas" [ref=e654]
+      - generic [ref=e656]:
+        - generic [ref=e657]:
+          - heading "Trước (1)" [level=3] [ref=e658]
+          - generic [ref=e660]:
+            - text: bật lửa
+            - generic [ref=e661]: 69de10ec3e4ad1438017e838 · same_type · 0.792
+        - generic [ref=e662]:
+          - heading "Sau (1)" [level=3] [ref=e663]
+          - generic [ref=e665]:
+            - text: bật lửa
+            - generic [ref=e666]: 69de10ec3e4ad1438017e838 · same_type · 0.792
+    - generic [ref=e667]:
+      - heading "gà đá ✓ đúng ID" [level=2] [ref=e668]
+      - generic [ref=e669]:
+        - figure "Ảnh truy vấn" [ref=e670]
+        - figure "Ảnh tin trong Atlas" [ref=e672]
+      - generic [ref=e674]:
+        - generic [ref=e675]:
+          - heading "Trước (1)" [level=3] [ref=e676]
+          - generic [ref=e678]:
+            - text: gà đá
+            - generic [ref=e679]: 69de23e17a871f2c9e8f5084 · same_type · 0.906
+        - generic [ref=e680]:
+          - heading "Sau (1)" [level=3] [ref=e681]
+          - generic [ref=e683]:
+            - text: gà đá
+            - generic [ref=e684]: 69de23e17a871f2c9e8f5084 · same_type · 0.906
+    - generic [ref=e685]:
+      - heading "thức ăn cho cún — chưa thấy ID" [level=2] [ref=e686]
+      - generic [ref=e687]:
+        - figure "Ảnh truy vấn" [ref=e688]
+        - figure "Ảnh tin trong Atlas" [ref=e690]
+      - generic [ref=e692]:
+        - generic [ref=e693]:
+          - heading "Trước (1)" [level=3] [ref=e694]
+          - generic [ref=e696]:
+            - text: Thức ăn cho chó mèo Royal Canin dinh dưỡng cao 1.5kg
+            - generic [ref=e697]: 6af1739fc91caafe16621efd · same_type · 0.887
+        - generic [ref=e698]:
+          - heading "Sau (1)" [level=3] [ref=e699]
+          - generic [ref=e701]:
+            - text: Thức ăn cho chó mèo Royal Canin dinh dưỡng cao 1.5kg
+            - generic [ref=e702]: 6af1739fc91caafe16621efd · same_type · 0.887
+    - generic [ref=e703]:
+      - heading "ghế massage ✓ đúng ID" [level=2] [ref=e704]
+      - generic [ref=e705]:
+        - figure "Ảnh truy vấn" [ref=e706]
+        - figure "Ảnh tin trong Atlas" [ref=e708]
+      - generic [ref=e710]:
+        - generic [ref=e711]:
+          - heading "Trước (1)" [level=3] [ref=e712]
+          - generic [ref=e714]:
+            - text: ghế massage
+            - generic [ref=e715]: 69de24957a871f2c9e8f5109 · same_type · 0.912
+        - generic [ref=e716]:
+          - heading "Sau (1)" [level=3] [ref=e717]
+          - generic [ref=e719]:
+            - text: ghế massage
+            - generic [ref=e720]: 69de24957a871f2c9e8f5109 · same_type · 0.912
+    - generic [ref=e721]:
+      - heading "cá tây tượng ✓ đúng ID" [level=2] [ref=e722]
+      - generic [ref=e723]:
+        - figure "Ảnh truy vấn" [ref=e724]
+        - figure "Ảnh tin trong Atlas" [ref=e726]
+      - generic [ref=e728]:
+        - generic [ref=e729]:
+          - heading "Trước (2)" [level=3] [ref=e730]
+          - generic [ref=e732]:
+            - text: cá tây tượng
+            - generic [ref=e733]: 69de25ce7a871f2c9e8f525b · same_type · 0.906
+          - generic [ref=e735]:
+            - text: Thức ăn hỗn hợp tăng trưởng cho rùa cảnh và bò sát cảnh
+            - generic [ref=e736]: 6af173a0c91caafe16621f00 · wrong_type · 0.835
+        - generic [ref=e737]:
+          - heading "Sau (1)" [level=3] [ref=e738]
+          - generic [ref=e740]:
+            - text: cá tây tượng
+            - generic [ref=e741]: 69de25ce7a871f2c9e8f525b · same_type · 0.906
+    - generic [ref=e742]:
+      - heading "chuồng nuôi chuột hamster ✓ đúng ID" [level=2] [ref=e743]
+      - generic [ref=e744]:
+        - figure "Ảnh truy vấn" [ref=e745]
+        - figure "Ảnh tin trong Atlas" [ref=e747]
+      - generic [ref=e749]:
+        - generic [ref=e750]:
+          - heading "Trước (1)" [level=3] [ref=e751]
+          - generic [ref=e753]:
+            - text: chuồng nuôi chuột hamster
+            - generic [ref=e754]: 69de26217a871f2c9e8f529c · same_type · 0.821
+        - generic [ref=e755]:
+          - heading "Sau (2)" [level=3] [ref=e756]
+          - generic [ref=e758]:
+            - text: bể cá
+            - generic [ref=e759]: 69de265b7a871f2c9e8f52f4 · wrong_type · 0.880
+          - generic [ref=e761]:
+            - text: chuồng nuôi chuột hamster
+            - generic [ref=e762]: 69de26217a871f2c9e8f529c · same_type · 0.821
+    - generic [ref=e763]:
+      - heading "xe đạp địa hình ✓ đúng ID" [level=2] [ref=e764]
+      - generic [ref=e765]:
+        - figure "Ảnh truy vấn" [ref=e766]
+        - figure "Ảnh tin trong Atlas" [ref=e768]
+      - generic [ref=e770]:
+        - generic [ref=e771]:
+          - heading "Trước (2)" [level=3] [ref=e772]
+          - generic [ref=e774]:
+            - text: xe đạp địa hình
+            - generic [ref=e775]: 69de26cc7a871f2c9e8f53b9 · same_type · 0.809
+          - generic [ref=e777]:
+            - text: Xe đạp địa hình thể thao Twitter Mantis khung nhôm phanh đĩa dầu
+            - generic [ref=e778]: 6af17dbc2e06332d9bb40e8a · related · 0.796
+        - generic [ref=e779]:
+          - heading "Sau (1)" [level=3] [ref=e780]
+          - generic [ref=e782]:
+            - text: xe đạp địa hình
+            - generic [ref=e783]: 69de26cc7a871f2c9e8f53b9 · same_type · 0.809
+    - generic [ref=e784]:
+      - heading "Tủ quần áo — chưa thấy ID" [level=2] [ref=e785]
+      - generic [ref=e786]:
+        - figure "Ảnh truy vấn" [ref=e787]
+        - figure "Ảnh tin trong Atlas" [ref=e789]
+      - generic [ref=e791]:
+        - generic [ref=e792]:
+          - heading "Trước (0)" [level=3] [ref=e793]
+          - paragraph [ref=e794]: Không có thẻ
+        - generic [ref=e795]:
+          - heading "Sau (0)" [level=3] [ref=e796]
+          - paragraph [ref=e797]: Không có thẻ
+    - generic [ref=e798]:
+      - heading "Thức ăn cho chó mèo Royal Canin dinh dưỡng cao 1.5kg ✓ đúng ID" [level=2] [ref=e799]
+      - generic [ref=e800]:
+        - figure "Ảnh truy vấn" [ref=e801]
+        - figure "Ảnh tin trong Atlas" [ref=e803]
+      - generic [ref=e805]:
+        - generic [ref=e806]:
+          - heading "Trước (2)" [level=3] [ref=e807]
+          - generic [ref=e809]:
+            - text: Thức ăn cho chó mèo Royal Canin dinh dưỡng cao 1.5kg
+            - generic [ref=e810]: 6af1739fc91caafe16621efd · same_type · 0.894
+          - generic [ref=e812]:
+            - text: Bộ tạ tay đa năng điều chỉnh Bowflex 24kg tập thể hình tại nhà
+            - generic [ref=e813]: 6af17dbc2e06332d9bb40e8d · wrong_type · 0.825
+        - generic [ref=e814]:
+          - heading "Sau (1)" [level=3] [ref=e815]
+          - generic [ref=e817]:
+            - text: Thức ăn cho chó mèo Royal Canin dinh dưỡng cao 1.5kg
+            - generic [ref=e818]: 6af1739fc91caafe16621efd · same_type · 0.894
+    - generic [ref=e819]:
+      - heading "Bát ăn đôi tự động cấp nước cho chó mèo và thú cưng — chưa thấy ID" [level=2] [ref=e820]
+      - generic [ref=e821]:
+        - figure "Ảnh truy vấn" [ref=e822]
+        - figure "Ảnh tin trong Atlas" [ref=e824]
+      - generic [ref=e826]:
+        - generic [ref=e827]:
+          - heading "Trước (1)" [level=3] [ref=e828]
+          - generic [ref=e830]:
+            - text: Thức ăn cho chó mèo Royal Canin dinh dưỡng cao 1.5kg
+            - generic [ref=e831]: 6af1739fc91caafe16621efd · wrong_type · 0.784
+        - generic [ref=e832]:
+          - heading "Sau (1)" [level=3] [ref=e833]
+          - generic [ref=e835]:
+            - text: gạt tàn điện tử hút mùi
+            - generic [ref=e836]: 69dcb551e8f5f531d474e4c5 · unreviewed · 0.794
+    - generic [ref=e837]:
+      - heading "Mũ bảo hiểm xe đạp thể thao thoáng khí siêu nhẹ — chưa thấy ID" [level=2] [ref=e838]
+      - generic [ref=e839]:
+        - figure "Ảnh truy vấn" [ref=e840]
+        - figure "Ảnh tin trong Atlas" [ref=e842]
+      - generic [ref=e844]:
+        - generic [ref=e845]:
+          - heading "Trước (1)" [level=3] [ref=e846]
+          - generic [ref=e848]:
+            - text: nón full face 99%
+            - generic [ref=e849]: 69dcb45ee8f5f531d474e3e7 · related · 0.812
+        - generic [ref=e850]:
+          - heading "Sau (1)" [level=3] [ref=e851]
+          - generic [ref=e853]:
+            - text: nón full face 99%
+            - generic [ref=e854]: 69dcb45ee8f5f531d474e3e7 · related · 0.812
+    - generic [ref=e855]:
+      - heading "Khóa dây số chống trộm xe đạp và xe máy thông minh 5 số — chưa thấy ID" [level=2] [ref=e856]
+      - generic [ref=e857]:
+        - figure "Ảnh truy vấn" [ref=e858]
+        - figure "Ảnh tin trong Atlas" [ref=e860]
+      - generic [ref=e862]:
+        - generic [ref=e863]:
+          - heading "Trước (2)" [level=3] [ref=e864]
+          - generic [ref=e866]:
+            - text: máy quạt
+            - generic [ref=e867]: 69d87648a937bd538ab3237f · wrong_type · 0.794
+          - generic [ref=e869]:
+            - text: Đồng hồ thông minh Apple Watch Series 8 45mm nhôm Midnight pin 98%
+            - generic [ref=e870]: 6af17dc02e06332d9bb40ea3 · wrong_type · 0.791
+        - generic [ref=e871]:
+          - heading "Sau (2)" [level=3] [ref=e872]
+          - generic [ref=e874]:
+            - text: máy quạt
+            - generic [ref=e875]: 69d87648a937bd538ab3237f · wrong_type · 0.794
+          - generic [ref=e877]:
+            - text: Đồng hồ thông minh Apple Watch Series 8 45mm nhôm Midnight pin 98%
+            - generic [ref=e878]: 6af17dc02e06332d9bb40ea3 · wrong_type · 0.791
+    - generic [ref=e879]:
+      - heading "Củ sạc nhanh Samsung 25W Type-C chính hãng ✓ đúng ID" [level=2] [ref=e880]
+      - generic [ref=e881]:
+        - figure "Ảnh truy vấn" [ref=e882]
+        - figure "Ảnh tin trong Atlas" [ref=e884]
+      - generic [ref=e886]:
+        - generic [ref=e887]:
+          - heading "Trước (2)" [level=3] [ref=e888]
+          - generic [ref=e890]:
+            - text: Củ sạc nhanh Samsung 25W Type-C chính hãng
+            - generic [ref=e891]: 6af173a0c91caafe16621f05 · same_type · 0.910
+          - generic [ref=e893]:
+            - text: Cáp sạc Baseus Type-C to Lightning 20W bọc dù chống đứt gãy sạc nhanh PD
+            - generic [ref=e894]: 6af17dc02e06332d9bb40ea0 · related · 0.910
+        - generic [ref=e895]:
+          - heading "Sau (2)" [level=3] [ref=e896]
+          - generic [ref=e898]:
+            - text: Củ sạc nhanh Samsung 25W Type-C chính hãng
+            - generic [ref=e899]: 6af173a0c91caafe16621f05 · same_type · 0.910
+          - generic [ref=e901]:
+            - text: Cáp sạc Baseus Type-C to Lightning 20W bọc dù chống đứt gãy sạc nhanh PD
+            - generic [ref=e902]: 6af17dc02e06332d9bb40ea0 · related · 0.910
+    - generic [ref=e903]:
+      - heading "Tai nghe Bluetooth không dây chống ồn TWS cao cấp ✓ đúng ID" [level=2] [ref=e904]
+      - generic [ref=e905]:
+        - figure "Ảnh truy vấn" [ref=e906]
+        - figure "Ảnh tin trong Atlas" [ref=e908]
+      - generic [ref=e910]:
+        - generic [ref=e911]:
+          - heading "Trước (2)" [level=3] [ref=e912]
+          - generic [ref=e914]:
+            - text: Tai nghe Bluetooth Apple AirPods Pro 2 Type-C chính hãng chống ồn chủ động
+            - generic [ref=e915]: 6af17dbf2e06332d9bb40e9e · same_type · 0.829
+          - generic [ref=e917]:
+            - text: Tai nghe Bluetooth không dây chống ồn TWS cao cấp
+            - generic [ref=e918]: 6af173a0c91caafe16621f06 · same_type · 0.803
+        - generic [ref=e919]:
+          - heading "Sau (2)" [level=3] [ref=e920]
+          - generic [ref=e922]:
+            - text: Tai nghe Bluetooth Apple AirPods Pro 2 Type-C chính hãng chống ồn chủ động
+            - generic [ref=e923]: 6af17dbf2e06332d9bb40e9e · same_type · 0.829
+          - generic [ref=e925]:
+            - text: Tai nghe Bluetooth không dây chống ồn TWS cao cấp
+            - generic [ref=e926]: 6af173a0c91caafe16621f06 · same_type · 0.803
+    - generic [ref=e927]:
+      - heading "Vợt cầu lông Yonex Astrox 88D Pro chính hãng đan sẵn cước BG65 ✓ đúng ID" [level=2] [ref=e928]
+      - generic [ref=e929]:
+        - figure "Ảnh truy vấn" [ref=e930]
+        - figure "Ảnh tin trong Atlas" [ref=e932]
+      - generic [ref=e934]:
+        - generic [ref=e935]:
+          - heading "Trước (1)" [level=3] [ref=e936]
+          - generic [ref=e938]:
+            - text: Vợt cầu lông Yonex Astrox 88D Pro chính hãng đan sẵn cước BG65
+            - generic [ref=e939]: 6af17dbb2e06332d9bb40e89 · same_type · 0.858
+        - generic [ref=e940]:
+          - heading "Sau (1)" [level=3] [ref=e941]
+          - generic [ref=e943]:
+            - text: Vợt cầu lông Yonex Astrox 88D Pro chính hãng đan sẵn cước BG65
+            - generic [ref=e944]: 6af17dbb2e06332d9bb40e89 · same_type · 0.858

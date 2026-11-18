@@ -1,0 +1,871 @@
+- generic [active] [ref=e1]:
+  - link "Jump to content" [ref=e2] [cursor=pointer]:
+    - /url: "#bodyContent"
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - navigation "Site" [ref=e6]:
+        - generic "Main menu" [ref=e7]:
+          - button "Main menu" [ref=e8] [cursor=pointer]
+          - generic [ref=e11]: Main menu
+          - option "Qafár af"
+          - option "Arbërisht"
+          - option "аԥсшәа"
+          - option "Abron"
+          - option "bahasa ambon"
+          - option "Acèh"
+          - option "Kwéyòl Sent Lisi"
+          - option "عراقي"
+          - option "адыгабзэ"
+          - option "адыгабзэ"
+          - option "تونسي / Tûnsî"
+          - option "تونسي"
+          - option "Tûnsî"
+          - option "Afrikaans"
+          - option "Aghem"
+          - option "Aanteegan an' Baabyuudan"
+          - option "Akan"
+          - option "Gegë"
+          - option "Alemannisch"
+          - option "алтай тил"
+          - option "አማርኛ"
+          - option "Pangcah"
+          - option "aragonés"
+          - option "Ænglisc"
+          - option "Obolo"
+          - option "अंगिका"
+          - option "شامي"
+          - option "العربية"
+          - option "ܐܪܡܝܐ"
+          - option "mapudungun"
+          - option "جازايرية"
+          - option "الدارجة"
+          - option "مصرى"
+          - option "অসমীয়া"
+          - option "American sign language"
+          - option "asturianu"
+          - option "Atikamekw"
+          - option "авар"
+          - option "Kotava"
+          - option "अवधी"
+          - option "Aymar aru"
+          - option "azərbaycanca"
+          - option "تۆرکجه"
+          - option "башҡортса"
+          - option "Tuki"
+          - option "Basa Bali"
+          - option "ᬩᬲᬩᬮᬶ"
+          - option "Boarisch"
+          - option "Basaa"
+          - option "žemaitėška"
+          - option "Bamum"
+          - option "Batak Toba"
+          - option "Batak Toba"
+          - option "Ghomála'"
+          - option "جهلسری بلوچی"
+          - option "wawle"
+          - option "Bikol Central"
+          - option "Bajau Sama"
+          - option "беларуская"
+          - option "беларуская (тарашкевіца)"
+          - option "беларуская (тарашкевіца)"
+          - option "Betawi"
+          - option "Bafut"
+          - option "ରେମସାମ୍"
+          - option "български"
+          - option "हरियाणवी"
+          - option "روچ کپتین بلوچی"
+          - option "भोजपुरी"
+          - option "भोजपुरी"
+          - option "Bislama"
+          - option "Banjar"
+          - option "Baka"
+          - option "Bakoko"
+          - option "Kom"
+          - option "ပအိုဝ်ႏဘာႏသာႏ"
+          - option "bamanankan"
+          - option "বাংলা"
+          - option "བོད་ཡིག"
+          - option "bòo pìkkà"
+          - option "বিষ্ণুপ্রিয়া মণিপুরী"
+          - option "بختیاری"
+          - option "Mka'a"
+          - option "brezhoneg"
+          - option "Bráhuí"
+          - option "bosanski"
+          - option "Batak Mandailing"
+          - option "Iriga Bicolano"
+          - option "Basa Ugi"
+          - option "ᨅᨔ ᨕᨘᨁᨗ"
+          - option "буряад"
+          - option "Medumba"
+          - option "català"
+          - option "Kaqchikel"
+          - option "Carolinian"
+          - option "Chavacano de Zamboanga"
+          - option "𑄌𑄋𑄴𑄟𑄳𑄦"
+          - option "閩東語 / Mìng-dĕ̤ng-ngṳ̄"
+          - option "閩東語（傳統漢字）"
+          - option "Mìng-dĕ̤ng-ngṳ̄ (Bàng-uâ-cê)"
+          - option "нохчийн"
+          - option "Cebuano"
+          - option "Chamoru"
+          - option "chinuk wawa"
+          - option "Chahta anumpa"
+          - option "ᏣᎳᎩ"
+          - option "Tsetsêhestâhese"
+          - option "کوردی"
+          - option "Hakha Chin"
+          - option "corsu"
+          - option "ϯⲙⲉⲧⲣⲉⲙⲛ̀ⲭⲏⲙⲓ"
+          - option "Capiceño"
+          - option "莆仙語 / Pó-sing-gṳ̂"
+          - option "莆仙语（简体）"
+          - option "莆仙語（繁體）"
+          - option "Pó-sing-gṳ̂ (Báⁿ-uā-ci̍)"
+          - option "Nēhiyawēwin / ᓀᐦᐃᔭᐍᐏᐣ"
+          - option "qırımtatarca"
+          - option "къырымтатарджа (Кирилл)"
+          - option "qırımtatarca (Latin)"
+          - option "tatarşa"
+          - option "čeština"
+          - option "kaszëbsczi"
+          - option "словѣньскъ / ⰔⰎⰑⰂⰡⰐⰠⰔⰍⰟ"
+          - option "чӑвашла"
+          - option "Cymraeg"
+          - option "dansk"
+          - option "dagbanli"
+          - option "Deutsch"
+          - option "Österreichisches Deutsch"
+          - option "Schweizer Hochdeutsch"
+          - option "Deutsch (Sie-Form)"
+          - option "Dagaare"
+          - option "Thuɔŋjäŋ"
+          - option "Zazaki"
+          - option "долган тыла"
+          - option "dolnoserbski"
+          - option "ଦେଶିଆ"
+          - option "Kadazandusun"
+          - option "डोटेली"
+          - option "Duala"
+          - option "ދިވެހިބަސް"
+          - option "ཇོང་ཁ"
+          - option "eʋegbe"
+          - option "Efịk"
+          - option "Emiliàn"
+          - option "Ελληνικά"
+          - option "emiliàn e rumagnòl"
+          - option "English" [selected]
+          - option "Canadian English"
+          - option "British English"
+          - option "American English"
+          - option "Esperanto"
+          - option "español"
+          - option "español de América Latina"
+          - option "español (formal)"
+          - option "eesti"
+          - option "Eton"
+          - option "Ejagham"
+          - option "euskara"
+          - option "Ewondo"
+          - option "estremeñu"
+          - option "فارسی"
+          - option "mfantse"
+          - option "Fulfulde"
+          - option "suomi"
+          - option "meänkieli"
+          - option "võro"
+          - option "Na Vosa Vakaviti"
+          - option "kvääni"
+          - option "Fe'fe'"
+          - option "føroyskt"
+          - option "fɔ̀ngbè"
+          - option "français"
+          - option "français cadien"
+          - option "arpetan"
+          - option "Nordfriisk"
+          - option "Oostfräisk"
+          - option "furlan"
+          - option "poor’íŋ belé’ŋ"
+          - option "Frysk"
+          - option "Gaeilge"
+          - option "Ga"
+          - option "Gagauz"
+          - option "贛語"
+          - option "赣语（简体）"
+          - option "贛語（繁體）"
+          - option "kréyòl Gwadloup"
+          - option "kriyòl gwiyannen"
+          - option "Gàidhlig"
+          - option "گوجری"
+          - option "गुज्जरी"
+          - option "galego"
+          - option "на̄ни"
+          - option "گیلکی"
+          - option "Avañe'ẽ"
+          - option "गोंयची कोंकणी / Gõychi Konknni"
+          - option "गोंयची कोंकणी"
+          - option "Gõychi Konknni"
+          - option "Bahasa Hulontalo"
+          - option "𐌲𐌿𐍄𐌹𐍃𐌺"
+          - option "Ghanaian Pidgin"
+          - option "Ἀρχαία ἑλληνικὴ"
+          - option "Alemannisch"
+          - option "ગુજરાતી"
+          - option "wayuunaiki"
+          - option "farefare"
+          - option "gungbe"
+          - option "Gaelg"
+          - option "Gbaya"
+          - option "Hausa"
+          - option "客家語 / Hak-kâ-ngî"
+          - option "客家语（简体）"
+          - option "客家語（繁體）"
+          - option "Hak-kâ-ngî (Pha̍k-fa-sṳ)"
+          - option "Hawaiʻi"
+          - option "עברית"
+          - option "हिन्दी"
+          - option "Fiji Hindi"
+          - option "Fiji Hindi"
+          - option "Ilonggo"
+          - option "kihunde"
+          - option "ہندکو"
+          - option "Hiri Motu"
+          - option "𑢹𑣉𑣉 𑣎𑣋𑣜"
+          - option "Ho"
+          - option "hrvatski"
+          - option "Hunsrik"
+          - option "hornjoserbsce"
+          - option "湘語"
+          - option "Kreyòl ayisyen"
+          - option "magyar"
+          - option "magyar (formal)"
+          - option "հայերեն"
+          - option "Արեւմտահայերէն"
+          - option "Otsiherero"
+          - option "interlingua"
+          - option "Jaku Iban"
+          - option "ibibio"
+          - option "Bahasa Indonesia"
+          - option "Interlingue"
+          - option "Igbo"
+          - option "Igala"
+          - option "ꆇꉙ"
+          - option "Iñupiatun"
+          - option "ᐃᓄᒃᑎᑐᑦ"
+          - option "inuktitut"
+          - option "Ilokano"
+          - option "гӀалгӀай"
+          - option "Ido"
+          - option "íslenska"
+          - option "Isu"
+          - option "medžuslovjansky"
+          - option "меджусловјанскы"
+          - option "medžuslovjansky"
+          - option "italiano"
+          - option "ᐃᓄᒃᑎᑐᑦ / inuktitut"
+          - option "日本語"
+          - option "Patois"
+          - option "la .lojban."
+          - option "jysk"
+          - option "Jawa"
+          - option "ꦗꦮ"
+          - option "ქართული"
+          - option "Qaraqalpaqsha"
+          - option "Taqbaylit"
+          - option "Karai-karai"
+          - option "Jju"
+          - option "адыгэбзэ"
+          - option "адыгэбзэ"
+          - option "Kabɩyɛ"
+          - option "Tyap"
+          - option "kabuverdianu"
+          - option "Kera"
+          - option "Kongo"
+          - option "Kumoring"
+          - option "गेम्येहाक़ गिपन"
+          - option "کھوار"
+          - option "Gĩkũyũ"
+          - option "Kırmancki"
+          - option "Kwanyama"
+          - option "хакас"
+          - option "ဖၠုံလိက်"
+          - option "қазақша"
+          - option "قازاقشا (تٴوتە)"
+          - option "قازاقشا (جۇنگو)"
+          - option "қазақша (кирил)"
+          - option "қазақша (Қазақстан)"
+          - option "qazaqşa (latın)"
+          - option "qazaqşa (Türkïya)"
+          - option "kalaallisut"
+          - option "ភាសាខ្មែរ"
+          - option "ಕನ್ನಡ"
+          - option "Yerwa Kanuri"
+          - option "한국어"
+          - option "조선말"
+          - option "перем коми"
+          - option "kanuri"
+          - option "къарачай-малкъар"
+          - option "Krio"
+          - option "Kinaray-a"
+          - option "karjal"
+          - option "کٲشُر"
+          - option "کٲشُر"
+          - option "कॉशुर"
+          - option "Bafia"
+          - option "Ripoarisch"
+          - option "စှီၤ"
+          - option "kurdî"
+          - option "کوردی (عەرەبی)"
+          - option "kurdî (latînî)"
+          - option "къумукъ"
+          - option "Kʋsaal"
+          - option "коми"
+          - option "kernowek"
+          - option "кыргызча"
+          - option "Latina"
+          - option "Ladino"
+          - option "Lëtzebuergesch"
+          - option "лакку"
+          - option "Nomaande"
+          - option "лезги"
+          - option "Lingua Franca Nova"
+          - option "Luganda"
+          - option "Limburgs"
+          - option "Ligure"
+          - option "Līvõ kēļ"
+          - option "Lampung Api"
+          - option "لەکی"
+          - option "Lakȟótiyapi"
+          - option "Ladin"
+          - option "lombard"
+          - option "lingála"
+          - option "Lamnso'"
+          - option "ລາວ"
+          - option "Silozi"
+          - option "لۊری شومالی"
+          - option "lietuvių"
+          - option "latgaļu"
+          - option "ciluba"
+          - option "Mizo ţawng"
+          - option "لئری دوٙمینی"
+          - option "latviešu"
+          - option "文言"
+          - option "Lazuri"
+          - option "Madhurâ"
+          - option "मगही"
+          - option "मैथिली"
+          - option "Basa Banyumasan"
+          - option "vùn màsànà"
+          - option "Maka"
+          - option "мокшень"
+          - option "Malagasy"
+          - option "Ebon"
+          - option "олык марий"
+          - option "Māori"
+          - option "Minangkabau"
+          - option "македонски"
+          - option "മലയാളം"
+          - option "монгол"
+          - option "manju gisun"
+          - option "manju gisun"
+          - option "ᠮᠠᠨᠵᡠ ᡤᡳᠰᡠᠨ"
+          - option "ꯃꯤꯇꯩ ꯂꯣꯟ"
+          - option "ဘာသာမန်"
+          - option "молдовеняскэ"
+          - option "moore"
+          - option "मराठी"
+          - option "Mara"
+          - option "кырык мары"
+          - option "Bahasa Melayu"
+          - option "بهاس ملايو"
+          - option "Malti"
+          - option "Mundang"
+          - option "Baso Palembang"
+          - option "Mvskoke"
+          - option "Mirandés"
+          - option "မြန်မာဘာသာ"
+          - option "эрзянь"
+          - option "مازِرونی"
+          - option "Dorerin Naoero"
+          - option "Nāhuatl"
+          - option "閩南語 / Bân-lâm-gí"
+          - option "閩南語"
+          - option "閩南語（傳統漢字）"
+          - option "Bân-lâm-gí (Pe̍h-ōe-jī)"
+          - option "Bân-lâm-gí (Tâi-lô)"
+          - option "Napulitano"
+          - option "norsk bokmål"
+          - option "Plattdüütsch"
+          - option "Nedersaksies"
+          - option "नेपाली"
+          - option "नेपाल भाषा"
+          - option "Oshiwambo"
+          - option "Ngémba"
+          - option "Li Niha"
+          - option "కొలామి"
+          - option "Niuē"
+          - option "Nederlands"
+          - option "Nederlands (informeel)"
+          - option "Ngombala"
+          - option "Kwasio"
+          - option "nawdm"
+          - option "norsk nynorsk"
+          - option "Ngiemboon"
+          - option "Nda'nda'"
+          - option "norsk"
+          - option "ᨣᩤᩴᨾᩮᩬᩥᨦ"
+          - option "ногайша"
+          - option "Novial"
+          - option "ߒߞߏ"
+          - option "isiNdebele seSewula"
+          - option "Nouormand"
+          - option "Sesotho sa Leboa"
+          - option "Nupe"
+          - option "Diné bizaad"
+          - option "Chi-Chewa"
+          - option "runyankore"
+          - option "Orunyoro"
+          - option "Nyunga"
+          - option "occitan"
+          - option "Ojibwemowin"
+          - option "livvinkarjala"
+          - option "Oromoo"
+          - option "ଓଡ଼ିଆ"
+          - option "ирон"
+          - option "Wažáže íe"
+          - option "لسان عثمانى"
+          - option "ਪੰਜਾਬੀ"
+          - option "Pangasinan"
+          - option "Kapampangan"
+          - option "Papiamentu"
+          - option "Papiamento"
+          - option "Picard"
+          - option "Naijá"
+          - option "Deitsch"
+          - option "Plautdietsch"
+          - option "Pälzisch"
+          - option "पालि"
+          - option "Norfuk / Pitkern"
+          - option "polski"
+          - option "Piemontèis"
+          - option "پنجابی"
+          - option "Ποντιακά"
+          - option "Nawat"
+          - option "prūsiskan"
+          - option "پښتو"
+          - option "português"
+          - option "português do Brasil"
+          - option "pinayuanan"
+          - option "Runa Simi"
+          - option "Qatzijob\\ʼal"
+          - option "Runa shimi"
+          - option "Rumagnôl"
+          - option "Tarifit"
+          - option "ရခိုင်"
+          - option "rumantsch"
+          - option "romaňi čhib"
+          - option "kaalengo tšimb"
+          - option "romani čhib"
+          - option "ikirundi"
+          - option "română"
+          - option "armãneashti"
+          - option "tarandíne"
+          - option "руски"
+          - option "русский"
+          - option "русиньскый"
+          - option "armãneashti"
+          - option "Vlăheşte"
+          - option "Влахесте"
+          - option "Vlăheşte"
+          - option "мыхаӀбишды"
+          - option "Ikinyarwanda"
+          - option "मारवाड़ी"
+          - option "沖縄口"
+          - option "संस्कृतम्"
+          - option "саха тыла"
+          - option "Sasak"
+          - option "ᱥᱟᱱᱛᱟᱲᱤ"
+          - option "sardu"
+          - option "sicilianu"
+          - option "Scots"
+          - option "سنڌي"
+          - option "Sassaresu"
+          - option "کوردی خوارگ"
+          - option "davvisámegiella"
+          - option "davvisámegiella (Suoma bealde)"
+          - option "davvisámegiella (Norgga bealde)"
+          - option "davvisámegiella (Ruoŧa bealde)"
+          - option "Cmique Itom"
+          - option "Koyraboro Senni"
+          - option "Sängö"
+          - option "žemaitėška"
+          - option "srpskohrvatski / српскохрватски"
+          - option "српскохрватски (ћирилица)"
+          - option "srpskohrvatski (latinica)"
+          - option "Taclḥit"
+          - option "Taclḥit"
+          - option "ⵜⴰⵛⵍⵃⵉⵜ"
+          - option "တႆး"
+          - option "tacawit"
+          - option "tacawit"
+          - option "සිංහල"
+          - option "Simple English"
+          - option "кӣллт са̄мь кӣлл"
+          - option "bidumsámegiella"
+          - option "ubmejesámiengiälla"
+          - option "slovenčina"
+          - option "سرائیکی"
+          - option "سرائیکی"
+          - option "slovenščina"
+          - option "Schläsch"
+          - option "Gagana Samoa"
+          - option "åarjelsaemien"
+          - option "julevsámegiella"
+          - option "anarâškielâ"
+          - option "nuõrttsääʹmǩiõll"
+          - option "chiShona"
+          - option "Soomaaliga"
+          - option "shqip"
+          - option "српски / srpski"
+          - option "српски (ћирилица)"
+          - option "srpski (latinica)"
+          - option "Sranantongo"
+          - option "sardu campidanesu"
+          - option "mbia cheë"
+          - option "SiSwati"
+          - option "Sesotho"
+          - option "Seeltersk"
+          - option "себертатар"
+          - option "Sunda"
+          - option "svenska"
+          - option "ლუშნუ"
+          - option "Kiswahili"
+          - option "ꠍꠤꠟꠐꠤ"
+          - option "ślůnski"
+          - option "Sakizaya"
+          - option "தமிழ்"
+          - option "Tayal"
+          - option "ತುಳು"
+          - option "ᥖᥭᥰ ᥖᥬᥲ ᥑᥨᥒᥰ"
+          - option "తెలుగు"
+          - option "tetun"
+          - option "тоҷикӣ"
+          - option "тоҷикӣ"
+          - option "tojikī"
+          - option "ไทย"
+          - option "काेचिला थारु"
+          - option "ትግርኛ"
+          - option "ትግሬ"
+          - option "Türkmençe"
+          - option "Tagalog"
+          - option "tolışi"
+          - option "толыши"
+          - option "Setswana"
+          - option "lea faka-Tonga"
+          - option "toki pona"
+          - option "Tok Pisin"
+          - option "Tanapag"
+          - option "Türkçe"
+          - option "Ṫuroyo"
+          - option "Seediq"
+          - option "Xitsonga"
+          - option "татарча / tatarça"
+          - option "татарча"
+          - option "tatarça"
+          - option "Orutooro"
+          - option "chiTumbuka"
+          - option "Tunen"
+          - option "Twi"
+          - option "reo tahiti"
+          - option "тыва дыл"
+          - option "ⵜⴰⵎⴰⵣⵉⵖⵜ"
+          - option "удмурт"
+          - option "ئۇيغۇرچە / Uyghurche"
+          - option "ئۇيغۇرچە"
+          - option "Uyghurche"
+          - option "українська"
+          - option "اردو"
+          - option "oʻzbekcha / ўзбекча"
+          - option "ўзбекча"
+          - option "oʻzbekcha"
+          - option "Tshivenda"
+          - option "vèneto"
+          - option "vepsän kel’"
+          - option "Tiếng Việt"
+          - option "West-Vlams"
+          - option "Mainfränkisch"
+          - option "emakhuwa"
+          - option "Volapük"
+          - option "Vaďďa"
+          - option "võro"
+          - option "Vute"
+          - option "walon"
+          - option "wolaytta"
+          - option "Winaray"
+          - option "Pidgin (Cameroon)"
+          - option "Fakaʻuvea"
+          - option "waale"
+          - option "Wolof"
+          - option "吴语"
+          - option "吴语（简体）"
+          - option "吳語（正體）"
+          - option "Wyandot"
+          - option "хальмг"
+          - option "isiXhosa"
+          - option "მარგალური"
+          - option "saisiyat"
+          - option "Nugunu"
+          - option "Yambeta"
+          - option "Yangben"
+          - option "Yemba"
+          - option "ייִדיש"
+          - option "Yorùbá"
+          - option "Nhẽẽgatú"
+          - option "maaya t’aan"
+          - option "粵語"
+          - option "粵语（简体）"
+          - option "粵語（繁體）"
+          - option "Vahcuengh"
+          - option "Zeêuws"
+          - option "ⵜⴰⵎⴰⵣⵉⵖⵜ ⵜⴰⵏⴰⵡⴰⵢⵜ"
+          - option "tamaziɣt tanawayt"
+          - option "中文"
+          - option "文言"
+          - option "中文（中国大陆）"
+          - option "中文（简体）"
+          - option "中文（繁體）"
+          - option "中文（香港）"
+          - option "Bân-lâm-gú"
+          - option "中文（澳門）"
+          - option "中文（马来西亚）"
+          - option "中文（新加坡）"
+          - option "中文（臺灣）"
+          - option "粵語"
+          - option "isiZulu"
+      - link [ref=e12] [cursor=pointer]:
+        - /url: /wiki/Main_Page
+        - img "Wikimedia Commons" [ref=e15]
+    - generic [ref=e16]:
+      - search [ref=e17]:
+        - link "Search" [ref=e18] [cursor=pointer]:
+          - /url: /wiki/Special:MediaSearch
+      - navigation "Personal tools" [ref=e21]:
+        - generic [ref=e22]:
+          - list [ref=e25]:
+            - listitem [ref=e26]:
+              - link "English" [ref=e27] [cursor=pointer]:
+                - /url: "#"
+          - navigation "Appearance" [ref=e30]:
+            - generic "Change the appearance of the page's font size, width, and color" [ref=e31]:
+              - button "Appearance" [ref=e32] [cursor=pointer]
+              - generic [ref=e35]: Appearance
+          - list [ref=e38]:
+            - listitem [ref=e39]:
+              - link "Donate" [ref=e40] [cursor=pointer]:
+                - /url: https://donate.wikimedia.org/?wmf_source=donate&wmf_medium=sidebar&wmf_campaign=commons.wikimedia.org&uselang=en
+            - listitem [ref=e41]:
+              - link "Create account" [ref=e42] [cursor=pointer]:
+                - /url: /w/index.php?title=Special:CreateAccount&returnto=Special%3AMediaSearch&returntoquery=search%3Dbadminton%2Bracket%26type%3Dimage
+            - listitem [ref=e43]:
+              - link "Log in" [ref=e44] [cursor=pointer]:
+                - /url: /w/index.php?title=Special:UserLogin&returnto=Special%3AMediaSearch&returntoquery=search%3Dbadminton%2Bracket%26type%3Dimage
+  - generic [ref=e46]:
+    - main [ref=e48]:
+      - generic [ref=e49]:
+        - heading "Search media" [level=1] [ref=e50]
+        - generic [ref=e51]:
+          - link "Switch to Special:Search" [ref=e53] [cursor=pointer]:
+            - /url: https://commons.wikimedia.org/w/index.php?title=Special%3ASearch&search=badminton+racket
+          - link "Help" [ref=e55] [cursor=pointer]:
+            - /url: https://www.mediawiki.org/wiki/Special:MyLanguage/Help:MediaSearch
+      - generic [ref=e57]:
+        - generic:
+          - navigation "Namespaces"
+        - generic [ref=e58]:
+          - navigation "Views"
+          - navigation "Page tools" [ref=e59]:
+            - generic [ref=e60]:
+              - button "Tools" [ref=e61] [cursor=pointer]
+              - generic [ref=e64]: Tools
+      - generic "Search media" [ref=e65]:
+        - generic [ref=e66]:
+          - generic [ref=e68]:
+            - generic [ref=e69]:
+              - generic [ref=e70]: Search media
+              - textbox "Search media Search media" [ref=e72]:
+                - /placeholder: Search for images, audio, video and more
+                - text: badminton racket
+            - button "Search" [ref=e74]
+          - generic [ref=e76]:
+            - tablist [ref=e79]:
+              - tab "Images" [selected] [ref=e80]
+              - tab "Audio" [ref=e81]
+              - tab "Video" [ref=e82]
+              - tab "Other Media" [ref=e83]
+              - tab "Categories and Pages" [ref=e84]
+            - tabpanel "Images" [ref=e86]:
+              - generic [ref=e87]: 1,483 results
+              - generic [ref=e90]:
+                - generic [ref=e91]:
+                  - link "Badminton racket.jpg" [ref=e92] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_racket.jpg
+                    - img "Badminton racket.jpg"
+                  - link "Badminton racket Pinhead icon.svg" [ref=e93] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_racket_Pinhead_icon.svg
+                    - img "Badminton racket Pinhead icon.svg"
+                  - link "Badminton racket and shuttlecock Pinhead icon.svg" [ref=e94] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_racket_and_shuttlecock_Pinhead_icon.svg
+                    - img "Badminton racket and shuttlecock Pinhead icon.svg"
+                  - link "Heads of badminton raquets.jpg" [ref=e95] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Heads_of_badminton_raquets.jpg
+                    - img "Heads of badminton raquets.jpg"
+                  - link "Badminton Racket.jpg" [ref=e96] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_Racket.jpg
+                    - img "Badminton Racket.jpg"
+                  - link "Yonex Isometric 30 VF.png" [ref=e97] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Yonex_Isometric_30_VF.png
+                    - img "Yonex Isometric 30 VF.png"
+                  - link "WorldsLargestBadmintonRacket.jpg" [ref=e98] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:WorldsLargestBadmintonRacket.jpg
+                    - img "WorldsLargestBadmintonRacket.jpg"
+                  - link "Badminton racquets victor thruster ryuga.jpg" [ref=e99] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_racquets_victor_thruster_ryuga.jpg
+                    - img "Badminton racquets victor thruster ryuga.jpg"
+                  - link "Rachetă de badminton şi fluturaş.jpg" [ref=e100] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Rachet%C4%83_de_badminton_%C5%9Fi_flutura%C5%9F.jpg
+                    - img "Rachetă de badminton şi fluturaş.jpg"
+                  - link "Tennis Racket and Balls.jpg" [ref=e101] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Tennis_Racket_and_Balls.jpg
+                    - img "Tennis Racket and Balls.jpg"
+                  - link "Nanoldsquash2.JPG" [ref=e102] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Nanoldsquash2.JPG
+                    - img "Nanoldsquash2.JPG"
+                  - link "Racket (PSF).png" [ref=e103] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_(PSF).png
+                    - img "Racket (PSF).png"
+                  - link "Racket on the beach 2.jpg" [ref=e104] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_on_the_beach_2.jpg
+                    - img "Racket on the beach 2.jpg"
+                  - link "Racket on the beach.jpg" [ref=e105] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_on_the_beach.jpg
+                    - img "Racket on the beach.jpg"
+                  - link "Racket Pinhead icon.svg" [ref=e106] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_Pinhead_icon.svg
+                    - img "Racket Pinhead icon.svg"
+                  - link "Yonex Nanoray 10.jpg" [ref=e107] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Yonex_Nanoray_10.jpg
+                    - img "Yonex Nanoray 10.jpg"
+                  - link "Racket on the beach 1.jpg" [ref=e108] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_on_the_beach_1.jpg
+                    - img "Racket on the beach 1.jpg"
+                  - link "White-booted racket-tail (Ocreatus underwoodii melanantherus) male in flight Paz de las Aves.jpg" [ref=e109] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:White-booted_racket-tail_(Ocreatus_underwoodii_melanantherus)_male_in_flight_Paz_de_las_Aves.jpg
+                    - img "White-booted racket-tail (Ocreatus underwoodii melanantherus) male in flight Paz de las Aves.jpg"
+                  - link "EB1911 Racquets - The Racquet.png" [ref=e110] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:EB1911_Racquets_-_The_Racquet.png
+                    - img "EB1911 Racquets - The Racquet.png"
+                  - link "Badmin 3.jpg" [ref=e111] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badmin_3.jpg
+                    - img "Badmin 3.jpg"
+                  - link "レイヤード久屋大通公園にあるレクレーション設備 05.jpg" [ref=e112] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%E3%83%89%E4%B9%85%E5%B1%8B%E5%A4%A7%E9%80%9A%E5%85%AC%E5%9C%92%E3%81%AB%E3%81%82%E3%82%8B%E3%83%AC%E3%82%AF%E3%83%AC%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E8%A8%AD%E5%82%99_05.jpg
+                    - img "レイヤード久屋大通公園にあるレクレーション設備 05.jpg"
+                  - link "SAKURAKO plays badminton! (26993043064).jpg" [ref=e113] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:SAKURAKO_plays_badminton!_(26993043064).jpg
+                    - img "SAKURAKO plays badminton! (26993043064).jpg"
+                  - link "HK SW 上環 Sheung Wan 皇后大道中 Queen's Road Central July 2022 Px3 23.jpg" [ref=e114] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:HK_SW_%E4%B8%8A%E7%92%B0_Sheung_Wan_%E7%9A%87%E5%90%8E%E5%A4%A7%E9%81%93%E4%B8%AD_Queen%27s_Road_Central_July_2022_Px3_23.jpg
+                    - img "HK SW 上環 Sheung Wan 皇后大道中 Queen's Road Central July 2022 Px3 23.jpg"
+                  - link "2011 US Masters International - Miami lakes - must be Colin Taylor on this court (15955651447).jpg" [ref=e115] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:2011_US_Masters_International_-_Miami_lakes_-_must_be_Colin_Taylor_on_this_court_(15955651447).jpg
+                    - img "2011 US Masters International - Miami lakes - must be Colin Taylor on this court (15955651447).jpg"
+                  - link "Badminton-gef8652e4a 1920.jpg" [ref=e116] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton-gef8652e4a_1920.jpg
+                    - img "Badminton-gef8652e4a 1920.jpg"
+                  - link "HK Sheung Wan Queen's Road Central shop sports tools December 2021 SS2 02.jpg" [ref=e117] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:HK_Sheung_Wan_Queen%27s_Road_Central_shop_sports_tools_December_2021_SS2_02.jpg
+                    - img "HK Sheung Wan Queen's Road Central shop sports tools December 2021 SS2 02.jpg"
+                  - link "Badminton-1428046.jpg" [ref=e118] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton-1428046.jpg
+                    - img "Badminton-1428046.jpg"
+                  - link "スポーツショップ『ハセガワ』店内 (5536402584).jpg" [ref=e119] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:%E3%82%B9%E3%83%9D%E3%83%BC%E3%83%84%E3%82%B7%E3%83%A7%E3%83%83%E3%83%97%E3%80%8E%E3%83%8F%E3%82%BB%E3%82%AC%E3%83%AF%E3%80%8F%E5%BA%97%E5%86%85_(5536402584).jpg
+                    - img "スポーツショップ『ハセガワ』店内 (5536402584).jpg"
+                  - link "HK Sheung Wan Queen's Road Central shop sports tools December 2021 SS2 01.jpg" [ref=e120] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:HK_Sheung_Wan_Queen%27s_Road_Central_shop_sports_tools_December_2021_SS2_01.jpg
+                    - img "HK Sheung Wan Queen's Road Central shop sports tools December 2021 SS2 01.jpg"
+                  - link "Rackets - panoramio.jpg" [ref=e121] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Rackets_-_panoramio.jpg
+                    - img "Rackets - panoramio.jpg"
+                  - link "Lin Dan Exclusive II Collection.jpg" [ref=e122] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Lin_Dan_Exclusive_II_Collection.jpg
+                    - img "Lin Dan Exclusive II Collection.jpg"
+                  - link "SAKURAKO plays badminton! (27326093040).jpg" [ref=e123] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:SAKURAKO_plays_badminton!_(27326093040).jpg
+                    - img "SAKURAKO plays badminton! (27326093040).jpg"
+                  - link "HK CWB 銅鑼灣 Causeway Bay Great George Street The Park Lane shopping mall Decathlon Sports Store February 2021 SS2 03.jpg" [ref=e124] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:HK_CWB_%E9%8A%85%E9%91%BC%E7%81%A3_Causeway_Bay_Great_George_Street_The_Park_Lane_shopping_mall_Decathlon_Sports_Store_February_2021_SS2_03.jpg
+                    - img "HK CWB 銅鑼灣 Causeway Bay Great George Street The Park Lane shopping mall Decathlon Sports Store February 2021 SS2 03.jpg"
+                  - link "Badminton Undergrip Flat.jpg" [ref=e125] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_Undergrip_Flat.jpg
+                    - img "Badminton Undergrip Flat.jpg"
+                  - link "Badminton 1.jpg" [ref=e126] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_1.jpg
+                    - img "Badminton 1.jpg"
+                  - link "Silly rackets only. (218853699).jpg" [ref=e127] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Silly_rackets_only._(218853699).jpg
+                    - img "Silly rackets only. (218853699).jpg"
+                  - link "Recordage badminton.JPG" [ref=e128] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Recordage_badminton.JPG
+                    - img "Recordage badminton.JPG"
+                  - link "Li-Ning 李宁有限公司 Recordage de raquette de badminton men at workF.jpg" [ref=e129] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Li-Ning_%E6%9D%8E%E5%AE%81%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8_Recordage_de_raquette_de_badminton_men_at_workF.jpg
+                    - img "Li-Ning 李宁有限公司 Recordage de raquette de badminton men at workF.jpg"
+                  - link "Tabletennis.jpg" [ref=e130] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Tabletennis.jpg
+                    - img "Tabletennis.jpg"
+                  - link "Village badminton.jpg" [ref=e131] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Village_badminton.jpg
+                    - img "Village badminton.jpg"
+                - button "Load more" [ref=e133]
+                - button "Load more" [ref=e136] [cursor=pointer]
+    - contentinfo [ref=e138]:
+      - list:
+        - listitem [ref=e139]:
+          - link "Privacy policy" [ref=e140] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy
+        - listitem [ref=e141]:
+          - link "About Wikimedia Commons" [ref=e142] [cursor=pointer]:
+            - /url: /wiki/Commons:Welcome
+        - listitem [ref=e143]:
+          - link "Disclaimers" [ref=e144] [cursor=pointer]:
+            - /url: /wiki/Commons:General_disclaimer
+        - listitem [ref=e145]:
+          - link "Legal & safety contacts" [ref=e146] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Legal:Wikimedia_Foundation_Legal_and_Safety_Contact_Information
+        - listitem [ref=e147]:
+          - link "Code of Conduct" [ref=e148] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Universal_Code_of_Conduct
+        - listitem [ref=e149]:
+          - link "Developers" [ref=e150] [cursor=pointer]:
+            - /url: https://developer.wikimedia.org
+        - listitem [ref=e151]:
+          - link "Statistics" [ref=e152] [cursor=pointer]:
+            - /url: https://stats.wikimedia.org/#/commons.wikimedia.org
+        - listitem [ref=e153]:
+          - link "Cookie statement" [ref=e154] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Cookie_statement
+        - listitem [ref=e155]:
+          - link "Mobile view" [ref=e156] [cursor=pointer]:
+            - /url: //commons.wikimedia.org/w/index.php?title=Special:MediaSearch&search=badminton+racket&type=image&mobileaction=toggle_view_mobile
+      - list [ref=e157]:
+        - listitem [ref=e158]:
+          - link [ref=e159] [cursor=pointer]:
+            - /url: https://www.wikimedia.org/
+            - img "Wikimedia Foundation" [ref=e161]
+        - listitem [ref=e162]:
+          - link [ref=e163] [cursor=pointer]:
+            - /url: https://www.mediawiki.org/
+            - img "Powered by MediaWiki" [ref=e165]
+  - generic [ref=e166]:
+    - list

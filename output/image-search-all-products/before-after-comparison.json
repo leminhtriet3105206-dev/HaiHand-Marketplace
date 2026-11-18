@@ -1,0 +1,57 @@
+{
+  "comparableCases": 35,
+  "before": {
+    "cases": 35,
+    "targetHits": 26,
+    "returnedCards": 39,
+    "empty": 4
+  },
+  "after": {
+    "cases": 35,
+    "targetHits": 24,
+    "returnedCards": 35,
+    "empty": 6
+  },
+  "changed": [
+    {
+      "id": "69d86ef5a937bd538ab31d67",
+      "title": "wave",
+      "beforeIds": [
+        "69d86ef5a937bd538ab31d67",
+        "69d4c326612f527c57572c56"
+      ],
+      "afterIds": [
+        "69d86ef5a937bd538ab31d67"
+      ]
+    },
+    {
+      "id": "69dcbe50295b6e59ef3af603",
+      "title": "Trục lăn xả vải Kim loại 2m",
+      "beforeIds": [
+        "69dcbe50295b6e59ef3af603"
+      ],
+      "afterIds": []
+    },
+    {
+      "id": "69dcc0c7295b6e59ef3af97d",
+      "title": "Nhà đẹp Hxh thông Gò dầu ngay Tân Sơn Nhì 4.2x12.5 -3.5 tấm chỉ 7,5 tỷ",
+      "beforeIds": [
+        "69d4c326612f527c57572c56",
+        "69d86b92a937bd538ab31a30",
+        "69d86a68a937bd538ab3192b"
+      ],
+      "afterIds": [
+        "69d86b92a937bd538ab31a30",
+        "69d86a68a937bd538ab3192b"
+      ]
+    },
+    {
+      "id": "69dcc334295b6e59ef3afc9e",
+      "title": "Bàn ủi hơi nước Silver Star ES-94A",
+      "beforeIds": [
+        "69dcc334295b6e59ef3afc9e"
+      ],
+      "afterIds": []
+    }
+  ]
+}

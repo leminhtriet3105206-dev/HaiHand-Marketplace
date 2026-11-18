@@ -1,0 +1,39 @@
+{
+  "samples": 86,
+  "positives": 67,
+  "negatives": 19,
+  "currentThreshold": {
+    "threshold": 0.72,
+    "train": {
+      "tp": 51,
+      "fn": 1,
+      "tn": 1,
+      "fp": 14,
+      "balancedAccuracy": 0.5237179487179487
+    },
+    "holdout": {
+      "tp": 15,
+      "fn": 0,
+      "tn": 0,
+      "fp": 4,
+      "balancedAccuracy": 0.5
+    }
+  },
+  "candidateThreshold": {
+    "threshold": 0.8,
+    "train": {
+      "tp": 41,
+      "fn": 11,
+      "tn": 11,
+      "fp": 4,
+      "balancedAccuracy": 0.7608974358974359
+    },
+    "holdout": {
+      "tp": 11,
+      "fn": 4,
+      "tn": 3,
+      "fp": 1,
+      "balancedAccuracy": 0.7416666666666667
+    }
+  }
+}

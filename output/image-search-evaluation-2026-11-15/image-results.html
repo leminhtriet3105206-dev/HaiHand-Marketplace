@@ -1,0 +1,83 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HaiHand — Kết quả tìm sản phẩm bằng ảnh</title><style>
+  *{box-sizing:border-box}body{margin:0;background:#fffbeb;color:#1c1917;font:15px/1.5 Inter,system-ui,sans-serif}header{background:#facc15;padding:26px max(24px,calc((100vw - 1180px)/2))}h1{font-size:28px;margin:0}main{max-width:1180px;margin:auto;padding:28px 20px 60px}a{color:#a74600}table{border-collapse:collapse;width:100%;background:white;margin:16px 0 26px}th,td{text-align:left;border:1px solid #e7e5e4;padding:10px 14px}th{background:#f5f5f4}.case{background:white;border:1px solid #e7e5e4;border-radius:12px;padding:22px;margin:20px 0}.case h2{font-size:20px;margin:0 0 16px}.case h3{font-size:14px;margin:0 0 10px}.columns{display:grid;grid-template-columns:1fr 1fr 1fr;gap:22px}.query{width:100%;height:210px;object-fit:contain;background:#f5f5f4;border-radius:8px}.product{display:flex;gap:10px;border:1px solid #e7e5e4;border-left:4px solid #16a34a;border-radius:8px;padding:8px;margin:0 0 8px;min-height:70px}.product.wrong{border-left-color:#dc2626}.product img{width:72px;height:64px;object-fit:cover;border-radius:4px}.product div{display:flex;flex-direction:column;gap:2px}.product strong{font-size:12px}.product.correct strong{color:#166534}.product.wrong strong{color:#b91c1c}.product small{color:#78716c;word-break:break-all}.previous,.note{background:#f5f5f4;padding:10px 12px;border-radius:6px;margin:14px 0 0}.note{background:#fff7ed}.empty{color:#57534e}@media(max-width:760px){.columns{grid-template-columns:1fr}.query{height:180px}}
+  </style></head><body><header><h1>Kết quả tìm sản phẩm bằng hình ảnh</h1><div>HaiHand · 7 ảnh truy vấn ngoài catalog · 15/11/2026</div></header><main>
+  <p>Ảnh truy vấn được chọn thủ công từ Wikimedia Commons. “Đúng” nghĩa là ảnh và loại sản phẩm phù hợp; nhãn chưa xác thực mẫu mã hoặc tình trạng thực tế của món hàng. Đây là bộ kiểm thử nhỏ để phát hiện lỗi, không phải số đo độ chính xác chung của hệ thống.</p>
+  <p>Mỗi cột là một lần chạy. Bộ lọc cũ cũng từng đạt 5/6 ở lần thử khác, nên chênh lệch 4/6 → 5/6 ở đây chưa chứng minh mức cải thiện ổn định. Ảnh truy vấn là ảnh chụp thumbnail của trang tìm kiếm, độ phân giải thấp.</p>
+  <table><thead><tr><th>Chỉ số</th><th>Trước</th><th>Sau</th></tr></thead><tbody>
+  <tr><td>Truy vấn có ít nhất một tin đúng</td><td>4/6</td><td>5/6</td></tr>
+  <tr><td>Thẻ sản phẩm đúng</td><td>4</td><td>5</td></tr>
+  <tr><td>Thẻ sản phẩm sai</td><td>1</td><td>1</td></tr>
+  <tr><td>Trả hàng sai khi không có hàng</td><td>0/1</td><td>0/1</td></tr>
+</tbody></table>
+  <p><b>Vấn đề dữ liệu:</b> tin mũ bảo hiểm xe đạp có ảnh người lái xe máy; tin Twitter Mantis ghi xe đạp địa hình nhưng ảnh là xe đường phố. Cần ảnh thật đúng sản phẩm và lập chỉ mục lại trước khi dùng hai tin đó để huấn luyện.</p>
+  <section class="case">
+    <h2>1. tìm gà đá</h2>
+    <div class="columns">
+      <div><h3>Ảnh truy vấn</h3><img class="query" src="images/rooster.png" alt="tìm gà đá"><p><a href="https://commons.wikimedia.org/wiki/File:A_rooster_in_nature.jpg">Nguồn ảnh</a></p></div>
+      <div><h3>Tin đúng theo nhãn</h3><div class="product correct"><img src="images/catalog-69de23e17a871f2c9e8f5084.jpg" alt="Ảnh tin gà đá "><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/69de23e17a871f2c9e8f5084">gà đá </a><small>69de23e17a871f2c9e8f5084</small></div></div></div>
+      <div><h3>Kết quả sau chỉnh sửa</h3><div class="product correct"><img src="images/catalog-69de23e17a871f2c9e8f5084.jpg" alt="Ảnh tin gà đá "><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/69de23e17a871f2c9e8f5084">gà đá </a><small>69de23e17a871f2c9e8f5084</small></div></div></div>
+    </div>
+    <p class="previous"><b>Trước chỉnh sửa:</b> gà đá </p>
+    
+  </section>
+<section class="case">
+    <h2>2. tìm chào mào</h2>
+    <div class="columns">
+      <div><h3>Ảnh truy vấn</h3><img class="query" src="images/bulbul.png" alt="tìm chào mào"><p><a href="https://commons.wikimedia.org/wiki/File:Red-whiskered_bulbul_(Pycnonotus_jocosus)_Reunion.jpg">Nguồn ảnh</a></p></div>
+      <div><h3>Tin đúng theo nhãn</h3><div class="product correct"><img src="images/catalog-69dcb897e8f5f531d474e90e.jpg" alt="Ảnh tin chào mào đại bàng"><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/69dcb897e8f5f531d474e90e">chào mào đại bàng</a><small>69dcb897e8f5f531d474e90e</small></div></div></div>
+      <div><h3>Kết quả sau chỉnh sửa</h3><div class="product correct"><img src="images/catalog-69dcb897e8f5f531d474e90e.jpg" alt="Ảnh tin chào mào đại bàng"><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/69dcb897e8f5f531d474e90e">chào mào đại bàng</a><small>69dcb897e8f5f531d474e90e</small></div></div></div>
+    </div>
+    <p class="previous"><b>Trước chỉnh sửa:</b> chào mào đại bàng</p>
+    
+  </section>
+<section class="case">
+    <h2>3. tìm xe đạp địa hình</h2>
+    <div class="columns">
+      <div><h3>Ảnh truy vấn</h3><img class="query" src="images/mountain-bike.png" alt="tìm xe đạp địa hình"><p><a href="https://commons.wikimedia.org/wiki/File:Bulls_Wild_Cup_1_(Modell_2010)_20100814.jpg">Nguồn ảnh</a></p></div>
+      <div><h3>Tin đúng theo nhãn</h3><div class="product correct"><img src="images/catalog-69de26cc7a871f2c9e8f53b9.jpg" alt="Ảnh tin xe đạp địa hình "><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/69de26cc7a871f2c9e8f53b9">xe đạp địa hình </a><small>69de26cc7a871f2c9e8f53b9</small></div></div></div>
+      <div><h3>Kết quả sau chỉnh sửa</h3><div class="product correct"><img src="images/catalog-69de26cc7a871f2c9e8f53b9.jpg" alt="Ảnh tin xe đạp địa hình "><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/69de26cc7a871f2c9e8f53b9">xe đạp địa hình </a><small>69de26cc7a871f2c9e8f53b9</small></div></div><div class="product wrong"><img src="images/catalog-6af17dbc2e06332d9bb40e8a.jpg" alt="Ảnh tin Xe đạp địa hình thể thao Twitter Mantis khung nhôm phanh đĩa dầu"><div><strong>✕ Sai</strong><a href="http://localhost:3000/post/6af17dbc2e06332d9bb40e8a">Xe đạp địa hình thể thao Twitter Mantis khung nhôm phanh đĩa dầu</a><small>6af17dbc2e06332d9bb40e8a</small></div></div></div>
+    </div>
+    <p class="previous"><b>Trước chỉnh sửa:</b> xe đạp địa hình ; Xe đạp địa hình thể thao Twitter Mantis khung nhôm phanh đĩa dầu</p>
+    <p class="note"><b>Cần xem dữ liệu:</b> Tin Twitter Mantis ghi xe đạp địa hình nhưng ảnh catalog là xe đạp đường phố, nên không tính là khớp ảnh.</p>
+  </section>
+<section class="case">
+    <h2>4. tìm mũ bảo hiểm xe đạp</h2>
+    <div class="columns">
+      <div><h3>Ảnh truy vấn</h3><img class="query" src="images/bicycle-helmet.png" alt="tìm mũ bảo hiểm xe đạp"><p><a href="https://commons.wikimedia.org/wiki/File:Bicycle_white_helmet_from_bikemate_3.jpg">Nguồn ảnh</a></p></div>
+      <div><h3>Tin đúng theo nhãn</h3><div class="product correct"><img src="images/catalog-6af173a0c91caafe16621f03.jpg" alt="Ảnh tin Mũ bảo hiểm xe đạp thể thao thoáng khí siêu nhẹ"><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/6af173a0c91caafe16621f03">Mũ bảo hiểm xe đạp thể thao thoáng khí siêu nhẹ</a><small>6af173a0c91caafe16621f03</small></div></div></div>
+      <div><h3>Kết quả sau chỉnh sửa</h3><p class="empty">Không trả sản phẩm — bỏ sót</p></div>
+    </div>
+    <p class="previous"><b>Trước chỉnh sửa:</b> Không có</p>
+    <p class="note"><b>Cần xem dữ liệu:</b> Ảnh catalog của tin mũ bảo hiểm xe đạp là người lái xe máy; cần sửa ảnh tin trước khi dùng làm nhãn train.</p>
+  </section>
+<section class="case">
+    <h2>5. tìm vợt cầu lông</h2>
+    <div class="columns">
+      <div><h3>Ảnh truy vấn</h3><img class="query" src="images/badminton-racket.png" alt="tìm vợt cầu lông"><p><a href="https://commons.wikimedia.org/wiki/File:Badminton_racket.jpg">Nguồn ảnh</a></p></div>
+      <div><h3>Tin đúng theo nhãn</h3><div class="product correct"><img src="images/catalog-6af17dbb2e06332d9bb40e89.jpg" alt="Ảnh tin Vợt cầu lông Yonex Astrox 88D Pro chính hãng đan sẵn cước BG65"><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/6af17dbb2e06332d9bb40e89">Vợt cầu lông Yonex Astrox 88D Pro chính hãng đan sẵn cước BG65</a><small>6af17dbb2e06332d9bb40e89</small></div></div></div>
+      <div><h3>Kết quả sau chỉnh sửa</h3><div class="product correct"><img src="images/catalog-6af17dbb2e06332d9bb40e89.jpg" alt="Ảnh tin Vợt cầu lông Yonex Astrox 88D Pro chính hãng đan sẵn cước BG65"><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/6af17dbb2e06332d9bb40e89">Vợt cầu lông Yonex Astrox 88D Pro chính hãng đan sẵn cước BG65</a><small>6af17dbb2e06332d9bb40e89</small></div></div></div>
+    </div>
+    <p class="previous"><b>Trước chỉnh sửa:</b> Không có</p>
+    
+  </section>
+<section class="case">
+    <h2>6. tìm thảm tập yoga</h2>
+    <div class="columns">
+      <div><h3>Ảnh truy vấn</h3><img class="query" src="images/yoga-mat.png" alt="tìm thảm tập yoga"><p><a href="https://commons.wikimedia.org/wiki/File:Yoga_mat.jpg">Nguồn ảnh</a></p></div>
+      <div><h3>Tin đúng theo nhãn</h3><div class="product correct"><img src="images/catalog-6af17dbc2e06332d9bb40e8e.jpg" alt="Ảnh tin Thảm tập Yoga định tuyến TPE chống trượt 8mm cao cấp kèm túi đựng"><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/6af17dbc2e06332d9bb40e8e">Thảm tập Yoga định tuyến TPE chống trượt 8mm cao cấp kèm túi đựng</a><small>6af17dbc2e06332d9bb40e8e</small></div></div></div>
+      <div><h3>Kết quả sau chỉnh sửa</h3><div class="product correct"><img src="images/catalog-6af17dbc2e06332d9bb40e8e.jpg" alt="Ảnh tin Thảm tập Yoga định tuyến TPE chống trượt 8mm cao cấp kèm túi đựng"><div><strong>✓ Đúng</strong><a href="http://localhost:3000/post/6af17dbc2e06332d9bb40e8e">Thảm tập Yoga định tuyến TPE chống trượt 8mm cao cấp kèm túi đựng</a><small>6af17dbc2e06332d9bb40e8e</small></div></div></div>
+    </div>
+    <p class="previous"><b>Trước chỉnh sửa:</b> Thảm tập Yoga định tuyến TPE chống trượt 8mm cao cấp kèm túi đựng</p>
+    
+  </section>
+<section class="case">
+    <h2>7. tìm máy bay</h2>
+    <div class="columns">
+      <div><h3>Ảnh truy vấn</h3><img class="query" src="images/airplanes.png" alt="tìm máy bay"><p><a href="https://commons.wikimedia.org/wiki/File:Frecce_Tricolori_-_Aire_75_-_01.jpg">Nguồn ảnh</a></p></div>
+      <div><h3>Tin đúng theo nhãn</h3><p>Không có sản phẩm phù hợp</p></div>
+      <div><h3>Kết quả sau chỉnh sửa</h3><p class="empty">Không trả sản phẩm — đúng vì không có hàng</p></div>
+    </div>
+    <p class="previous"><b>Trước chỉnh sửa:</b> Không có</p>
+    
+  </section>
+  </main></body></html>

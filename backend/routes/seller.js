@@ -3,7 +3,7 @@ const { protect, isSeller, isAdmin } = require('../middleware/auth');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const { Post } = require('../models/Product');
-const { indexProductImage } = require('../services/imageEmbeddingService');
+const { refreshProductSearch } = require('../services/chatbotService');
 const {
   sanitizeUser,
   canonicalStatus,
@@ -297,11 +297,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       });
       await product.save();
 
-      try {
-        await indexProductImage(product);
-      } catch (error) {
-        console.warn(`Không tạo được image embedding cho ${product._id}: ${error.message}`);
-      }
+      await refreshProductSearch(product);
 
       // Trigger 1: When a user/seller creates a new Product/Post (and auto-approve is false), automatically create a notification for Admins
       if (!isAutoApprove && postStatus === 'pending') {
@@ -365,6 +361,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       }
       if (Number(product.stockQuantity) <= 0) product.status = 'out_of_stock';
       await product.save();
+      await refreshProductSearch(product, Boolean(req.files?.length));
       res.json({ message: 'Đã cập nhật sản phẩm', product });
     } catch (error) {
       res.status(500).json({ message: 'Lỗi cập nhật sản phẩm' });

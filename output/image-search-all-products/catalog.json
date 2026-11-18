@@ -1,0 +1,1920 @@
+[
+  {
+    "id": "69d371acb75cabcfbf8571a2",
+    "title": "d ạdaoidkapdla",
+    "category": "Điện tử & Công nghệ",
+    "description": "ăFwfF",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775464876/HaiHand_Images/a74x2yvccu8kctkh6yk3.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775464875/HaiHand_Images/c86k05klysa07yeptxoa.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775464875/HaiHand_Images/b0eurwr3xcedyf6bdgiy.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775464875/HaiHand_Images/pbdiwqtzguuvp9otqx6p.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775464874/HaiHand_Images/v6iahdsroaqudbcpu1na.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775464876/HaiHand_Images/a74x2yvccu8kctkh6yk3.jpg",
+    "imageCount": 5,
+    "embeddedImageCount": 5,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d4c326612f527c57572c56",
+    "title": "qwfqfq",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "eqeqrq",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775551268/HaiHand_Images/t7bk7othakiyazsipy32.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775551268/HaiHand_Images/urcwuzfevt4u1sls9zcs.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775551269/HaiHand_Images/dbdlyaosojut2nfsfrgb.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775551269/HaiHand_Images/lwvppuujwzrn6qfelq5q.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775551268/HaiHand_Images/lhf4yodhwnlxdwcuohro.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775551268/HaiHand_Images/t7bk7othakiyazsipy32.jpg",
+    "imageCount": 5,
+    "embeddedImageCount": 5,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d86a68a937bd538ab3192b",
+    "title": "nhà cấp 4 ",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": " cách 200m là tới  chợ gần trung tâm thành phố",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775790697/HaiHand_Images/xjoqiwzhbqnxdw6l5sp0.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775790697/HaiHand_Images/xjoqiwzhbqnxdw6l5sp0.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d86af9a937bd538ab319b2",
+    "title": "chung cư cao cấp ",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "2 phòng 2 vệ sịnh ",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775790841/HaiHand_Images/extihxqvbbzvzsuaovqp.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775790841/HaiHand_Images/extihxqvbbzvzsuaovqp.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d86b92a937bd538ab31a30",
+    "title": "biệt thự ",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "gần biển , trung tâm thành phố ",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775790995/HaiHand_Images/j7ffo5bhfkmiaxohm9ra.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775790995/HaiHand_Images/j7ffo5bhfkmiaxohm9ra.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d86cb9a937bd538ab31b12",
+    "title": "xe sh125i ",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "màu trắng\r\n",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775791285/HaiHand_Images/jfxgw7lqqnzra9rcpkrr.png"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775791285/HaiHand_Images/jfxgw7lqqnzra9rcpkrr.png",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d86ef5a937bd538ab31d67",
+    "title": "wave",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "sddvav",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775791858/HaiHand_Images/ccz95aglzk2iwyig1vm7.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775791859/HaiHand_Images/e0k8ldhctxohgxbposef.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775791859/HaiHand_Images/gka7mnkh63hnp6u9sn6n.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775791859/HaiHand_Images/o3hqqy6bd242ztxoipf1.png"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775791858/HaiHand_Images/ccz95aglzk2iwyig1vm7.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d86fcaa937bd538ab31df7",
+    "title": "bút bi thiên long",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "eagqaf",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792071/HaiHand_Images/cleqeojhad37aoeciy2z.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792072/HaiHand_Images/xnj3mxgc7dranlkuhz3n.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792073/HaiHand_Images/j90vpwu3vxqu98nyoclc.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792072/HaiHand_Images/xgdyxkbervbm7yxtv1dh.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792074/HaiHand_Images/tfszu1hbnp6jjrwyx9jz.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775792071/HaiHand_Images/cleqeojhad37aoeciy2z.jpg",
+    "imageCount": 5,
+    "embeddedImageCount": 5,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d87073a937bd538ab31e7f",
+    "title": "pet ",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "cavfa",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792240/HaiHand_Images/vgdgev5wn5hgfwoffkfh.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792241/HaiHand_Images/bryzzhyomr6g7gfpjs7o.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792242/HaiHand_Images/f7lbpfv0uiwmeuyxwpyy.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792242/HaiHand_Images/twbdicb5d4czbsuvz1wa.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792243/HaiHand_Images/tunwjvnzpddnkz427on9.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775792240/HaiHand_Images/vgdgev5wn5hgfwoffkfh.jpg",
+    "imageCount": 5,
+    "embeddedImageCount": 5,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d870f5a937bd538ab31eeb",
+    "title": "đèn ngủ ",
+    "category": "Điện tử & Công nghệ",
+    "description": "cCcSC",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792368/HaiHand_Images/w0huj9q7j8q9obhkmtvl.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792367/HaiHand_Images/q19zv6mfwszhkwdo9e60.webp",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792369/HaiHand_Images/bgetuhexpgrgmfcyr1e6.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792370/HaiHand_Images/f6lxzraknchhvpv1s76c.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792371/HaiHand_Images/iql5g6fm6mo1igrpiw8y.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775792368/HaiHand_Images/w0huj9q7j8q9obhkmtvl.png",
+    "imageCount": 5,
+    "embeddedImageCount": 5,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d871c7a937bd538ab31f93",
+    "title": "bàn học lười",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "làm bằng bột cưa ",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792582/HaiHand_Images/bhl76rbwd5woxzirep14.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792582/HaiHand_Images/guu2fufeoajtakjkc7m4.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792583/HaiHand_Images/wl7w2c82bz1xyrzbq7r0.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775792582/HaiHand_Images/bhl76rbwd5woxzirep14.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d87254a937bd538ab31ffb",
+    "title": "chuột máy tính không dây ",
+    "category": "Điện tử & Công nghệ",
+    "description": "scav",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792723/HaiHand_Images/fb5upbruxtiftlkqo0fl.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792723/HaiHand_Images/bbpma1nhasfui80imdcx.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792723/HaiHand_Images/ozkhfijlubolgqetlptu.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792723/HaiHand_Images/xfuxmaup3clnhdpzv9s1.png"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775792723/HaiHand_Images/fb5upbruxtiftlkqo0fl.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d872e9a937bd538ab3206b",
+    "title": "bàn phím không dây ",
+    "category": "Điện tử & Công nghệ",
+    "description": "davesv",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792871/HaiHand_Images/meyg1pm719fu2pptipdf.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792873/HaiHand_Images/dc5mztkhrkzwyclczgis.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775792871/HaiHand_Images/meyg1pm719fu2pptipdf.jpg",
+    "imageCount": 2,
+    "embeddedImageCount": 2,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d87366a937bd538ab320db",
+    "title": "máy tính casio580vn",
+    "category": "Điện tử & Công nghệ",
+    "description": "chỉ sử dụng một lần cần bán ",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775792996/HaiHand_Images/gdmqra3zprzvliyig22n.png"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775792996/HaiHand_Images/gdmqra3zprzvliyig22n.png",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d87411a937bd538ab32193",
+    "title": "đồng hồ 3 kim ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "fBSF",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793169/HaiHand_Images/aj0gzcesfdb4g4vugehd.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775793169/HaiHand_Images/aj0gzcesfdb4g4vugehd.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d8750fa937bd538ab32274",
+    "title": "đồng hồ treo tường ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "scascwa",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793423/HaiHand_Images/ksjrcvgwa7ynlne6dskb.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793423/HaiHand_Images/smmhp24j2cy75rkjzisi.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775793423/HaiHand_Images/ksjrcvgwa7ynlne6dskb.jpg",
+    "imageCount": 2,
+    "embeddedImageCount": 2,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d875b2a937bd538ab32315",
+    "title": "nồi cơm điện ",
+    "category": "Điện tử & Công nghệ",
+    "description": "ad",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793584/HaiHand_Images/p0pxlmsasrssj62pa98a.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793586/HaiHand_Images/hn41moulyt9xgyqjkzo9.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793586/HaiHand_Images/e1qhsjaghjkiaesnzfet.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793585/HaiHand_Images/epqunfhhg3sm9gjy1ixs.png"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775793584/HaiHand_Images/p0pxlmsasrssj62pa98a.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d87648a937bd538ab3237f",
+    "title": "máy quạt ",
+    "category": "Điện tử & Công nghệ",
+    "description": "acqac",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793736/HaiHand_Images/mfmuwycsgwi19uoxklck.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793736/HaiHand_Images/xgnsdemkym40rlzql4le.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793736/HaiHand_Images/ttmzdahugi98avatrqsy.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775793736/HaiHand_Images/mfmuwycsgwi19uoxklck.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d876d9a937bd538ab323ed",
+    "title": "máy quạt cầm tay ",
+    "category": "Điện tử & Công nghệ",
+    "description": "csaca",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793881/HaiHand_Images/rgcf3y47hr4orcn1nz7r.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793880/HaiHand_Images/cfgesdqysxiqm4qvyb4c.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775793881/HaiHand_Images/wxw6pnxtf8ijooakfev0.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775793881/HaiHand_Images/rgcf3y47hr4orcn1nz7r.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d877b4a937bd538ab32501",
+    "title": "dép tổ ong ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "avdacv",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794094/HaiHand_Images/lmx1i9h5jqxhv0lneqzq.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794097/HaiHand_Images/kzu3jx8gn1owzowy7fot.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794097/HaiHand_Images/xpzbsds6eq5jqzazuekk.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794099/HaiHand_Images/d3dxq0d8xhvopgsd7wn6.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775794094/HaiHand_Images/lmx1i9h5jqxhv0lneqzq.png",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d87895a937bd538ab325d8",
+    "title": "giày sandal nữ cao cấp ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "chjacjhc",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794325/HaiHand_Images/jna98ymeqwomrnvlk764.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794325/HaiHand_Images/nuwfaoaoyeot4nyymho2.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794325/HaiHand_Images/gi3lbgeeewm6tzajzglu.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794325/HaiHand_Images/i05cvgfgwm7xmnqcq1t0.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775794325/HaiHand_Images/jna98ymeqwomrnvlk764.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69d87928a937bd538ab32650",
+    "title": "giày cao gót",
+    "category": "Thời trang & Phụ kiện",
+    "description": "dCAC",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794470/HaiHand_Images/oinlvos2xxnct830ejex.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794470/HaiHand_Images/yf9vdzwf9ntoumwqcn7o.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1775794471/HaiHand_Images/yjm31pllnr9dwxnzjzgn.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1775794470/HaiHand_Images/oinlvos2xxnct830ejex.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dba90473b1b1204ed9bf5c",
+    "title": "dép tổ ong ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "36 đôi dép \r\nsize 3-6 \r\ndép mới tinh",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776003327/HaiHand_Images/tctefme8ncki8v5ftgq7.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776003328/HaiHand_Images/n8ouunkt7ewxc3trgmio.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776003329/HaiHand_Images/agqkb0t4g2ijih0bhmuh.png"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776003327/HaiHand_Images/tctefme8ncki8v5ftgq7.png",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcabfce8f5f531d474daf1",
+    "title": "đồ ngủ nữ ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "eds",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776069624/HaiHand_Images/idsiancsen9rymifahkw.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776069624/HaiHand_Images/ek5gmr4xxfjm1kba1ewu.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776069625/HaiHand_Images/pjoshxqzsaxz4hl6gsqv.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776069624/HaiHand_Images/ra2hptalt9qz9nwseioi.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776069624/HaiHand_Images/idsiancsen9rymifahkw.png",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcad5de8f5f531d474dc87",
+    "title": "áo sơ mi tay dài nam ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "dfq",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776069979/HaiHand_Images/r5b7d2vql5ufmdbg6lig.gif",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776069980/HaiHand_Images/yvrrbjhbxeytlxlv0vgm.gif"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776069979/HaiHand_Images/r5b7d2vql5ufmdbg6lig.gif",
+    "imageCount": 2,
+    "embeddedImageCount": 2,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcae1be8f5f531d474dd03",
+    "title": "thắc lưng da cá  sấu ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "yavbsha",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070168/HaiHand_Images/thd1utiylczlltvfjen1.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070169/HaiHand_Images/iqwqiw3ra92hhn3jx3lq.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070169/HaiHand_Images/okxnbryzvv30kjewvwvt.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776070168/HaiHand_Images/thd1utiylczlltvfjen1.png",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcaeffe8f5f531d474de4c",
+    "title": "dép tông lào ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "adfdsf",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070398/HaiHand_Images/rfhyrchbdutbkayo7cjv.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070398/HaiHand_Images/cc8zogtspdrs6p0oltsl.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776070398/HaiHand_Images/rfhyrchbdutbkayo7cjv.jpg",
+    "imageCount": 2,
+    "embeddedImageCount": 2,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcafa1e8f5f531d474deba",
+    "title": "đầm ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "adv",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070555/HaiHand_Images/dvnneehapb1r9fqzgevb.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070556/HaiHand_Images/xcbivjkl91frmehybgjx.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070557/HaiHand_Images/qflhe3amkrifinai76xe.png"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776070555/HaiHand_Images/dvnneehapb1r9fqzgevb.png",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb006e8f5f531d474df1c",
+    "title": "áo thun trơn ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "ưetfuay\r\n",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070657/HaiHand_Images/htyyhbgti9is8irer5gk.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070658/HaiHand_Images/psfrk6pesiwjgdixj7eq.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070658/HaiHand_Images/djufma2usak1oubp2vuc.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776070657/HaiHand_Images/htyyhbgti9is8irer5gk.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb078e8f5f531d474df80",
+    "title": "quần tây nam đủ màu sắc ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "vav",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070772/HaiHand_Images/sdaqdsbfo8zjxtcwpols.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070774/HaiHand_Images/vhkpqv1myi15bu8bxkbt.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070773/HaiHand_Images/frs75oznsvyvie0lz1xg.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070775/HaiHand_Images/favuyyx9hbf1rxwiv4vi.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776070772/HaiHand_Images/sdaqdsbfo8zjxtcwpols.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb12ae8f5f531d474e085",
+    "title": "kẹp tóc nữ ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "avgigv",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070953/HaiHand_Images/rkciiwbezdngw0jhab6p.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070954/HaiHand_Images/pgaeq8pl7ymm0wtle54t.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776070954/HaiHand_Images/pccniudof0s29wrlfltz.webp"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776070953/HaiHand_Images/rkciiwbezdngw0jhab6p.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb1d9e8f5f531d474e101",
+    "title": "gọng kính 0 độ ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "xzv",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776071126/HaiHand_Images/nllzknuitfat1turyxiq.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776071128/HaiHand_Images/rksnxqhef9higkdtb9t5.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776071128/HaiHand_Images/khgpfwlhrctvktckavoo.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776071126/HaiHand_Images/nllzknuitfat1turyxiq.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb263e8f5f531d474e18d",
+    "title": "VF3 cũ ",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "xe lướt dưới 1 vạn km",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776071266/HaiHand_Images/jy2qnx8wrpc3oylxax0a.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776071266/HaiHand_Images/jy2qnx8wrpc3oylxax0a.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb3abe8f5f531d474e373",
+    "title": "Bonsai nhỏ kiểng",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Đảm bảo ko gãy rụng, giao hàng tận nơi 24h\r\n",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776071594/HaiHand_Images/t0ciisvy2fjkhbyhvvvi.webp",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776071594/HaiHand_Images/gfhhfcnmsryosyfqlzbh.webp"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776071594/HaiHand_Images/t0ciisvy2fjkhbyhvvvi.webp",
+    "imageCount": 2,
+    "embeddedImageCount": 2,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb45ee8f5f531d474e3e7",
+    "title": "nón full face 99%",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "Nón sạch, như mới",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776071774/HaiHand_Images/mt0rot126bd68ccefg7h.webp"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776071774/HaiHand_Images/mt0rot126bd68ccefg7h.webp",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb4e6e8f5f531d474e45d",
+    "title": "tủ lạnh panasonic 120l ",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Tủ còn mới, cam kết giữ lạnh đầy đủ",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776071909/HaiHand_Images/qseyus9wn3agpnewt8b3.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776071909/HaiHand_Images/qseyus9wn3agpnewt8b3.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb551e8f5f531d474e4c5",
+    "title": "gạt tàn điện tử hút mùi ",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "hàng new 99% nhập khẩu campuchia",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776072016/HaiHand_Images/aocvwrehfwbuifjng0nj.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776072016/HaiHand_Images/aocvwrehfwbuifjng0nj.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb5e5e8f5f531d474e535",
+    "title": "sofa cũ màu xám lông chuột",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "mới dùng 1 tháng, do không hợp nhu cầu nên đổi",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776072165/HaiHand_Images/xem6ogjhho7cnjewqqxx.webp"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776072165/HaiHand_Images/xem6ogjhho7cnjewqqxx.webp",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb6dce8f5f531d474e73d",
+    "title": "sofa cũ",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "hàng mới dùng",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776072411/HaiHand_Images/bpi4f4uncqos3jozh0xh.webp"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776072411/HaiHand_Images/bpi4f4uncqos3jozh0xh.webp",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb7d0e8f5f531d474e844",
+    "title": "máy lạnh daikin",
+    "category": "Điện tử & Công nghệ",
+    "description": "hàng mới pass lại",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776072655/HaiHand_Images/yb6yy965x8jrobbwswgi.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776072655/HaiHand_Images/yb6yy965x8jrobbwswgi.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb897e8f5f531d474e90e",
+    "title": "chào mào đại bàng",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "3 tháng tuổi, hót hung. Do ko nuôi được nữa nên pass lại",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776072854/HaiHand_Images/ao6dgue4tjwix3jekulh.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776072854/HaiHand_Images/ao6dgue4tjwix3jekulh.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcb925e8f5f531d474ea31",
+    "title": "rồng nam mỹ green",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "1 tuổi, hiền lành quấn chủ",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776072996/HaiHand_Images/fch8msi4sbprrte7mcdt.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776072996/HaiHand_Images/fch8msi4sbprrte7mcdt.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcbe50295b6e59ef3af603",
+    "title": "Trục lăn xả vải Kim loại 2m",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Thanh lý trục lăn xả vải 1tr2\r\nKích thước 2m  trục lăn khổ 1.9m\r\nĐầu hơi rỉ sét, mua sơn về sơn lại là ok",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776074319/HaiHand_Images/lgqtryaqkiif4phi7ie4.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776074319/HaiHand_Images/lgqtryaqkiif4phi7ie4.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcc0c7295b6e59ef3af97d",
+    "title": "Nhà đẹp Hxh thông Gò dầu ngay Tân Sơn Nhì 4.2x12.5 -3.5 tấm chỉ 7,5 tỷ",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Thông tin chi tiết: Chủ cần tiền giảm 500 tr từ 8 tỷ về 7,49 tỷ còn thương lượng!\r\n- Nhà hẻm xe hơi thông gò dầu ngay gần Tân Sơn Nhì , khu dân trí cao an ninh, xung quanh đầy đủ tiện ích dịch vụ cao cấp của Q.Tân Phú!\r\n• Diện tích :4.2x12.5 m\r\n•Kết cấu : nhà đúc 2 lầu + sân thượng\r\n•Pháp lý : sổ hồ",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776074950/HaiHand_Images/qzkmvthklvhekdbtfkbo.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776074950/HaiHand_Images/ypts8szogc67qmtof4i9.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776074950/HaiHand_Images/mmfkwcmwuvqjncpiso0n.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776074950/HaiHand_Images/qzkmvthklvhekdbtfkbo.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcc199295b6e59ef3afa5c",
+    "title": "Đồng hồ đo Ampe Đen, Trắng",
+    "category": "Thời trang & Phụ kiện",
+    "description": "bán 6 cái đồng Hồ đo A hàng tháo máy còn rất đẹp như hình..giá 160k hết đống như hình bác nào cần alô.",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075160/HaiHand_Images/svwuvuiqc53g9idkvvdk.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075160/HaiHand_Images/ex7l4l2nu6m0cx0kafrd.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075161/HaiHand_Images/rmompk2hypxiqogknm08.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776075160/HaiHand_Images/svwuvuiqc53g9idkvvdk.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcc258295b6e59ef3afb4a",
+    "title": "Máy ép nhiệt Wuxi Pengda khổ 1m6",
+    "category": "Điện tử & Công nghệ",
+    "description": "[THANH LÝ] MÁY ÉP NHIỆT CUỘN ĐA NĂNG - HIỆU PENGDA (WUXIPENGDA)\r\nDo thay đổi nhu cầu sản xuất, mình cần nhượng lại máy ép nhiệt cuộn chuyên dụng cho in chuyển nhiệt vải cây, vải tấm, đồng phục... Máy đang hoạt động ổn định, bảo trì kỹ lưỡng.\r\n\r\n✨ Đặc điểm nổi bật:\r\nThương hiệu: Wuxi Pengda Science &",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075351/HaiHand_Images/n6zd1swnqcti5a7eb2jb.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075351/HaiHand_Images/whlmhszvbwmauolexbir.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075351/HaiHand_Images/jdpwmbegbhzv3w563g42.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776075351/HaiHand_Images/n6zd1swnqcti5a7eb2jb.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcc2d5295b6e59ef3afbf6",
+    "title": "Apple Watch Ultra 3 Bạc 99% Fullbox VN BH 12/26",
+    "category": "Điện tử & Công nghệ",
+    "description": "Apple watch Ultra 3 titan bạc 99% Esim \r\n\r\nMã chính hãng 🇻🇳 vna - pin 100 - BH 12/2026 \r\n\r\n💵💵💵 17tr600k Fullbox sạc zin dây thường \r\n\r\n💵💵💵 18tr900k Fullbox sạc zin dây đeo hãng",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075477/HaiHand_Images/stv3lbm9elsd8s4dxxru.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075477/HaiHand_Images/fp75oez6l2l4cojyjuq6.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075477/HaiHand_Images/vvaymfja8zhztscsensw.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075477/HaiHand_Images/d4yaq7xydzunxd2lrkvx.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075477/HaiHand_Images/kb83wcwe4lqppq0jt5og.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776075477/HaiHand_Images/stv3lbm9elsd8s4dxxru.jpg",
+    "imageCount": 5,
+    "embeddedImageCount": 5,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcc334295b6e59ef3afc9e",
+    "title": "Bàn ủi hơi nước Silver Star ES-94A",
+    "category": "Điện tử & Công nghệ",
+    "description": "Bàn ủi hơi nước.hoạt động bình thường.ko sử dụng nữa thanh lý ạ\r\n\r\n",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075571/HaiHand_Images/o4t2yldubrnznitrvvsb.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075571/HaiHand_Images/odgvsyog018ezwqr2spv.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075572/HaiHand_Images/wh27hppfqq8w89ii9wax.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776075571/HaiHand_Images/o4t2yldubrnznitrvvsb.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcc3c0295b6e59ef3afd63",
+    "title": "Loa karaoke JBL PartyBox Đen",
+    "category": "Điện tử & Công nghệ",
+    "description": "Loa karaoke JBl partybox hàng vừa khui thùng sạc đúng 2 lần (CHƯA KÍCH BẢO HÀNH)\r\nae nào cần ib liên hệ có fix nhẹ.\r\nbao test thoải mái",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075711/HaiHand_Images/novmobnleihdrx6onp4p.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075711/HaiHand_Images/zrkpcmnhubrsgi0wnikw.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075711/HaiHand_Images/e9y6gqgheaeqxcfkylmm.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075712/HaiHand_Images/uvwr3vsqgtjkihmygvwq.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776075711/HaiHand_Images/novmobnleihdrx6onp4p.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcc42f295b6e59ef3afe26",
+    "title": "máy gaming đồ họa Z170 i7 6700K GTX1070 8gb",
+    "category": "Điện tử & Công nghệ",
+    "description": "KHÁCH NÂNG CẤP DƯ THÙNG MÁY KHÁ OK\r\nĐỒ HỌA- GAME CÒN KHÁ TỐT\r\n✅ Main Giga Z170X Gaming GT xịn sò\r\n✅ I7-6700K 4C/8T upto 4.2gh\r\n✅ VGA GTX 1070 8G sơn trắng, độ led lung linh\r\n✅ Nvme 256G Giga \r\n✅ DR4 16GB bus 2400\r\n✅ Nguồn 550w công suất thực\r\n✅ Vỏ case kính sạch đẹp y hình \r\n❤CẦN ĐỔI 8 TRIỆU- BẢO HÀ",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075821/HaiHand_Images/ej2bicj8aijwyjy2tipp.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075821/HaiHand_Images/faaupqxxify3acvq4xoi.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075822/HaiHand_Images/snmfegqg5nstkadzyaeh.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075823/HaiHand_Images/p1xl4c7sn6dqxsxhcudb.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776075823/HaiHand_Images/awfpaggfk3ricl7cvmxj.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776075821/HaiHand_Images/ej2bicj8aijwyjy2tipp.jpg",
+    "imageCount": 5,
+    "embeddedImageCount": 5,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcc908295b6e59ef3b0176",
+    "title": "Đồng hồ đeo tay Tommy Hilfiger TH1790748 Nam",
+    "category": "Thời trang & Phụ kiện",
+    "description": "Đồng hồ Tommy Hilfiger TH1790748 dành cho nam, thiết kế mạnh mẽ, sang trọng.\r\n - Chất liệu thép không gỉ bền bỉ.sise 42-44 \r\n - Màu đen cá tính, dễ phối đồ.\r\n - Phù hợp đi làm, đi chơi.",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077062/HaiHand_Images/rdcd39x7xsvzzrfpl6dm.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077063/HaiHand_Images/eut6koulcu5gbo0a7dlm.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077063/HaiHand_Images/wy9i1owiyjlgh6wgh8hw.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077063/HaiHand_Images/og4pung1wpcbtyo206og.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077062/HaiHand_Images/lvzzxra7qs9tumrtorxd.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776077062/HaiHand_Images/rdcd39x7xsvzzrfpl6dm.jpg",
+    "imageCount": 5,
+    "embeddedImageCount": 5,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcc997295b6e59ef3b0272",
+    "title": "Máy hút bụi Electrolux Đỏ",
+    "category": "Điện tử & Công nghệ",
+    "description": "Máy hút bụi electrolux tình trạng máy hút không được để cho ai về sửa\r\n\r\n",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077206/HaiHand_Images/lkywiq8kkzdtzzt8bjmt.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077205/HaiHand_Images/fc0favn6debqqixzrq6v.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077206/HaiHand_Images/ok1iercmnoebggvlj3zu.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776077206/HaiHand_Images/lkywiq8kkzdtzzt8bjmt.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcca28295b6e59ef3b034e",
+    "title": "Chén làm bánh bèo Gốm sứ dư 30 cái mới",
+    "category": "Điện tử & Công nghệ",
+    "description": "Dư 30 chén làm bánh bèo mới cần bán lại 140k\r\n\r\n",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077352/HaiHand_Images/kgsqaix0ptmuu17fz1su.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776077352/HaiHand_Images/kgsqaix0ptmuu17fz1su.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dccaa8295b6e59ef3b043a",
+    "title": "Google Pixel 10 Pro Fold 256GB Monstone",
+    "category": "Điện tử & Công nghệ",
+    "description": "Pixel  nhiều người dùng cho công việc vẫn rất thích AI Google, và HDH thuần siêu mượt của nó\r\n\r\nPixel 10 Pro Fold 256gb : Màn gập, màu Monstone 99% fullbox quốc tế = 32.500k\r\n\r\nCall : *** -***\r\nĐịa chỉ :#LAKMOBILE \r\nSố 04 Thích Quảng Đức, P Phú Lợi , TP Hồ Chí Minh ( Bình Dương cũ)\r\n( ngay góc ngã b",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077480/HaiHand_Images/zdujmrlnnmwjfoaudjdm.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077480/HaiHand_Images/vacvjtkws9tjh4dpfxld.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077479/HaiHand_Images/wspepsogkmsd4msdypad.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077479/HaiHand_Images/lbh2jnydfrtcdxs1mgac.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776077480/HaiHand_Images/zdujmrlnnmwjfoaudjdm.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dccb35295b6e59ef3b0511",
+    "title": "Hyundai hd 65 đời 2009. tải 2.3Tấn thùng dài 4,6m",
+    "category": "Điện tử & Công nghệ",
+    "description": "Bán xe Hyundai hd65 đời 2009 tải 2,3 Tấn thùng kín cửa hông máy lạnh đang xài ngay chủ ký giấy ủy quyền hay mua bán ok\r\n\r\n",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077620/HaiHand_Images/vtacsgndr8xldl7lb3sd.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077619/HaiHand_Images/swv7urn0bf1nmwbcqwmg.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077619/HaiHand_Images/jy1mmaq0xztiaipt0luw.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077620/HaiHand_Images/nnod5rfzqwjoxs5bpxt1.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776077620/HaiHand_Images/vtacsgndr8xldl7lb3sd.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dccbdd295b6e59ef3b0637",
+    "title": "Bộ định tuyến WiFi TP-Link Archer C50",
+    "category": "Điện tử & Công nghệ",
+    "description": "Bộ định tuyến WiFi TP-Link Archer C50 màu trắng. \r\n - Chuẩn WiFi AC1200, tốc độ cao. \r\n - 4 anten 5dBi, phủ sóng rộng. \r\n - Thiết kế nhỏ gọn, dễ lắp đặt.",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077788/HaiHand_Images/xjid7nsxyhbqxwk6bke3.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077788/HaiHand_Images/zmz6hqwce8sveg0v3hjn.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776077789/HaiHand_Images/ls1w72uhjkfu2ysrxxmb.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776077788/HaiHand_Images/xjid7nsxyhbqxwk6bke3.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dcccdb295b6e59ef3b072d",
+    "title": "Vỏ si chất lượng 68",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Kho vỏ si ag chuyên cung cấp tất cả các dòng vỏ cho xe 2 bánh, có sĩ và lẻ luôn ạ,giao hàng tận nơi,bao đổi nếu lỗi, khách yêu cần cứ gọi để được tư vấn nhiệt tình.có hầu hết 95/100 tất cả các dòng vỏ trên thị trường ạ!\r\n*Giá vỏ xe tay ga vision,Ab,vario,click,Nouvo,hayate,Attila,lead v.v...120k/cái",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776078042/HaiHand_Images/vk8rmtbbr5zlbamdcrc9.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776078042/HaiHand_Images/ilz69vl9kbrzcydjpiyi.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776078042/HaiHand_Images/inwh1uhz7fqmxyabjxm8.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776078042/HaiHand_Images/iltdbtvpqzsu467sc0oy.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776078042/HaiHand_Images/vk8rmtbbr5zlbamdcrc9.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de058fe0f64faf1ab9ef18",
+    "title": "1241241414",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "ưqeqeqe",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776158095/HaiHand_Images/qminsmzhqttnaqz0xdyc.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776158095/HaiHand_Images/qminsmzhqttnaqz0xdyc.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de05a4e0f64faf1ab9ef56",
+    "title": "nón lưỡi trai trơn ",
+    "category": "Thời trang & Phụ kiện",
+    "description": "nxn",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776158115/HaiHand_Images/pabxu3fpy7qa3qieskgo.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776158115/HaiHand_Images/kxgyfuu4esyt8zqglgbr.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776158115/HaiHand_Images/uwjizkse6xus2a8chgpp.webp",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776158115/HaiHand_Images/fva87td0hidmfpgx7hia.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776158115/HaiHand_Images/pabxu3fpy7qa3qieskgo.jpg",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de0869e0f64faf1ab9f632",
+    "title": "kẹo mút ",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "fsbsav",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776158824/HaiHand_Images/mqpuuy0u5kxnb7vsrlsp.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776158824/HaiHand_Images/mqpuuy0u5kxnb7vsrlsp.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de0c16e0f64faf1ab9fe6e",
+    "title": "chảo chống dính",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "sfwf",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776159766/HaiHand_Images/abvt6osbjbqka5sffvst.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776159766/HaiHand_Images/hk7urw2mndmznsygz41c.jpg",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776159766/HaiHand_Images/akkmp3idi83ioyckzgjs.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776159766/HaiHand_Images/abvt6osbjbqka5sffvst.jpg",
+    "imageCount": 3,
+    "embeddedImageCount": 3,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de10ec3e4ad1438017e838",
+    "title": "bật lửa",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "sdvsv",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776161004/HaiHand_Images/uitmvombgm2gvgr9rlun.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776161004/HaiHand_Images/uitmvombgm2gvgr9rlun.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de1f1a7a871f2c9e8f4e42",
+    "title": "nón trơn đen",
+    "category": "Thời trang & Phụ kiện",
+    "description": "dvc",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776164633/HaiHand_Images/kcg7mzofqj2alzvtfbuf.webp"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776164633/HaiHand_Images/kcg7mzofqj2alzvtfbuf.webp",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de1f8d7a871f2c9e8f4ea7",
+    "title": "rồng nam mỹ ",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "vád",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776164748/HaiHand_Images/rjc5n2qcijnv7i4sg2tx.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776164748/HaiHand_Images/rjc5n2qcijnv7i4sg2tx.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de234a7a871f2c9e8f5042",
+    "title": "thức ăn cho rùa ",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "xv",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776165705/HaiHand_Images/yv0jc1o7qf83f4ds3n7c.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776165705/HaiHand_Images/yv0jc1o7qf83f4ds3n7c.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de23e17a871f2c9e8f5084",
+    "title": "gà đá ",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "ăn được 20 trận ",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776165857/HaiHand_Images/dj04awxssrurmzxyaapi.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776165857/HaiHand_Images/dj04awxssrurmzxyaapi.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de24247a871f2c9e8f50bc",
+    "title": "thức ăn cho cún ",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "dvwv",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776165923/HaiHand_Images/tjyvg8r08hx4swtxkyve.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776165923/HaiHand_Images/tjyvg8r08hx4swtxkyve.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de24957a871f2c9e8f5109",
+    "title": "ghế massage",
+    "category": "Điện tử & Công nghệ",
+    "description": "cs",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776166037/HaiHand_Images/fragfh8bd2vkbikcih6o.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776166037/HaiHand_Images/fragfh8bd2vkbikcih6o.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de25647a871f2c9e8f51ec",
+    "title": "sách đắt nhân tâm ",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "cve",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776166244/HaiHand_Images/thybhqdqv08s7ztx5xq5.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776166244/HaiHand_Images/thybhqdqv08s7ztx5xq5.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de25ce7a871f2c9e8f525b",
+    "title": "cá tây tượng ",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "dv",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776166349/HaiHand_Images/zrpbcebhqjkzu1wk6h0s.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776166349/HaiHand_Images/zrpbcebhqjkzu1wk6h0s.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de26217a871f2c9e8f529c",
+    "title": "chuồng nuôi chuột hamster",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "xccw",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776166432/HaiHand_Images/qb3fong0yoel3onzsivd.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776166432/HaiHand_Images/qb3fong0yoel3onzsivd.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de265b7a871f2c9e8f52f4",
+    "title": "bể cá",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "xve",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776166490/HaiHand_Images/sdlk5w6k3enpqcpadkv2.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776166490/HaiHand_Images/sdlk5w6k3enpqcpadkv2.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de26cc7a871f2c9e8f53b9",
+    "title": "xe đạp địa hình ",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "eg",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776166603/HaiHand_Images/k4cglqaktgsh9vhzjngl.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776166603/HaiHand_Images/k4cglqaktgsh9vhzjngl.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de27127a871f2c9e8f543c",
+    "title": "xe đạp điện ",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "acf",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776166674/HaiHand_Images/agwymcdwhji3k7xzuleb.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776166674/HaiHand_Images/agwymcdwhji3k7xzuleb.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de275c7a871f2c9e8f54b6",
+    "title": "trái banh 2030",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "dvqav",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776166748/HaiHand_Images/io9x6t02veoymygebmlp.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776166748/HaiHand_Images/io9x6t02veoymygebmlp.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de27a47a871f2c9e8f553d",
+    "title": "đồng hồ omaga",
+    "category": "Thời trang & Phụ kiện",
+    "description": "bsdhb",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776166819/HaiHand_Images/ycr8r17tal84lz3tdery.webp"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776166819/HaiHand_Images/ycr8r17tal84lz3tdery.webp",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69de63100e50f0cd4bcf0e60",
+    "title": "test",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "ádadadada",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776182030/HaiHand_Images/ydojuyyefjswx551ermn.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776182030/HaiHand_Images/m33lqrauema6ebawncrt.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776182030/HaiHand_Images/ydojuyyefjswx551ermn.png",
+    "imageCount": 2,
+    "embeddedImageCount": 2,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "69dedd5681dc9f396b74049e",
+    "title": "Tủ quần áo",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Vzvz",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1776213332/HaiHand_Images/rc9exnyx8kia2g9ke6cq.jpg"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1776213332/HaiHand_Images/rc9exnyx8kia2g9ke6cq.jpg",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6ad4d6fa66495dc4334558ef",
+    "title": "samsum",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "- Bao test 7 ngày\r\n- Còn bảo hành hãng\r\n- Đầy đủ hộp và sạc\r\n- Hàng chính hãng VN/A",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1792333560/HaiHand_Images/s9ccx5wiplw8ikacwycq.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1792333561/HaiHand_Images/xmp3upefi6lqrdggev9q.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1792333561/HaiHand_Images/xrckpxh8oe1st56rrvml.png",
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1792333561/HaiHand_Images/kx0p04ibyulhtoqasulo.png"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1792333560/HaiHand_Images/s9ccx5wiplw8ikacwycq.png",
+    "imageCount": 4,
+    "embeddedImageCount": 4,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6ada0e32b0ff001334fe1d8b",
+    "title": "lababu",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "aassss",
+    "images": [
+      "https://res.cloudinary.com/dbznseukv/image/upload/v1792675377/HaiHand_Images/zfxkbkvkp7efmpd9qbwz.png"
+    ],
+    "firstImage": "https://res.cloudinary.com/dbznseukv/image/upload/v1792675377/HaiHand_Images/zfxkbkvkp7efmpd9qbwz.png",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af1739fc91caafe16621efd",
+    "title": "Thức ăn cho chó mèo Royal Canin dinh dưỡng cao 1.5kg",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Thức ăn hạt dinh dưỡng cân bằng cho chó mèo mọi lứa tuổi, giàu protein, giúp mượt lông và tăng cường tiêu hóa.",
+    "images": [
+      "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af173a0c91caafe16621efe",
+    "title": "Pate dinh dưỡng cho mèo Whiskas vị cá ngừ thơm ngon",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Pate cao cấp cung cấp nước và khoáng chất thiết yếu cho mèo cưng, hỗ trợ hệ tiết niệu.",
+    "images": [
+      "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1548767797-d8c844163c4c?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af173a0c91caafe16621eff",
+    "title": "Bể nuôi rùa cảnh mini có cầu thang & cây xanh ngắm cảnh",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Bể nhựa acrylic cao cấp có ban công phơi nắng cho rùa cảnh, tích hợp máng ăn và cầu thang tập bò.",
+    "images": [
+      "https://images.unsplash.com/photo-1508817628294-5a453fa0b8fb?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1508817628294-5a453fa0b8fb?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af173a0c91caafe16621f00",
+    "title": "Thức ăn hỗn hợp tăng trưởng cho rùa cảnh và bò sát cảnh",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Hạt dinh dưỡng bổ sung canxi và vitamin D3 giúp mai rùa cứng cáp, ngừa mềm mai ở rùa nhỏ.",
+    "images": [
+      "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af173a0c91caafe16621f01",
+    "title": "Đèn sưởi UVB 3.0 cho rùa và bò sát hỗ trợ hấp thụ canxi",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Bóng đèn sưởi mô phỏng ánh nắng mặt trời, giúp rùa tiêu hóa thức ăn và tổng hợp vitamin D3.",
+    "images": [
+      "https://images.unsplash.com/photo-1548802673-380ab8ebc7b7?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1548802673-380ab8ebc7b7?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af173a0c91caafe16621f02",
+    "title": "Bát ăn đôi tự động cấp nước cho chó mèo và thú cưng",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Bộ khay đựng thức ăn kèm bình nước tự động chống tràn, tiện lợi khi bạn vắng nhà.",
+    "images": [
+      "https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1535930891776-0c2dfb7fda1a?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af173a0c91caafe16621f03",
+    "title": "Mũ bảo hiểm xe đạp thể thao thoáng khí siêu nhẹ",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "Mũ bảo hiểm thể thao có khe tản nhiệt, đệm lót êm ái, đạt chuẩn an toàn đi xe đạp địa hình.",
+    "images": [
+      "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af173a0c91caafe16621f04",
+    "title": "Khóa dây số chống trộm xe đạp và xe máy thông minh 5 số",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "Dây cáp thép bọc nhựa dẻo chống cắt, mật mã 5 số dễ dàng thay đổi an toàn tuyệt đối.",
+    "images": [
+      "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af173a0c91caafe16621f05",
+    "title": "Củ sạc nhanh Samsung 25W Type-C chính hãng",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Củ sạc chuẩn PD hỗ trợ sạc siêu nhanh 25W cho các dòng Samsung Galaxy, iPhone và iPad.",
+    "images": [
+      "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af173a0c91caafe16621f06",
+    "title": "Tai nghe Bluetooth không dây chống ồn TWS cao cấp",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Âm bass mạnh mẽ, pin trâu 6 tiếng liên tục, dock sạc dự phòng thông minh.",
+    "images": [
+      "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbb2e06332d9bb40e89",
+    "title": "Vợt cầu lông Yonex Astrox 88D Pro chính hãng đan sẵn cước BG65",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Vợt thân cứng đầm đầu, trợ lực đập cầu uy lực. Nước sơn không vết xước, tặng kèm bao vợt nhung.",
+    "images": [
+      "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbc2e06332d9bb40e8a",
+    "title": "Xe đạp địa hình thể thao Twitter Mantis khung nhôm phanh đĩa dầu",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Xe đạp địa hình 24 tốc độ Shimano, thụt dầu êm ái, lốp gai bám đường chống trơn trượt.",
+    "images": [
+      "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbc2e06332d9bb40e8b",
+    "title": "Giày chạy bộ Nike Air Zoom Pegasus 40 êm ái size 42 full box",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Giày chạy chính hãng Nike Pegasus 40, đệm khí Zoom kép phản hồi lực tốt, đi êm ái không mỏi chân.",
+    "images": [
+      "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbc2e06332d9bb40e8c",
+    "title": "Lều cắm trại dã ngoại tự bung 4-6 người chống mưa chống tia UV",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Lều mở tự động trong 3 giây, vải Oxford 210D chống nước 3000mm, lưới chống côn trùng thông thoáng.",
+    "images": [
+      "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbc2e06332d9bb40e8d",
+    "title": "Bộ tạ tay đa năng điều chỉnh Bowflex 24kg tập thể hình tại nhà",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Tạ xoay chỉnh từ 2.5kg đến 24kg tiện lợi, tiết kiệm không gian phòng tập gia đình.",
+    "images": [
+      "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbc2e06332d9bb40e8e",
+    "title": "Thảm tập Yoga định tuyến TPE chống trượt 8mm cao cấp kèm túi đựng",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Thảm dày 8mm bảo vệ khớp gối, có vạch định tuyến chuẩn tư thế, không bám mùi mồ hôi.",
+    "images": [
+      "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbc2e06332d9bb40e8f",
+    "title": "Đèn pin dã ngoại siêu sáng chiếu xa 500m chống nước IPX6 pin trâu",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Chip LED công suất cao, tích hợp cổng sạc USB-C và làm pin sạc dự phòng điện thoại khi khẩn cấp.",
+    "images": [
+      "https://images.unsplash.com/photo-1510519138101-570d1dca3d66?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1510519138101-570d1dca3d66?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbc2e06332d9bb40e90",
+    "title": "Bàn bóng bàn gấp gọn thi đấu Double Fish chuẩn ITTF kèm cọc lưới",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Mặt bàn gỗ MDF phủ sơn chống lóa nảy bóng cực chuẩn, chân bánh xe di chuyển xếp gọn nhẹ nhàng.",
+    "images": [
+      "https://images.unsplash.com/photo-1534158914592-062992fbe900?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1534158914592-062992fbe900?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbc2e06332d9bb40e91",
+    "title": "Bộ cần câu máy rút Shimano Cacbon 2m7 kèm máy câu kim loại và cước",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Cần đọt đặc chịu tải kéo cá đến 8kg, máy câu êm mượt tặng kèm hộp lưỡi và mồi câu giả.",
+    "images": [
+      "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1541781774459-bb2af2f05b55?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbd2e06332d9bb40e92",
+    "title": "Bình nước thể thao giữ nhiệt Lock&Lock 1000ml Inox 316 có quai xách",
+    "category": "Thể thao & Dã ngoại",
+    "description": "Giữ nóng lạnh 24 giờ, inox 316 y tế an toàn không gỉ, nắp bật tiện lợi khi tập luyện.",
+    "images": [
+      "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbd2e06332d9bb40e93",
+    "title": "Labubu The Monsters Fall in Wild bản chính hãng Pop Mart nguyên seal",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "Labubu phiên bản cắm trại cực hot, cam kết chuẩn chính hãng Pop Mart quét mã QR kiểm tra.",
+    "images": [
+      "https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbd2e06332d9bb40e94",
+    "title": "Xe đẩy cho bé gấp gọn hai chiều du lịch Baobaohao V8 siêu nhẹ",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "Ghế xoay 360 độ 2 chiều tiện quan sát bé, đai an toàn 5 điểm, gập gọn để vừa cốp ô tô và xách tay máy bay.",
+    "images": [
+      "https://images.unsplash.com/photo-1591088398332-8a7791972843?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1591088398332-8a7791972843?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbd2e06332d9bb40e95",
+    "title": "Bộ xếp hình Lego City Cảnh sát & Trực thăng đuổi bắt nguyên hộp",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "Bộ lắp ráp 350 chi tiết giúp rèn luyện tư duy không gian và tính kiên nhẫn cho bé từ 5 tuổi.",
+    "images": [
+      "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbd2e06332d9bb40e96",
+    "title": "Gấu bông Capybara ôm gà chảy nước mũi siêu mềm mịn cao 50cm",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "Lông nhung co giãn 4 chiều mềm mịn không rụng lông, bông gòn PP 3D êm ái cho bé ôm ngủ.",
+    "images": [
+      "https://images.unsplash.com/photo-1559454403-b8fb88521f11?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1559454403-b8fb88521f11?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbd2e06332d9bb40e97",
+    "title": "Ghế ăn dặm cho bé điều chỉnh độ cao Chilux Grow S đệm da cao cấp",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "Khung thép chịu lực 50kg, ngả lưng 3 nấc nằm - ngả - ngồi, khay ăn đôi tháo rời dễ vệ sinh.",
+    "images": [
+      "https://images.unsplash.com/photo-1544126592-807ade215a0b?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1544126592-807ade215a0b?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbd2e06332d9bb40e98",
+    "title": "Máy hút sữa điện đôi không dây rảnh tay Fatzbaby Resonance 3",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "Máy hút sữa không dây ôm trọn bầu ngực, mẹ mặc trong áo ngực vừa hút vừa làm việc nhà thoải mái.",
+    "images": [
+      "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbd2e06332d9bb40e99",
+    "title": "Quây cũi kiêm nhà bóng cho bé kèm 100 bóng nhựa cao cấp an toàn",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "Khung inox bọc vải lưới thông thoáng giúp mẹ yên tâm để bé tự lập vui chơi an toàn trong phòng.",
+    "images": [
+      "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbe2e06332d9bb40e9a",
+    "title": "Xe chòi chân 4 bánh tự cân bằng có đèn nhạc vui nhộn cho bé 1-3 tuổi",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "Khung nhựa ABS dày dặn bo tròn góc cạnh, bánh xe cao su chống trượt chạy êm không xước sàn gỗ.",
+    "images": [
+      "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbe2e06332d9bb40e9b",
+    "title": "Bộ 10 cuốn truyện tranh thiếu nhi cổ tích song ngữ Việt Anh phát triển IQ",
+    "category": "Đồ chơi, Mẹ & Bé",
+    "description": "Hình minh họa sống động sắc nét, giấy bóng chống lóa mắt, nuôi dưỡng tình yêu đọc sách từ nhỏ.",
+    "images": [
+      "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbf2e06332d9bb40e9c",
+    "title": "iPhone 13 Pro Max 128GB Quốc Tế Xanh Sierra pin 90% zin ốc nguyên bản",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Máy đẹp keng không tì vết, màn hình 120Hz mượt mà, camera nét căng 3x zoom, bao test 15 ngày.",
+    "images": [
+      "https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbf2e06332d9bb40e9d",
+    "title": "Samsung Galaxy S23 Ultra 256GB Đen Phantom chính hãng SSVN fullbox",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Bút S-Pen tiện dụng, camera mắt thần bóng đêm 200MP zoom 100x cực đỉnh, bảo hành dài hạn.",
+    "images": [
+      "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1610945415295-d9bbf067e59c?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dbf2e06332d9bb40e9e",
+    "title": "Tai nghe Bluetooth Apple AirPods Pro 2 Type-C chính hãng chống ồn chủ động",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Chống ồn gấp 2 lần bản trước, âm thanh không gian sống động, hộp sạc tích hợp loa tìm kiếm Find My.",
+    "images": [
+      "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1600294037681-c80b4cb5b434?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc02e06332d9bb40e9f",
+    "title": "Sạc dự phòng Anker 20000mAh 65W Power Delivery sạc nhanh điện thoại và laptop",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Dung lượng thực chuẩn sạc được 4-5 lần iPhone, hỗ trợ sạc cả MacBook và laptop Type-C.",
+    "images": [
+      "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc02e06332d9bb40ea0",
+    "title": "Cáp sạc Baseus Type-C to Lightning 20W bọc dù chống đứt gãy sạc nhanh PD",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Dây dù bện bọc nhôm dày chịu uốn gập 10.000 lần, sạc 50% pin iPhone chỉ trong 30 phút.",
+    "images": [
+      "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc02e06332d9bb40ea1",
+    "title": "Ốp lưng chống sốc UAG Pathfinder cho iPhone 14 Pro Max chuẩn quân đội",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Thiết kế hầm hố chịu lực rơi 4.8m, phím bấm nhẹ nảy, bảo vệ cụm camera nhô an toàn tuyệt đối.",
+    "images": [
+      "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc02e06332d9bb40ea2",
+    "title": "Gimbal chống rung điện thoại DJI Osmo Mobile SE gập gọn quay vlog cực mượt",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Chống rung 3 trục, ngàm kẹp nam châm tháo lắp siêu tốc, tính năng ActiveTrack 5.0 bám nét khuôn mặt.",
+    "images": [
+      "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc02e06332d9bb40ea3",
+    "title": "Đồng hồ thông minh Apple Watch Series 8 45mm nhôm Midnight pin 98%",
+    "category": "Điện thoại & Phụ kiện",
+    "description": "Màn hình Always-on hiển thị liên tục, đo điện tâm đồ ECG và nồng độ oxy SpO2 theo dõi sức khỏe.",
+    "images": [
+      "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc02e06332d9bb40ea4",
+    "title": "Xe máy Honda Wave Alpha 110cc đời 2021 màu trắng máy êm biển Hà Nội",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "Xe đi làm văn phòng giữ gìn cẩn thận, bảo dưỡng định kỳ thay nhớt đều đặn, giấy tờ chính chủ.",
+    "images": [
+      "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc02e06332d9bb40ea5",
+    "title": "Mũ bảo hiểm Fullface Royal M136 kính khói chống chói lót tháo giặt",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "Vỏ nhựa ABS nguyên sinh chịu va đập chuẩn CR kiểm định, kính tráng gương chống tia UV ban ngày.",
+    "images": [
+      "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc02e06332d9bb40ea6",
+    "title": "Camera hành trình ô tô 70mai Dash Cam Pro Plus A500S ghi hình trước sau 2K",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "Góc quay rộng 140 độ bắt trọn làn đường, tích hợp GPS hiển thị tốc độ và cảnh báo làn đường ADAS.",
+    "images": [
+      "https://images.unsplash.com/photo-1508974239320-0a029497e820?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1508974239320-0a029497e820?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc12e06332d9bb40ea7",
+    "title": "Bơm lốp ô tô kiêm kích bình xe máy ô tô Baseus 12V nhỏ gọn bỏ cốp",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "Tự ngắt khi đủ áp suất lốp, đèn LED cứu hộ ban đêm, kích nổ xe hơi dễ dàng khi hết ắc quy.",
+    "images": [
+      "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc12e06332d9bb40ea8",
+    "title": "Nhớt Motul 7100 10W40 100% tổng hợp nhập khẩu Pháp cho xe số và côn tay",
+    "category": "Xe cộ & Phụ tùng",
+    "description": "Nhớt màu đỏ Ester Core cao cấp bôi trơn tối ưu, bốc máy êm số, chu kỳ thay nhớt lên đến 3.000km.",
+    "images": [
+      "https://images.unsplash.com/photo-1563720223185-11003d516935?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1563720223185-11003d516935?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc12e06332d9bb40ea9",
+    "title": "MacBook Air M1 2020 8GB/256GB Silver chính hãng SA/A pin 95% sạc 45 lần",
+    "category": "Điện tử & Công nghệ",
+    "description": "Hiệu năng chip M1 mạnh mẽ mát máy, màn hình Retina sắc nét, pin xài cả ngày 10-12 tiếng liên tục.",
+    "images": [
+      "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc12e06332d9bb40eaa",
+    "title": "Màn hình máy tính Dell UltraSharp U2422H 24 inch IPS tràn viền màu chuẩn đồ họa",
+    "category": "Điện tử & Công nghệ",
+    "description": "Độ phủ màu 100% sRGB, chân đế nâng hạ xoay dọc linh hoạt, cổng kết nối Type-C đa năng.",
+    "images": [
+      "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc12e06332d9bb40eab",
+    "title": "Chuột không dây công thái học Logitech MX Master 3S Silent cuộn vô cực MagSpeed",
+    "category": "Điện tử & Công nghệ",
+    "description": "Nút bấm êm giảm 90% tiếng ồn, cảm biến 8000 DPI di chuyển trên mọi mặt phẳng kính, pin sạc 70 ngày.",
+    "images": [
+      "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc12e06332d9bb40eac",
+    "title": "Loa Bluetooth di động Marshall Emberton II âm thanh nổi 360 độ chống nước IP67",
+    "category": "Điện tử & Công nghệ",
+    "description": "Chất âm Marshall cổ điển mộc mạc âm trầm dày dặn, pin chơi nhạc hơn 30 giờ cho chuyến dã ngoại.",
+    "images": [
+      "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1545454675-3531b543be5d?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc12e06332d9bb40ead",
+    "title": "Bàn phím cơ không dây Keychron K2 V2 nhôm Led RGB switch Gateron Brown",
+    "category": "Điện tử & Công nghệ",
+    "description": "Layout 75% gọn gàng hỗ trợ tốt cả Mac và Windows, switch gõ đầm tay không gây ồn văn phòng.",
+    "images": [
+      "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc12e06332d9bb40eae",
+    "title": "Nồi chiên không dầu điện tử Philips HD9280 dung tích 6.2L kết nối Wifi",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Công nghệ Rapid Air giảm 90% lượng dầu mỡ, lòng nồi chống dính tháo rời vệ sinh máy rửa chén.",
+    "images": [
+      "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc22e06332d9bb40eaf",
+    "title": "Robot hút bụi lau nhà Xiaomi Dreame F9 lực hút mạnh 2500Pa điều hướng vSLAM",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Hút sạch bụi mịn và lông thú cưng, lau nhà sạch bóng, lập bản đồ nhà thông minh điều khiển qua app.",
+    "images": [
+      "https://images.unsplash.com/photo-1558317374-067fb5f30001?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1558317374-067fb5f30001?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc22e06332d9bb40eb0",
+    "title": "Bàn làm việc gaming chữ Z mặt gỗ MDF carbon khung thép chịu lực",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Kích thước 120x60cm rộng rãi có lỗ luồn dây điện và giá để cốc nước, khung thép hộp dày chắc chắn.",
+    "images": [
+      "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc22e06332d9bb40eb1",
+    "title": "Ghế công thái học Ergonomic Sihoo M57 đệm lưới thoáng khí đỡ lưng 3D",
+    "category": "Đồ gia dụng & Nội thất",
+    "description": "Lưới Dragon thoáng mát không bí nhiệt, tựa đầu điều chỉnh đa hướng chống đau mỏi vai gáy khi ngồi lâu.",
+    "images": [
+      "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1505843490538-5133c6c7d0e1?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc22e06332d9bb40eb2",
+    "title": "Áo khoác gió thể thao nam nữ The North Face 2 lớp chống nước cản gió",
+    "category": "Thời trang & Phụ kiện",
+    "description": "Chất liệu Gore-Tex chống thấm mưa phùn, lớp lót lưới thoáng khí, mũ trùm tháo rời tiện lợi khi đi phượt.",
+    "images": [
+      "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1544022613-e87ca75a784a?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc22e06332d9bb40eb3",
+    "title": "Giày sneaker Nike Air Jordan 1 Low Panda phối màu đen trắng hot trend size 41",
+    "category": "Thời trang & Phụ kiện",
+    "description": "Form giày ôm chân chất da cao cấp không gãy mũi, phối màu dễ phối mọi phong cách streetwear.",
+    "images": [
+      "https://images.unsplash.com/photo-1552346154-21d32810aba3?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1552346154-21d32810aba3?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc22e06332d9bb40eb4",
+    "title": "Đồng hồ nam dây thép không gỉ Casio Edifice Chronograph 6 kim chống nước 100m",
+    "category": "Thời trang & Phụ kiện",
+    "description": "Mặt kính khoáng cường lực chống xước, vỏ thép 316L sáng bóng nam tính, bấm giờ thể thao chính xác.",
+    "images": [
+      "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc22e06332d9bb40eb5",
+    "title": "Balo laptop công sở Tomtoc Urban chống nước chống sốc đựng vừa máy 15.6 inch",
+    "category": "Thời trang & Phụ kiện",
+    "description": "Công nghệ CornerArmor bảo vệ góc laptop khi va chạm, khóa kéo YKK Nhật Bản trơn mượt bền bỉ.",
+    "images": [
+      "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc22e06332d9bb40eb6",
+    "title": "Chuồng nuôi mèo 3 tầng nan sắt sơn tĩnh điện có bánh xe di chuyển khay vệ sinh",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Chuồng rộng rãi có võng nằm êm ái cho mèo leo trèo, nan sắt dày dặn không rỉ sét, tháo lắp đơn giản.",
+    "images": [
+      "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc22e06332d9bb40eb7",
+    "title": "Cát đậu nành hữu cơ Cature cho mèo khử mùi kháng khuẩn xả thẳng bồn cầu túi 6L",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Vón cục siêu nhanh không bụi an toàn đường hô hấp cho mèo và trẻ nhỏ, tan nhanh trong nước dễ tiêu hủy.",
+    "images": [
+      "https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc32e06332d9bb40eb8",
+    "title": "Bể cá cảnh mini để bàn làm việc tích hợp thác nước lọc tuần hoàn và đèn LED",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Bể thủy tinh siêu trong uốn cong 3 cạnh, máy bơm êm không tiếng ồn, tạo điểm nhấn thư giãn cho góc làm việc.",
+    "images": [
+      "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  },
+  {
+    "id": "6af17dc32e06332d9bb40eb9",
+    "title": "Thức ăn cá cảnh cá Koi AquaMaster tăng màu và cân đối thể trọng gói 1kg",
+    "category": "Thú cưng & Đồ dùng",
+    "description": "Hạt thức ăn nổi lâu không làm đục nước, giàu đạm và Spirulina giúp cá lên màu tự nhiên rực rỡ.",
+    "images": [
+      "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=600&auto=format&fit=crop"
+    ],
+    "firstImage": "https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=600&auto=format&fit=crop",
+    "imageCount": 1,
+    "embeddedImageCount": 1,
+    "imageEmbeddingModel": "Xenova/siglip-base-patch16-224"
+  }
+]

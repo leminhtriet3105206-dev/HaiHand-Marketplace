@@ -1101,44 +1101,58 @@ app.post('/api/admin/release-funds/:orderId', requireAdminJWT, async (req, res) 
   }
 });
 
-/** [API] Admin hoàn tiền đơn hàng hủy về ví HaiPay người mua */
+/**
+ * [API] Admin hoàn tiền đơn hàng về ví HaiPay người mua (C9 - nguyên tử & idempotent):
+ * - Từ chối nếu đơn đã `refunded`, `released`, hoặc là đơn COD / chưa thu tiền vào ví ký quỹ (`paymentStatus !== 'escrow'`).
+ * - Gọi `cancelOrderWithRefundAndRestock(order, { cancelledBy: 'admin' })` để đặt cổng `findOneAndUpdate` TRƯỚC rồi mới `$inc` ví người mua và trừ `pendingBalance` người bán.
+ */
 app.post('/api/admin/refund-order/:orderId', requireAdminJWT, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
-    const current = canonicalStatus(order.status);
-    if (current !== 'Cancelled' && order.status !== 'Đã hủy (Chờ hoàn tiền)' && order.paymentStatus !== 'escrow') {
-      return res.status(400).json({ message: 'Đơn hàng này không ở trạng thái chờ hoàn tiền!' });
+    if (order.paymentStatus === 'refunded') {
+      return res.status(409).json({ message: 'Đơn hàng này đã được hoàn tiền trước đó!' });
     }
 
-    const buyer = await User.findById(orderBuyerId(order));
-    if (buyer) {
-      buyer.walletBalance = (buyer.walletBalance || 0) + order.totalPrice;
-      await buyer.save();
+    if (order.paymentStatus === 'released') {
+      return res.status(409).json({ message: 'Đơn hàng đã giải ngân cho người bán, không thể hoàn tiền!' });
+    }
 
-      await Transaction.create({
-        user: buyer._id,
-        type: 'Hoàn tiền',
-        amount: order.totalPrice,
-        status: 'Thành công',
-        description: `Hoàn tiền từ đơn hàng đã hủy #${order._id.toString().slice(-6).toUpperCase()}`
-      });
-
-      await UserNotification.create({
-        user: buyer._id,
-        title: '💸 Đã nhận được tiền hoàn!',
-        message: `Hệ thống đã hoàn lại ${order.totalPrice.toLocaleString('vi-VN')}đ vào ví HaiPay của bạn từ đơn hàng bị hủy #${order._id.toString().slice(-6).toUpperCase()}.`,
-        link: '/haipay'
+    const methodUpper = String(order.paymentMethod || 'COD').trim().toUpperCase();
+    if (methodUpper === 'COD' || (order.paymentStatus !== 'escrow' && !isEscrow(order))) {
+      return res.status(400).json({
+        message: 'Chỉ có thể hoàn tiền cho đơn hàng đã thanh toán vào ví ký quỹ (escrow)!'
       });
     }
 
-    order.status = 'Cancelled';
-    order.paymentStatus = 'refunded';
-    order.cancelledAt = order.cancelledAt || new Date();
-    await order.save();
+    const result = await cancelOrderWithRefundAndRestock(order, {
+      cancelledBy: 'admin',
+      reason: req.body?.reason || 'Admin hoàn tiền đơn hàng'
+    });
 
-    res.json({ message: '✅ Hoàn tiền thành công và đã cộng vào ví HaiPay của người mua!' });
+    if (!result.success) {
+      const code = result.alreadyCancelled ? 409 : (result.statusCode || 400);
+      return res.status(code).json({ message: result.message });
+    }
+
+    const buyerId = orderBuyerId(order);
+    if (buyerId && result.refundedAmount > 0) {
+      await sendNotification(
+        buyerId,
+        '💸 Đã nhận được tiền hoàn!',
+        `Hệ thống đã hoàn lại ${result.refundedAmount.toLocaleString('vi-VN')}đ vào ví HaiPay của bạn từ đơn hàng #${order._id.toString().slice(-6).toUpperCase()}.`,
+        'PAYMENT',
+        '/haipay',
+        { orderId: order._id }
+      );
+    }
+
+    res.json({
+      message: '✅ Hoàn tiền thành công và đã cộng vào ví HaiPay của người mua!',
+      order: result.order,
+      refundedAmount: result.refundedAmount
+    });
   } catch (error) {
     console.error('Lỗi hoàn tiền:', error);
     res.status(500).json({ message: 'Lỗi hệ thống khi hoàn tiền' });

@@ -1,3 +1,4 @@
+const fs = require('fs');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -6,8 +7,10 @@ const Transaction = require('../models/Transaction');
 const { createAndSaveOtp, verifyOtp } = require('../utils/otpService');
 const { getJwtSecret, sanitizeUser, signUserToken } = require('../utils/b2c');
 const { hashPassword, verifyPassword } = require('../utils/password');
+const { otpLimiter, loginLimiter } = require('../middleware/security');
 
 const router = express.Router();
+const ALLOWED_OTP_PURPOSES = new Set(['LOGIN', 'REGISTER', 'TRANSACTION']);
 
 /**
  * Middleware to authenticate HaiPay wallet session
@@ -39,61 +42,88 @@ const requireWalletAuth = async (req, res, next) => {
 };
 
 /**
- * Helper: Verify Firebase ID Token if firebase-admin is installed and initialized
+ * Helper: Verify Firebase ID Token via firebase-admin (C8)
  */
 async function verifyFirebaseIdToken(idToken) {
   if (!idToken || typeof idToken !== 'string') return null;
   try {
-    // Attempt to use firebase-admin if configured in the environment
     // eslint-disable-next-line global-require, import/no-unresolved
     const admin = require('firebase-admin');
-    if (admin && admin.apps && admin.apps.length > 0) {
-      const decodedToken = await admin.auth().verifyIdToken(idToken);
-      return decodedToken;
+    if (admin) {
+      if (!admin.apps || admin.apps.length === 0) {
+        if (process.env.FIREBASE_SERVICE_ACCOUNT_JSON) {
+          const cert = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+          admin.initializeApp({ credential: admin.credential.cert(cert) });
+        } else if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH && fs.existsSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)) {
+          const cert = JSON.parse(fs.readFileSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH, 'utf8'));
+          admin.initializeApp({ credential: admin.credential.cert(cert) });
+        } else if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+          admin.initializeApp({
+            credential: admin.credential.cert({
+              projectId: process.env.FIREBASE_PROJECT_ID,
+              clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+              privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+            })
+          });
+        }
+      }
+      if (admin.apps && admin.apps.length > 0) {
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        return decodedToken;
+      }
     }
   } catch (e) {
-    // firebase-admin not installed or not initialized in dev environment
+    // firebase-admin not installed or token verification failed
   }
   return null;
 }
 
 /**
  * POST /api/haipay/send-otp
- * Generates and dispatches OTP
+ * Generates and dispatches OTP (C8 & H14: whitelist purpose, rate limit, anti-enumeration)
  */
-router.post('/send-otp', async (req, res) => {
+router.post('/send-otp', otpLimiter, async (req, res) => {
   try {
-    const { identifier, purpose = 'LOGIN' } = req.body;
+    const { identifier, purpose = 'LOGIN' } = req.body || {};
 
-    if (!identifier || !identifier.trim()) {
+    if (!identifier || typeof identifier !== 'string' || !identifier.trim()) {
       return res.status(400).json({ message: 'Vui lòng cung cấp Email hoặc Số điện thoại' });
+    }
+
+    const cleanPurpose = String(purpose || 'LOGIN').trim().toUpperCase();
+    if (!ALLOWED_OTP_PURPOSES.has(cleanPurpose)) {
+      return res.status(400).json({ message: 'Mục đích yêu cầu OTP (purpose) không hợp lệ!' });
     }
 
     const cleanIdentifier = identifier.trim().toLowerCase();
 
-    if (purpose === 'LOGIN') {
+    if (cleanPurpose === 'LOGIN') {
       const existingUser = await User.findOne({
         $or: [{ email: cleanIdentifier }, { phone: cleanIdentifier }]
       });
 
       if (!existingUser) {
-        return res.status(404).json({ message: 'Tài khoản chưa được đăng ký trong hệ thống HaiHand' });
+        return res.status(200).json({
+          success: true,
+          message: `Nếu tài khoản tồn tại, mã OTP đã được gửi đến ${cleanIdentifier}.`,
+          expiresIn: 600
+        });
       }
     }
 
-    await createAndSaveOtp(cleanIdentifier, purpose);
+    await createAndSaveOtp(cleanIdentifier, cleanPurpose);
 
     return res.status(200).json({
       success: true,
-      message: `Mã OTP đã được gửi đến ${cleanIdentifier}. Vui lòng kiểm tra hộp thư (hoặc console server).`,
-      expiresIn: 300
+      message: `Mã OTP đã được gửi đến ${cleanIdentifier}. Vui lòng kiểm tra hộp thư.`,
+      expiresIn: 600
     });
   } catch (error) {
     if (error.statusCode === 429) {
       return res.status(429).json({ message: error.message });
     }
     console.error('Send OTP Error:', error);
-    return res.status(500).json({ message: 'Lỗi khi gửi mã OTP: ' + error.message });
+    return res.status(500).json({ message: 'Lỗi khi gửi mã OTP' });
   }
 });
 
@@ -267,18 +297,14 @@ router.post('/login', async (req, res) => {
 
 /**
  * POST /api/haipay/verify-firebase
- * Security Hardened (Anti-Account Takeover):
- * - Không cho phép chỉ gửi `phoneNumber` từ `req.body` để lấy JWT.
- * - Bắt buộc phải có `idToken` được xác thực bởi Firebase Admin SDK, HOẶC nếu môi trường dev
- *   chưa cấu hình Firebase Admin SDK thì bắt buộc phải xác thực bằng OTP (`verifyOtp`) hoặc mật khẩu (`password`) của tài khoản.
+ * Security Hardened (C8 - Anti-Account Takeover):
+ * - Sử dụng `firebase-admin` -> `verifyIdToken(idToken)`, lấy số điện thoại & uid trực tiếp từ token đã verify.
+ * - TUYỆT ĐỐI không tin `phoneNumber` hay `firebaseUid` trần trong `req.body` nếu không có bằng chứng xác thực từ server.
+ * - Nếu môi trường chưa có Firebase Admin token thì chỉ cho phép xác thực tài khoản thông qua `verifyOtp` hoặc `verifyPassword`.
  */
-router.post('/verify-firebase', async (req, res) => {
+router.post('/verify-firebase', loginLimiter, async (req, res) => {
   try {
-    const { phoneNumber, firebaseUid, fullName, email, idToken, otp, password, otpPurpose = 'LOGIN' } = req.body || {};
-
-    if (!phoneNumber || !phoneNumber.trim()) {
-      return res.status(400).json({ message: 'Thiếu số điện thoại được xác thực' });
-    }
+    const { phoneNumber, fullName, email, idToken, otp, password, otpPurpose = 'LOGIN' } = req.body || {};
 
     if (!idToken && !otp && !password) {
       return res.status(401).json({
@@ -286,27 +312,35 @@ router.post('/verify-firebase', async (req, res) => {
       });
     }
 
-    const cleanRawPhone = phoneNumber.trim();
-    const localPhone = cleanRawPhone.startsWith('+84')
-      ? '0' + cleanRawPhone.slice(3)
-      : (cleanRawPhone.startsWith('84') ? '0' + cleanRawPhone.slice(2) : cleanRawPhone);
-    const intlPhone = cleanRawPhone.startsWith('+')
-      ? cleanRawPhone
-      : (cleanRawPhone.startsWith('0') ? '+84' + cleanRawPhone.slice(1) : '+84' + cleanRawPhone);
-
-    // 1. Try verifying idToken via Firebase Admin SDK if present
+    // 1. Verify idToken via Firebase Admin SDK
     const verifiedFirebaseClaims = await verifyFirebaseIdToken(idToken);
     let verifiedByFirebaseAdmin = false;
+    let verifiedUid = '';
+    let resolvedRawPhone = '';
 
     if (verifiedFirebaseClaims) {
-      const claimPhone = verifiedFirebaseClaims.phone_number || '';
-      if (claimPhone && claimPhone !== localPhone && claimPhone !== intlPhone) {
-        return res.status(401).json({ message: 'Số điện thoại không khớp với Firebase idToken!' });
+      const claimPhone = verifiedFirebaseClaims.phone_number ? String(verifiedFirebaseClaims.phone_number).trim() : '';
+      if (!claimPhone) {
+        return res.status(401).json({ message: 'Firebase idToken không chứa thông tin số điện thoại đã xác thực!' });
       }
+      resolvedRawPhone = claimPhone;
+      verifiedUid = verifiedFirebaseClaims.uid ? String(verifiedFirebaseClaims.uid) : '';
       verifiedByFirebaseAdmin = true;
+    } else {
+      if (!phoneNumber || typeof phoneNumber !== 'string' || !phoneNumber.trim()) {
+        return res.status(401).json({ message: 'Không thể xác thực Firebase idToken!' });
+      }
+      resolvedRawPhone = phoneNumber.trim();
     }
 
-    // 2. Find existing user by phone
+    const localPhone = resolvedRawPhone.startsWith('+84')
+      ? '0' + resolvedRawPhone.slice(3)
+      : (resolvedRawPhone.startsWith('84') ? '0' + resolvedRawPhone.slice(2) : resolvedRawPhone);
+    const intlPhone = resolvedRawPhone.startsWith('+')
+      ? resolvedRawPhone
+      : (resolvedRawPhone.startsWith('0') ? '+84' + resolvedRawPhone.slice(1) : '+84' + resolvedRawPhone);
+
+    // 2. Find existing user by verified phone
     let user = await User.findOne({
       $or: [
         { phone: localPhone },
@@ -316,29 +350,24 @@ router.post('/verify-firebase', async (req, res) => {
       ]
     });
 
-    // 3. If Firebase Admin SDK did not verify idToken (e.g. dev environment without serviceAccount),
-    // strictly require server-side OTP verification or account password verification!
+    // 3. Nếu không verify được qua Firebase Admin SDK -> BẮT BUỘC phải verify qua OTP server hoặc mật khẩu tài khoản
     if (!verifiedByFirebaseAdmin) {
       let secondaryVerified = false;
+      const safeOtpPurpose = ALLOWED_OTP_PURPOSES.has(String(otpPurpose).toUpperCase())
+        ? String(otpPurpose).toUpperCase()
+        : 'LOGIN';
 
-      if (otp) {
-        const otpIdentifier = (email && email.trim().toLowerCase()) || user?.email || localPhone;
-        const otpCheck = await verifyOtp(otpIdentifier, String(otp).trim(), otpPurpose);
+      if (otp && typeof otp === 'string') {
+        const otpIdentifier = (typeof email === 'string' && email.trim().toLowerCase()) || user?.email || localPhone;
+        const otpCheck = await verifyOtp(otpIdentifier, otp.trim(), safeOtpPurpose);
         if (!otpCheck.valid) {
           return res.status(401).json({ message: otpCheck.message || 'Mã OTP xác thực không hợp lệ hoặc đã hết hạn!' });
         }
         secondaryVerified = true;
-      } else if (password && user) {
-        const isBcryptHash = typeof user.password === 'string' && /^\$2[aby]\$/.test(user.password);
-        const isPassMatch = isBcryptHash
-          ? await bcrypt.compare(String(password), user.password)
-          : user.password === String(password);
-
+      } else if (password && typeof password === 'string' && user) {
+        const isPassMatch = await verifyPassword(user, password);
         if (!isPassMatch) {
           return res.status(401).json({ message: 'Mật khẩu xác thực không chính xác!' });
-        }
-        if (!isBcryptHash) {
-          user.password = await bcrypt.hash(String(password), 10);
         }
         secondaryVerified = true;
       }
@@ -351,22 +380,22 @@ router.post('/verify-firebase', async (req, res) => {
     }
 
     if (user) {
-      if (user.status === 'locked' || user.isBanned === true) {
+      if (user.status === 'locked' || user.isBanned === true || user.isDeleted === true) {
         return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa' });
       }
 
       user.isWalletActive = true;
       if (!user.walletPhone) user.walletPhone = localPhone;
-      const resolvedUid = verifiedFirebaseClaims?.uid || firebaseUid;
-      if (resolvedUid && !user.firebaseUid) user.firebaseUid = resolvedUid;
+      // Chỉ lưu firebaseUid nếu lấy từ token đã được Firebase Admin SDK verify (TUYỆT ĐỐI không lấy firebaseUid từ body)
+      if (verifiedUid && !user.firebaseUid) user.firebaseUid = verifiedUid;
       if (!user.walletRegisteredAt) user.walletRegisteredAt = new Date();
-      if (fullName && (!user.name || user.name.startsWith('Người dùng'))) {
+      if (typeof fullName === 'string' && fullName.trim() && (!user.name || user.name.startsWith('Người dùng'))) {
         user.name = fullName.trim();
       }
       user.lastActive = new Date();
       await user.save();
     } else {
-      const cleanEmail = email && email.trim()
+      const cleanEmail = typeof email === 'string' && email.trim()
         ? email.trim().toLowerCase()
         : `haipay_${localPhone.replace(/\D/g, '') || Date.now()}@haipay.vn`;
 
@@ -375,39 +404,39 @@ router.post('/verify-firebase', async (req, res) => {
         ? `haipay_${Date.now()}_${Math.floor(Math.random() * 1000)}@haipay.vn`
         : cleanEmail;
 
-      const rawPass = password && String(password).trim()
-        ? String(password).trim()
-        : `fb_auth_${verifiedFirebaseClaims?.uid || firebaseUid || Date.now()}`;
-      const hashedPassword = await bcrypt.hash(rawPass, 10);
+      const rawPass = typeof password === 'string' && password.trim()
+        ? password.trim()
+        : `fb_auth_${verifiedUid || Date.now()}`;
+      const hashedPassword = await hashPassword(rawPass, 10);
 
       user = new User({
-        name: fullName && fullName.trim() ? fullName.trim() : `Người dùng HaiPay ${localPhone.slice(-4) || 'Mới'}`,
+        name: typeof fullName === 'string' && fullName.trim() ? fullName.trim() : `Người dùng HaiPay ${localPhone.slice(-4) || 'Mới'}`,
         email: finalEmail,
         phone: localPhone,
         walletPhone: localPhone,
-        firebaseUid: verifiedFirebaseClaims?.uid || firebaseUid || '',
+        firebaseUid: verifiedUid || '',
         password: hashedPassword,
         isWalletActive: true,
         walletRegisteredAt: new Date(),
         walletBalance: 0,
         pendingBalance: 0,
+        role: 'Khách hàng',
+        isSeller: false,
+        sellerStatus: 'none',
         lastActive: new Date()
       });
 
       await user.save();
     }
 
-    const token = jwt.sign(
-      {
-        id: user._id,
+    const token = signUserToken(user, {
+      extra: {
         email: user.email,
         phone: user.phone || user.walletPhone,
         isWalletActive: true,
         sessionType: 'HAIPAY_WALLET'
-      },
-      getJwtSecret(),
-      { expiresIn: '7d' }
-    );
+      }
+    });
 
     return res.status(200).json({
       success: true,
@@ -417,7 +446,7 @@ router.post('/verify-firebase', async (req, res) => {
     });
   } catch (error) {
     console.error('Firebase Auth Verification Error:', error);
-    return res.status(500).json({ message: 'Lỗi đồng bộ xác thực với máy chủ: ' + error.message });
+    return res.status(500).json({ message: 'Lỗi đồng bộ xác thực với máy chủ' });
   }
 });
 

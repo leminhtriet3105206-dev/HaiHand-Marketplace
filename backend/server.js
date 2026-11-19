@@ -1349,31 +1349,27 @@ app.put('/api/users/change-password/:id', protect, requireOwnerOrAdmin('id'), as
   } catch (err) { res.status(500).json({ message: 'Lỗi server khi đổi mật khẩu' }); }
 });
 
-/** Quên mật khẩu xác minh bằng SĐT (legacy) */
-app.post('/api/users/forgot-password', async (req, res) => {
-  try {
-    const { email, phone, newPassword } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký tài khoản!' });
-    if (!user.phone) return res.status(400).json({ message: 'Chưa cập nhật SĐT, liên hệ Admin.' });
-    if (user.phone !== phone) return res.status(400).json({ message: 'SĐT không chính xác!' });
-    user.password = await bcrypt.hash(String(newPassword), 10);
-    await user.save();
-    res.status(200).json({ message: 'Lấy lại mật khẩu thành công!' });
-  } catch (err) { res.status(500).json({ message: 'Lỗi server' }); }
-});
+// Đã xóa hẳn POST /api/users/forgot-password (chỉ cần email + SĐT là đổi được mật khẩu - C8).
+// Giữ duy nhất luồng OTP qua email (/api/users/send-otp -> /api/users/reset-password-otp) với OTP băm, hết hạn 10 phút, tối đa 5 lần thử, dùng 1 lần.
 
-/** Gửi mã OTP 6 chữ số bảo mật qua email để đặt lại mật khẩu (TTL 5 phút) */
-app.post('/api/users/send-otp', async (req, res) => {
+/** Gửi mã OTP 6 chữ số bảo mật qua email để đặt lại mật khẩu (TTL 10 phút, gắn otpLimiter, trả cùng 1 thông báo chống dò email - C8 & H14) */
+app.post('/api/users/send-otp', otpLimiter, async (req, res) => {
   try {
-    const { email } = req.body;
-    if (!email || !email.trim()) {
+    const { email } = req.body || {};
+    if (typeof email !== 'string' || !email.trim()) {
       return res.status(400).json({ message: 'Vui lòng cung cấp email!' });
     }
     const cleanEmail = email.trim().toLowerCase();
     const user = await mongoose.model('User').findOne({ email: cleanEmail });
 
-    if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký tài khoản!' });
+    const genericSuccessResponse = {
+      success: true,
+      message: 'Nếu email tồn tại trong hệ thống, mã xác thực OTP đã được gửi đến hộp thư của bạn!'
+    };
+
+    if (!user) {
+      return res.json(genericSuccessResponse);
+    }
 
     const generatedOtp = crypto.randomInt(100000, 1000000).toString();
     const otpHash = await bcrypt.hash(generatedOtp, 10);
@@ -1384,19 +1380,20 @@ app.post('/api/users/send-otp', async (req, res) => {
       identifier: cleanEmail,
       otpHash,
       purpose: 'RESET_PASSWORD',
-      attempts: 0
+      attempts: 0,
+      createdAt: new Date()
     });
 
     await sendOtpEmail({ email: cleanEmail, otp: generatedOtp, purpose: 'RESET_PASSWORD' });
 
-    res.json({ success: true, message: 'Mã xác thực OTP đã được gửi đến email của bạn!' });
+    return res.json(genericSuccessResponse);
   } catch (err) {
     console.error('Lỗi khi gửi OTP đặt lại mật khẩu:', err);
-    res.status(500).json({ message: 'Lỗi máy chủ khi gửi OTP!' });
+    return res.status(500).json({ message: 'Lỗi máy chủ khi gửi OTP!' });
   }
 });
 
-/** Xác thực OTP (tối đa 5 lần thử) và đặt lại mật khẩu mới đã băm bcrypt + tăng tokenVersion */
+/** Xác thực OTP (hết hạn 10 phút, tối đa 5 lần thử, dùng 1 lần) và đặt lại mật khẩu mới đã băm bcrypt + tăng tokenVersion (C8) */
 app.post('/api/users/reset-password-otp', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body || {};
@@ -1417,6 +1414,12 @@ app.post('/api/users/reset-password-otp', async (req, res) => {
       return res.status(400).json({ message: 'Mã OTP đã hết hạn hoặc không tồn tại!' });
     }
 
+    const OTP_TTL_MS = 10 * 60 * 1000;
+    if (tokenRecord.createdAt && Date.now() - new Date(tokenRecord.createdAt).getTime() > OTP_TTL_MS) {
+      await OtpToken.deleteOne({ _id: tokenRecord._id });
+      return res.status(400).json({ message: 'Mã OTP đã hết hạn (quá 10 phút). Vui lòng yêu cầu mã mới!' });
+    }
+
     if (tokenRecord.attempts >= 5) {
       await OtpToken.deleteOne({ _id: tokenRecord._id });
       return res.status(400).json({ message: 'Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu mã OTP mới!' });
@@ -1425,12 +1428,17 @@ app.post('/api/users/reset-password-otp', async (req, res) => {
     const isMatch = await bcrypt.compare(otp.trim(), tokenRecord.otpHash);
     if (!isMatch) {
       tokenRecord.attempts += 1;
+      if (tokenRecord.attempts >= 5) {
+        await OtpToken.deleteOne({ _id: tokenRecord._id });
+        return res.status(400).json({ message: 'Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu mã OTP mới!' });
+      }
       await tokenRecord.save();
       return res.status(400).json({ message: 'Mã OTP không chính xác!' });
     }
 
     const user = await mongoose.model('User').findOne({ email: cleanEmail });
     if (!user) {
+      await OtpToken.deleteOne({ _id: tokenRecord._id });
       return res.status(404).json({ message: 'Không tìm thấy người dùng!' });
     }
 

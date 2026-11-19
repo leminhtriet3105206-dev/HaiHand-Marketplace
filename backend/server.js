@@ -72,7 +72,7 @@ const {
 } = require('./utils/b2c');
 const notificationService = require('./utils/notificationService');
 const { sendOtpEmail } = require('./utils/otpService');
-const { hashPassword, verifyPassword } = require('./utils/password');
+const { hashPassword, verifyPassword, verifyUserWalletPin } = require('./utils/password');
 const {
   getVnpTmnCode,
   getVnpReturnUrl,
@@ -346,6 +346,64 @@ const requireAdmin = async (req, res, next) => {
 // SECTION 9: GẮN CÁC MODULE ROUTER CHUYÊN BIỆT (MODULAR ROUTERS)
 // Lưu ý thứ tự: Gắn trước các route `/api/users/:id` để không bị wildcard che mất
 // ============================================================================
+/**
+ * Middleware kiểm tra chế độ bảo trì hệ thống (`maintenanceMode` - H7):
+ * - Luôn cho phép các request đọc (`GET`, `HEAD`, `OPTIONS`), route đăng nhập, webhook và Admin (`/api/admin/*`, `/admin/*`).
+ * - Với các thao tác ghi (`POST`, `PUT`, `PATCH`, `DELETE`): nếu `settings.maintenanceMode === true` và người gọi không phải Admin -> trả 503.
+ */
+app.use(async (req, res, next) => {
+  try {
+    const method = String(req.method || 'GET').toUpperCase();
+    if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+      return next();
+    }
+    const urlPath = req.path || req.originalUrl || '';
+    if (
+      urlPath.startsWith('/api/admin') ||
+      urlPath.startsWith('/admin') ||
+      urlPath.startsWith('/api/webhook') ||
+      urlPath === '/login' ||
+      urlPath === '/api/users/login'
+    ) {
+      return next();
+    }
+
+    let setting = null;
+    try {
+      setting = await Settings.findOne();
+    } catch (sErr) {}
+
+    if (!setting || setting.maintenanceMode !== true) {
+      return next();
+    }
+
+    if (req.user && req.user.role === 'Admin') {
+      return next();
+    }
+    if (req.session && req.session.adminId) {
+      return next();
+    }
+
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const decoded = jwt.verify(token, getJwtSecret());
+        const caller = await User.findById(decoded.id || decoded._id);
+        if (caller && caller.role === 'Admin' && caller.status !== 'locked' && !caller.isBanned) {
+          return next();
+        }
+      } catch (jwtErr) {}
+    }
+
+    return res.status(503).json({
+      message: 'Hệ thống đang tạm bảo trì để nâng cấp. Vui lòng quay lại sau ít phút!'
+    });
+  } catch (err) {
+    return next();
+  }
+});
+
 app.use(createSellerRouter({ upload, sendNotification, sendAdminNotification, io })); // Kênh Người Bán & Duyệt Seller
 app.use('/api/webhook', webhookRouter);                                               // Webhook vận chuyển GHN
 app.use('/api/haipay', haipayRouter);                                                 // Ví HaiPay (OTP, đăng ký, đăng nhập, /me)
@@ -520,18 +578,23 @@ app.get('/api/admin/settings', requireAdminJWT, async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi lấy cấu hình hệ thống' }); }
 });
 
-/** [API] Cập nhật cấu hình hệ thống toàn sàn */
+/** [API] Cập nhật cấu hình hệ thống toàn sàn (H7 & M1: thêm autoApprovePosts và đồng bộ platformFeePercentage/commissionRate) */
 app.put('/api/admin/settings', requireAdminJWT, async (req, res) => {
   try {
     const settings = await Settings.getGlobal();
     const updatable = [
-      'commissionRate', 'maintenanceMode', 'bannerAnnouncement',
+      'commissionRate', 'platformFeePercentage', 'autoApprovePosts', 'maintenanceMode', 'bannerAnnouncement',
       'allowNewSellerRegistration', 'codEnabled', 'vnpayEnabled', 'haipayEnabled',
-      'supportHotline', 'supportEmail'
+      'supportHotline', 'supportEmail', 'contactEmail'
     ];
     updatable.forEach(key => {
       if (req.body[key] !== undefined) settings[key] = req.body[key];
     });
+    if (req.body.commissionRate !== undefined && req.body.platformFeePercentage === undefined) {
+      settings.platformFeePercentage = Number(req.body.commissionRate);
+    } else if (req.body.platformFeePercentage !== undefined && req.body.commissionRate === undefined) {
+      settings.commissionRate = Number(req.body.platformFeePercentage);
+    }
     await settings.save();
     res.json({ message: 'Đã lưu cấu hình hệ thống thành công!', settings });
   } catch (error) { res.status(500).json({ message: 'Lỗi cập nhật cấu hình hệ thống' }); }
@@ -545,6 +608,8 @@ app.get('/api/settings', async (req, res) => {
       bannerAnnouncement: settings.bannerAnnouncement,
       maintenanceMode: settings.maintenanceMode,
       commissionRate: settings.commissionRate,
+      platformFeePercentage: settings.platformFeePercentage ?? settings.commissionRate ?? 5,
+      autoApprovePosts: settings.autoApprovePosts === true,
       allowNewSellerRegistration: settings.allowNewSellerRegistration,
       codEnabled: settings.codEnabled,
       vnpayEnabled: settings.vnpayEnabled,
@@ -668,8 +733,8 @@ app.post('/users/edit/:id', requireAdminJWT, async (req, res) => {
   }
 });
 
-/** [SSR] Xóa người dùng theo ID */
-app.get('/users/delete/:id', requireAdmin, async (req, res) => {
+/** [SSR] Xóa người dùng theo ID (H16: chuyển sang POST + requireAdmin) */
+app.post('/users/delete/:id', requireAdmin, async (req, res) => {
   try { await User.findByIdAndDelete(req.params.id); res.redirect('/users'); } catch (e) { res.redirect('/users'); }
 });
 
@@ -765,13 +830,14 @@ app.get('/posts', requireAdmin, async (req, res) => {
   } catch (error) { res.render('posts', { posts: [], searchQuery: '' }); }
 });
 
-/** [SSR] Ẩn/Xóa mềm bài đăng (đặt status = DELETED, moderationStatus = locked - H3) */
-app.get('/posts/delete/:id', requireAdmin, async (req, res) => {
+/** [SSR] Ẩn/Xóa mềm bài đăng (đặt status = DELETED, moderationStatus = locked - H3 & H16: dùng POST) */
+const handleBackendSsrDeletePost = async (req, res) => {
   try { await Post.findByIdAndUpdate(req.params.id, { status: 'DELETED', moderationStatus: 'locked' }); res.redirect('/posts'); } catch (e) { res.redirect('/posts'); }
-});
+};
+app.post('/posts/delete/:id', requireAdmin, handleBackendSsrDeletePost);
 
-/** [SSR] Duyệt bài đăng (chuyển moderationStatus = approved, status = active hoặc out_of_stock theo tồn kho - H3) */
-app.get('/posts/approve/:id', requireAdmin, async (req, res) => {
+/** [SSR] Duyệt bài đăng (chuyển moderationStatus = approved, status = active hoặc out_of_stock theo tồn kho - H3 & H16: dùng POST) */
+const handleBackendSsrApprovePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).send('Không tìm thấy bài viết');
@@ -793,7 +859,8 @@ app.get('/posts/approve/:id', requireAdmin, async (req, res) => {
   } catch (error) {
     res.status(500).send('Lỗi server khi duyệt bài');
   }
-});
+};
+app.post('/posts/approve/:id', requireAdmin, handleBackendSsrApprovePost);
 
 /** [SSR] Xóa bài vi phạm từ trang báo cáo Admin, dọn Report + Cart/Favorites liên quan */
 app.post('/admin/posts/delete/:id', requireAdmin, async (req, res) => {
@@ -1073,6 +1140,12 @@ app.post('/api/admin/release-funds/:orderId', requireAdminJWT, async (req, res) 
     );
     if (!updatedSeller) {
       return res.status(404).json({ message: 'Không tìm thấy Seller' });
+    }
+    if ((updatedSeller.pendingBalance || 0) < 0) {
+      updatedSeller.pendingBalance = 0;
+      if (typeof updatedSeller.save === 'function') {
+        await updatedSeller.save();
+      }
     }
 
     await Transaction.create({
@@ -2308,23 +2381,50 @@ app.get('/api/users/:userId/transactions', protect, requireOwnerOrAdmin('userId'
 });
 
 /**
- * Tạo lệnh rút tiền từ Ví HaiPay (yêu cầu Bearer JWT chính chủ, tối thiểu 50.000đ):
+ * Tạo lệnh rút tiền từ Ví HaiPay (H8 & M14: yêu cầu Bearer JWT chính chủ, bắt buộc mã PIN ví 6 chữ số, tối thiểu 50.000đ):
+ * - Kiểm tra `verifyUserWalletPin` (khóa 15 phút sau 5 lần sai).
  * - Trừ số dư ví nguyên tử bằng `User.findOneAndUpdate({ walletBalance: { $gte: amount } })` chống rút lố đồng thời.
- * - Tạo Transaction `Đang xử lý` và thông báo tới Admin Portal.
+ * - Tạo Transaction `Đang xử lý` (lưu `bankName`, `accountNumber`, `accountHolder` có cấu trúc) và thông báo tới Admin Portal.
  */
-app.post('/api/users/:userId/withdraw', protectStrict, async (req, res) => {
+app.post('/api/users/:userId/withdraw', protectStrict, withdrawLimiter, async (req, res) => {
   try {
     if (!req.user._id.equals(req.params.userId) && req.user.role !== 'Admin') {
       return res.status(403).json({ message: 'Không có quyền rút tiền từ ví của người khác' });
     }
-    const { bankName, bankAccount } = req.body;
-    const amount = Number(req.body.amount);
-    if (!Number.isFinite(amount) || amount < 50000) {
-      return res.status(400).json({ message: 'Số tiền rút tối thiểu là 50.000đ!' });
+    const { bankName, bankAccount, accountNumber, accountHolder, walletPin, pin } = req.body || {};
+    const cleanBankName = typeof bankName === 'string' ? bankName.trim() : '';
+    const cleanBankAccount = typeof bankAccount === 'string' && bankAccount.trim()
+      ? bankAccount.trim()
+      : (typeof accountNumber === 'string' ? accountNumber.trim() : '');
+    const cleanAccountHolder = typeof accountHolder === 'string' ? accountHolder.trim() : '';
+
+    if (!cleanBankName || !cleanBankAccount) {
+      return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ Tên ngân hàng và Số tài khoản thụ hưởng!' });
+    }
+
+    const rawAmount = req.body?.amount;
+    if (typeof rawAmount === 'object' || typeof rawAmount === 'boolean' || String(rawAmount).includes('.')) {
+      return res.status(400).json({ message: 'Số tiền rút phải là số nguyên dương hợp lệ!' });
+    }
+    const amount = Number(rawAmount);
+    if (!Number.isFinite(amount) || !Number.isInteger(amount) || amount < 50000) {
+      return res.status(400).json({ message: 'Số tiền rút phải là số nguyên tối thiểu 50.000đ!' });
     }
 
     const existingUser = await User.findById(req.params.userId);
     if (!existingUser) return res.status(404).json({ message: 'Không tìm thấy user' });
+    if (existingUser.status === 'locked' || existingUser.isBanned === true || existingUser.isDeleted === true) {
+      return res.status(403).json({ message: 'Tài khoản của bạn đang bị khóa, không thể thực hiện rút tiền!' });
+    }
+
+    const pinCheck = await verifyUserWalletPin(existingUser, walletPin !== undefined ? walletPin : pin);
+    if (!pinCheck.ok) {
+      return res.status(pinCheck.statusCode || 400).json({
+        message: pinCheck.message,
+        locked: Boolean(pinCheck.locked),
+        noPin: Boolean(pinCheck.noPin)
+      });
+    }
 
     const user = await User.findOneAndUpdate(
       { _id: req.params.userId, walletBalance: { $gte: amount } },
@@ -2336,15 +2436,23 @@ app.post('/api/users/:userId/withdraw', protectStrict, async (req, res) => {
     }
 
     await Transaction.create({
-      user: user._id, type: 'Rút tiền', amount: amount, status: 'Đang xử lý',
-      description: `Rút tiền về NH: ${bankName} - STK: ${bankAccount}`
+      user: user._id,
+      type: 'Rút tiền',
+      amount: amount,
+      status: 'Đang xử lý',
+      bankName: cleanBankName,
+      accountNumber: cleanBankAccount,
+      accountHolder: cleanAccountHolder || user.name || '',
+      description: `Rút tiền về NH: ${cleanBankName} - STK: ${cleanBankAccount}${cleanAccountHolder ? ` (${cleanAccountHolder})` : ''}`
     });
 
-    await UserNotification.create({
-      user: user._id, title: '🏦 Đã tạo lệnh rút tiền!',
-      message: `Lệnh rút ${amount.toLocaleString('vi-VN')}đ về tài khoản ${bankName} đang được xử lý. Tiền sẽ về trong 2-4 tiếng nữa nhé.`,
-      link: '/haipay'
-    });
+    await sendNotification(
+      user._id,
+      '🏦 Đã tạo lệnh rút tiền!',
+      `Lệnh rút ${amount.toLocaleString('vi-VN')}đ về tài khoản ${cleanBankName} đang được xử lý. Tiền sẽ về trong 2-4 tiếng nữa nhé.`,
+      'WITHDRAWAL',
+      '/haipay'
+    );
 
     await sendAdminNotification(
       '💸 Yêu cầu rút tiền mới!',
@@ -2353,7 +2461,7 @@ app.post('/api/users/:userId/withdraw', protectStrict, async (req, res) => {
       'WITHDRAWAL'
     );
 
-    res.status(200).json({ message: 'Tạo lệnh rút tiền thành công!', user });
+    res.status(200).json({ message: 'Tạo lệnh rút tiền thành công!', user: sanitizeUser(user, { keepOwnerFields: true }) });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi hệ thống khi rút tiền' });
   }
@@ -3240,15 +3348,19 @@ app.put('/api/messages/mark-read', protect, async (req, res) => {
 });
 
 // --- 14.3. Chatbot AI (LM Studio & MongoDB RAG) ---
-/** Xử lý câu hỏi Chatbot AI hỗ trợ tìm sản phẩm & tư vấn chính sách HaiHand */
+/** Xử lý câu hỏi Chatbot AI hỗ trợ tìm sản phẩm & tư vấn chính sách HaiHand (H14: giới hạn tốc độ & độ dài input <= 1000 ký tự) */
 app.post('/api/chatbot/ask', chatbotLimiter, async (req, res) => {
   try {
-    const { message, history } = req.body;
-    if (!message || typeof message !== 'string') {
+    const { message, history } = req.body || {};
+    if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn (message)' });
     }
+    if (message.length > 1000) {
+      return res.status(400).json({ error: 'Nội dung tin nhắn quá dài (tối đa 1000 ký tự)!' });
+    }
+    const safeHistory = Array.isArray(history) ? history.slice(-10) : [];
 
-    const result = await processChatbot(message, history);
+    const result = await processChatbot(message.trim(), safeHistory);
     res.json(result);
   } catch (error) {
     console.error('Lỗi Chatbot:', error);

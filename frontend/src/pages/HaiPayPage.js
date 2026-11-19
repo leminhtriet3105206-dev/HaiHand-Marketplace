@@ -22,6 +22,7 @@ const HaiPayPage = () => {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [bankName, setBankName] = useState('Vietcombank');
   const [bankAccount, setBankAccount] = useState('');
+  const [walletPin, setWalletPin] = useState('');
   const [transactions, setTransactions] = useState([]);
 
   
@@ -75,6 +76,9 @@ const HaiPayPage = () => {
     if (!amount || !bankAccount) return toast.warning('Chú ý', "Vui lòng điền đủ thông tin!");
     if (amount < 50000) return toast.warning('Chú ý', "Rút tối thiểu 50.000đ bác nhé!");
     if (amount > user.walletBalance) return toast.info('Thông báo', "Số dư không đủ để rút!");
+    if (!/^\d{6}$/.test(walletPin.trim())) {
+      return toast.warning('Yêu cầu Mã PIN Ví', 'Vui lòng nhập mã PIN Ví HaiPay (6 chữ số) để xác nhận rút tiền!');
+    }
 
     const isConfirmed = await confirm(`Xác nhận rút ${amount.toLocaleString('vi-VN')}đ về ${bankName}?`);
     if (isConfirmed) {
@@ -83,7 +87,8 @@ const HaiPayPage = () => {
             const res = await axiosClient.post(`/api/users/${user._id}/withdraw`, {
                 amount: amount,
                 bankName,
-                bankAccount
+                bankAccount,
+                walletPin: walletPin.trim()
             });
             
             toast.success('Thành công', "✅ " + res.data.message);
@@ -93,6 +98,7 @@ const HaiPayPage = () => {
             
             setWithdrawAmount(''); 
             setBankAccount('');
+            setWalletPin('');
             setActiveTab('history');
             fetchWalletData(); 
         } catch (error) {
@@ -229,9 +235,22 @@ const HaiPayPage = () => {
                             <option value="ACB">Ngân hàng Á Châu (ACB)</option>
                         </select>
                     </div>
-                    <div className="mb-8">
+                    <div className="mb-5">
                         <label className="block font-bold text-stone-700 text-sm mb-2">Số tài khoản thụ hưởng</label>
                         <input type="text" className="w-full border-2 border-stone-200 rounded-xl text-lg p-3.5 font-bold focus:outline-none focus:border-[#EA580C] transition-colors" placeholder="Nhập số tài khoản của bạn..." value={bankAccount} onChange={e => setBankAccount(e.target.value)} required />
+                    </div>
+                    <div className="mb-8">
+                        <label className="block font-bold text-stone-700 text-sm mb-2">🔒 Mã PIN Ví HaiPay (6 chữ số)</label>
+                        <input
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={6}
+                            className="w-full border-2 border-stone-200 rounded-xl text-lg p-3.5 font-mono font-bold tracking-widest focus:outline-none focus:border-[#EA580C] transition-colors"
+                            placeholder="Nhập 6 chữ số mã PIN Ví HaiPay..."
+                            value={walletPin}
+                            onChange={e => setWalletPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            required
+                        />
                     </div>
                     <button type="submit" className="w-full bg-[#1C1917] hover:bg-stone-800 text-white font-black text-lg py-4 rounded-xl shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 14v3m4-3v3m4-3v3M3 21h18M3 10h18M3 7l9-4 9 4M4 10h16v11H4V10z" /></svg>

@@ -6,8 +6,9 @@ const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const { createAndSaveOtp, verifyOtp } = require('../utils/otpService');
 const { getJwtSecret, sanitizeUser, signUserToken } = require('../utils/b2c');
-const { hashPassword, verifyPassword } = require('../utils/password');
+const { hashPassword, verifyPassword, verifyUserWalletPin } = require('../utils/password');
 const { otpLimiter, loginLimiter } = require('../middleware/security');
+const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 const ALLOWED_OTP_PURPOSES = new Set(['LOGIN', 'REGISTER', 'TRANSACTION']);
@@ -468,6 +469,7 @@ router.get('/me', requireWalletAuth, async (req, res) => {
         walletBalance: user.walletBalance || 0,
         pendingBalance: user.pendingBalance || 0,
         isWalletActive: !!user.isWalletActive,
+        hasPin: Boolean(user.walletPin && String(user.walletPin).trim()),
         walletPhone: user.walletPhone || user.phone || '',
         cccd: user.cccd || '',
         bankInfo: user.bankInfo || { name: '', accountNumber: '', accountName: '' },
@@ -480,5 +482,76 @@ router.get('/me', requireWalletAuth, async (req, res) => {
     return res.status(500).json({ message: 'Lỗi lấy thông tin ví: ' + error.message });
   }
 });
+
+/**
+ * GET /api/haipay/status
+ * Trả trạng thái Ví HaiPay cho trang Checkout / Hồ sơ (H11: protect -> { isWalletActive, walletBalance, hasPin })
+ */
+router.get('/status', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+    return res.status(200).json({
+      isWalletActive: !!user.isWalletActive,
+      walletBalance: Number(user.walletBalance) || 0,
+      pendingBalance: Number(user.pendingBalance) || 0,
+      hasPin: Boolean(user.walletPin && String(user.walletPin).trim())
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Lỗi lấy trạng thái ví HaiPay' });
+  }
+});
+
+/**
+ * PUT /api/haipay/pin (và POST /api/haipay/set-pin)
+ * Thiết lập lần đầu hoặc đổi mã PIN Ví HaiPay 6 chữ số (H8: băm bcrypt cost >= 10)
+ */
+const handleSetOrChangeWalletPin = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'Không tìm thấy người dùng' });
+    }
+
+    const { pin, newPin, oldPin, currentPin } = req.body || {};
+    const targetPin = typeof newPin === 'string' && newPin.trim() ? newPin.trim() : (typeof pin === 'string' ? pin.trim() : '');
+
+    if (!/^\d{6}$/.test(targetPin)) {
+      return res.status(400).json({ message: 'Mã PIN Ví HaiPay phải gồm đúng 6 chữ số (0-9)!' });
+    }
+
+    const hasExistingPin = Boolean(user.walletPin && String(user.walletPin).trim());
+    if (hasExistingPin) {
+      const providedOldPin = typeof oldPin === 'string' ? oldPin : currentPin;
+      const pinCheck = await verifyUserWalletPin(user, providedOldPin);
+      if (!pinCheck.ok) {
+        return res.status(pinCheck.statusCode || 400).json({ message: pinCheck.message });
+      }
+    }
+
+    user.walletPin = await hashPassword(targetPin, 10);
+    user.pinFailedAttempts = 0;
+    user.pinLockedUntil = null;
+    if (!user.isWalletActive) {
+      user.isWalletActive = true;
+      user.walletRegisteredAt = user.walletRegisteredAt || new Date();
+    }
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      hasPin: true,
+      isWalletActive: user.isWalletActive,
+      message: hasExistingPin ? 'Đã đổi mã PIN Ví HaiPay thành công!' : 'Đã thiết lập mã PIN Ví HaiPay thành công!'
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Lỗi thiết lập mã PIN Ví HaiPay' });
+  }
+};
+
+router.put('/pin', protect, handleSetOrChangeWalletPin);
+router.post('/set-pin', protect, handleSetOrChangeWalletPin);
 
 module.exports = router;

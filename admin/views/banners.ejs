@@ -282,13 +282,12 @@
                                         >
                                             <i class="fas fa-edit mr-1"></i> Sửa
                                         </button>
-                                        <a
-                                            href="/banners/delete/<%= b._id %>"
-                                            onclick="return confirm('Xác nhận xóa vĩnh viễn Banner này?');"
-                                            class="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-bold transition"
-                                        >
-                                            <i class="fas fa-trash-alt mr-1"></i> Xóa
-                                        </a>
+                                        <form action="/banners/delete/<%= b._id %>" method="POST" class="inline" onsubmit="return confirm('Xác nhận xóa vĩnh viễn Banner này?');">
+                                            <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
+                                            <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-bold transition cursor-pointer">
+                                                <i class="fas fa-trash-alt mr-1"></i> Xóa
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>

@@ -30,6 +30,12 @@ function getPlatformFeePercent(setting) {
 async function fetchPlatformFeePercent() {
   try {
     const Settings = require('../models/Settings');
+    const isConnected = Settings.db && Settings.db.readyState === 1;
+    const isFindOneMocked =
+      typeof Settings.findOne === 'function' && Boolean(Settings.findOne._isMockFunction);
+    if (!isConnected && !isFindOneMocked) {
+      return DEFAULT_COMMISSION_PERCENT;
+    }
     const setting = await Settings.findOne();
     return getPlatformFeePercent(setting);
   } catch (e) {

@@ -110,12 +110,14 @@ export default function CheckoutPage() {
   const [appliedVoucher, setAppliedVoucher] = useState(null); // { code, discountAmount, label }
   const [voucherError, setVoucherError] = useState('');
 
-  // Wallet balance
+  // Wallet balance & PIN state (H8 & H11)
   const [walletInfo, setWalletInfo] = useState({
     isActive: !!currentUser?.isWalletActive,
     balance: Number(currentUser?.walletBalance) || 0,
+    hasPin: false,
     loading: false
   });
+  const [walletPin, setWalletPin] = useState('');
 
   // Submission / Loading
   const [submitting, setSubmitting] = useState(false);
@@ -199,6 +201,7 @@ export default function CheckoutPage() {
         setWalletInfo({
           isActive: !!res.data.isWalletActive,
           balance: Number(res.data.walletBalance) || 0,
+          hasPin: !!res.data.hasPin,
           loading: false
         });
       }
@@ -550,6 +553,9 @@ export default function CheckoutPage() {
       if (walletInfo.balance < grandTotal) {
         return toast.error('Số dư không đủ', `Số dư Ví (${formatPrice(walletInfo.balance)}) không đủ thanh toán ${formatPrice(grandTotal)}. Vui lòng nạp thêm hoặc chọn phương thức khác.`);
       }
+      if (!/^\d{6}$/.test(walletPin.trim())) {
+        return toast.warning('Yêu cầu Mã PIN Ví', 'Vui lòng nhập mã PIN Ví HaiPay (6 chữ số) để xác nhận thanh toán.');
+      }
     }
 
     setSubmitting(true);
@@ -572,7 +578,8 @@ export default function CheckoutPage() {
           fullAddress: selectedAddress.fullAddress || selectedAddress.street
         },
         saveAsDefault: false,
-        paymentMethod
+        paymentMethod,
+        ...(paymentMethod === 'HAIPAY' ? { walletPin: walletPin.trim() } : {})
       };
 
       const { data } = await axiosClient.post('/api/checkout', checkoutPayload);
@@ -1023,6 +1030,32 @@ export default function CheckoutPage() {
                   </p>
                 </label>
               </div>
+
+              {/* Ô nhập Mã PIN Ví HaiPay khi chọn phương thức HAIPAY (H8) */}
+              {paymentMethod === 'HAIPAY' && (
+                <div className="mt-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-extrabold text-stone-800 flex items-center gap-1.5">
+                      <span>🔒 Mã PIN Ví HaiPay (6 chữ số)</span>
+                    </label>
+                    <Link to="/haipay" className="text-[11px] font-bold text-amber-700 hover:underline">
+                      Quản lý / Thiết lập PIN Ví →
+                    </Link>
+                  </div>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Nhập 6 chữ số mã PIN Ví HaiPay..."
+                    value={walletPin}
+                    onChange={(e) => setWalletPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full sm:w-72 px-4 py-2.5 bg-white border border-amber-300 rounded-xl text-sm font-mono font-bold tracking-widest text-stone-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                  />
+                  <p className="text-[11px] text-stone-500">
+                    Bắt buộc xác thực mã PIN Ví HaiPay để bảo vệ số dư tài khoản của bạn (tạm khóa 15 phút nếu nhập sai quá 5 lần).
+                  </p>
+                </div>
+              )}
             </div>
 
           </div>

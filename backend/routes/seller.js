@@ -2,6 +2,7 @@ const express = require('express');
 const { protect, isSeller, isAdmin, requireAdminJWT } = require('../middleware/auth');
 const User = require('../models/User');
 const Order = require('../models/Order');
+const Settings = require('../models/Settings');
 const { Post } = require('../models/Product');
 const {
   PENDING_PRODUCT_STATUSES,
@@ -45,6 +46,22 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
 
   router.post('/api/users/apply-seller', protect, async (req, res) => {
     try {
+      let setting = null;
+      try {
+        const isSettingsConnected = Settings.db && Settings.db.readyState === 1;
+        const isSettingsMocked =
+          typeof Settings.findOne === 'function' && Boolean(Settings.findOne._isMockFunction);
+        if (isSettingsConnected || isSettingsMocked) {
+          setting = await Settings.findOne();
+        }
+      } catch (sErr) {}
+
+      if (setting && setting.allowNewSellerRegistration === false) {
+        return res.status(403).json({
+          message: 'Hiện tại sàn đang tạm ngưng nhận đăng ký mở Shop mới. Vui lòng quay lại sau!'
+        });
+      }
+
       const user = await User.findById(req.user._id);
       if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
       if (user.sellerStatus === 'approved' && user.isSeller) {

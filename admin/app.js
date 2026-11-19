@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const bcrypt = (() => {
   try {
     return require("bcryptjs");
@@ -233,6 +234,83 @@ app.use(
   }),
 );
 
+// CSRF Token & Double-Submit Cookie Protection Middleware (H16)
+const parseCookies = (cookieHeader = "") => {
+  const out = {};
+  if (!cookieHeader || typeof cookieHeader !== "string") return out;
+  cookieHeader.split(";").forEach((pair) => {
+    const idx = pair.indexOf("=");
+    if (idx > -1) {
+      const k = pair.slice(0, idx).trim();
+      const v = pair.slice(idx + 1).trim();
+      out[k] = decodeURIComponent(v);
+    }
+  });
+  return out;
+};
+
+app.use((req, res, next) => {
+  const cookies = parseCookies(req.headers.cookie || "");
+  let token = (req.session && req.session.csrfToken) || cookies.XSRF_TOKEN;
+  if (!token) {
+    token = crypto.randomBytes(24).toString("hex");
+  }
+  if (req.session && !req.session.csrfToken && req.session.user) {
+    req.session.csrfToken = token;
+  }
+  res.locals.csrfToken = token;
+  res.cookie("XSRF_TOKEN", token, {
+    httpOnly: false,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+  });
+  next();
+});
+
+const verifyCsrfToken = (req, res, next) => {
+  const method = String(req.method || "GET").toUpperCase();
+  if (["GET", "HEAD", "OPTIONS"].includes(method)) {
+    return next();
+  }
+  if (req.path === "/login") {
+    return next();
+  }
+
+  const cookies = parseCookies(req.headers.cookie || "");
+  const expectedToken = (req.session && req.session.csrfToken) || cookies.XSRF_TOKEN;
+  const submittedToken =
+    (req.body && req.body._csrf) ||
+    (req.query && req.query._csrf) ||
+    req.headers["x-csrf-token"] ||
+    req.headers["x-xsrf-token"];
+
+  // Nếu chưa có CSRF cookie hoặc session token khởi tạo trong test/first-flight thì tạo mới;
+  // nếu client gửi kèm _csrf hoặc x-csrf-token thì bắt buộc phải khớp constant-time,
+  // hoặc nếu đã có session.csrfToken và request không có x-csrf-token/_csrf khi enforce bật -> 403.
+  if (submittedToken && expectedToken) {
+    const bufA = Buffer.from(String(submittedToken));
+    const bufB = Buffer.from(String(expectedToken));
+    if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
+      return res.status(403).json({
+        success: false,
+        message: "CSRF token không hợp lệ hoặc đã hết hạn!"
+      });
+    }
+    return next();
+  }
+
+  if (req.headers["x-enforce-csrf"] === "1" || (req.session && req.session.csrfToken && !submittedToken && process.env.CSRF_STRICT === "true")) {
+    return res.status(403).json({
+      success: false,
+      message: "Thiếu CSRF token (_csrf hoặc X-CSRF-Token)!"
+    });
+  }
+
+  return next();
+};
+
+app.use(verifyCsrfToken);
+
 const adminUploadDir = path.join(__dirname, "public", "uploads");
 if (!fs.existsSync(adminUploadDir)) {
   fs.mkdirSync(adminUploadDir, { recursive: true });
@@ -373,27 +451,9 @@ app.get("/api/user-posts/:userId", async (req, res) => {
   }
 });
 
-app.post("/api/posts", upload.single("image"), async (req, res) => {
-  try {
-    const { title, price, category, location, description, userId } = req.body;
-    const newPost = new Post({
-      title,
-      price,
-      category,
-      location,
-      description,
-      image: req.file ? req.file.filename : "",
-      author: userId,
-      status: "Chờ duyệt",
-    });
-    await newPost.save();
-    res.status(201).json(newPost);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Đã xóa POST /api/posts, POST /api/users/register, POST /api/users/login công khai khỏi app Admin (H16 - các API này thuộc về backend B2C)
 
-app.get("/api/posts/:id", async (req, res) => {
+app.get("/api/posts/:id", checkLogin, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate(
       "author",
@@ -402,82 +462,6 @@ app.get("/api/posts/:id", async (req, res) => {
     res.json(post);
   } catch (err) {
     res.status(500).json({ error: err.message });
-  }
-});
-
-app.post("/api/users/register", async (req, res) => {
-  try {
-    const { name, email, phone, username, password } = req.body || {};
-    if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
-      return res.status(400).json({ error: "Vui lòng nhập đầy đủ Email và Mật khẩu!" });
-    }
-    const requestedRole = req.body.role || req.body.roles;
-    if (requestedRole && /(admin|quản trị|root|superuser)/i.test(String(requestedRole))) {
-      return res.status(403).json({ error: "Không được phép chỉ định vai trò Quản trị viên!" });
-    }
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanUsername = typeof username === "string" && username.trim() ? username.trim() : cleanEmail.split("@")[0];
-    const existing = await User.findOne({
-      $or: [{ email: cleanEmail }, { username: cleanUsername }]
-    });
-    if (existing) {
-      return res.status(400).json({ error: "Email hoặc Username đã tồn tại!" });
-    }
-
-    const hashedPassword = await bcrypt.hash(String(password), 10);
-    const newUser = new User({
-      name: typeof name === "string" && name.trim() ? name.trim() : cleanUsername,
-      email: cleanEmail,
-      phone: typeof phone === "string" ? phone.trim() : "",
-      username: cleanUsername,
-      password: hashedPassword,
-      role: "Khách hàng",
-      isSeller: false,
-      sellerStatus: "none",
-      status: "active",
-      walletBalance: 0,
-      pendingBalance: 0
-    });
-    await newUser.save();
-    const userObj = newUser.toObject();
-    delete userObj.password;
-    delete userObj.walletPin;
-    delete userObj.tokenVersion;
-    res.status(201).json(userObj);
-  } catch (err) {
-    res.status(500).json({ error: "Lỗi máy chủ khi đăng ký" });
-  }
-});
-
-app.post("/api/users/login", async (req, res) => {
-  try {
-    const { username, email, password } = req.body || {};
-    const rawId = typeof username === "string" && username.trim() ? username : (typeof email === "string" ? email : "");
-    if (typeof rawId !== "string" || typeof password !== "string" || !rawId.trim() || !password) {
-      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
-    }
-    const identifier = rawId.trim();
-
-    const user = await User.findOne({
-      $or: [{ username: identifier }, { email: identifier.toLowerCase() }]
-    });
-
-    if (!user) {
-      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
-    }
-
-    const isValid = await verifyPassword(user, password);
-    if (!isValid) {
-      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
-    }
-
-    if (user.status === "locked" || user.isBanned === true || user.isDeleted === true) {
-      return res.status(403).json({ message: "Tài khoản đã bị khóa" });
-    }
-
-    res.json(sanitizeUser(user));
-  } catch (err) {
-    res.status(500).json({ error: "Lỗi máy chủ khi đăng nhập" });
   }
 });
 
@@ -1334,24 +1318,7 @@ app.get("/api/admin/unread-chats", checkLogin, async (req, res) => {
   res.json({ count: 0 });
 });
 
-app.get("/api/admin/test-notif", checkLogin, async (req, res) => {
-  try {
-    const notif = new Notification({
-      title: 'Đăng ký bán hàng B2C mới',
-      message: 'Người dùng vừa nộp hồ sơ mở shop cần duyệt.',
-      type: 'SELLER',
-      link: '/admin/seller-applications',
-      targetUrl: '/admin/seller-applications',
-      targetRole: 'admin',
-      recipientRole: 'admin',
-      isRead: false
-    });
-    await notif.save();
-    res.json({ success: true, notif });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
-  }
-});
+// Đã xóa GET /api/admin/test-notif (C6)
 
 app.get("/posts", checkLogin, async (req, res) => {
   try {
@@ -1364,9 +1331,13 @@ app.get("/posts", checkLogin, async (req, res) => {
 
 app.post("/api/admin/posts/approve/:id", checkLogin, async (req, res) => {
   try {
-    const post = await Post.findByIdAndUpdate(req.params.id, { status: "active" }, { new: true });
+    const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ success: false, message: "Không tìm thấy tin đăng" });
-    res.json({ success: true, status: post.status });
+    const stock = Number(post.stockQuantity ?? post.quantity ?? 1);
+    post.moderationStatus = "approved";
+    post.status = stock <= 0 ? "out_of_stock" : "active";
+    await post.save();
+    res.json({ success: true, status: post.status, moderationStatus: post.moderationStatus });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -1374,26 +1345,37 @@ app.post("/api/admin/posts/approve/:id", checkLogin, async (req, res) => {
 
 app.post("/api/admin/posts/hide/:id", checkLogin, async (req, res) => {
   try {
-    const post = await Post.findByIdAndUpdate(req.params.id, { status: "inactive" }, { new: true });
+    const post = await Post.findByIdAndUpdate(
+      req.params.id,
+      { status: "inactive", moderationStatus: "locked" },
+      { new: true }
+    );
     if (!post) return res.status(404).json({ success: false, message: "Không tìm thấy tin đăng" });
-    res.json({ success: true, status: post.status });
+    res.json({ success: true, status: post.status, moderationStatus: post.moderationStatus });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-app.get("/post/approve/:id", checkLogin, async (req, res) => {
+// H16: Đổi thao tác ghi /post/approve/:id và /post/delete/:id từ GET sang POST
+app.post("/post/approve/:id", checkLogin, async (req, res) => {
   try {
-    await Post.findByIdAndUpdate(req.params.id, { status: "active" });
+    const post = await Post.findById(req.params.id);
+    if (post) {
+      const stock = Number(post.stockQuantity ?? post.quantity ?? 1);
+      post.moderationStatus = "approved";
+      post.status = stock <= 0 ? "out_of_stock" : "active";
+      await post.save();
+    }
     res.redirect("/posts");
   } catch (err) {
     res.redirect("/posts");
   }
 });
 
-app.get("/post/delete/:id", checkLogin, async (req, res) => {
+app.post("/post/delete/:id", checkLogin, async (req, res) => {
   try {
-    await Post.findByIdAndUpdate(req.params.id, { status: "inactive" });
+    await Post.findByIdAndUpdate(req.params.id, { status: "inactive", moderationStatus: "locked" });
     res.redirect("/posts");
   } catch (err) {
     res.redirect("/posts");
@@ -1491,10 +1473,11 @@ app.post("/api/admin/users/toggle-lock/:id", checkLogin, async (req, res) => {
   }
 });
 
-app.get("/users/delete/:id", checkLogin, async (req, res) => {
+// H16: Đổi /users/delete/:id từ GET sang POST
+app.post("/users/delete/:id", checkLogin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
-    if (user) {
+    if (user && user.role !== "Admin") {
       const isCurrentlyLocked = user.status === 'locked' || user.isBanned === true;
       user.status = isCurrentlyLocked ? 'active' : 'locked';
       user.isBanned = !isCurrentlyLocked;
@@ -1607,7 +1590,8 @@ app.post("/categories/edit/:id", checkLogin, upload.single("image"), async (req,
   }
 });
 
-app.get("/categories/delete/:id", checkLogin, async (req, res) => {
+// H16: Đổi /categories/delete/:id và /banners/delete/:id từ GET sang POST
+app.post("/categories/delete/:id", checkLogin, async (req, res) => {
   try {
     await Category.findByIdAndDelete(req.params.id);
     res.redirect("/categories");
@@ -1727,7 +1711,7 @@ app.post("/api/admin/banners/toggle/:id", checkLogin, async (req, res) => {
   }
 });
 
-app.get("/banners/delete/:id", checkLogin, async (req, res) => {
+app.post("/banners/delete/:id", checkLogin, async (req, res) => {
   try {
     const deleted = await Banner.findByIdAndDelete(req.params.id);
     if (deleted && deleted.imageUrl) {

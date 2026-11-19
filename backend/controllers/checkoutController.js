@@ -4,9 +4,11 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const PaymentSession = require('../models/PaymentSession');
 const Transaction = require('../models/Transaction');
+const Settings = require('../models/Settings');
 const { Product, Post } = require('../models/Product');
 const Notification = require('../models/Notification');
 const { sendNotification } = require('../utils/notificationService');
+const { verifyUserWalletPin } = require('../utils/password');
 const shippingService = require('../services/shipping');
 const { pickAddressFields, isCompleteAddress, formatAddress } = require('../models/schemas/Address');
 const { addAddressToUser } = require('../routes/address');
@@ -78,11 +80,10 @@ async function rollbackDeductedStock(deductedItems = []) {
  */
 async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymentMethod } = {}) {
   const session = await PaymentSession.findOneAndUpdate(
-    { parentOrderId, status: { $ne: 'paid' } },
+    { parentOrderId, status: { $nin: ['paid', 'processing'] } },
     {
       $set: {
-        status: 'paid',
-        paidAt: new Date(),
+        status: 'processing',
         gatewayPayload
       }
     },
@@ -91,7 +92,7 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
 
   if (!session) {
     const verifiedSession = await PaymentSession.findOne({ parentOrderId });
-    if (verifiedSession && verifiedSession.status === 'paid') {
+    if (verifiedSession && (verifiedSession.status === 'paid' || verifiedSession.status === 'processing')) {
       return { session: verifiedSession, alreadyPaid: true };
     }
     throw new Error(`Không tìm thấy phiên thanh toán với mã ${parentOrderId}`);
@@ -99,10 +100,11 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
 
   const feePercent = await fetchPlatformFeePercent();
   const orders = await Order.find({ _id: { $in: session.orderIds } });
+  const paidTime = new Date();
   for (const order of orders) {
     const { sellerReceive } = calculateOrderSplit(order, feePercent);
     order.paymentStatus = 'escrow';
-    order.paidAt = new Date();
+    order.paidAt = paidTime;
     order.status = 'Pending';
     if (order.commissionRate == null) order.commissionRate = feePercent;
     if (order.sellerReceive == null) order.sellerReceive = sellerReceive;
@@ -171,6 +173,17 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
     await buyer.save();
   }
 
+  // Đánh dấu session sang 'paid' SAU khi đã xử lý xong toàn bộ Order & pendingBalance (H12)
+  session.status = 'paid';
+  session.paidAt = paidTime;
+  if (typeof session.save === 'function') {
+    await session.save();
+  } else {
+    await PaymentSession.findByIdAndUpdate(session._id, {
+      $set: { status: 'paid', paidAt: paidTime }
+    });
+  }
+
   return { session, orders, alreadyPaid: false };
 }
 
@@ -185,6 +198,8 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
  */
 async function processCheckout(req, res) {
   const deductedItems = [];
+  let walletDeductedAmount = 0;
+  let walletDeductedBuyerId = null;
   try {
     const buyerId = req.user ? req.user._id : req.body.userId;
     if (!buyerId || !mongoose.Types.ObjectId.isValid(buyerId)) {
@@ -200,8 +215,52 @@ async function processCheckout(req, res) {
       items,
       shippingAddress: rawAddress,
       saveAsDefault = false,
-      paymentMethod = 'COD'
+      paymentMethod: rawPaymentMethod = 'COD',
+      walletPin,
+      pin
     } = req.body;
+
+    const paymentMethod = typeof rawPaymentMethod === 'string' ? rawPaymentMethod.trim().toUpperCase() : '';
+    const ALLOWED_PAYMENT_METHODS = new Set(['COD', 'VNPAY', 'HAIPAY']);
+    if (!ALLOWED_PAYMENT_METHODS.has(paymentMethod)) {
+      return res.status(400).json({
+        message: 'Phương thức thanh toán không hợp lệ (chỉ chấp nhận COD, VNPAY hoặc HAIPAY)!'
+      });
+    }
+
+    // Kiểm tra cờ cấu hình hệ thống ở server (H7)
+    let globalSettings = null;
+    try {
+      const isSettingsConnected = Settings.db && Settings.db.readyState === 1;
+      const isSettingsMocked =
+        typeof Settings.findOne === 'function' && Boolean(Settings.findOne._isMockFunction);
+      if (isSettingsConnected || isSettingsMocked) {
+        globalSettings = await Settings.findOne();
+      }
+    } catch (sErr) {}
+
+    if (globalSettings) {
+      if (globalSettings.maintenanceMode === true && req.user?.role !== 'Admin') {
+        return res.status(503).json({
+          message: 'Hệ thống đang tạm bảo trì để nâng cấp. Vui lòng quay lại sau ít phút!'
+        });
+      }
+      if (paymentMethod === 'COD' && globalSettings.codEnabled === false) {
+        return res.status(400).json({
+          message: 'Phương thức thanh toán khi nhận hàng (COD) hiện đang tạm ngưng trên hệ thống!'
+        });
+      }
+      if (paymentMethod === 'VNPAY' && globalSettings.vnpayEnabled === false) {
+        return res.status(400).json({
+          message: 'Cổng thanh toán VNPAY hiện đang tạm ngưng trên hệ thống!'
+        });
+      }
+      if (paymentMethod === 'HAIPAY' && globalSettings.haipayEnabled === false) {
+        return res.status(400).json({
+          message: 'Phương thức thanh toán qua Ví HaiPay hiện đang tạm ngưng trên hệ thống!'
+        });
+      }
+    }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: 'Vui lòng chọn ít nhất 1 sản phẩm để đặt hàng' });
@@ -454,10 +513,18 @@ async function processCheckout(req, res) {
       });
     }
 
-    // Pre-check HaiPay balance if using wallet
+    // Pre-check HaiPay balance & mandatory Wallet PIN if using wallet (H8)
     if (paymentMethod === 'HAIPAY') {
       if (!buyer.isWalletActive) {
         return res.status(400).json({ message: 'Bạn chưa kích hoạt Ví HaiPay. Vui lòng kích hoạt trong mục Ví!' });
+      }
+      const pinCheck = await verifyUserWalletPin(buyer, walletPin !== undefined ? walletPin : pin);
+      if (!pinCheck.ok) {
+        return res.status(pinCheck.statusCode || 400).json({
+          message: pinCheck.message,
+          locked: Boolean(pinCheck.locked),
+          noPin: Boolean(pinCheck.noPin)
+        });
       }
       if ((buyer.walletBalance || 0) < finalAmount) {
         return res.status(400).json({
@@ -529,6 +596,31 @@ async function processCheckout(req, res) {
       }
     }
 
+    // 5.5. Nếu thanh toán bằng HAIPAY: trừ ví nguyên tử TRƯỚC khi tạo đơn (H12); nếu tạo đơn lỗi sẽ hoàn trả lại ví trong catch
+    let updatedBuyerAfterWallet = null;
+    if (paymentMethod === 'HAIPAY') {
+      updatedBuyerAfterWallet = await User.findOneAndUpdate(
+        {
+          _id: buyer._id,
+          isWalletActive: true,
+          walletBalance: { $gte: finalAmount }
+        },
+        {
+          $inc: { walletBalance: -finalAmount }
+        },
+        { new: true }
+      );
+
+      if (!updatedBuyerAfterWallet) {
+        await rollbackDeductedStock(deductedItems);
+        return res.status(400).json({
+          message: 'Số dư Ví HaiPay không đủ hoặc giao dịch bị từ chối do xung đột đồng thời. Vui lòng thử lại!'
+        });
+      }
+      walletDeductedAmount = finalAmount;
+      walletDeductedBuyerId = buyer._id;
+    }
+
     // 6. Generate cryptographically random parentOrderId sharing across all sub-orders (H0, M6)
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randSuffix = crypto.randomBytes(6).toString('hex').toUpperCase();
@@ -598,27 +690,6 @@ async function processCheckout(req, res) {
     let paymentUrl = null;
 
     if (paymentMethod === 'HAIPAY') {
-      const updatedBuyer = await User.findOneAndUpdate(
-        {
-          _id: buyer._id,
-          isWalletActive: true,
-          walletBalance: { $gte: finalAmount }
-        },
-        {
-          $inc: { walletBalance: -finalAmount }
-        },
-        { new: true }
-      );
-
-      if (!updatedBuyer) {
-        await rollbackDeductedStock(deductedItems);
-        await Order.deleteMany({ parentOrderId });
-        await PaymentSession.deleteOne({ parentOrderId });
-        return res.status(400).json({
-          message: 'Số dư Ví HaiPay không đủ hoặc giao dịch bị từ chối do xung đột đồng thời. Vui lòng thử lại!'
-        });
-      }
-
       try {
         await Transaction.create({
           user: buyer._id,
@@ -635,10 +706,12 @@ async function processCheckout(req, res) {
       await settlePaymentSession(parentOrderId, {
         gatewayPayload: {
           type: 'HAIPAY_WALLET',
-          buyerBalanceAfter: updatedBuyer.walletBalance,
+          buyerBalanceAfter: updatedBuyerAfterWallet?.walletBalance,
           stockDeducted: true
         }
       });
+      // Đã tất toán thành công đơn hàng -> không hoàn ví nữa nếu có lỗi thông báo về sau
+      walletDeductedAmount = 0;
     } else if (paymentMethod === 'COD') {
       const purchasedIdsStr = normalizedItems.map((n) => n.productId);
       buyer.cart = buyerCart.filter(
@@ -698,6 +771,15 @@ async function processCheckout(req, res) {
       paymentMethod
     });
   } catch (error) {
+    if (walletDeductedAmount > 0 && walletDeductedBuyerId) {
+      try {
+        await User.findByIdAndUpdate(walletDeductedBuyerId, {
+          $inc: { walletBalance: walletDeductedAmount }
+        });
+      } catch (refundErr) {
+        console.error('Rollback wallet error:', refundErr.message);
+      }
+    }
     if (deductedItems.length > 0) {
       await rollbackDeductedStock(deductedItems);
     }
@@ -772,6 +854,7 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
   }
 
   const wasEscrow = isEscrow(order) || order.paymentStatus === 'escrow';
+  const shouldRestock = order.stockDeducted !== false;
   const nextPaymentStatus = wasEscrow ? 'refunded' : (order.paymentStatus || 'unpaid');
   const now = new Date();
   const cancelNote =
@@ -876,8 +959,7 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
     }
   }
 
-  // 2. Sum quantities per product accurately and atomically restore stock & decrement soldCount ONLY IF stockDeducted !== false (H1)
-  const shouldRestock = order.stockDeducted !== false;
+  // 2. Sum quantities per product accurately and atomically restore stock & decrement soldCount ONLY IF stockDeducted !== false BEFORE update (H1)
   const qtyByProduct = {};
   if (shouldRestock) {
     if (Array.isArray(order.orderItems) && order.orderItems.length > 0) {

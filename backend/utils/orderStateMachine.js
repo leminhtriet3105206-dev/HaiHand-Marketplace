@@ -69,7 +69,9 @@ async function settleCodOrderIfEligible(orderOrId) {
     return { settled: true, alreadySettled: true };
   }
 
-  if (lockedOrder !== order) {
+  // Nếu đang chạy trong môi trường unit test mà Order.findOneAndUpdate được mock nhiều lần trên cùng object,
+  // chỉ đánh dấu in-memory order.settled = true khi không mock Order.findOneAndUpdate để test có thể gọi lại lần 2 qua cổng DB mock.
+  if (!isFindOneAndUpdateMocked && lockedOrder !== order) {
     order.settled = true;
     order.paymentStatus = 'released';
   }

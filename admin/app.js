@@ -93,10 +93,57 @@ const Notification = mongoose.models.Notification || mongoose.model('Notificatio
 
 /**
  * Helper: Kiểm tra mật khẩu bằng bcrypt.compare trước; nếu mật khẩu cũ trong DB chưa hash (legacy plaintext)
- * thì fallback so sánh chuỗi và tự động hash lại bằng bcrypt trước khi lưu vào DB.
+ * thì fallback so sánh chuỗi hằng-thời-gian và tự động hash lại bằng bcrypt (cost >= 10) trước khi lưu vào DB.
+ * Tự chứa (self-contained) để chạy được cả trong Docker container `/app` khi không có thư mục `../backend`.
  */
-const { verifyPassword, hashPassword } = require("../backend/utils/password");
-const { sanitizeUser } = require("../backend/utils/b2c");
+const BCRYPT_PREFIX_REGEX = /^\$2[aby]\$\d{2}\$/;
+
+function timingSafeStringEqual(a, b) {
+  if (typeof a !== "string" || typeof b !== "string") return false;
+  const bufA = Buffer.from(a, "utf-8");
+  const bufB = Buffer.from(b, "utf-8");
+  if (bufA.length !== bufB.length) {
+    crypto.timingSafeEqual(bufA, bufA);
+    return false;
+  }
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+async function hashPassword(plainPassword, cost = 10) {
+  if (typeof plainPassword !== "string" || plainPassword.length === 0) {
+    throw new Error("Mật khẩu phải là chuỗi không rỗng");
+  }
+  return bcrypt.hash(plainPassword, Math.max(10, Number(cost) || 10));
+}
+
+async function verifyPassword(userDoc, plainPassword) {
+  if (!userDoc || typeof plainPassword !== "string" || !plainPassword) return false;
+  const stored = userDoc.password;
+  if (typeof stored !== "string" || !stored) return false;
+
+  if (BCRYPT_PREFIX_REGEX.test(stored)) {
+    return bcrypt.compare(plainPassword, stored);
+  }
+  if (!timingSafeStringEqual(stored, plainPassword)) return false;
+
+  try {
+    userDoc.password = await hashPassword(plainPassword, 10);
+    if (typeof userDoc.save === "function") await userDoc.save();
+  } catch (e) {}
+  return true;
+}
+
+function sanitizeUser(user) {
+  if (!user) return null;
+  const obj = typeof user.toObject === "function" ? user.toObject() : { ...user };
+  delete obj.password;
+  delete obj.walletPin;
+  delete obj.tokenVersion;
+  delete obj.firebaseUid;
+  delete obj.pinFailedAttempts;
+  delete obj.pinLockedUntil;
+  return obj;
+}
 
 async function verifyAndUpgradePassword(user, plainPassword) {
   return verifyPassword(user, plainPassword);

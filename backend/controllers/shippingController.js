@@ -81,13 +81,28 @@ const createShipmentGHN = async (req, res) => {
       }
     }
 
-    // 3. Xử lý linh hoạt trạng thái thanh toán:
+    // 3. Kiểm tra trạng thái đơn hàng: chỉ cho phép tạo vận đơn khi đơn đang ở Pending hoặc Processing (H4)
+    const currentCanon = canonicalStatus(order.status);
+    if (!['Pending', 'Processing'].includes(currentCanon)) {
+      return res.status(400).json({
+        success: false,
+        message: `Không thể tạo vận đơn cho đơn hàng đang ở trạng thái "${currentCanon}" (chỉ hỗ trợ Pending hoặc Processing).`
+      });
+    }
+
+    // 3.1. Xử lý linh hoạt trạng thái thanh toán:
     // Nếu đơn VNPAY/Online chưa thanh toán xong (chưa escrow/paid) nhưng Seller vẫn bấm giao -> chuyển sang COD để GHN thu hộ
     const methodUpper = String(order.paymentMethod || 'COD').trim().toUpperCase();
     const isCodOrder = methodUpper === 'COD' || methodUpper.includes('COD') || methodUpper.includes('TIỀN MẶT');
     const isPaidOrder = ['escrow', 'paid', 'released'].includes(String(order.paymentStatus || '').toLowerCase()) ||
       String(order.status || '').includes('Đã thanh toán');
     if (!isCodOrder && !isPaidOrder) {
+      if (process.env.STRICT_ESCROW_BEFORE_SHIP === 'true') {
+        return res.status(400).json({
+          success: false,
+          message: `Đơn hàng ${order.paymentMethod} chưa được thanh toán vào ví ký quỹ (escrow), không thể tạo vận đơn!`
+        });
+      }
       order.paymentMethod = 'COD';
     }
 
@@ -320,8 +335,8 @@ const createShipmentGHN = async (req, res) => {
       ...(ghnData?.data ? { raw: ghnData.data } : {})
     };
 
-    const currentCanon = canonicalStatus(order.status);
-    if (currentCanon === 'Pending') {
+    const currentCanonAfter = canonicalStatus(order.status);
+    if (currentCanonAfter === 'Pending') {
       const tr = await transitionOrder(order, 'Processing', 'seller', {
         actorId: req.user._id,
         reason: 'Người bán tạo vận đơn GHN',

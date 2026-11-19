@@ -1017,6 +1017,12 @@ app.post('/api/admin/release-funds/:orderId', requireAdminJWT, async (req, res) 
       });
     }
 
+    if (order.dispute && (order.dispute.isDisputed === true || order.dispute.status === 'open')) {
+      return res.status(400).json({
+        message: 'Đơn hàng đang có khiếu nại mở (Dispute), không thể giải ngân cho đến khi khiếu nại được giải quyết!'
+      });
+    }
+
     const current = canonicalStatus(order.status);
     if (!['Completed', 'Delivered'].includes(current)) {
       return res.status(400).json({ message: 'Chỉ giải ngân khi đơn hàng đã Delivered / Completed!' });
@@ -2741,6 +2747,127 @@ app.put('/api/orders/:orderId/receive', protect, async (req, res) => {
 
     res.status(200).json({ message: 'Cảm ơn bạn đã xác nhận nhận hàng!', order: tr.order });
   } catch (error) { res.status(500).json({ error: 'Lỗi xác nhận' }); }
+});
+
+/**
+ * POST /api/orders/:id/dispute (H6):
+ * Người mua mở khiếu nại đơn hàng trong hạn (khi đơn đang ở Shipped hoặc Delivered và chưa quá AUTO_COMPLETE_DAYS)
+ * -> Chặn auto-complete và chặn giải ngân cho tới khi Admin xử lý.
+ */
+app.post('/api/orders/:id/dispute', protect, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+
+    const buyerRef = orderBuyerId(order);
+    const isBuyerOwner = buyerRef && String(buyerRef) === String(req.user._id);
+    if (!isBuyerOwner && req.user.role !== 'Admin') {
+      return res.status(403).json({ message: 'Chỉ người mua của đơn hàng này mới có thể gửi khiếu nại!' });
+    }
+
+    const current = canonicalStatus(order.status);
+    if (!['Shipped', 'Delivered'].includes(current)) {
+      return res.status(400).json({
+        message: `Chỉ có thể khiếu nại đơn hàng đang giao (Shipped) hoặc mới giao (Delivered). Trạng thái hiện tại: ${current}`
+      });
+    }
+
+    const autoDays = Math.max(1, Number(process.env.AUTO_COMPLETE_DAYS) || 7);
+    if (order.deliveredAt && Date.now() - new Date(order.deliveredAt).getTime() > autoDays * 24 * 60 * 60 * 1000) {
+      return res.status(400).json({
+        message: `Đã quá thời hạn khiếu nại (${autoDays} ngày kể từ khi nhận hàng)!`
+      });
+    }
+
+    const reason = typeof req.body?.reason === 'string' && req.body.reason.trim()
+      ? req.body.reason.trim()
+      : 'Khách hàng khiếu nại sản phẩm';
+
+    order.dispute = {
+      isDisputed: true,
+      reason,
+      status: 'open',
+      createdAt: new Date()
+    };
+    await order.save();
+
+    const sellerId = orderSellerId(order);
+    const shortCode = order._id.toString().slice(-6).toUpperCase();
+    if (sellerId) {
+      await sendNotification({
+        userId: sellerId,
+        shopId: sellerId,
+        recipientRole: 'seller',
+        type: 'ORDER_STATUS',
+        orderId: order._id,
+        title: '⚠️ Đơn hàng có khiếu nại mới',
+        message: `Người mua vừa gửi khiếu nại cho đơn hàng #${shortCode}: "${reason}".`,
+        link: '/seller-channel/orders',
+        targetUrl: '/seller-channel/orders'
+      });
+    }
+    await sendAdminNotification(
+      '⚠️ Khiếu nại đơn hàng mới',
+      `Đơn hàng #${shortCode} vừa bị người mua khiếu nại: "${reason}".`,
+      '/orders',
+      'REPORT'
+    );
+
+    return res.status(200).json({
+      message: 'Đã ghi nhận khiếu nại đơn hàng. Quản trị viên sẽ kiểm tra và xử lý!',
+      order
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Lỗi gửi khiếu nại đơn hàng' });
+  }
+});
+
+/**
+ * POST /api/admin/orders/:id/resolve-dispute (H6):
+ * Admin xử lý khiếu nại: `action = 'refund'` (hoàn tiền qua cancelOrderWithRefundAndRestock) hoặc `action = 'release'` (bác bỏ khiếu nại, mở khóa giải ngân).
+ */
+app.post('/api/admin/orders/:id/resolve-dispute', requireAdminJWT, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
+
+    const action = String(req.body?.action || 'refund').toLowerCase();
+    if (action === 'refund') {
+      order.dispute = {
+        ...(order.dispute || {}),
+        isDisputed: false,
+        status: 'resolved_refund',
+        resolvedAt: new Date()
+      };
+      await order.save();
+
+      const cancelRes = await cancelOrderWithRefundAndRestock(order, {
+        cancelledBy: 'admin',
+        reason: req.body?.note || 'Admin chấp nhận khiếu nại & hoàn tiền'
+      });
+      if (!cancelRes.success) {
+        return res.status(cancelRes.statusCode || 400).json({ message: cancelRes.message });
+      }
+      return res.status(200).json({
+        message: 'Đã giải quyết khiếu nại: Hoàn tiền cho người mua!',
+        order: cancelRes.order
+      });
+    }
+
+    order.dispute = {
+      ...(order.dispute || {}),
+      isDisputed: false,
+      status: 'resolved_release',
+      resolvedAt: new Date()
+    };
+    await order.save();
+    return res.status(200).json({
+      message: 'Đã giải quyết khiếu nại: Mở khóa đơn hàng để tiếp tục hoàn tất/giải ngân!',
+      order
+    });
+  } catch (error) {
+    return res.status(500).json({ message: 'Lỗi xử lý khiếu nại' });
+  }
 });
 
 /**

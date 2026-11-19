@@ -189,9 +189,14 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       const pending = orders.filter((o) => canonicalStatus(o.status) === 'Pending').length;
       const processing = orders.filter((o) => ['Processing', 'Shipped', 'Delivered'].includes(canonicalStatus(o.status))).length;
       const completed = orders.filter((o) => canonicalStatus(o.status) === 'Completed');
-      const revenue = completed.reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
-      const releasedRevenue = completed
-        .filter((o) => o.paymentStatus === 'released' || o.paymentMethod === 'COD')
+      const settledCodOrCompleted = orders.filter(
+        (o) =>
+          canonicalStatus(o.status) === 'Completed' ||
+          (o.paymentMethod === 'COD' && (o.settled === true || canonicalStatus(o.status) === 'Delivered'))
+      );
+      const revenue = settledCodOrCompleted.reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
+      const releasedRevenue = settledCodOrCompleted
+        .filter((o) => o.paymentStatus === 'released' || o.settled === true || o.paymentMethod === 'COD')
         .reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
       const escrowRevenue = orders
         .filter((o) => o.paymentStatus === 'escrow' && canonicalStatus(o.status) !== 'Cancelled')

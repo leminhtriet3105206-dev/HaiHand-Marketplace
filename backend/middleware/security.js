@@ -95,6 +95,12 @@ const globalLimiter = makeLimiter({
 const loginLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000,
   max: process.env.NODE_ENV === 'test' ? 50 : 10,
+  keyGenerator: (req) => {
+    const ip = req.headers['x-forwarded-for']?.toString().split(',')[0].trim() || req.ip || '127.0.0.1';
+    const rawId = req.body && (typeof req.body.email === 'string' ? req.body.email : typeof req.body.username === 'string' ? req.body.username : typeof req.body.identifier === 'string' ? req.body.identifier : '');
+    const cleanId = rawId ? rawId.trim().toLowerCase() : 'anon';
+    return `${ip}:${cleanId}`;
+  },
   message: 'Bạn đã đăng nhập sai quá nhiều lần. Vui lòng thử lại sau 15 phút.'
 });
 

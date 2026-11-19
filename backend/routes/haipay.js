@@ -4,7 +4,8 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Transaction = require('../models/Transaction');
 const { createAndSaveOtp, verifyOtp } = require('../utils/otpService');
-const { getJwtSecret, sanitizeUser } = require('../utils/b2c');
+const { getJwtSecret, sanitizeUser, signUserToken } = require('../utils/b2c');
+const { hashPassword, verifyPassword } = require('../utils/password');
 
 const router = express.Router();
 
@@ -120,62 +121,56 @@ router.post('/register', async (req, res) => {
     let user = await User.findOne({ email: cleanEmail });
 
     if (user) {
-      if (!password) {
+      if (!password || typeof password !== 'string') {
         return res.status(400).json({ message: 'Tài khoản đã tồn tại. Vui lòng nhập mật khẩu tài khoản để kích hoạt ví!' });
       }
-      const isBcryptHash = typeof user.password === 'string' && /^\$2[aby]\$/.test(user.password);
-      const isPasswordValid = isBcryptHash
-        ? await bcrypt.compare(password, user.password)
-        : user.password === password;
+      const isPasswordValid = await verifyPassword(user, password);
       if (!isPasswordValid) {
         return res.status(400).json({ message: 'Mật khẩu tài khoản không chính xác!' });
       }
-      if (!isBcryptHash) {
-        user.password = await bcrypt.hash(password, 10);
-      }
 
       user.isWalletActive = true;
-      if (phone) user.walletPhone = phone.trim();
-      if (fullName && (!user.name || user.name === 'User')) user.name = fullName.trim();
-      if (cccd) user.cccd = cccd.trim();
-      if (pin) user.walletPin = await bcrypt.hash(pin.trim(), 8);
+      if (phone && typeof phone === 'string') user.walletPhone = phone.trim();
+      if (fullName && typeof fullName === 'string' && (!user.name || user.name === 'User')) user.name = fullName.trim();
+      if (cccd && typeof cccd === 'string') user.cccd = cccd.trim();
+      if (pin && typeof pin === 'string') user.walletPin = await hashPassword(pin.trim(), 10);
       user.walletRegisteredAt = new Date();
       await user.save();
     } else {
-      if (!password) {
+      if (!password || typeof password !== 'string') {
         return res.status(400).json({ message: 'Vui lòng đặt mật khẩu cho tài khoản mới' });
       }
 
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await hashPassword(password, 10);
       let hashedPin = '';
-      if (pin) hashedPin = await bcrypt.hash(pin.trim(), 8);
+      if (pin && typeof pin === 'string') hashedPin = await hashPassword(pin.trim(), 10);
 
       user = new User({
-        name: fullName ? fullName.trim() : cleanEmail.split('@')[0],
+        name: fullName && typeof fullName === 'string' ? fullName.trim() : cleanEmail.split('@')[0],
         email: cleanEmail,
         password: hashedPassword,
-        phone: phone ? phone.trim() : '',
-        walletPhone: phone ? phone.trim() : '',
-        cccd: cccd ? cccd.trim() : '',
+        phone: phone && typeof phone === 'string' ? phone.trim() : '',
+        walletPhone: phone && typeof phone === 'string' ? phone.trim() : '',
+        cccd: cccd && typeof cccd === 'string' ? cccd.trim() : '',
         walletPin: hashedPin,
         isWalletActive: true,
         walletRegisteredAt: new Date(),
         walletBalance: 0,
-        pendingBalance: 0
+        pendingBalance: 0,
+        role: 'Khách hàng',
+        isSeller: false,
+        sellerStatus: 'none'
       });
       await user.save();
     }
 
-    const token = jwt.sign(
-      {
-        id: user._id,
+    const token = signUserToken(user, {
+      extra: {
         email: user.email,
         isWalletActive: true,
         sessionType: 'HAIPAY_WALLET'
-      },
-      getJwtSecret(),
-      { expiresIn: '7d' }
-    );
+      }
+    });
 
     return res.status(200).json({
       success: true,
@@ -218,17 +213,9 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Vui lòng nhập mật khẩu tài khoản' });
     }
 
-    const isBcryptHash = typeof user.password === 'string' && /^\$2[aby]\$/.test(user.password);
-    const isPasswordValid = isBcryptHash
-      ? await bcrypt.compare(password, user.password)
-      : user.password === password;
+    const isPasswordValid = await verifyPassword(user, password);
     if (!isPasswordValid) {
       return res.status(400).json({ message: 'Mật khẩu không chính xác' });
-    }
-
-    if (!isBcryptHash) {
-      user.password = await bcrypt.hash(password, 10);
-      await user.save();
     }
 
     if (!otp) {
@@ -258,16 +245,13 @@ router.post('/login', async (req, res) => {
       await user.save();
     }
 
-    const token = jwt.sign(
-      {
-        id: user._id,
+    const token = signUserToken(user, {
+      extra: {
         email: user.email,
         isWalletActive: true,
         sessionType: 'HAIPAY_WALLET'
-      },
-      getJwtSecret(),
-      { expiresIn: '7d' }
-    );
+      }
+    });
 
     return res.status(200).json({
       success: true,

@@ -71,6 +71,7 @@ const {
 } = require('./utils/b2c');
 const notificationService = require('./utils/notificationService');
 const { sendOtpEmail } = require('./utils/otpService');
+const { hashPassword, verifyPassword } = require('./utils/password');
 const {
   getVnpTmnCode,
   getVnpReturnUrl,
@@ -310,63 +311,34 @@ const sendAdminNotification = notificationService.sendAdminNotification;
  * thì fallback so khớp chuỗi và tự động mã hóa bcryptjs lưu ngược vào DB.
  */
 async function verifyAndUpgradeUserPassword(user, plainPassword) {
-  if (!user || !plainPassword || typeof user.password !== 'string') return false;
-  const isBcryptHash = /^\$2[aby]\$\d{2}\$/.test(user.password);
-  if (isBcryptHash) {
-    return bcrypt.compare(String(plainPassword), user.password);
-  }
-  if (user.password === String(plainPassword)) {
-    try {
-      user.password = await bcrypt.hash(String(plainPassword), 10);
-      await user.save();
-    } catch (e) { }
-    return true;
-  }
-  return false;
+  return verifyPassword(user, plainPassword);
 }
 
 /**
  * Middleware xác thực Admin hỗ trợ cả Session SSR (req.session.adminId) lẫn Bearer JWT (role === 'Admin').
  * Tự động trả 401 JSON cho route `/api/*` hoặc redirect `/login` cho trang SSR.
  */
-const requireAdmin = (req, res, next) => {
-  if (req.session.adminId) return next();
+const requireAdmin = async (req, res, next) => {
+  if (req.session && req.session.adminId) {
+    try {
+      const adminUser = await User.findById(req.session.adminId).select('-password');
+      if (adminUser && adminUser.role === 'Admin' && adminUser.status !== 'locked' && !adminUser.isBanned && !adminUser.isDeleted) {
+        req.user = adminUser;
+        req.adminId = adminUser._id;
+        return next();
+      }
+    } catch (e) {}
+  }
 
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    try {
-      const decoded = jwt.verify(token, getJwtSecret());
-      if (decoded.role === 'Admin') {
-        req.adminId = decoded.id;
-        return next();
-      }
-    } catch (e) { }
+    return requireAdminJWT(req, res, next);
   }
 
   if (req.originalUrl && req.originalUrl.startsWith('/api/')) {
     return res.status(401).json({ message: 'Truy cập bị từ chối' });
   }
-  res.redirect('/login');
-};
-
-/**
- * Middleware xác thực Admin nghiêm ngặt chỉ qua Bearer JWT (phục vụ Admin REST APIs).
- */
-const requireAdminJWT = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'Truy cập bị từ chối' });
-  }
-  const token = authHeader.split(' ')[1];
-  try {
-    const decoded = jwt.verify(token, getJwtSecret());
-    if (decoded.role !== 'Admin') return res.status(403).json({ message: 'Bạn không có quyền quản trị!' });
-    req.adminId = decoded.id;
-    next();
-  } catch (err) {
-    res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn' });
-  }
+  return res.redirect('/login');
 };
 
 // ============================================================================
@@ -388,19 +360,29 @@ app.use('/api/addresses', addressRouter);                                       
 /** [SSR] Trang form đăng nhập Admin */
 app.get('/login', (req, res) => res.render('login', { error: null }));
 
-/** [SSR] Xử lý đăng nhập Admin qua Session */
-app.post('/login', async (req, res) => {
+/** [SSR] Xử lý đăng nhập Admin qua Session (chống NoSQL injection, dùng verifyPassword) */
+app.post('/login', loginLimiter, async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const admin = await User.findOne({ username, role: 'Admin' });
-    if (admin && await verifyAndUpgradeUserPassword(admin, password)) {
-      req.session.adminId = admin._id;
-      res.redirect('/dashboard');
-    } else {
-      res.render('login', { error: 'Tài khoản không tồn tại hoặc bạn không phải Admin!' });
+    const { username, email, password } = req.body || {};
+    const rawId = typeof username === 'string' && username.trim() ? username : (typeof email === 'string' ? email : '');
+    if (typeof rawId !== 'string' || typeof password !== 'string' || !rawId.trim() || !password) {
+      return res.render('login', { error: 'Sai email hoặc mật khẩu' });
     }
+    const cleanId = rawId.trim();
+    const admin = await User.findOne({
+      role: 'Admin',
+      $or: [{ username: cleanId }, { email: cleanId.toLowerCase() }]
+    });
+    if (admin && (await verifyPassword(admin, password))) {
+      if (admin.status === 'locked' || admin.isBanned || admin.isDeleted) {
+        return res.render('login', { error: 'Tài khoản quản trị viên đã bị khóa!' });
+      }
+      req.session.adminId = admin._id;
+      return res.redirect('/dashboard');
+    }
+    return res.render('login', { error: 'Sai email hoặc mật khẩu' });
   } catch (err) {
-    res.render('login', { error: 'Lỗi hệ thống khi đăng nhập: ' + err.message });
+    return res.render('login', { error: 'Lỗi hệ thống khi đăng nhập' });
   }
 });
 
@@ -415,19 +397,29 @@ app.get('/logout', (req, res) => {
 /** [SSR] Trang gốc tự động chuyển hướng sang /dashboard */
 app.get('/', (req, res) => res.redirect('/dashboard'));
 
-/** [API] Đăng nhập Admin và cấp Bearer JWT (expiresIn 1d) */
-app.post('/api/admin/login', async (req, res) => {
+/** [API] Đăng nhập Admin và cấp Bearer JWT */
+app.post('/api/admin/login', loginLimiter, async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const admin = await User.findOne({ username, role: 'Admin' });
-    if (admin && await verifyAndUpgradeUserPassword(admin, password)) {
-      const token = jwt.sign({ id: admin._id, role: admin.role }, getJwtSecret(), { expiresIn: '1d' });
-      res.status(200).json({ message: 'Đăng nhập thành công', token, user: sanitizeUser(admin) });
-    } else {
-      res.status(401).json({ message: 'Sai tên đăng nhập hoặc mật khẩu!' });
+    const { username, email, password } = req.body || {};
+    const rawId = typeof username === 'string' && username.trim() ? username : (typeof email === 'string' ? email : '');
+    if (typeof rawId !== 'string' || typeof password !== 'string' || !rawId.trim() || !password) {
+      return res.status(400).json({ message: 'Sai email hoặc mật khẩu' });
     }
+    const cleanId = rawId.trim();
+    const admin = await User.findOne({
+      role: 'Admin',
+      $or: [{ username: cleanId }, { email: cleanId.toLowerCase() }]
+    });
+    if (admin && (await verifyPassword(admin, password))) {
+      if (admin.status === 'locked' || admin.isBanned || admin.isDeleted) {
+        return res.status(403).json({ message: 'Tài khoản quản trị viên đã bị khóa!' });
+      }
+      const token = signUserToken(admin);
+      return res.status(200).json({ message: 'Đăng nhập thành công', token, user: sanitizeUser(admin) });
+    }
+    return res.status(401).json({ message: 'Sai email hoặc mật khẩu' });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi server' });
+    return res.status(500).json({ message: 'Lỗi server' });
   }
 });
 
@@ -1269,23 +1261,26 @@ app.get('/api/admin/test-notif', async (req, res) => {
 // Lưu ý thứ tự: Toàn bộ route tĩnh (`/search`, `/profile`...) phải đặt TRƯỚC `GET /api/users/:id`
 // ============================================================================
 
-/** Đăng nhập tài khoản người dùng (hỗ trợ bcrypt + tự nâng cấp plaintext cũ) và trả JWT */
-app.post('/api/users/login', async (req, res) => {
+/** Đăng nhập tài khoản người dùng (C3, C4: chống NoSQL injection, dùng verifyPassword + lazy bcrypt migration) */
+app.post('/api/users/login', loginLimiter, async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const cleanEmail = email ? String(email).trim().toLowerCase() : '';
-    const user = await User.findOne({ $or: [{ email: cleanEmail }, { email }] });
-    if (!user || !(await verifyAndUpgradeUserPassword(user, password))) {
+    const { email, password } = req.body || {};
+    if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password) {
       return res.status(401).json({ message: 'Sai email hoặc mật khẩu' });
     }
-    if (user.status === 'locked' || user.isBanned) {
+    const cleanEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: cleanEmail });
+    if (!user || !(await verifyPassword(user, password))) {
+      return res.status(401).json({ message: 'Sai email hoặc mật khẩu' });
+    }
+    if (user.status === 'locked' || user.isBanned || user.isDeleted) {
       return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ ban quản trị để được hỗ trợ.' });
     }
-    const safe = sanitizeUser(user);
+    const safe = sanitizeUser(user, { keepOwnerFields: true });
     const token = signUserToken(user);
-    res.status(200).json({ ...safe, token });
+    return res.status(200).json({ ...safe, token });
   } catch (err) {
-    res.status(500).json({ message: 'Lỗi server khi đăng nhập: ' + err.message });
+    return res.status(500).json({ message: 'Lỗi server khi đăng nhập' });
   }
 });
 
@@ -1313,7 +1308,7 @@ app.post('/api/users/register', async (req, res) => {
     const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) return res.status(400).json({ message: 'Email này đã được sử dụng!' });
 
-    const hashedPassword = await bcrypt.hash(String(password), 10);
+    const hashedPassword = await hashPassword(password, 10);
 
     // Whitelist tuyệt đối: không bao giờ nhận role, isSeller, walletBalance, pendingBalance, isAdmin từ client
     const newUser = new User({
@@ -1334,15 +1329,19 @@ app.post('/api/users/register', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi server khi đăng ký' }); }
 });
 
-/** Đổi mật khẩu khi biết mật khẩu cũ */
-app.put('/api/users/change-password/:id', async (req, res) => {
+/** Đổi mật khẩu khi biết mật khẩu cũ (yêu cầu Bearer JWT chính chủ, băm mới, tăng tokenVersion) */
+app.put('/api/users/change-password/:id', protect, requireOwnerOrAdmin('id'), async (req, res) => {
   try {
-    const { oldPassword, newPassword } = req.body;
+    const { oldPassword, newPassword } = req.body || {};
+    if (typeof oldPassword !== 'string' || typeof newPassword !== 'string' || !oldPassword || !newPassword) {
+      return res.status(400).json({ message: 'Vui lòng nhập đầy đủ mật khẩu hiện tại và mật khẩu mới!' });
+    }
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
-    const isMatch = await verifyAndUpgradeUserPassword(user, oldPassword);
+    const isMatch = await verifyPassword(user, oldPassword);
     if (!isMatch) return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng!' });
-    user.password = await bcrypt.hash(String(newPassword), 10);
+    user.password = await hashPassword(newPassword, 10);
+    user.tokenVersion = (typeof user.tokenVersion === 'number' ? user.tokenVersion : 0) + 1;
     await user.save();
     res.status(200).json({ message: 'Đổi mật khẩu thành công!' });
   } catch (err) { res.status(500).json({ message: 'Lỗi server khi đổi mật khẩu' }); }
@@ -1395,11 +1394,18 @@ app.post('/api/users/send-otp', async (req, res) => {
   }
 });
 
-/** Xác thực OTP (tối đa 5 lần thử) và đặt lại mật khẩu mới đã băm bcrypt */
+/** Xác thực OTP (tối đa 5 lần thử) và đặt lại mật khẩu mới đã băm bcrypt + tăng tokenVersion */
 app.post('/api/users/reset-password-otp', async (req, res) => {
   try {
-    const { email, otp, newPassword } = req.body;
-    if (!email || !otp || !newPassword) {
+    const { email, otp, newPassword } = req.body || {};
+    if (
+      typeof email !== 'string' ||
+      typeof otp !== 'string' ||
+      typeof newPassword !== 'string' ||
+      !email.trim() ||
+      !otp.trim() ||
+      !newPassword
+    ) {
       return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ email, mã OTP và mật khẩu mới!' });
     }
     const cleanEmail = email.trim().toLowerCase();
@@ -1414,7 +1420,7 @@ app.post('/api/users/reset-password-otp', async (req, res) => {
       return res.status(400).json({ message: 'Bạn đã nhập sai quá 5 lần. Vui lòng yêu cầu mã OTP mới!' });
     }
 
-    const isMatch = await bcrypt.compare(String(otp).trim(), tokenRecord.otpHash);
+    const isMatch = await bcrypt.compare(otp.trim(), tokenRecord.otpHash);
     if (!isMatch) {
       tokenRecord.attempts += 1;
       await tokenRecord.save();
@@ -1426,7 +1432,8 @@ app.post('/api/users/reset-password-otp', async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy người dùng!' });
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
+    user.password = await hashPassword(newPassword, 10);
+    user.tokenVersion = (typeof user.tokenVersion === 'number' ? user.tokenVersion : 0) + 1;
     await user.save();
 
     await OtpToken.deleteOne({ _id: tokenRecord._id });

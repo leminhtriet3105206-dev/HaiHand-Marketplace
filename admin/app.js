@@ -94,22 +94,11 @@ const Notification = mongoose.models.Notification || mongoose.model('Notificatio
  * Helper: Kiểm tra mật khẩu bằng bcrypt.compare trước; nếu mật khẩu cũ trong DB chưa hash (legacy plaintext)
  * thì fallback so sánh chuỗi và tự động hash lại bằng bcrypt trước khi lưu vào DB.
  */
+const { verifyPassword, hashPassword } = require("../backend/utils/password");
+const { sanitizeUser } = require("../backend/utils/b2c");
+
 async function verifyAndUpgradePassword(user, plainPassword) {
-  if (!user || !plainPassword || typeof user.password !== 'string') return false;
-  const isBcryptHash = /^\$2[aby]\$\d{2}\$/.test(user.password);
-  if (isBcryptHash) {
-    return bcrypt.compare(String(plainPassword), user.password);
-  }
-  if (user.password === String(plainPassword)) {
-    try {
-      user.password = await bcrypt.hash(String(plainPassword), 10);
-      await user.save();
-    } catch (upgradeErr) {
-      console.warn('Auto-upgrade password hash warning:', upgradeErr.message);
-    }
-    return true;
-  }
-  return false;
+  return verifyPassword(user, plainPassword);
 }
 
 /**
@@ -462,34 +451,33 @@ app.post("/api/users/register", async (req, res) => {
 
 app.post("/api/users/login", async (req, res) => {
   try {
-    const { username, email, password } = req.body;
-    const identifier = (username || email || "").trim();
-    if (!identifier || !password) {
-      return res.status(400).json({ message: "Vui lòng nhập tài khoản và mật khẩu" });
+    const { username, email, password } = req.body || {};
+    const rawId = typeof username === "string" && username.trim() ? username : (typeof email === "string" ? email : "");
+    if (typeof rawId !== "string" || typeof password !== "string" || !rawId.trim() || !password) {
+      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
     }
+    const identifier = rawId.trim();
 
     const user = await User.findOne({
       $or: [{ username: identifier }, { email: identifier.toLowerCase() }]
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Sai thông tin đăng nhập" });
+      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
     }
 
-    const isValid = await verifyAndUpgradePassword(user, password);
+    const isValid = await verifyPassword(user, password);
     if (!isValid) {
-      return res.status(401).json({ message: "Sai thông tin đăng nhập" });
+      return res.status(401).json({ message: "Sai email hoặc mật khẩu" });
     }
 
-    if (user.status === "locked" || user.isBanned === true) {
+    if (user.status === "locked" || user.isBanned === true || user.isDeleted === true) {
       return res.status(403).json({ message: "Tài khoản đã bị khóa" });
     }
 
-    const userObj = user.toObject();
-    delete userObj.password;
-    res.json(userObj);
+    res.json(sanitizeUser(user));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Lỗi máy chủ khi đăng nhập" });
   }
 });
 
@@ -515,31 +503,32 @@ app.get("/login", (req, res) => res.render("login", { error: null }));
 
 app.post("/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
-    if (!username || !password) {
-      return res.render("login", { error: "Vui lòng nhập đầy đủ tài khoản và mật khẩu!" });
+    const { username, email, password } = req.body || {};
+    const rawId = typeof username === "string" && username.trim() ? username : (typeof email === "string" ? email : "");
+    if (typeof rawId !== "string" || typeof password !== "string" || !rawId.trim() || !password) {
+      return res.render("login", { error: "Sai email hoặc mật khẩu" });
     }
 
-    const cleanIdentifier = String(username).trim();
+    const cleanIdentifier = rawId.trim();
     const user = await User.findOne({
       $or: [{ username: cleanIdentifier }, { email: cleanIdentifier.toLowerCase() }]
     });
 
     if (user && user.role === "Admin") {
-      const isPasswordValid = await verifyAndUpgradePassword(user, password);
+      const isPasswordValid = await verifyPassword(user, password);
       if (!isPasswordValid) {
-        return res.render("login", { error: "Sai tài khoản hoặc mật khẩu Quản trị viên!" });
+        return res.render("login", { error: "Sai email hoặc mật khẩu" });
       }
-      if (user.status === 'locked' || user.isBanned) {
+      if (user.status === 'locked' || user.isBanned || user.isDeleted) {
         return res.render("login", { error: "Tài khoản quản trị viên này đã bị khóa!" });
       }
-      req.session.user = user;
+      req.session.user = sanitizeUser(user);
       res.redirect("/");
     } else {
-      res.render("login", { error: "Sai tài khoản hoặc không phải Admin!" });
+      res.render("login", { error: "Sai email hoặc mật khẩu" });
     }
   } catch (err) {
-    res.render("login", { error: "Lỗi kết nối máy chủ: " + err.message });
+    res.render("login", { error: "Lỗi kết nối máy chủ" });
   }
 });
 

@@ -49,7 +49,9 @@ function generateNumericOtp(length = 6) {
 async function sendOtpEmail({ email, otp, purpose = 'LOGIN' }) {
   const purposeText = purpose === 'REGISTER' 
     ? 'Kích hoạt tài khoản Ví HaiPay' 
-    : 'Đăng nhập vào Ví HaiPay';
+    : purpose === 'RESET_PASSWORD'
+      ? 'Đặt lại mật khẩu tài khoản'
+      : 'Đăng nhập vào Ví HaiPay';
 
   const htmlContent = `
     <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 16px; background-color: #ffffff;">
@@ -105,22 +107,37 @@ async function sendOtpEmail({ email, otp, purpose = 'LOGIN' }) {
 }
 
 /**
- * Generate, hash, and persist OTP in database
+ * Generate, hash, and persist OTP in database with 60s cooldown rate-limiting
  */
 async function createAndSaveOtp(identifier, purpose = 'LOGIN') {
   const cleanIdentifier = identifier.trim().toLowerCase();
   
-  // Clear any existing OTP for this identifier and purpose
+  // Rate Limiting Cooldown: Enforce minimum 60 seconds between OTP generation requests per identifier
+  const existingRecent = await OtpToken.findOne({
+    identifier: cleanIdentifier,
+    purpose,
+    createdAt: { $gt: new Date(Date.now() - 60 * 1000) }
+  });
+
+  if (existingRecent) {
+    const remainingSec = Math.max(1, Math.ceil((existingRecent.createdAt.getTime() + 60000 - Date.now()) / 1000));
+    const err = new Error(`Vui lòng đợi ${remainingSec} giây trước khi yêu cầu mã OTP mới`);
+    err.statusCode = 429;
+    throw err;
+  }
+
+  // Clear any existing expired OTP for this identifier and purpose
   await OtpToken.deleteMany({ identifier: cleanIdentifier, purpose });
 
   const rawOtp = generateNumericOtp(6);
-  const otpHash = await bcrypt.hash(rawOtp, 8);
+  const otpHash = await bcrypt.hash(rawOtp, 10);
 
   await OtpToken.create({
     identifier: cleanIdentifier,
     otpHash,
     purpose,
-    attempts: 0
+    attempts: 0,
+    createdAt: new Date()
   });
 
   // Dispatch email/message
@@ -130,26 +147,36 @@ async function createAndSaveOtp(identifier, purpose = 'LOGIN') {
 }
 
 /**
- * Verify OTP against stored hash
+ * Verify OTP against stored hash with atomic attempt tracking
  */
 async function verifyOtp(identifier, rawOtp, purpose = 'LOGIN') {
   const cleanIdentifier = identifier.trim().toLowerCase();
-  const tokenRecord = await OtpToken.findOne({ identifier: cleanIdentifier, purpose });
+  
+  // 1. Atomic attempt increment with boundary condition { attempts: { $lt: 5 } }
+  // Prevents concurrency race conditions from brute-forcing OTPs
+  const tokenRecord = await OtpToken.findOneAndUpdate(
+    { identifier: cleanIdentifier, purpose, attempts: { $lt: 5 } },
+    { $inc: { attempts: 1 } },
+    { new: true }
+  );
 
   if (!tokenRecord) {
+    const existing = await OtpToken.findOne({ identifier: cleanIdentifier, purpose });
+    if (existing && existing.attempts >= 5) {
+      await OtpToken.deleteOne({ _id: existing._id });
+      return { valid: false, message: 'Bạn đã nhập sai quá 5 lần quy định. Mã OTP đã bị hủy. Vui lòng lấy mã mới!' };
+    }
     return { valid: false, message: 'Mã OTP đã hết hạn hoặc không tồn tại. Vui lòng lấy mã mới!' };
   }
 
-  if (tokenRecord.attempts >= 5) {
-    await OtpToken.deleteOne({ _id: tokenRecord._id });
-    return { valid: false, message: 'Bạn đã nhập sai quá số lần quy định. Vui lòng yêu cầu mã mới!' };
-  }
-
-  const isMatch = await bcrypt.compare(rawOtp.trim(), tokenRecord.otpHash);
+  const isMatch = await bcrypt.compare(String(rawOtp).trim(), tokenRecord.otpHash);
   if (!isMatch) {
-    tokenRecord.attempts += 1;
-    await tokenRecord.save();
-    return { valid: false, message: 'Mã OTP không chính xác. Vui lòng thử lại!' };
+    const remaining = 5 - tokenRecord.attempts;
+    if (remaining <= 0) {
+      await OtpToken.deleteOne({ _id: tokenRecord._id });
+      return { valid: false, message: 'Bạn đã nhập sai quá 5 lần. Mã OTP đã bị hủy!' };
+    }
+    return { valid: false, message: `Mã OTP không chính xác. Bạn còn ${remaining} lần thử!` };
   }
 
   // Consume OTP upon successful verification

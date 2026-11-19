@@ -2,6 +2,13 @@ const express = require("express");
 const app = express();
 const path = require("path");
 const fs = require("fs");
+const bcrypt = (() => {
+  try {
+    return require("bcryptjs");
+  } catch (e) {
+    return require("../backend/node_modules/bcryptjs");
+  }
+})();
 
 // Load backend env if present (for local execution)
 const envPath = path.join(__dirname, "../backend/.env");
@@ -20,6 +27,8 @@ const Product = require("./models/Product");
 const User = require("./models/User");
 const Category = require("./models/Category");
 const GlobalSetting = require("./models/GlobalSetting");
+const Banner = require("./models/Banner");
+
 // Minimal Order model: required so Revenue.populate('orderId') can resolve the 'Order' ref.
 // strict:false keeps it read-compatible with the full B2C schema owned by the backend.
 const Order = mongoose.models.Order || mongoose.model('Order', new mongoose.Schema({
@@ -27,20 +36,31 @@ const Order = mongoose.models.Order || mongoose.model('Order', new mongoose.Sche
   buyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  items: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+  orderItems: { type: Array, default: [] },
+  itemsSubtotal: { type: Number, default: 0 },
+  shippingFee: { type: Number, default: 0 },
   totalPrice: { type: Number, default: 0 },
+  commissionRate: { type: Number, default: null },
+  sellerReceive: { type: Number, default: null },
+  paymentMethod: { type: String, default: 'COD' },
+  paymentStatus: { type: String, default: 'unpaid' },
   status: String
 }, { timestamps: true, strict: false }), 'orders');
+
 const Revenue = mongoose.models.Revenue || mongoose.model('Revenue', new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   commissionAmount: { type: Number, required: true },
+  description: { type: String, default: 'Chiết khấu phí sàn từ đơn hàng' },
   createdAt: { type: Date, default: Date.now }
 }));
 
 const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  type: { type: String, enum: ['Nạp tiền', 'Rút tiền', 'Giải ngân', 'Hoàn tiền'], required: true },
+  type: { type: String, enum: ['Nạp tiền', 'Rút tiền', 'Giải ngân', 'Hoàn tiền', 'Thanh toán đơn hàng'], required: true },
   amount: { type: Number, required: true },
   status: { type: String, enum: ['Thành công', 'Đang xử lý', 'Thất bại'], default: 'Thành công' },
+  txnRef: String,
   description: String,
   bankName: String,
   accountNumber: String,
@@ -57,6 +77,8 @@ const Report = mongoose.models.Report || mongoose.model('Report', new mongoose.S
 
 const Notification = mongoose.models.Notification || mongoose.model('Notification', new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   title: { type: String, required: true },
   message: { type: String, required: true },
@@ -67,6 +89,74 @@ const Notification = mongoose.models.Notification || mongoose.model('Notificatio
   recipientRole: { type: String, enum: ['buyer', 'seller', 'admin', 'all'], default: 'admin' },
   isRead: { type: Boolean, default: false }
 }, { timestamps: true, strict: false }), 'notifications');
+
+/**
+ * Helper: Kiểm tra mật khẩu bằng bcrypt.compare trước; nếu mật khẩu cũ trong DB chưa hash (legacy plaintext)
+ * thì fallback so sánh chuỗi và tự động hash lại bằng bcrypt trước khi lưu vào DB.
+ */
+async function verifyAndUpgradePassword(user, plainPassword) {
+  if (!user || !plainPassword || typeof user.password !== 'string') return false;
+  const isBcryptHash = /^\$2[aby]\$\d{2}\$/.test(user.password);
+  if (isBcryptHash) {
+    return bcrypt.compare(String(plainPassword), user.password);
+  }
+  if (user.password === String(plainPassword)) {
+    try {
+      user.password = await bcrypt.hash(String(plainPassword), 10);
+      await user.save();
+    } catch (upgradeErr) {
+      console.warn('Auto-upgrade password hash warning:', upgradeErr.message);
+    }
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Helper: Tính phí hoa hồng sàn (chỉ tính trên itemsSubtotal, không tính trên shippingFee)
+ */
+function computeAdminOrderSplit(order, feePercent = 5) {
+  const shippingFee = Math.max(0, Number(order.shippingFee) || 0);
+  const totalAmount = Math.max(0, Number(order.totalPrice || order.totalAmount || 0));
+  const itemsSubtotal =
+    order.itemsSubtotal !== undefined && order.itemsSubtotal !== null && Number(order.itemsSubtotal) > 0
+      ? Math.max(0, Number(order.itemsSubtotal))
+      : Math.max(0, totalAmount - shippingFee);
+
+  const effectiveRate =
+    typeof order.commissionRate === 'number' && !Number.isNaN(order.commissionRate)
+      ? order.commissionRate
+      : Number(feePercent) || 5;
+
+  const commissionAmount = Math.round(itemsSubtotal * (effectiveRate / 100));
+
+  if (
+    typeof order.sellerReceive === 'number' &&
+    !Number.isNaN(order.sellerReceive) &&
+    order.sellerReceive >= 0 &&
+    order.sellerReceive <= Math.max(totalAmount, itemsSubtotal)
+  ) {
+    const sellerReceive = Math.round(order.sellerReceive);
+    return {
+      totalAmount,
+      itemsSubtotal,
+      shippingFee,
+      feePercent: effectiveRate,
+      commissionAmount: itemsSubtotal > 0 ? commissionAmount : Math.max(0, totalAmount - sellerReceive),
+      sellerReceive
+    };
+  }
+
+  const sellerReceive = Math.max(0, itemsSubtotal - commissionAmount);
+  return {
+    totalAmount,
+    itemsSubtotal,
+    shippingFee,
+    feePercent: effectiveRate,
+    commissionAmount,
+    sellerReceive
+  };
+}
 
 const ADMIN_DB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 if (!ADMIN_DB_URI) {
@@ -108,7 +198,6 @@ app.set("views", path.join(__dirname, "views"));
 app.use((req, res, next) => {
   const originalRender = res.render.bind(res);
   res.render = function (view, options = {}, callback) {
-    // Standalone views that render directly without AdminLayout
     const standaloneViews = ['login', 'home'];
     if (standaloneViews.includes(view) || view.startsWith('layouts/')) {
       return originalRender(view, options, callback);
@@ -116,7 +205,6 @@ app.use((req, res, next) => {
 
     const viewOptions = Object.assign({}, res.locals, options);
 
-    // Render the specific page view content first
     req.app.render(view, viewOptions, (err, bodyHtml) => {
       if (err) {
         console.error(`Error rendering view ${view}:`, err);
@@ -124,8 +212,7 @@ app.use((req, res, next) => {
         return originalRender(view, options, callback);
       }
 
-      // Render master AdminLayout with body injected into <main id="admin-outlet">
-      const layoutData = Object.assign({}, viewOptions, { 
+      const layoutData = Object.assign({}, viewOptions, {
         body: bodyHtml,
         active: viewOptions.active || view
       });
@@ -142,18 +229,105 @@ app.use((req, res, next) => {
 
 app.use(
   session({
-    secret: "secret-key-vip-pro",
+    secret: process.env.SESSION_SECRET || "secret-key-vip-pro",
     resave: false,
     saveUninitialized: true,
   }),
 );
 
+const adminUploadDir = path.join(__dirname, "public", "uploads");
+if (!fs.existsSync(adminUploadDir)) {
+  fs.mkdirSync(adminUploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "./public/uploads/"),
-  filename: (req, file, cb) =>
-    cb(null, "img-" + Date.now() + path.extname(file.originalname)),
+  destination: (req, file, cb) => cb(null, adminUploadDir),
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    cb(null, "img-" + Date.now() + "-" + Math.round(Math.random() * 1e6) + ext);
+  },
 });
+
+const allowedBannerExts = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".svg"]);
+const allowedBannerMimes = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+  "image/avif",
+  "image/svg+xml",
+]);
+
 const upload = multer({ storage: storage });
+const uploadBanner = multer({
+  storage: storage,
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname || "").toLowerCase();
+    const mime = String(file.mimetype || "").toLowerCase();
+    if (allowedBannerExts.has(ext) || allowedBannerMimes.has(mime)) {
+      return cb(null, true);
+    }
+    return cb(new Error("Chỉ hỗ trợ ảnh tĩnh (JPG, PNG, WEBP, AVIF, SVG) và ảnh động GIF!"));
+  },
+});
+
+const handleBannerUpload = (req, res, next) => {
+  uploadBanner.fields([
+    { name: "imageFile", maxCount: 1 },
+    { name: "image", maxCount: 1 },
+  ])(req, res, (err) => {
+    if (err) {
+      const msg = encodeURIComponent(err.message || "Lỗi tải lên tệp ảnh Banner (tối đa 20MB)!");
+      return res.redirect(`/banners?error=${msg}`);
+    }
+    next();
+  });
+};
+
+const getUploadedBannerFile = (req) => {
+  if (req.file) return req.file;
+  if (req.files) {
+    if (req.files.imageFile && req.files.imageFile[0]) return req.files.imageFile[0];
+    if (req.files.image && req.files.image[0]) return req.files.image[0];
+  }
+  return null;
+};
+
+const resolveBannerUploadUrl = (req, file) => {
+  try {
+    const backendUploadsDir = path.join(__dirname, "..", "backend", "uploads");
+    if (fs.existsSync(backendUploadsDir)) {
+      fs.copyFileSync(file.path, path.join(backendUploadsDir, file.filename));
+    }
+  } catch (e) {}
+
+  const configuredBase = process.env.ADMIN_PUBLIC_URL
+    ? process.env.ADMIN_PUBLIC_URL.replace(/\/+$/, "")
+    : null;
+  const host = req.get("host");
+  const baseUrl = configuredBase || (host ? `${req.protocol}://${host}` : "");
+  return `${baseUrl}/uploads/${file.filename}`;
+};
+
+const cleanupOrphanLocalBannerFile = async (imageUrl) => {
+  try {
+    if (!imageUrl || typeof imageUrl !== "string") return;
+    const match = imageUrl.match(/\/uploads\/([^/?#]+)$/);
+    if (!match) return;
+    const filename = path.basename(match[1]);
+    const stillUsed = await Banner.countDocuments({
+      imageUrl: { $regex: `${filename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$` },
+    });
+    if (stillUsed === 0) {
+      const targetPath = path.join(adminUploadDir, filename);
+      if (fs.existsSync(targetPath)) {
+        fs.unlinkSync(targetPath);
+      }
+    }
+  } catch (e) {}
+};
 
 const checkLogin = (req, res, next) => {
   const isApi = req.originalUrl.startsWith("/api/") || req.path.startsWith("/api/");
@@ -166,7 +340,6 @@ const checkLogin = (req, res, next) => {
     return res.redirect("/login");
   }
 
-  // Strict role verification & account status check
   if (user.role !== "Admin" || user.status === "locked" || user.isBanned === true) {
     if (isApi) {
       return res.status(403).json({ success: false, error: "Quyền truy cập bị từ chối: Yêu cầu quyền quản trị viên hợp lệ." });
@@ -179,9 +352,6 @@ const checkLogin = (req, res, next) => {
   res.locals.user = user;
   return next();
 };
-
-
-
 
 app.get("/api/posts", async (req, res) => {
   try {
@@ -240,16 +410,34 @@ app.get("/api/posts/:id", async (req, res) => {
 app.post("/api/users/register", async (req, res) => {
   try {
     const { name, email, phone, username, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Vui lòng nhập đầy đủ Email và Mật khẩu!" });
+    }
+    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanUsername = username ? String(username).trim() : cleanEmail.split("@")[0];
+    const existing = await User.findOne({
+      $or: [{ email: cleanEmail }, { username: cleanUsername }]
+    });
+    if (existing) {
+      return res.status(400).json({ error: "Email hoặc Username đã tồn tại!" });
+    }
+
+    const hashedPassword = await bcrypt.hash(String(password), 10);
     const newUser = new User({
-      name,
-      email,
-      phone,
-      username,
-      password,
+      name: name ? String(name).trim() : cleanUsername,
+      email: cleanEmail,
+      phone: phone ? String(phone).trim() : "",
+      username: cleanUsername,
+      password: hashedPassword,
       role: "Khách hàng",
+      isSeller: false,
+      sellerStatus: "none",
+      status: "active"
     });
     await newUser.save();
-    res.status(201).json(newUser);
+    const userObj = newUser.toObject();
+    delete userObj.password;
+    res.status(201).json(userObj);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -257,10 +445,32 @@ app.post("/api/users/register", async (req, res) => {
 
 app.post("/api/users/login", async (req, res) => {
   try {
-    const { username, password } = req.body;
-    const user = await User.findOne({ username, password });
-    if (user) res.json(user);
-    else res.status(401).json({ message: "Sai thông tin" });
+    const { username, email, password } = req.body;
+    const identifier = (username || email || "").trim();
+    if (!identifier || !password) {
+      return res.status(400).json({ message: "Vui lòng nhập tài khoản và mật khẩu" });
+    }
+
+    const user = await User.findOne({
+      $or: [{ username: identifier }, { email: identifier.toLowerCase() }]
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Sai thông tin đăng nhập" });
+    }
+
+    const isValid = await verifyAndUpgradePassword(user, password);
+    if (!isValid) {
+      return res.status(401).json({ message: "Sai thông tin đăng nhập" });
+    }
+
+    if (user.status === "locked" || user.isBanned === true) {
+      return res.status(403).json({ message: "Tài khoản đã bị khóa" });
+    }
+
+    const userObj = user.toObject();
+    delete userObj.password;
+    res.json(userObj);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -275,16 +485,34 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-
-
+app.get("/api/banners", async (req, res) => {
+  try {
+    const banners = await Banner.find({ isActive: true }).sort({ order: 1, createdAt: -1 });
+    res.json(banners);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.get("/login", (req, res) => res.render("login", { error: null }));
 
 app.post("/login", async (req, res) => {
   try {
     const { username, password } = req.body;
-    const user = await User.findOne({ username, password });
+    if (!username || !password) {
+      return res.render("login", { error: "Vui lòng nhập đầy đủ tài khoản và mật khẩu!" });
+    }
+
+    const cleanIdentifier = String(username).trim();
+    const user = await User.findOne({
+      $or: [{ username: cleanIdentifier }, { email: cleanIdentifier.toLowerCase() }]
+    });
+
     if (user && user.role === "Admin") {
+      const isPasswordValid = await verifyAndUpgradePassword(user, password);
+      if (!isPasswordValid) {
+        return res.render("login", { error: "Sai tài khoản hoặc mật khẩu Quản trị viên!" });
+      }
       if (user.status === 'locked' || user.isBanned) {
         return res.render("login", { error: "Tài khoản quản trị viên này đã bị khóa!" });
       }
@@ -300,14 +528,12 @@ app.post("/login", async (req, res) => {
 
 app.post("/register", async (req, res) => {
   try {
-    // 1. Strict Input Sanitization: Whitelist ONLY safe fields
     const { name, email, username, password } = req.body;
 
     if (!email || !username || !password) {
       return res.status(400).render("login", { error: "Vui lòng điền đầy đủ Email, Tên đăng nhập và Mật khẩu!" });
     }
 
-    // 2. Privilege Escalation Guard: Reject any payload attempting to self-assign Admin privileges
     const requestedRole = req.body.role || req.body.roles;
     if (requestedRole && /(admin|quản trị|root|superuser)/i.test(String(requestedRole))) {
       return res.status(403).render("login", {
@@ -315,7 +541,6 @@ app.post("/register", async (req, res) => {
       });
     }
 
-    // 3. Prevent duplicate accounts
     const cleanEmail = email.trim().toLowerCase();
     const cleanUsername = username.trim();
     const existing = await User.findOne({
@@ -325,14 +550,15 @@ app.post("/register", async (req, res) => {
       return res.status(400).render("login", { error: "Email hoặc Tên đăng nhập này đã được sử dụng!" });
     }
 
-    // 4. Force default safe role ('Khách hàng'), completely ignoring any user-supplied role
+    const hashedPassword = await bcrypt.hash(String(password), 10);
+
     const newUser = new User({
       name: (name || cleanUsername).trim(),
       email: cleanEmail,
       phone: req.body.phone ? String(req.body.phone).trim() : "",
       username: cleanUsername,
-      password: password,
-      role: "Khách hàng", // Enforce safe default role
+      password: hashedPassword,
+      role: "Khách hàng",
       isSeller: false,
       sellerStatus: "none",
       status: "active"
@@ -354,8 +580,6 @@ app.get("/dashboard", checkLogin, (req, res) => {
   res.redirect("/");
 });
 
-
-// Status sets spanning legacy C2C values and the new B2C lifecycle
 const PENDING_PRODUCT_STATUSES = ['pending', 'PENDING', 'Pending', 'Chờ duyệt'];
 const COMPLETED_ORDER_STATUSES = ['Completed', 'Delivered', 'Hoàn thành', 'Đã giao thành công'];
 
@@ -374,7 +598,6 @@ const DEFAULT_DASHBOARD = () => ({
   recentRevenues: []
 });
 
-// Resolves to `fallback` instead of rejecting, so one broken query can't blank the whole dashboard
 const safeQuery = async (label, queryFn, fallback) => {
   try {
     return await queryFn();
@@ -388,7 +611,6 @@ app.get("/", checkLogin, async (req, res) => {
   try {
     const now = new Date();
     const notDeleted = { isDeleted: { $ne: true } };
-    // Locked = legacy isBanned flag, or status 'locked' whose lock has not yet expired
     const lockedFilter = {
       ...notDeleted,
       $or: [
@@ -435,13 +657,11 @@ app.get("/", checkLogin, async (req, res) => {
       ]), [])
     ]);
 
-    // Real demographics calculation for Doughnut Chart
     const [sellerCount, buyerCount] = await Promise.all([
       safeQuery('sellerCount', () => User.countDocuments({ ...notDeleted, isSeller: true }), 0),
       safeQuery('buyerCount', () => User.countDocuments({ ...notDeleted, isSeller: { $ne: true } }), 0)
     ]);
 
-    // Real 7-day Sales & Orders aggregation for Bar Chart
     const daysMap = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
     const last7DaysData = [];
     for (let i = 6; i >= 0; i--) {
@@ -466,7 +686,6 @@ app.get("/", checkLogin, async (req, res) => {
       });
     }
 
-    // Prefer recorded ledger; fall back to completed orders × fee
     let revenue = (revenueAgg[0] && revenueAgg[0].total) || 0;
     if (!revenue) {
       const gmvAgg = await safeQuery('orderGmv', () => Order.aggregate([
@@ -476,7 +695,6 @@ app.get("/", checkLogin, async (req, res) => {
       revenue = ((gmvAgg[0] && gmvAgg[0].total) || 0) * (feePercent / 100);
     }
 
-    // Scale 7-day distribution cleanly from revenue if historical daily rows are empty
     const totalDailyRev = last7DaysData.reduce((acc, cur) => acc + cur.revenue, 0);
     const factors = [0.12, 0.15, 0.22, 0.18, 0.28, 0.35, 0.30];
     const finalDailySales = last7DaysData.map((item, idx) => {
@@ -522,7 +740,7 @@ app.get("/", checkLogin, async (req, res) => {
 });
 
 // -------------------------------------------------------------------------
-// NEW & RESTORED ADMIN PORTAL ROUTES (Fixing "Cannot GET" errors)
+// ADMIN PORTAL FINANCE & ORDER MANAGEMENT ROUTES
 // -------------------------------------------------------------------------
 
 // 1. Finance - Doanh thu sàn
@@ -531,7 +749,7 @@ app.get("/admin/revenue", checkLogin, async (req, res) => {
     const revenues = await safeQuery('revenues', () => Revenue.find()
       .populate({ path: 'orderId', populate: { path: 'buyer', select: 'name email' } })
       .sort({ createdAt: -1 }), []);
-    
+
     const totalRevenue = revenues.reduce((sum, item) => sum + (item.commissionAmount || 0), 0);
 
     res.render("revenue", {
@@ -551,7 +769,7 @@ app.get("/admin/withdrawals", checkLogin, async (req, res) => {
     const withdrawals = await safeQuery('withdrawals', () => Transaction.find({ type: 'Rút tiền' })
       .populate('user')
       .sort({ createdAt: -1 }), []);
-    
+
     res.render("withdrawals", {
       withdrawals,
       active: 'withdrawals'
@@ -561,17 +779,107 @@ app.get("/admin/withdrawals", checkLogin, async (req, res) => {
   }
 });
 
+/**
+ * POST /admin/withdrawals/approve/:id
+ * Duyệt lệnh rút tiền nguyên tử (Idempotent)
+ */
 app.post("/admin/withdrawals/approve/:id", checkLogin, async (req, res) => {
   try {
-    await Transaction.findByIdAndUpdate(req.params.id, { status: 'Thành công' });
-  } catch (e) { }
+    const tx = await Transaction.findOneAndUpdate(
+      { _id: req.params.id, type: 'Rút tiền', status: 'Đang xử lý' },
+      { $set: { status: 'Thành công' } },
+      { new: true }
+    );
+
+    if (!tx) {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.status(409).json({ success: false, message: 'Lệnh rút tiền đã được xử lý trước đó hoặc không tồn tại!' });
+      }
+      return res.redirect("/admin/withdrawals");
+    }
+
+    if (tx.user) {
+      await Notification.create({
+        userId: tx.user,
+        user: tx.user,
+        title: '✅ Lệnh rút tiền đã được duyệt!',
+        message: `Yêu cầu rút ${Math.abs(tx.amount || 0).toLocaleString('vi-VN')} đ của bạn đã được Admin chuyển khoản thành công.`,
+        type: 'WITHDRAWAL',
+        link: '/haipay',
+        targetUrl: '/haipay',
+        recipientRole: 'buyer',
+        targetRole: 'buyer',
+        isRead: false
+      });
+    }
+
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.json({ success: true, message: 'Đã xác nhận chuyển tiền thành công!' });
+    }
+  } catch (e) {
+    console.error('Approve withdrawal error:', e.message);
+  }
   res.redirect("/admin/withdrawals");
 });
 
+/**
+ * POST /admin/withdrawals/reject/:id
+ * Từ chối lệnh rút tiền & hoàn tiền nguyên tử về Ví HaiPay của User (Idempotent)
+ */
 app.post("/admin/withdrawals/reject/:id", checkLogin, async (req, res) => {
   try {
-    await Transaction.findByIdAndUpdate(req.params.id, { status: 'Thất bại' });
-  } catch (e) { }
+    const tx = await Transaction.findOneAndUpdate(
+      { _id: req.params.id, type: 'Rút tiền', status: 'Đang xử lý' },
+      { $set: { status: 'Thất bại' } },
+      { new: true }
+    );
+
+    if (!tx) {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.status(409).json({
+          success: false,
+          message: 'Lệnh rút tiền này đã được xử lý trước đó hoặc không còn ở trạng thái Đang xử lý!'
+        });
+      }
+      return res.redirect("/admin/withdrawals");
+    }
+
+    const refundAmount = Math.abs(Number(tx.amount) || 0);
+    if (tx.user && refundAmount > 0) {
+      await User.findByIdAndUpdate(tx.user, {
+        $inc: { walletBalance: refundAmount }
+      });
+
+      const rejectReason = (req.body && req.body.reason)
+        ? String(req.body.reason).trim()
+        : 'Thông tin tài khoản nhận chưa chính xác hoặc không hợp lệ';
+
+      await Notification.create({
+        userId: tx.user,
+        user: tx.user,
+        title: '↩️ Lệnh rút tiền bị từ chối & Đã hoàn ví',
+        message: `Lệnh rút ${refundAmount.toLocaleString('vi-VN')} đ bị từ chối (${rejectReason}). Số tiền ${refundAmount.toLocaleString('vi-VN')} đ đã được hoàn lại đầy đủ vào Ví HaiPay của bạn.`,
+        type: 'WITHDRAWAL',
+        link: '/haipay',
+        targetUrl: '/haipay',
+        recipientRole: 'buyer',
+        targetRole: 'buyer',
+        isRead: false
+      });
+    }
+
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.json({
+        success: true,
+        message: `Đã từ chối lệnh rút và hoàn lại ${refundAmount.toLocaleString('vi-VN')} đ vào ví người dùng!`
+      });
+    }
+  } catch (e) {
+    console.error('Reject withdrawal error:', e.message);
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.status(500).json({ success: false, message: 'Lỗi máy chủ khi hoàn tiền lệnh rút!' });
+    }
+  }
   res.redirect("/admin/withdrawals");
 });
 
@@ -582,7 +890,7 @@ app.get("/orders", checkLogin, async (req, res) => {
       .populate('buyer', 'name phone email')
       .populate('seller', 'name phone email')
       .sort({ createdAt: -1 }), []);
-    
+
     res.render("orders", {
       orders,
       active: 'orders'
@@ -597,7 +905,7 @@ app.get("/order/:id", checkLogin, async (req, res) => {
     const order = await safeQuery('orderDetail', () => Order.findById(req.params.id)
       .populate('buyer')
       .populate('seller'), null);
-    
+
     if (!order) return res.redirect("/orders");
     res.render("order-detail", { order, active: 'orders' });
   } catch (e) {
@@ -605,10 +913,345 @@ app.get("/order/:id", checkLogin, async (req, res) => {
   }
 });
 
+/**
+ * POST /orders/update-status/:id
+ * Cập nhật trạng thái đơn hàng từ Admin Portal
+ */
+app.post("/orders/update-status/:id", checkLogin, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).send("Không tìm thấy đơn hàng");
+    }
+
+    const lockedStatuses = ['Đã thanh toán cho người bán', 'Đã hủy', 'Completed', 'Cancelled'];
+    if (
+      lockedStatuses.includes(order.status) &&
+      (order.paymentStatus === 'released' || order.paymentStatus === 'refunded')
+    ) {
+      return res.status(400).send(`
+        <div style="text-align:center; padding: 50px; font-family: sans-serif;">
+          <h2 style="color: red;">⛔ LỖI BẢO MẬT HỆ THỐNG</h2>
+          <p>Không thể thay đổi trạng thái của đơn hàng đã được GIẢI NGÂN hoặc ĐÃ HOÀN TIỀN!</p>
+          <a href="/orders" style="padding: 10px 20px; background: #333; color: white; text-decoration: none; border-radius: 5px;">Quay lại</a>
+        </div>
+      `);
+    }
+
+    const nextStatus = req.body.status;
+    order.status = nextStatus;
+    if (nextStatus === 'Delivered' || nextStatus === 'Đã giao hàng') {
+      order.deliveredAt = order.deliveredAt || new Date();
+    } else if (nextStatus === 'Completed' || nextStatus === 'Hoàn thành') {
+      order.completedAt = order.completedAt || new Date();
+    }
+    await order.save();
+
+    res.redirect("/orders");
+  } catch (error) {
+    res.status(500).send("Lỗi server khi cập nhật trạng thái: " + error.message);
+  }
+});
+
+const ELIGIBLE_RELEASE_STATUSES = [
+  'Delivered',
+  'Completed',
+  'Hoàn thành',
+  'Đã giao thành công',
+  'Đã giao hàng'
+];
+
+/**
+ * POST /api/admin/release-funds/:orderId
+ * Giải ngân đơn hàng nguyên tử trên Admin Portal (Idempotent)
+ */
+app.post("/api/admin/release-funds/:orderId", checkLogin, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+
+    const isOrderEscrow = order.paymentStatus === 'escrow' || order.status === 'Đã thanh toán (Admin giữ tiền)';
+    if (order.paymentMethod === 'COD' || (order.paymentStatus === 'unpaid' && !isOrderEscrow)) {
+      return res.status(400).json({
+        message: "Đơn hàng COD hoặc chưa thanh toán qua ví ký quỹ (escrow) không thể giải ngân từ sàn!"
+      });
+    }
+
+    if (order.paymentStatus === 'released') {
+      return res.status(409).json({
+        message: "Đơn hàng này đã được giải ngân trước đó!"
+      });
+    }
+
+    if (!isOrderEscrow) {
+      return res.status(400).json({
+        message: `Chỉ có thể giải ngân cho đơn hàng đang ở trạng thái ký quỹ (escrow), hiện tại: ${order.paymentStatus}`
+      });
+    }
+
+    if (!ELIGIBLE_RELEASE_STATUSES.includes(order.status)) {
+      return res.status(400).json({
+        message: `Chỉ có thể giải ngân khi đơn hàng đã Giao thành công (Delivered / Completed). Trạng thái hiện tại: ${order.status}`
+      });
+    }
+
+    const sellerRef = order.sellerId?._id || order.seller?._id || order.sellerId || order.seller;
+    if (!sellerRef) {
+      return res.status(400).json({ message: "Đơn hàng thiếu thông tin người bán!" });
+    }
+
+    const setting = await safeQuery('settings', () => GlobalSetting.findOne().lean(), null);
+    const feePercent = Number(setting?.platformFeePercentage ?? setting?.commissionRate ?? 5);
+    const { commissionAmount, sellerReceive } = computeAdminOrderSplit(order, feePercent);
+    const now = new Date();
+
+    // Atomic conditional transition to prevent double payout
+    const releasedOrder = await Order.findOneAndUpdate(
+      {
+        _id: order._id,
+        paymentStatus: 'escrow',
+        status: { $in: ELIGIBLE_RELEASE_STATUSES }
+      },
+      {
+        $set: {
+          paymentStatus: 'released',
+          status: 'Completed',
+          completedAt: order.completedAt || now,
+          commissionRate: feePercent,
+          sellerReceive
+        }
+      },
+      { new: true }
+    );
+
+    if (!releasedOrder) {
+      return res.status(409).json({
+        message: "Đơn hàng đã được giải ngân hoặc không đủ điều kiện giải ngân!"
+      });
+    }
+
+    await User.findByIdAndUpdate(sellerRef, {
+      $inc: {
+        pendingBalance: -sellerReceive,
+        walletBalance: sellerReceive
+      }
+    });
+
+    await Revenue.create({
+      orderId: order._id,
+      commissionAmount,
+      description: `Chiết khấu ${feePercent}% phí sàn từ đơn hàng #${order._id.toString().slice(-6).toUpperCase()}`
+    });
+
+    await Transaction.create({
+      user: sellerRef,
+      type: 'Giải ngân',
+      amount: sellerReceive,
+      status: 'Thành công',
+      txnRef: `RELEASE_${order._id}`,
+      description: `Giải ngân doanh thu đơn hàng #${order._id.toString().slice(-6).toUpperCase()} (đã trừ ${feePercent}% phí sàn)`
+    });
+
+    await Notification.create({
+      userId: sellerRef,
+      user: sellerRef,
+      shopId: sellerRef,
+      orderId: order._id,
+      title: '💰 Đã giải ngân doanh thu đơn hàng!',
+      message: `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được Admin giải ngân. Số tiền +${sellerReceive.toLocaleString('vi-VN')} đ đã cộng vào Số dư khả dụng Ví HaiPay của Shop.`,
+      type: 'PAYMENT',
+      link: '/haipay',
+      targetUrl: '/haipay',
+      recipientRole: 'seller',
+      targetRole: 'seller',
+      isRead: false
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Giải ngân thành công +${sellerReceive.toLocaleString('vi-VN')} đ cho người bán!`,
+      order: releasedOrder,
+      sellerReceive,
+      platformFee: commissionAmount
+    });
+  } catch (err) {
+    console.error("Admin release-funds error:", err);
+    return res.status(500).json({ message: "Lỗi hệ thống khi giải ngân: " + err.message });
+  }
+});
+
+/**
+ * POST /api/admin/refund-order/:orderId
+ * Hoàn tiền cho Buyer đối với đơn hủy đang giữ tiền escrow (Idempotent)
+ */
+app.post("/api/admin/refund-order/:orderId", checkLogin, async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.orderId);
+    if (!order) {
+      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
+    }
+
+    if (order.paymentStatus === 'refunded') {
+      return res.status(409).json({ message: "Đơn hàng này đã được hoàn tiền trước đó!" });
+    }
+
+    const isOrderEscrow = order.paymentStatus === 'escrow' || order.status === 'Đã thanh toán (Admin giữ tiền)';
+    if (!isOrderEscrow) {
+      return res.status(400).json({
+        message: `Chỉ có thể hoàn tiền cho đơn hàng đang giữ tiền ký quỹ (escrow). Trạng thái thanh toán hiện tại: ${order.paymentStatus}`
+      });
+    }
+
+    const setting = await safeQuery('settings', () => GlobalSetting.findOne().lean(), null);
+    const feePercent = Number(setting?.platformFeePercentage ?? setting?.commissionRate ?? 5);
+    const { totalAmount, sellerReceive } = computeAdminOrderSplit(order, feePercent);
+    const now = new Date();
+
+    const refundedOrder = await Order.findOneAndUpdate(
+      {
+        _id: order._id,
+        paymentStatus: 'escrow'
+      },
+      {
+        $set: {
+          status: 'Cancelled',
+          paymentStatus: 'refunded',
+          cancelledAt: order.cancelledAt || now,
+          cancelReason: order.cancelReason || 'Admin xác nhận hoàn tiền đơn hàng đã hủy'
+        }
+      },
+      { new: true }
+    );
+
+    if (!refundedOrder) {
+      return res.status(409).json({ message: "Đơn hàng đã được xử lý hoàn tiền hoặc giải ngân trước đó!" });
+    }
+
+    const buyerRef = order.buyerId?._id || order.buyer?._id || order.buyerId || order.buyer;
+    const sellerRef = order.sellerId?._id || order.seller?._id || order.sellerId || order.seller;
+
+    if (buyerRef && totalAmount > 0) {
+      await User.findByIdAndUpdate(buyerRef, {
+        $inc: { walletBalance: totalAmount }
+      });
+
+      await Transaction.create({
+        user: buyerRef,
+        type: 'Hoàn tiền',
+        amount: totalAmount,
+        status: 'Thành công',
+        txnRef: `REFUND_${order._id}_${Date.now()}`,
+        description: `Hoàn tiền đơn hàng #${order._id.toString().slice(-6).toUpperCase()} từ Admin`
+      });
+
+      await Notification.create({
+        userId: buyerRef,
+        user: buyerRef,
+        orderId: order._id,
+        title: '💸 Đã hoàn tiền đơn hàng vào Ví HaiPay!',
+        message: `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được hoàn trả +${totalAmount.toLocaleString('vi-VN')} đ vào Ví HaiPay của bạn.`,
+        type: 'PAYMENT',
+        link: '/haipay',
+        targetUrl: '/haipay',
+        recipientRole: 'buyer',
+        targetRole: 'buyer',
+        isRead: false
+      });
+    }
+
+    if (sellerRef && sellerReceive > 0) {
+      await User.findByIdAndUpdate(sellerRef, {
+        $inc: { pendingBalance: -sellerReceive }
+      });
+    }
+
+    // Hoàn lại tồn kho nếu đơn chưa được hoàn kho trước đó
+    if (order.status !== 'Cancelled' && order.status !== 'Đã hủy') {
+      const qtyByProduct = {};
+      if (Array.isArray(order.orderItems) && order.orderItems.length > 0) {
+        for (const item of order.orderItems) {
+          const pid = item.productId?._id || item.productId;
+          if (pid) {
+            const key = pid.toString();
+            qtyByProduct[key] = (qtyByProduct[key] || 0) + (Number(item.quantity) || 1);
+          }
+        }
+      } else if (Array.isArray(order.items) && order.items.length > 0) {
+        for (const rawId of order.items) {
+          const pid = rawId?._id || rawId;
+          if (pid) {
+            const key = pid.toString();
+            qtyByProduct[key] = (qtyByProduct[key] || 0) + 1;
+          }
+        }
+      }
+
+      for (const [productId, addQty] of Object.entries(qtyByProduct)) {
+        if (addQty > 0) {
+          const restored = await Post.findByIdAndUpdate(
+            productId,
+            { $inc: { stockQuantity: addQty, quantity: addQty, soldCount: -addQty } },
+            { new: true }
+          );
+          if (restored) {
+            const fixSet = {};
+            if ((restored.soldCount || 0) < 0) fixSet.soldCount = 0;
+            if (
+              (restored.status === 'out_of_stock' || restored.status === 'SOLD') &&
+              (restored.stockQuantity ?? restored.quantity ?? 0) > 0
+            ) {
+              fixSet.status = 'active';
+            }
+            if (Object.keys(fixSet).length > 0) {
+              await Post.findByIdAndUpdate(productId, { $set: fixSet });
+            }
+          }
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Đã hoàn tiền +${totalAmount.toLocaleString('vi-VN')} đ về Ví HaiPay cho khách hàng!`,
+      order: refundedOrder
+    });
+  } catch (err) {
+    console.error("Admin refund-order error:", err);
+    return res.status(500).json({ message: "Lỗi hệ thống khi hoàn tiền: " + err.message });
+  }
+});
+
+/**
+ * POST /admin/orders/delete/:id
+ * Chặn xóa cứng nếu đơn hàng đang giữ tiền ký quỹ (paymentStatus === 'escrow')
+ */
 app.post("/admin/orders/delete/:id", checkLogin, async (req, res) => {
   try {
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
+      }
+      return res.redirect("/orders");
+    }
+
+    if (order.paymentStatus === 'escrow' || order.status === 'Đã thanh toán (Admin giữ tiền)') {
+      const msg = "Không thể xóa đơn hàng đang giữ tiền ký quỹ (escrow)! Vui lòng thực hiện Hoàn tiền hoặc Giải ngân trước khi xóa để tránh lệch sổ cái.";
+      if (req.headers.accept && req.headers.accept.includes('application/json')) {
+        return res.status(400).json({ success: false, message: msg });
+      }
+      return res.status(400).send(msg);
+    }
+
     await Order.findByIdAndDelete(req.params.id);
-  } catch (e) { }
+    if (req.headers.accept && req.headers.accept.includes('application/json')) {
+      return res.json({ success: true, message: "Đã xóa đơn hàng thành công" });
+    }
+  } catch (e) {
+    console.error("Delete order error:", e.message);
+  }
   res.redirect("/orders");
 });
 
@@ -619,7 +1262,7 @@ app.get("/admin/reports", checkLogin, async (req, res) => {
       .populate('reporter', 'name email')
       .populate('post', 'title')
       .sort({ createdAt: -1 }), []);
-    
+
     res.render("reports", {
       reports,
       active: 'reports'
@@ -634,7 +1277,6 @@ app.get("/admin/chat", checkLogin, (req, res) => {
   res.render("admin-chat", { active: 'chat' });
 });
 
-// Helper filter to isolate admin/system-level notifications from personal user notifications
 const getAdminNotifFilter = () => ({
   $or: [
     { targetRole: 'admin' },
@@ -660,7 +1302,6 @@ app.get("/api/admin/notifications", checkLogin, async (req, res) => {
 
 app.get("/api/notifications", checkLogin, async (req, res) => {
   try {
-    // Admin dashboard must ONLY display system-level notifications
     const adminFilter = getAdminNotifFilter();
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
     const notifications = await safeQuery('notifs', () => Notification.find(adminFilter)
@@ -746,7 +1387,6 @@ app.get("/post/approve/:id", checkLogin, async (req, res) => {
 
 app.get("/post/delete/:id", checkLogin, async (req, res) => {
   try {
-    // Soft hide instead of permanent delete
     await Post.findByIdAndUpdate(req.params.id, { status: "inactive" });
     res.redirect("/posts");
   } catch (err) {
@@ -847,7 +1487,6 @@ app.post("/api/admin/users/toggle-lock/:id", checkLogin, async (req, res) => {
 
 app.get("/users/delete/:id", checkLogin, async (req, res) => {
   try {
-    // Soft lock instead of hard delete
     const user = await User.findById(req.params.id);
     if (user) {
       const isCurrentlyLocked = user.status === 'locked' || user.isBanned === true;
@@ -861,7 +1500,6 @@ app.get("/users/delete/:id", checkLogin, async (req, res) => {
   }
 });
 
-// Settings API for Auto-Approve Posts logic (Protected with checkLogin)
 app.get("/api/admin/settings/auto-approve", checkLogin, async (req, res) => {
   try {
     const setting = await GlobalSetting.getGlobal();
@@ -896,10 +1534,10 @@ app.post("/users/edit/:id", checkLogin, async (req, res) => {
   try {
     const { name, email, phone, role, status } = req.body;
     const isLocked = status === 'locked';
-    await User.findByIdAndUpdate(req.params.id, { 
-      name, 
-      email, 
-      phone, 
+    await User.findByIdAndUpdate(req.params.id, {
+      name,
+      email,
+      phone,
       role,
       status: isLocked ? 'locked' : 'active',
       isBanned: isLocked
@@ -909,7 +1547,6 @@ app.post("/users/edit/:id", checkLogin, async (req, res) => {
     res.redirect("/users");
   }
 });
-
 
 app.get("/categories", checkLogin, async (req, res) => {
   try {
@@ -973,7 +1610,134 @@ app.get("/categories/delete/:id", checkLogin, async (req, res) => {
   }
 });
 
+// ======================== BANNER CAROUSEL MANAGEMENT ========================
+app.get("/banners", checkLogin, async (req, res) => {
+  try {
+    const banners = await Banner.find().sort({ order: 1, createdAt: -1 });
+    res.render("banners", {
+      banners,
+      active: "banners",
+      error: req.query.error || null,
+      success: req.query.success || null,
+    });
+  } catch (err) {
+    res.status(500).send("Lỗi khi tải danh sách Banner: " + err.message);
+  }
+});
+
+app.post("/banners/add", checkLogin, handleBannerUpload, async (req, res) => {
+  try {
+    const uploadedFile = getUploadedBannerFile(req);
+    const manualUrl = String(req.body.imageUrl || "").trim();
+    const imageUrl = uploadedFile ? resolveBannerUploadUrl(req, uploadedFile) : manualUrl;
+
+    if (!imageUrl) {
+      return res.redirect("/banners?error=" + encodeURIComponent("Vui lòng chọn file ảnh/GIF hoặc nhập URL ảnh!"));
+    }
+
+    const fromForm = req.body.hasFormFlags === "1";
+    const openInNewTab = fromForm
+      ? Boolean(req.body.openInNewTab)
+      : req.body.openInNewTab === true || req.body.openInNewTab === "true" || req.body.openInNewTab === "on";
+    const isActive = fromForm
+      ? Boolean(req.body.isActive)
+      : req.body.isActive === undefined
+        ? true
+        : req.body.isActive === true || req.body.isActive === "true" || req.body.isActive === "on";
+
+    const newBanner = new Banner({
+      title: String(req.body.title || "").trim(),
+      imageUrl,
+      targetUrl: String(req.body.targetUrl || "").trim(),
+      openInNewTab,
+      order: Number.isFinite(Number(req.body.order)) ? Number(req.body.order) : 0,
+      isActive,
+    });
+
+    await newBanner.save();
+    res.redirect("/banners?success=" + encodeURIComponent("Đã thêm Banner mới thành công!"));
+  } catch (err) {
+    res.redirect("/banners?error=" + encodeURIComponent("Lỗi thêm Banner: " + err.message));
+  }
+});
+
+app.post("/banners/edit/:id", checkLogin, handleBannerUpload, async (req, res) => {
+  try {
+    const existing = await Banner.findById(req.params.id);
+    if (!existing) {
+      return res.redirect("/banners?error=" + encodeURIComponent("Không tìm thấy Banner cần sửa!"));
+    }
+
+    const uploadedFile = getUploadedBannerFile(req);
+    const manualUrl = String(req.body.imageUrl || "").trim();
+    const previousImageUrl = existing.imageUrl;
+
+    const fromForm = req.body.hasFormFlags === "1";
+    const openInNewTab = fromForm
+      ? Boolean(req.body.openInNewTab)
+      : req.body.openInNewTab === true || req.body.openInNewTab === "true" || req.body.openInNewTab === "on";
+    const isActive = fromForm
+      ? Boolean(req.body.isActive)
+      : req.body.isActive === undefined
+        ? existing.isActive
+        : req.body.isActive === true || req.body.isActive === "true" || req.body.isActive === "on";
+
+    const updateData = {
+      title: String(req.body.title !== undefined ? req.body.title : existing.title).trim(),
+      targetUrl: String(req.body.targetUrl !== undefined ? req.body.targetUrl : existing.targetUrl).trim(),
+      openInNewTab,
+      order: Number.isFinite(Number(req.body.order)) ? Number(req.body.order) : existing.order,
+      isActive,
+    };
+
+    if (uploadedFile) {
+      updateData.imageUrl = resolveBannerUploadUrl(req, uploadedFile);
+    } else if (manualUrl) {
+      updateData.imageUrl = manualUrl;
+    }
+
+    await Banner.findByIdAndUpdate(req.params.id, updateData);
+    if (updateData.imageUrl && updateData.imageUrl !== previousImageUrl) {
+      await cleanupOrphanLocalBannerFile(previousImageUrl);
+    }
+
+    res.redirect("/banners?success=" + encodeURIComponent("Đã cập nhật Banner thành công!"));
+  } catch (err) {
+    res.redirect("/banners?error=" + encodeURIComponent("Lỗi cập nhật Banner: " + err.message));
+  }
+});
+
+app.post("/api/admin/banners/toggle/:id", checkLogin, async (req, res) => {
+  try {
+    const banner = await Banner.findById(req.params.id);
+    if (!banner) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy Banner!" });
+    }
+    banner.isActive = !banner.isActive;
+    await banner.save();
+    res.json({ success: true, banner });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get("/banners/delete/:id", checkLogin, async (req, res) => {
+  try {
+    const deleted = await Banner.findByIdAndDelete(req.params.id);
+    if (deleted && deleted.imageUrl) {
+      await cleanupOrphanLocalBannerFile(deleted.imageUrl);
+    }
+    res.redirect("/banners?success=" + encodeURIComponent("Đã xóa Banner!"));
+  } catch (err) {
+    res.redirect("/banners?error=" + encodeURIComponent("Lỗi xóa Banner: " + err.message));
+  }
+});
+
 const PORT = process.env.PORT || 4001;
-app.listen(PORT, '0.0.0.0', () =>
-  console.log(`🚀 Server Admin chạy tại port ${PORT}`),
-);
+if (require.main === module) {
+  app.listen(PORT, '0.0.0.0', () =>
+    console.log(`🚀 Server Admin chạy tại port ${PORT}`),
+  );
+}
+
+module.exports = app;

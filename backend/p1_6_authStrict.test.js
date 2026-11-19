@@ -97,3 +97,4 @@ describe('[P1-6] Strict Bearer JWT authentication on seller & sensitive routes',
     expect(Array.isArray(res.body)).toBe(true);
   });
 });
+

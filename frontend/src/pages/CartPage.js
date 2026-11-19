@@ -17,7 +17,6 @@ export default function CartPage() {
   const currentUser = JSON.parse(localStorage.getItem('user'));
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
-  const [paymentMethod, setPaymentMethod] = useState('COD'); 
   const [discountCode, setDiscountCode] = useState('HAIHANDVOUCHER100K');
 
   const fetchCart = async () => {
@@ -126,56 +125,31 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckout = async (computedFinalTotal) => {
+  const handleProceedToCheckout = () => {
     const selectedCartItems = cartItems.filter(item => selectedItems.has(item.product._id));
-    if (selectedCartItems.length === 0) return toast.warning('Chú ý', "Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!");
+    if (selectedCartItems.length === 0) {
+      return toast.warning('Chú ý', "Vui lòng chọn ít nhất 1 sản phẩm để thanh toán!");
+    }
 
     if (!currentUser) {
-        toast.warning('Chú ý', "Chức năng thanh toán yêu cầu đăng nhập và kết nối Backend đang hoạt động.");
-        return;
+      toast.warning('Chú ý', "Vui lòng đăng nhập để tiến hành thanh toán!");
+      navigate('/login');
+      return;
     }
 
-    const confirmPay = await confirm(`Xác nhận thanh toán ${new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(computedFinalTotal)} bằng phương thức ${paymentMethod}?`);
-    if (!confirmPay) return;
+    // Save selection to sessionStorage as a safeguard on browser refresh
+    const checkoutPayload = selectedCartItems.map(item => ({
+      product: item.product,
+      productId: item.product._id,
+      quantity: item.quantity
+    }));
+    sessionStorage.setItem('checkout_items', JSON.stringify(checkoutPayload));
 
-    try {
-        const itemIds = selectedCartItems.map(item => item.product._id);
-        const orderRes = await axios.post(`${API_URL}/api/users/${currentUser._id}/checkout`, {
-            items: itemIds,
-            totalPrice: computedFinalTotal,
-            phone: currentUser.phone || '0123456789',
-            address: currentUser.address || 'Hà Nội',
-            paymentMethod
-        });
-
-        const newOrder = orderRes.data.order;
-
-        if (paymentMethod === 'COD') {
-            toast.success('Thành công', "🎉 Đặt hàng thành công!");
-            navigate('/profile?tab=orders_buy');
-        } 
-        else if (paymentMethod === 'VNPAY') {
-            const vnpayRes = await axios.post(`${API_URL}/api/vnpay/create_payment_url`, {
-                amount: computedFinalTotal,
-                orderId: newOrder._id
-            });
-            if (vnpayRes.data && vnpayRes.data.paymentUrl) window.location.href = vnpayRes.data.paymentUrl;
-            else toast.info('Thông báo', "Không thể tạo link VNPay!");
-        }
-        else if (paymentMethod === 'HAIPAY') {
-            const updatedUser = { ...currentUser, walletBalance: orderRes.data.newBalance };
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-            window.dispatchEvent(new Event('userUpdated')); 
-            toast.success('Thành công', "🎉 Thanh toán rẹt rẹt bằng HaiPay thành công!");
-            navigate('/profile?tab=orders_buy');
-        }
-    } catch (error) {
-        if (error.response && error.response.status === 400) {
-            toast.error('Lỗi', "❌ " + error.response.data.error);
-        } else {
-            toast.error('Lỗi', "Lỗi trong quá trình thanh toán!");
-        }
-    }
+    navigate('/checkout', {
+      state: {
+        items: checkoutPayload
+      }
+    });
   };
 
   const getImageUrl = (imgStr) => {
@@ -456,20 +430,20 @@ export default function CartPage() {
                 )}
 
                 <button 
-                  onClick={() => handleCheckout(finalTotal)} 
+                  onClick={handleProceedToCheckout} 
                   disabled={selectedItems.size === 0}
-                  className="w-full bg-[#FACC15] hover:bg-[#EAB308] disabled:bg-stone-200 disabled:text-stone-400 text-[#1C1917] font-bold py-3.5 rounded-lg transition-colors flex items-center justify-center gap-2 mb-4"
+                  className="w-full bg-[#FACC15] hover:bg-[#EAB308] disabled:bg-stone-200 disabled:text-stone-400 text-[#1C1917] font-bold py-3.5 rounded-xl transition-all shadow-md shadow-amber-300/40 hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 mb-4 cursor-pointer disabled:cursor-not-allowed"
                 >
                   Tiến hành đặt hàng ({selectedItems.size} món)
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
                 </button>
 
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-stone-500 font-medium">Hỗ trợ thanh toán:</span>
-                  <div className="flex gap-1.5">
-                    <button onClick={() => setPaymentMethod('VNPAY')} className={`px-2 py-1 font-bold rounded border ${paymentMethod === 'VNPAY' ? 'border-[#1C1917] text-[#1C1917]' : 'border-stone-200 bg-stone-50 text-stone-500'}`}>VNPay</button>
-                    <button onClick={() => setPaymentMethod('HAIPAY')} className={`px-2 py-1 font-bold rounded border ${paymentMethod === 'HAIPAY' ? 'border-[#1C1917] text-[#1C1917]' : 'border-stone-200 bg-stone-50 text-stone-500'}`}>Ví HaiPay</button>
-                    <button onClick={() => setPaymentMethod('COD')} className={`px-2 py-1 font-bold rounded border ${paymentMethod === 'COD' ? 'border-[#1C1917] text-[#1C1917]' : 'border-stone-200 bg-stone-50 text-stone-500'}`}>COD</button>
+                <div className="flex items-center justify-between text-xs text-stone-500">
+                  <span className="font-medium">Chấp nhận thanh toán:</span>
+                  <div className="flex items-center gap-1.5 font-bold text-[11px]">
+                    <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200">VNPAY</span>
+                    <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">Ví HaiPay</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">COD</span>
                   </div>
                 </div>
 

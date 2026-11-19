@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'; 
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import { useSocket } from '../context/SocketContext';
 import { useToast } from './Toast';
 import './Header.css'; 
 import moment from 'moment';
@@ -45,7 +45,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
     return stored && stored !== "undefined" ? JSON.parse(stored) : null;
   });
 
-  const socket = useRef();
+  const { socket } = useSocket();
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   
@@ -83,21 +83,29 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
       fetchData();
       const notifInterval = setInterval(fetchData, 10000);
 
-      socket.current = io(API_URL, { transports: ["websocket", "polling"], reconnection: true });
-      socket.current.emit('addUser', user._id);
-      socket.current.on('getMessage', () => setUnreadCount(prev => prev + 1));
-      socket.current.on('new_notification', (newNotif) => {
-        setNotifications(prev => [newNotif, ...prev]);
-        setNotifCount(prev => prev + 1);
-        toast.info(`🔔 ${newNotif.title}`);
-      });
+      if (socket) {
+        const handleGetMessage = () => setUnreadCount(prev => prev + 1);
+        const handleNewNotif = (newNotif) => {
+          setNotifications(prev => [newNotif, ...prev]);
+          setNotifCount(prev => prev + 1);
+          toast.info(`🔔 ${newNotif.title}`);
+        };
+
+        socket.on('getMessage', handleGetMessage);
+        socket.on('new_notification', handleNewNotif);
+
+        return () => {
+          clearInterval(notifInterval);
+          socket.off('getMessage', handleGetMessage);
+          socket.off('new_notification', handleNewNotif);
+        };
+      }
 
       return () => {
         clearInterval(notifInterval);
-        socket.current?.disconnect();
       };
     }
-  }, [user?._id]);
+  }, [user?._id, socket]);
 
   useEffect(() => {
     if (tempCity) {

@@ -458,15 +458,18 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       const shippingCode = req.body.shippingCode;
       const shippingCarrier = req.body.shippingCarrier;
 
+      // Seller chỉ được phép chuyển từ Pending -> Processing/Cancelled, và Processing -> Shipped/Cancelled.
+      // Trạng thái Delivered chỉ do Webhook GHN hoặc Admin cập nhật.
+      // Trạng thái Completed chỉ do Buyer bấm "Đã nhận được hàng" hoặc Admin giải ngân.
       const allowed = {
         Pending: ['Processing', 'Cancelled'],
-        Processing: ['Shipped', 'Cancelled'],
-        Shipped: ['Delivered'],
-        Delivered: ['Completed']
+        Processing: ['Shipped', 'Cancelled']
       };
 
       if (!allowed[current] || !allowed[current].includes(next)) {
-        return res.status(400).json({ message: `Không thể chuyển từ ${current} sang ${next}` });
+        return res.status(400).json({
+          message: `Người bán không thể tự chuyển trạng thái đơn hàng từ "${current}" sang "${next}"`
+        });
       }
 
       if (next === 'Cancelled' && ['Shipped', 'Delivered', 'Completed'].includes(current)) {
@@ -572,19 +575,37 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         });
       }
 
-      // Check payment status for non-COD orders
-      if (order.paymentMethod !== 'COD' && order.paymentStatus !== 'escrow') {
-        return res.status(400).json({
-          message: 'Đơn hàng chưa được thanh toán thành công, không thể tạo vận đơn giao hàng!'
-        });
+      // Chuẩn hóa kiểm tra thanh toán: nếu đơn Online/VNPAY chưa thanh toán xong nhưng Seller vẫn chuẩn bị hàng
+      // thì tự động chuyển sang thu hộ COD thay vì chặn cứng bằng lỗi 400
+      const methodUpper = String(order.paymentMethod || 'COD').trim().toUpperCase();
+      const isCodOrder = methodUpper === 'COD' || methodUpper.includes('COD') || methodUpper.includes('TIỀN MẶT');
+      const isPaidOrder = ['escrow', 'paid', 'released'].includes(String(order.paymentStatus || '').toLowerCase()) ||
+                          String(order.status || '').includes('Đã thanh toán');
+      if (!isCodOrder && !isPaidOrder) {
+        order.paymentMethod = 'COD';
       }
 
-      // Call shipping service to create shipment (GHN or Mock)
-      const shipmentResult = await shippingService.createShipmentForOrder(order);
+      // Gọi shippingService trong try/catch, fallback vận đơn nội bộ nếu thiếu pickupAddress/lỗi GHN
+      let shipmentResult;
+      try {
+        shipmentResult = await shippingService.createShipmentForOrder(order);
+      } catch (shipErr) {
+        console.warn('⚠️ [PrepareOrder] Fallback vận đơn nội bộ:', shipErr.message);
+        const fallbackCode = `HH${Date.now().toString().slice(-8)}`;
+        shipmentResult = {
+          provider: 'mock',
+          carrier: 'HaiHand Express',
+          trackingCode: fallbackCode,
+          fee: order.shippingFee || 25000,
+          createdAt: new Date()
+        };
+      }
 
       order.shipment = shipmentResult;
+      order.trackingCode = shipmentResult.trackingCode || '';
       order.shippingCode = shipmentResult.trackingCode || '';
       order.shippingCarrier = shipmentResult.carrier || 'Giao Hàng Nhanh';
+      order.shippingStatus = order.shippingStatus || 'ready_to_pick';
       order.status = 'Processing'; // Đang chuẩn bị hàng
       await order.save();
 

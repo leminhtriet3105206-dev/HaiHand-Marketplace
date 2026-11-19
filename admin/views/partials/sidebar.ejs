@@ -63,7 +63,7 @@
             </div>
 
             <!-- 3. GROUP: COMMERCE (Accordion) -->
-            <% const isCommerceGroupActive = typeof active !== 'undefined' && (active === 'categories' || active === 'posts'); %>
+            <% const isCommerceGroupActive = typeof active !== 'undefined' && (active === 'categories' || active === 'posts' || active === 'banners'); %>
             <div class="accordion-group rounded-2xl overflow-hidden">
                 <button 
                     onclick="toggleAccordion('acc-commerce')" 
@@ -81,6 +81,9 @@
                     </a>
                     <a href="/posts" class="flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs transition-all <%= typeof active !== 'undefined' && active === 'posts' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 hover:bg-slate-50 dark:hover:bg-slate-800/60' %>">
                         <span>•</span> <span>Tin đăng & Sản phẩm</span>
+                    </a>
+                    <a href="/banners" class="flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs transition-all <%= typeof active !== 'undefined' && active === 'banners' ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-bold' : 'text-slate-500 dark:text-slate-400 hover:text-purple-600 dark:hover:text-purple-300 hover:bg-slate-50 dark:hover:bg-slate-800/60' %>">
+                        <span>•</span> <span>Quản lý Banner & Sự kiện</span>
                     </a>
                 </div>
             </div>

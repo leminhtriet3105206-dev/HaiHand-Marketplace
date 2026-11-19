@@ -37,26 +37,75 @@ async function fetchPlatformFeePercent() {
   }
 }
 
+/**
+ * Tính toán phân chia dòng tiền đơn hàng (Order Split):
+ * - Sàn CHỈ thu phí hoa hồng (`feePercent`, mặc định 5%) trên tiền hàng (`itemsSubtotal`),
+ *   KHÔNG thu phí hoa hồng trên phí vận chuyển (`shippingFee`).
+ * - Công thức chuẩn:
+ *   + `commissionAmount = Math.round(itemsSubtotal * (feePercent / 100))`
+ *   + Khi sàn đối soát cước vận chuyển với hãng vận chuyển (GHN `payment_type_id = 1` do sàn/hệ thống chi trả):
+ *     `sellerReceive = itemsSubtotal - commissionAmount`
+ *   + Nếu Shop tự nạp ví GHN và tự trả cước vận chuyển (`includeShippingInSellerReceive: true`):
+ *     `sellerReceiveWithShipping = (itemsSubtotal - commissionAmount) + shippingFee`
+ */
 function calculateOrderSplit(orderOrTotal, feePercentOverride) {
   const isObj = typeof orderOrTotal === 'object' && orderOrTotal !== null;
-  const totalAmount = Math.max(0, Number(isObj ? (orderOrTotal.totalPrice ?? orderOrTotal.totalAmount ?? 0) : orderOrTotal) || 0);
+  const shippingFee = isObj ? Math.max(0, Number(orderOrTotal.shippingFee) || 0) : 0;
+  const rawTotal = isObj
+    ? Number(orderOrTotal.totalPrice ?? orderOrTotal.totalAmount ?? 0)
+    : Number(orderOrTotal);
+  const totalAmount = Math.max(0, Number.isFinite(rawTotal) ? rawTotal : 0);
 
-  if (isObj && typeof orderOrTotal.sellerReceive === 'number' && !Number.isNaN(orderOrTotal.sellerReceive) && orderOrTotal.sellerReceive >= 0 && orderOrTotal.sellerReceive <= totalAmount) {
-    const sellerReceive = Math.round(orderOrTotal.sellerReceive);
-    const platformFee = Math.max(0, totalAmount - sellerReceive);
-    const feePercent = typeof orderOrTotal.commissionRate === 'number'
-      ? orderOrTotal.commissionRate
-      : (feePercentOverride != null ? Number(feePercentOverride) : DEFAULT_COMMISSION_PERCENT);
-    return { totalAmount, feePercent, platformFee, sellerReceive };
+  let itemsSubtotal;
+  if (isObj && orderOrTotal.itemsSubtotal !== undefined && orderOrTotal.itemsSubtotal !== null) {
+    itemsSubtotal = Math.max(0, Number(orderOrTotal.itemsSubtotal) || 0);
+  } else {
+    itemsSubtotal = Math.max(0, totalAmount - shippingFee);
   }
 
-  const feePercent = isObj && typeof orderOrTotal.commissionRate === 'number' && !Number.isNaN(orderOrTotal.commissionRate)
-    ? orderOrTotal.commissionRate
-    : getPlatformFeePercent({ commissionRate: feePercentOverride });
+  const feePercent =
+    isObj && typeof orderOrTotal.commissionRate === 'number' && !Number.isNaN(orderOrTotal.commissionRate)
+      ? orderOrTotal.commissionRate
+      : getPlatformFeePercent({ commissionRate: feePercentOverride });
 
-  const platformFee = Math.round(totalAmount * (feePercent / 100));
-  const sellerReceive = Math.max(0, totalAmount - platformFee);
-  return { totalAmount, feePercent, platformFee, sellerReceive };
+  const commissionAmount = Math.round(itemsSubtotal * (feePercent / 100));
+
+  // Nếu đơn hàng đã lưu snapshot sellerReceive hợp lệ thì ưu tiên dùng để khớp tuyệt đối với pendingBalance
+  if (
+    isObj &&
+    typeof orderOrTotal.sellerReceive === 'number' &&
+    !Number.isNaN(orderOrTotal.sellerReceive) &&
+    orderOrTotal.sellerReceive >= 0 &&
+    orderOrTotal.sellerReceive <= Math.max(totalAmount, itemsSubtotal)
+  ) {
+    const sellerReceive = Math.round(orderOrTotal.sellerReceive);
+    const effectivePlatformFee =
+      itemsSubtotal > 0 ? commissionAmount : Math.max(0, totalAmount - sellerReceive);
+    return {
+      totalAmount: totalAmount || itemsSubtotal + shippingFee,
+      itemsSubtotal,
+      shippingFee,
+      feePercent,
+      commissionAmount: effectivePlatformFee,
+      platformFee: effectivePlatformFee,
+      sellerReceive,
+      sellerReceiveWithShipping: sellerReceive + shippingFee
+    };
+  }
+
+  const sellerReceive = Math.max(0, itemsSubtotal - commissionAmount);
+  const sellerReceiveWithShipping = Math.max(0, sellerReceive + shippingFee);
+
+  return {
+    totalAmount: totalAmount || itemsSubtotal + shippingFee,
+    itemsSubtotal,
+    shippingFee,
+    feePercent,
+    commissionAmount,
+    platformFee: commissionAmount,
+    sellerReceive,
+    sellerReceiveWithShipping
+  };
 }
 
 const STATUS_TO_CANONICAL = {
@@ -66,6 +115,8 @@ const STATUS_TO_CANONICAL = {
   'Người bán đã chuẩn bị hàng': 'Processing',
   'Đang giao hàng': 'Shipped',
   'Đang giao': 'Shipped',
+  'Đã giao hàng': 'Delivered',
+  'Đã giao thành công': 'Delivered',
   'Hoàn thành': 'Completed',
   'Đã thanh toán cho người bán': 'Completed',
   'Đã hủy': 'Cancelled',
@@ -105,6 +156,7 @@ function orderSellerId(order) {
 }
 
 function isEscrow(order) {
+  if (!order) return false;
   return order.paymentStatus === 'escrow' || order.status === 'Đã thanh toán (Admin giữ tiền)';
 }
 

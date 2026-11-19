@@ -10,6 +10,7 @@ const shippingService = require('../services/shipping');
 const { pickAddressFields, isCompleteAddress, formatAddress } = require('../models/schemas/Address');
 const { addAddressToUser } = require('../routes/address');
 const {
+  CATALOG_VISIBLE,
   productOwnerId,
   displayProductName,
   orderSellerId,
@@ -22,10 +23,59 @@ const {
 const { buildVnpayPaymentUrl, normalizeIp } = require('../utils/vnpay');
 
 /**
+ * Helper: Rollback atomic stock deductions if a subsequent item or wallet payment fails
+ */
+async function rollbackDeductedStock(deductedItems = []) {
+  for (const deducted of deductedItems) {
+    try {
+      const incFields = {
+        stockQuantity: deducted.quantity,
+        quantity: deducted.quantity,
+        soldCount: -deducted.quantity
+      };
+      const restored = await Post.findByIdAndUpdate(
+        deducted.productId,
+        { $inc: incFields },
+        { new: true }
+      );
+      if (restored) {
+        const fixSet = {};
+        if ((restored.soldCount || 0) < 0) {
+          fixSet.soldCount = 0;
+        }
+        if (
+          (restored.status === 'out_of_stock' || restored.status === 'SOLD') &&
+          (restored.stockQuantity ?? restored.quantity ?? 0) > 0
+        ) {
+          fixSet.status = 'active';
+        }
+        if (deducted.variantKey && Array.isArray(restored.variants)) {
+          await Post.updateOne(
+            {
+              _id: deducted.productId,
+              variants: {
+                $elemMatch: {
+                  $or: [{ sku: deducted.variantKey }, { name: deducted.variantKey }]
+                }
+              }
+            },
+            { $inc: { 'variants.$.stock': deducted.quantity } }
+          );
+        }
+        if (Object.keys(fixSet).length > 0) {
+          await Post.findByIdAndUpdate(deducted.productId, { $set: fixSet });
+        }
+      }
+    } catch (rbErr) {
+      console.error('Rollback stock error:', rbErr.message);
+    }
+  }
+}
+
+/**
  * Helper to settle payment for a paymentSession (called by VNPAY verify/IPN or HaiPay)
  */
 async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymentMethod } = {}) {
-  // Atomic state transition: Only transition if status is not already paid
   const session = await PaymentSession.findOneAndUpdate(
     { parentOrderId, status: { $ne: 'paid' } },
     {
@@ -46,19 +96,17 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
     throw new Error(`Không tìm thấy phiên thanh toán với mã ${parentOrderId}`);
   }
 
-  // Find all child orders
   const feePercent = await fetchPlatformFeePercent();
   const orders = await Order.find({ _id: { $in: session.orderIds } });
   for (const order of orders) {
     const { sellerReceive } = calculateOrderSplit(order, feePercent);
-    order.paymentStatus = 'escrow'; // Platform holds funds
+    order.paymentStatus = 'escrow';
     order.paidAt = new Date();
-    order.status = 'Pending'; // Ready for seller to prepare
+    order.status = 'Pending';
     if (order.commissionRate == null) order.commissionRate = feePercent;
     if (order.sellerReceive == null) order.sellerReceive = sellerReceive;
     await order.save();
 
-    // Increase seller pendingBalance
     const sId = orderSellerId(order);
     if (sId) {
       await User.findByIdAndUpdate(sId, {
@@ -66,7 +114,6 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
       });
     }
 
-    // Notify seller in real-time
     try {
       if (sId) {
         await sendNotification({
@@ -86,19 +133,28 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
     }
   }
 
-  // Deduct inventory for purchased items
-  if (Array.isArray(session.purchasedItems)) {
+  // Only deduct inventory here if it was not already atomically reserved during processCheckout
+  const alreadyDeducted = session.gatewayPayload?.stockDeducted === true || gatewayPayload?.stockDeducted === true;
+  if (!alreadyDeducted && Array.isArray(session.purchasedItems)) {
     for (const item of session.purchasedItems) {
       if (item.productId && mongoose.Types.ObjectId.isValid(item.productId)) {
-        const post = await Post.findById(item.productId);
-        if (post) {
-          const qty = Number(item.quantity) || 1;
-          const currentStock = post.stockQuantity ?? post.quantity ?? 0;
-          const nextStock = Math.max(0, currentStock - qty);
-          post.stockQuantity = nextStock;
-          post.quantity = nextStock;
-          if (nextStock === 0) post.status = 'out_of_stock';
-          await post.save();
+        const qty = Math.max(1, Number(item.quantity) || 1);
+        const updatedPost = await Post.findOneAndUpdate(
+          {
+            _id: item.productId,
+            stockQuantity: { $gte: qty }
+          },
+          {
+            $inc: {
+              stockQuantity: -qty,
+              quantity: -qty,
+              soldCount: qty
+            }
+          },
+          { new: true }
+        );
+        if (updatedPost && (updatedPost.stockQuantity ?? updatedPost.quantity ?? 0) <= 0) {
+          await Post.findByIdAndUpdate(item.productId, { $set: { status: 'out_of_stock' } });
         }
       }
     }
@@ -107,7 +163,7 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
   // Clear purchased items from buyer's cart
   const buyer = await User.findById(session.buyer);
   if (buyer && Array.isArray(buyer.cart)) {
-    const purchasedIdsStr = session.purchasedItems.map((p) => p.productId.toString());
+    const purchasedIdsStr = (session.purchasedItems || []).map((p) => p.productId.toString());
     buyer.cart = buyer.cart.filter(
       (c) => c.product && !purchasedIdsStr.includes(c.product.toString())
     );
@@ -119,9 +175,15 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
 
 /**
  * POST /api/checkout
- * Main multi-vendor checkout endpoint
+ * Main multi-vendor checkout endpoint with:
+ * - Product active status check
+ * - Anti-self-purchase guard
+ * - Variant price/stock matching
+ * - Atomic stock deduction ($inc with $gte) & automatic rollback on failure
+ * - Commission calculated strictly on itemsSubtotal (excluding shippingFee)
  */
 async function processCheckout(req, res) {
+  const deductedItems = [];
   try {
     const buyerId = req.user ? req.user._id : req.body.userId;
     if (!buyerId || !mongoose.Types.ObjectId.isValid(buyerId)) {
@@ -134,7 +196,7 @@ async function processCheckout(req, res) {
     }
 
     const {
-      items, // array of { productId, quantity } or string ids
+      items,
       shippingAddress: rawAddress,
       saveAsDefault = false,
       paymentMethod = 'COD'
@@ -159,7 +221,6 @@ async function processCheckout(req, res) {
       });
     }
 
-    // Save as default in address book if requested
     if (saveAsDefault) {
       try {
         await addAddressToUser(buyer._id, targetAddress, { makeDefault: true });
@@ -168,13 +229,16 @@ async function processCheckout(req, res) {
       }
     }
 
-    // 2. Normalize requested items
+    // 2. Normalize requested items (including optional variantName / sku)
     const normalizedItems = [];
     const buyerCart = Array.isArray(buyer.cart) ? buyer.cart : [];
 
     for (const it of items) {
       let pId = null;
       let qty = 1;
+      let variantName = '';
+      let sku = '';
+
       if (typeof it === 'string' || mongoose.Types.ObjectId.isValid(it)) {
         pId = it.toString();
         const cartMatch = buyerCart.find((c) => c.product && c.product.toString() === pId);
@@ -187,9 +251,11 @@ async function processCheckout(req, res) {
           return res.status(400).json({ message: 'Số lượng sản phẩm không hợp lệ (phải là số nguyên dương >= 1)' });
         }
         qty = parsed;
+        if (it.variantName) variantName = String(it.variantName).trim();
+        if (it.sku) sku = String(it.sku).trim();
       }
       if (pId && mongoose.Types.ObjectId.isValid(pId)) {
-        normalizedItems.push({ productId: pId, quantity: qty });
+        normalizedItems.push({ productId: pId, quantity: qty, variantName, sku });
       }
     }
 
@@ -197,24 +263,68 @@ async function processCheckout(req, res) {
       return res.status(400).json({ message: 'Danh sách sản phẩm không hợp lệ' });
     }
 
-    // 3. Load products from DB and check stock server-side
-    const productIds = normalizedItems.map((n) => n.productId);
+    // 3. Load products from DB and validate availability, ownership, and variants
+    const productIds = [...new Set(normalizedItems.map((n) => n.productId))];
     const dbProducts = await Post.find({ _id: { $in: productIds } });
     if (!dbProducts || dbProducts.length === 0) {
       return res.status(404).json({ message: 'Không tìm thấy sản phẩm trong hệ thống' });
     }
 
     const productMap = new Map(dbProducts.map((p) => [p._id.toString(), p]));
-
-    // Group items by sellerId
     const groupsBySeller = {};
+
     for (const item of normalizedItems) {
       const p = productMap.get(item.productId);
-      if (!p) continue;
+      if (!p) {
+        return res.status(404).json({ message: `Không tìm thấy sản phẩm (${item.productId}) trong hệ thống` });
+      }
 
-      let sId = productOwnerId(p);
+      // Check product status is active / APPROVED
+      if (!CATALOG_VISIBLE.includes(p.status)) {
+        return res.status(400).json({
+          message: `Sản phẩm "${displayProductName(p)}" hiện không khả dụng để đặt mua (Trạng thái: ${p.status}).`
+        });
+      }
+
+      // Check seller ownership & block self-purchase
+      const sId = productOwnerId(p);
       if (!sId || !mongoose.Types.ObjectId.isValid(sId)) {
-        sId = buyer._id.toString(); // Fallback
+        return res.status(400).json({
+          message: `Sản phẩm "${displayProductName(p)}" thiếu thông tin người bán hợp lệ.`
+        });
+      }
+      if (sId === buyer._id.toString()) {
+        return res.status(400).json({
+          message: 'Bạn không thể tự đặt mua sản phẩm của chính Shop mình!'
+        });
+      }
+
+      // Check variant if requested
+      let matchedVariant = null;
+      if ((item.variantName || item.sku) && Array.isArray(p.variants) && p.variants.length > 0) {
+        matchedVariant = p.variants.find(
+          (v) =>
+            (item.sku && v.sku && String(v.sku).trim() === item.sku) ||
+            (item.variantName && v.name && String(v.name).trim() === item.variantName)
+        );
+        if (!matchedVariant) {
+          return res.status(400).json({
+            message: `Phân loại "${item.variantName || item.sku}" của sản phẩm "${displayProductName(p)}" không tồn tại!`
+          });
+        }
+        const varStock = Number(matchedVariant.stock ?? 0);
+        if (varStock < item.quantity) {
+          return res.status(400).json({
+            message: `Phân loại "${matchedVariant.name || matchedVariant.sku}" của sản phẩm "${displayProductName(p)}" chỉ còn ${varStock} sản phẩm, không đủ số lượng ${item.quantity}.`
+          });
+        }
+      }
+
+      const currentStock = p.stockQuantity ?? p.quantity ?? 0;
+      if (currentStock < item.quantity) {
+        return res.status(400).json({
+          message: `Sản phẩm "${displayProductName(p)}" chỉ còn ${currentStock} cái trong kho, không đủ số lượng ${item.quantity}.`
+        });
       }
 
       if (!groupsBySeller[sId]) {
@@ -222,7 +332,10 @@ async function processCheckout(req, res) {
       }
       groupsBySeller[sId].push({
         product: p,
-        quantity: item.quantity
+        quantity: item.quantity,
+        variant: matchedVariant,
+        variantName: item.variantName,
+        sku: item.sku
       });
     }
 
@@ -241,19 +354,20 @@ async function processCheckout(req, res) {
       let pkgItemsSubtotal = 0;
       const orderItems = [];
 
-      for (const { product: p, quantity: qty } of pkgItems) {
-        const unitPrice = Number(p.price) || 0;
-        const currentStock = p.stockQuantity ?? p.quantity ?? 0;
-        if (currentStock < qty) {
-          return res.status(400).json({
-            message: `Sản phẩm "${displayProductName(p)}" chỉ còn ${currentStock} cái trong kho, không đủ số lượng ${qty}.`
-          });
-        }
+      for (const { product: p, quantity: qty, variant } of pkgItems) {
+        const unitPrice =
+          variant && variant.price !== undefined && variant.price !== null
+            ? Number(variant.price) || 0
+            : Number(p.price) || 0;
 
         pkgItemsSubtotal += unitPrice * qty;
+        const itemDisplayName = variant?.name
+          ? `${displayProductName(p)} (${variant.name})`
+          : displayProductName(p);
+
         orderItems.push({
           productId: p._id,
-          name: displayProductName(p),
+          name: itemDisplayName,
           price: unitPrice,
           quantity: qty,
           weight: Number(p.weight) || 500,
@@ -261,7 +375,6 @@ async function processCheckout(req, res) {
         });
       }
 
-      // Calculate real/mock shipping quote server-side
       let shippingQuote;
       try {
         shippingQuote = await shippingService.quotePackage({
@@ -271,7 +384,6 @@ async function processCheckout(req, res) {
         });
       } catch (shipErr) {
         console.warn(`Shipping calculation warning for seller ${sId}:`, shipErr.message);
-        // Fallback standard fee if seller has not configured address yet
         shippingQuote = {
           fee: 25000,
           provider: 'mock',
@@ -303,7 +415,7 @@ async function processCheckout(req, res) {
 
     const finalAmount = totalItemsSubtotal + totalShippingFee;
 
-    // Check HaiPay balance if using wallet
+    // Pre-check HaiPay balance if using wallet
     if (paymentMethod === 'HAIPAY') {
       if (!buyer.isWalletActive) {
         return res.status(400).json({ message: 'Bạn chưa kích hoạt Ví HaiPay. Vui lòng kích hoạt trong mục Ví!' });
@@ -315,18 +427,89 @@ async function processCheckout(req, res) {
       }
     }
 
-    // 5. Generate parentOrderId sharing across all sub-orders
+    // 5. Atomic Stock Deduction ($inc with $gte) for all items to prevent race-condition overselling
+    for (const item of normalizedItems) {
+      const p = productMap.get(item.productId);
+      const updatedPost = await Post.findOneAndUpdate(
+        {
+          _id: item.productId,
+          status: { $in: ['active', 'APPROVED'] },
+          stockQuantity: { $gte: item.quantity }
+        },
+        {
+          $inc: {
+            stockQuantity: -item.quantity,
+            quantity: -item.quantity,
+            soldCount: item.quantity
+          }
+        },
+        { new: true }
+      );
+
+      if (!updatedPost) {
+        await rollbackDeductedStock(deductedItems);
+        return res.status(400).json({
+          message: `Sản phẩm "${displayProductName(p)}" vừa hết hàng hoặc không đủ số lượng tồn kho (${item.quantity}).`
+        });
+      }
+
+      const variantKey = item.sku || item.variantName || '';
+      if (variantKey && Array.isArray(p?.variants) && p.variants.length > 0) {
+        const varResult = await Post.updateOne(
+          {
+            _id: item.productId,
+            variants: {
+              $elemMatch: {
+                $or: [{ sku: variantKey }, { name: variantKey }],
+                stock: { $gte: item.quantity }
+              }
+            }
+          },
+          { $inc: { 'variants.$.stock': -item.quantity } }
+        );
+        if (!varResult || varResult.modifiedCount === 0) {
+          await rollbackDeductedStock(deductedItems);
+          // Hoàn lại phần vừa trừ trên Post tổng của item hiện tại
+          await Post.findByIdAndUpdate(item.productId, {
+            $inc: { stockQuantity: item.quantity, quantity: item.quantity, soldCount: -item.quantity }
+          });
+          return res.status(400).json({
+            message: `Phân loại "${variantKey}" của sản phẩm "${displayProductName(p)}" vừa hết hàng!`
+          });
+        }
+      }
+
+      deductedItems.push({
+        productId: item.productId,
+        quantity: item.quantity,
+        variantKey
+      });
+
+      if ((updatedPost.stockQuantity ?? updatedPost.quantity ?? 0) <= 0) {
+        await Post.findByIdAndUpdate(item.productId, { $set: { status: 'out_of_stock' } });
+      }
+    }
+
+    // 6. Generate parentOrderId sharing across all sub-orders
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const randSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
     const parentOrderId = `HH${dateStr}${randSuffix}`;
 
-    // 6. Create Order documents
+    // 7. Create Order documents (commission calculated strictly on itemsSubtotal)
     const savedOrders = [];
     const formattedAddressStr = formatAddress(targetAddress);
     const currentFeePercent = await fetchPlatformFeePercent();
 
     for (const pkg of sellerPackages) {
-      const { sellerReceive } = calculateOrderSplit(pkg.totalPrice, currentFeePercent);
+      const { sellerReceive } = calculateOrderSplit(
+        {
+          itemsSubtotal: pkg.itemsSubtotal,
+          shippingFee: pkg.shippingFee,
+          totalPrice: pkg.totalPrice
+        },
+        currentFeePercent
+      );
+
       const newOrder = new Order({
         parentOrderId,
         buyer: buyer._id,
@@ -353,7 +536,7 @@ async function processCheckout(req, res) {
       savedOrders.push(newOrder);
     }
 
-    // 7. Create PaymentSession (status starts as 'pending' so settlePaymentSession atomically settles HAIPAY/VNPAY)
+    // 8. Create PaymentSession
     const paymentSession = new PaymentSession({
       parentOrderId,
       buyer: buyer._id,
@@ -366,15 +549,15 @@ async function processCheckout(req, res) {
       shippingTotal: totalShippingFee,
       amount: finalAmount,
       method: paymentMethod,
-      status: 'pending'
+      status: 'pending',
+      gatewayPayload: { stockDeducted: true }
     });
     await paymentSession.save();
 
-    // 8. Handle Payment Method branches
+    // 9. Handle Payment Method branches
     let paymentUrl = null;
 
     if (paymentMethod === 'HAIPAY') {
-      // Deduct wallet balance atomically with conditional query (Prevents TOCTOU Double-Spending)
       const updatedBuyer = await User.findOneAndUpdate(
         {
           _id: buyer._id,
@@ -388,7 +571,7 @@ async function processCheckout(req, res) {
       );
 
       if (!updatedBuyer) {
-        // Rollback created sub-orders and session upon balance or concurrency failure
+        await rollbackDeductedStock(deductedItems);
         await Order.deleteMany({ parentOrderId });
         await PaymentSession.deleteOne({ parentOrderId });
         return res.status(400).json({
@@ -396,7 +579,6 @@ async function processCheckout(req, res) {
         });
       }
 
-      // Record transaction ledger
       try {
         await Transaction.create({
           user: buyer._id,
@@ -410,31 +592,20 @@ async function processCheckout(req, res) {
         console.warn('Lỗi ghi Transaction ví:', txErr.message);
       }
 
-      // Settle session right away
       await settlePaymentSession(parentOrderId, {
-        gatewayPayload: { type: 'HAIPAY_WALLET', buyerBalanceAfter: updatedBuyer.walletBalance }
+        gatewayPayload: {
+          type: 'HAIPAY_WALLET',
+          buyerBalanceAfter: updatedBuyer.walletBalance,
+          stockDeducted: true
+        }
       });
     } else if (paymentMethod === 'COD') {
-      // Deduct inventory & remove purchased items from cart immediately
-      for (const item of normalizedItems) {
-        const post = productMap.get(item.productId);
-        if (post) {
-          const currentStock = post.stockQuantity ?? post.quantity ?? 0;
-          const nextStock = Math.max(0, currentStock - item.quantity);
-          post.stockQuantity = nextStock;
-          post.quantity = nextStock;
-          if (nextStock === 0) post.status = 'out_of_stock';
-          await post.save();
-        }
-      }
-
       const purchasedIdsStr = normalizedItems.map((n) => n.productId);
       buyer.cart = buyerCart.filter(
         (c) => c.product && !purchasedIdsStr.includes(c.product.toString())
       );
       await buyer.save();
 
-      // Notify sellers in real-time
       for (const order of savedOrders) {
         try {
           const sId = orderSellerId(order);
@@ -454,7 +625,6 @@ async function processCheckout(req, res) {
         } catch (e) {}
       }
     } else if (paymentMethod === 'VNPAY') {
-      // Generate VNPAY payment URL using parentOrderId
       const ipAddr = normalizeIp(req);
       paymentUrl = buildVnpayPaymentUrl({
         orderId: parentOrderId,
@@ -464,7 +634,6 @@ async function processCheckout(req, res) {
       });
     }
 
-    // Buyer notification in real-time
     try {
       await sendNotification({
         userId: buyer._id,
@@ -489,6 +658,9 @@ async function processCheckout(req, res) {
       paymentMethod
     });
   } catch (error) {
+    if (deductedItems.length > 0) {
+      await rollbackDeductedStock(deductedItems);
+    }
     console.error('Checkout error:', error);
     return res.status(500).json({
       message: 'Lỗi trong quá trình tạo đơn hàng: ' + error.message,
@@ -506,25 +678,35 @@ const ALLOWED_CANCEL_STATUSES = [
   'Người bán đã chuẩn bị hàng'
 ];
 
+const SYSTEM_CANCEL_STATUSES = [
+  ...ALLOWED_CANCEL_STATUSES,
+  'Shipped',
+  'Đang giao hàng',
+  'Đang giao',
+  'Đã hủy (Chờ hoàn tiền)'
+];
+
 /**
- * Shared atomic order cancellation helper for Buyer, Seller, and Admin.
- * - Atomically transitions order status to 'Cancelled' only if currently in Pending/Processing
+ * Shared atomic order cancellation helper for Buyer, Seller, Admin, and GHN Webhook.
+ * - Atomically transitions order status to 'Cancelled'
  * - Refunds buyer's walletBalance ($inc) and deducts seller's pendingBalance ($inc) if in escrow
  * - Creates 'Hoàn tiền' Transaction record
- * - Accurately sums product quantities across orderItems (or falls back to items) and atomically restocks
- * - Appends warning to trackingLogs if order already has a carrier trackingCode
+ * - Accurately sums product quantities across orderItems and atomically restocks stockQuantity, quantity, and decrements soldCount (clamped >= 0)
  */
 async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer', reason = '' } = {}) {
-  const order = typeof orderOrId === 'object' && orderOrId !== null && orderOrId._id
-    ? orderOrId
-    : await Order.findById(orderOrId);
+  const order =
+    typeof orderOrId === 'object' && orderOrId !== null && orderOrId._id
+      ? orderOrId
+      : await Order.findById(orderOrId);
 
   if (!order) {
     return { success: false, statusCode: 404, message: 'Không tìm thấy đơn hàng' };
   }
 
+  const isPrivilegedCancel = cancelledBy === 'system_ghn' || cancelledBy === 'admin';
   const current = canonicalStatus(order.status);
-  if (current === 'Cancelled') {
+
+  if (current === 'Cancelled' && order.paymentStatus !== 'escrow') {
     return {
       success: false,
       alreadyCancelled: true,
@@ -532,7 +714,8 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
       message: 'Đơn này đã bị hủy từ trước rồi!'
     };
   }
-  if (['Shipped', 'Delivered', 'Completed'].includes(current)) {
+
+  if (!isPrivilegedCancel && ['Shipped', 'Delivered', 'Completed'].includes(current)) {
     return {
       success: false,
       statusCode: 400,
@@ -540,10 +723,27 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
     };
   }
 
+  if (isPrivilegedCancel && ['Delivered', 'Completed'].includes(current)) {
+    return {
+      success: false,
+      statusCode: 400,
+      message: 'Đơn hàng đã giao thành công hoặc đã hoàn tất, không thể hủy!'
+    };
+  }
+
   const wasEscrow = isEscrow(order) || order.paymentStatus === 'escrow';
   const nextPaymentStatus = wasEscrow ? 'refunded' : (order.paymentStatus || 'unpaid');
   const now = new Date();
-  const cancelNote = reason || order.cancelReason || (cancelledBy === 'seller' ? 'Người bán hủy đơn' : 'Khách hàng hủy đơn');
+  const cancelNote =
+    reason ||
+    order.cancelReason ||
+    (cancelledBy === 'seller'
+      ? 'Người bán hủy đơn'
+      : cancelledBy === 'system_ghn'
+        ? 'Hãng vận chuyển GHN hủy / hoàn trả đơn hàng'
+        : cancelledBy === 'admin'
+          ? 'Admin hủy & hoàn tiền đơn hàng'
+          : 'Khách hàng hủy đơn');
   const existingTrackingCode = order.trackingCode || order.shippingCode || order.shipment?.trackingCode || '';
 
   const updateDoc = {
@@ -555,7 +755,7 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
     }
   };
 
-  if (existingTrackingCode) {
+  if (existingTrackingCode && cancelledBy !== 'system_ghn') {
     console.warn(`⚠️ [OrderCancel] Đơn hàng #${order._id} đã có mã vận đơn (${existingTrackingCode}). Cần hủy vận đơn trên cổng GHN.`);
     updateDoc.$push = {
       trackingLogs: {
@@ -566,15 +766,22 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
     };
   }
 
-  // Atomic conditional state transition so concurrent requests cannot double-refund or double-restock
-  const updatedOrder = await Order.findOneAndUpdate(
-    {
-      _id: order._id,
-      status: { $in: ALLOWED_CANCEL_STATUSES }
-    },
-    updateDoc,
-    { new: true }
-  );
+  const allowedStatusesForFilter = isPrivilegedCancel
+    ? [...SYSTEM_CANCEL_STATUSES, 'Cancelled', 'Đã hủy']
+    : ALLOWED_CANCEL_STATUSES;
+
+  const filterCondition = isPrivilegedCancel
+    ? {
+        _id: order._id,
+        status: { $in: allowedStatusesForFilter },
+        paymentStatus: { $nin: ['refunded', 'released'] }
+      }
+    : {
+        _id: order._id,
+        status: { $in: ALLOWED_CANCEL_STATUSES }
+      };
+
+  const updatedOrder = await Order.findOneAndUpdate(filterCondition, updateDoc, { new: true });
 
   if (!updatedOrder) {
     return {
@@ -621,7 +828,7 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
     }
   }
 
-  // 2. Sum quantities per product accurately (accumulate += across orderItems; fallback to items only when orderItems is empty)
+  // 2. Sum quantities per product accurately and atomically restore stock & decrement soldCount
   const qtyByProduct = {};
   if (Array.isArray(order.orderItems) && order.orderItems.length > 0) {
     for (const item of order.orderItems) {
@@ -645,15 +852,29 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
     if (addQty > 0) {
       const restoredProduct = await Post.findByIdAndUpdate(
         productId,
-        { $inc: { stockQuantity: addQty, quantity: addQty } },
+        {
+          $inc: {
+            stockQuantity: addQty,
+            quantity: addQty,
+            soldCount: -addQty
+          }
+        },
         { new: true }
       );
-      if (
-        restoredProduct &&
-        (restoredProduct.status === 'out_of_stock' || restoredProduct.status === 'SOLD') &&
-        ((restoredProduct.stockQuantity ?? restoredProduct.quantity ?? 0) > 0)
-      ) {
-        await Post.findByIdAndUpdate(productId, { $set: { status: 'active' } });
+      if (restoredProduct) {
+        const patchSet = {};
+        if ((restoredProduct.soldCount || 0) < 0) {
+          patchSet.soldCount = 0;
+        }
+        if (
+          (restoredProduct.status === 'out_of_stock' || restoredProduct.status === 'SOLD') &&
+          (restoredProduct.stockQuantity ?? restoredProduct.quantity ?? 0) > 0
+        ) {
+          patchSet.status = 'active';
+        }
+        if (Object.keys(patchSet).length > 0) {
+          await Post.findByIdAndUpdate(productId, { $set: patchSet });
+        }
       }
     }
   }

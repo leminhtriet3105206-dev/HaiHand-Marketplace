@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { io } from 'socket.io-client';
+import { useSocket } from '../context/SocketContext';
 
 const InboxPage = () => {
   const [conversations, setConversations] = useState([]);
   const navigate = useNavigate();
-  const socket = useRef(); 
+  const { socket } = useSocket(); 
   const user = React.useMemo(() => {
     const stored = localStorage.getItem('user');
     return stored && stored !== "undefined" ? JSON.parse(stored) : {};
@@ -24,11 +24,12 @@ const InboxPage = () => {
   useEffect(() => {
     if (!user._id) return;
     fetchConversations(); 
-    socket.current = io(API_URL);
-    socket.current.emit("addUser", user._id);
-    socket.current.on("updateInbox", fetchConversations);
-    return () => socket.current.disconnect();
-  }, [user._id]);
+    if (!socket) return;
+    socket.on("updateInbox", fetchConversations);
+    return () => {
+      socket.off("updateInbox", fetchConversations);
+    };
+  }, [user._id, socket]);
 
   return (
     <div style={{ backgroundColor: '#fff', minHeight: '100vh' }}>

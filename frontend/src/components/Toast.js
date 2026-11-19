@@ -167,7 +167,19 @@ export const ToastProvider = ({ children }) => {
 
   const addToast = useCallback(({ type = 'info', title, message, duration = 3500 }) => {
     const id = Date.now() + Math.random();
-    setToasts(prev => [...prev, { id, type, title, message, duration }]);
+    const safeTitle =
+      typeof title === 'object' && title !== null
+        ? String(title.title || title.message || JSON.stringify(title))
+        : title != null
+          ? String(title)
+          : '';
+    const safeMessage =
+      typeof message === 'object' && message !== null
+        ? String(message.message || JSON.stringify(message))
+        : message != null
+          ? String(message)
+          : '';
+    setToasts(prev => [...prev, { id, type, title: safeTitle, message: safeMessage, duration }]);
   }, []);
 
   const removeToast = useCallback((id) => {

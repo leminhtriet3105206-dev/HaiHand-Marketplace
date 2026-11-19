@@ -2027,77 +2027,103 @@ app.post('/api/users/:userId/checkout', protect, (req, res, next) => {
 // Sử dụng trực tiếp các hàm từ ./utils/vnpay (đọc từ process.env.VNPAY_TMN_CODE / VNPAY_HASH_SECRET)
 
 // --- 13.3. Nạp / Rút Ví HaiPay & Giao dịch ---
-/** Tạo link nạp tiền vào Ví HaiPay qua VNPAY (yêu cầu Bearer JWT) */
+/** Tạo link nạp tiền vào Ví HaiPay qua VNPAY (yêu cầu Bearer JWT, tạo PaymentSession từ server) */
 app.post('/api/haipay/deposit', protectStrict, async (req, res) => {
   try {
-    const { amount } = req.body;
+    const rawAmount = Number(req.body?.amount);
+    if (!Number.isFinite(rawAmount) || !Number.isInteger(rawAmount) || rawAmount < 10000 || rawAmount > 500000000) {
+      return res.status(400).json({ message: 'Số tiền nạp phải là số nguyên từ 10.000đ đến 500.000.000đ' });
+    }
     const requestedUserId = req.body.userId;
     if (requestedUserId && !req.user._id.equals(requestedUserId) && req.user.role !== 'Admin') {
       return res.status(403).json({ message: 'Không có quyền nạp tiền cho tài khoản khác' });
     }
     const userId = req.user._id.toString();
     const createDate = moment(new Date()).format('YYYYMMDDHHmmss');
-    const txnRef = `NAP_${userId}_${createDate}`;
+    const randHex = crypto.randomBytes(3).toString('hex').toUpperCase();
+    const txnRef = `NAP_${userId}_${createDate}_${randHex}`;
+
+    // Tạo PaymentSession trên server để IPN đối chiếu số tiền và trạng thái idempotent (C5)
+    await PaymentSession.create({
+      parentOrderId: txnRef,
+      buyer: req.user._id,
+      orderIds: [],
+      purchasedItems: [],
+      itemsSubtotal: rawAmount,
+      shippingTotal: 0,
+      amount: rawAmount,
+      method: 'VNPAY',
+      status: 'pending',
+      gatewayPayload: { sessionType: 'WALLET_TOPUP' }
+    });
 
     const ipAddr = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '127.0.0.1';
     const paymentUrl = buildVnpayPaymentUrl({
       orderId: txnRef,
-      amount: Number(amount) || 0,
+      amount: rawAmount,
       ipAddr,
       orderInfo: 'Nap tien vao vi HaiPay cho User ' + userId,
       orderType: 'topup',
       returnUrl: getVnpReturnUrl()
     });
-    res.status(200).json({ paymentUrl, txnRef });
-  } catch (error) { res.status(500).json({ error: 'Lỗi nạp tiền!' }); }
+    res.status(200).json({ paymentUrl, txnRef, amount: rawAmount });
+  } catch (error) {
+    res.status(500).json({ error: 'Lỗi nạp tiền!' });
+  }
 });
 
-/** Xác nhận nạp tiền HaiPay từ VNPAY Return (chống replay attack theo txnRef) */
-app.post('/api/haipay/verify', async (req, res) => {
+/**
+ * Tra cứu trạng thái nạp tiền HaiPay (CHỈ ĐỌC - C5):
+ * - Nhận `txnRef` từ query hoặc body, tra DB (`PaymentSession` / `Transaction`) và trả trạng thái `paid | pending | failed`.
+ * - TUYỆT ĐỐI KHÔNG cộng tiền vào ví dựa trên `responseCode` hay `amount` từ client.
+ */
+const handleHaiPayVerifyReadOnly = async (req, res) => {
   try {
-    const { txnRef, responseCode, amount, vnp_Params, secureHash } = req.body;
-
-    if (secureHash && vnp_Params) {
-      const isValid = verifyVnpayChecksum(vnp_Params, secureHash);
-      if (!isValid) {
-        return res.status(400).json({ message: 'Chữ ký checksum không hợp lệ (Invalid Checksum)!' });
-      }
+    const txnRef = String(req.query?.txnRef || req.body?.txnRef || '').trim();
+    if (!txnRef || !txnRef.startsWith('NAP_')) {
+      return res.status(400).json({ status: 'failed', message: 'Mã giao dịch nạp tiền không hợp lệ!' });
     }
 
-    if (responseCode === '00') {
-      const parts = txnRef.split('_');
-      const userId = parts[1];
-      const actualAmount = parseInt(amount || req.body.amount) / 100;
-
-      const existingTx = await Transaction.findOne({ txnRef });
-      if (existingTx) {
-        const currentUser = await User.findById(userId);
-        return res.status(200).json({ message: 'Giao dịch đã được ghi nhận trước đó!', user: currentUser });
-      }
-
-      try {
-        await Transaction.create({
-          user: userId,
-          type: 'Nạp tiền',
-          amount: actualAmount,
-          status: 'Thành công',
-          txnRef,
-          description: `Nạp tiền ví HaiPay qua VNPay (Mã GD: ${txnRef})`
-        });
-        const updatedUser = await User.findByIdAndUpdate(userId, { $inc: { walletBalance: actualAmount } }, { new: true });
-        return res.status(200).json({ message: 'Nạp tiền thành công!', user: updatedUser });
-      } catch (dupErr) {
-        if (dupErr.code === 11000) {
-          const currentUser = await User.findById(userId);
-          return res.status(200).json({ message: 'Giao dịch đã được ghi nhận!', user: currentUser });
-        }
-        throw dupErr;
-      }
-    } else {
-      res.status(400).json({ message: 'Giao dịch thất bại!' });
+    const session = await PaymentSession.findOne({ parentOrderId: txnRef });
+    if (session) {
+      return res.status(200).json({
+        txnRef,
+        status: session.status,
+        paid: session.status === 'paid',
+        amount: session.amount,
+        message:
+          session.status === 'paid'
+            ? 'Nạp tiền vào Ví HaiPay thành công!'
+            : session.status === 'failed'
+              ? 'Giao dịch nạp tiền thất bại hoặc đã bị hủy.'
+              : 'Giao dịch đang chờ xác nhận từ cổng VNPAY (IPN)...'
+      });
     }
-  } catch (error) { res.status(500).json({ error: 'Lỗi xử lý ví!' }); }
-});
+
+    const existingTx = await Transaction.findOne({ txnRef, status: 'Thành công' });
+    if (existingTx) {
+      return res.status(200).json({
+        txnRef,
+        status: 'paid',
+        paid: true,
+        amount: existingTx.amount,
+        message: 'Nạp tiền vào Ví HaiPay thành công!'
+      });
+    }
+
+    return res.status(200).json({
+      txnRef,
+      status: 'pending',
+      paid: false,
+      message: 'Giao dịch đang chờ xác nhận từ cổng VNPAY...'
+    });
+  } catch (error) {
+    return res.status(500).json({ error: 'Lỗi tra cứu trạng thái giao dịch ví!' });
+  }
+};
+
+app.get('/api/haipay/verify', handleHaiPayVerifyReadOnly);
+app.post('/api/haipay/verify', handleHaiPayVerifyReadOnly);
 
 /** Lấy lịch sử giao dịch ví HaiPay của User */
 app.get('/api/users/:userId/transactions', async (req, res) => {
@@ -2180,139 +2206,186 @@ app.post('/api/vnpay/create_payment_url', async (req, res) => {
   }
 });
 
-/** Xác nhận thanh toán VNPAY Return cho PaymentSession đa shop hoặc đơn lẻ cũ */
-app.post('/api/vnpay/verify', async (req, res) => {
+/**
+ * Tra cứu trạng thái thanh toán VNPAY (CHỈ ĐỌC - C5):
+ * - Nhận `orderId` / `txnRef` từ query hoặc body, tra DB (`PaymentSession` / `Order`) và trả trạng thái `paid | pending | failed`.
+ * - TUYỆT ĐỐI KHÔNG đổi `paymentStatus`, KHÔNG cộng ví / pendingBalance, KHÔNG hủy đơn hàng theo dữ liệu từ client.
+ */
+const handleVnpayVerifyReadOnly = async (req, res) => {
   try {
-    const { orderId, responseCode, vnp_Params, secureHash } = req.body;
-    if (!orderId) return res.status(400).json({ message: 'Thiếu mã đơn hàng!' });
-
-    if (secureHash && vnp_Params) {
-      const isValid = verifyVnpayChecksum(vnp_Params, secureHash);
-      if (!isValid) {
-        return res.status(400).json({ message: 'Chữ ký checksum không hợp lệ (Invalid Checksum)!' });
-      }
+    const orderId = String(req.query?.orderId || req.query?.txnRef || req.body?.orderId || req.body?.txnRef || '').trim();
+    if (!orderId) {
+      return res.status(400).json({ status: 'failed', message: 'Thiếu mã đơn hàng!' });
     }
 
     const session = await PaymentSession.findOne({ parentOrderId: orderId });
     if (session) {
-      if (responseCode === '00') {
-        const result = await settlePaymentSession(orderId, {
-          gatewayPayload: { vnp_Params, responseCode },
-          paymentMethod: 'VNPAY'
-        });
-        return res.status(200).json({
-          message: 'Giao dịch VNPay thành công!',
-          parentOrderId: orderId,
-          ordersCount: result.orders?.length || 0
-        });
-      } else {
-        session.status = 'failed';
-        session.gatewayPayload = { vnp_Params, responseCode };
-        await session.save();
-
-        await Order.updateMany(
-          { _id: { $in: session.orderIds } },
-          { $set: { status: 'Cancelled', cancelReason: 'Thanh toán VNPay không thành công hoặc khách hủy' } }
-        );
-        return res.status(400).json({ message: 'Giao dịch thất bại hoặc đã bị khách hủy!' });
-      }
-    }
-
-    const order = await Order.findById(orderId);
-    if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
-
-    if (responseCode === '00') {
-      order.paymentStatus = 'escrow';
-      order.status = 'Pending';
-      order.paidAt = new Date();
-      await order.save();
-
-      const user = await User.findById(order.buyer);
-      if (user && user.cart && user.cart.length > 0) {
-        const purchasedIds = (order.items || []).map((id) => id.toString());
-        user.cart = user.cart.filter((c) => c.product && !purchasedIds.includes(c.product.toString()));
-        await user.save();
-      }
-
-      await Notification.create({
-        user: order.seller,
-        title: '🎉 Bạn có đơn hàng mới!',
-        message: `Khách hàng vừa thanh toán đơn hàng #${order._id.toString().slice(-6).toUpperCase()}. Hãy chuẩn bị hàng nhé!`,
-        link: '/seller-channel/orders'
+      return res.status(200).json({
+        orderId,
+        parentOrderId: orderId,
+        status: session.status,
+        paid: session.status === 'paid',
+        amount: session.amount,
+        ordersCount: Array.isArray(session.orderIds) ? session.orderIds.length : 0,
+        message:
+          session.status === 'paid'
+            ? 'Giao dịch VNPay thành công!'
+            : session.status === 'failed'
+              ? 'Giao dịch thất bại hoặc đã bị hủy!'
+              : 'Đang chờ xác nhận thanh toán từ cổng VNPay (IPN)...'
       });
-
-      return res.status(200).json({ message: 'Giao dịch VNPay thành công!' });
-    } else {
-      order.status = 'Cancelled';
-      order.cancelReason = 'Thanh toán VNPay thất bại hoặc bị hủy';
-      await order.save();
-      return res.status(400).json({ message: 'Giao dịch thất bại hoặc đã bị khách hủy!' });
     }
-  } catch (error) {
-    console.error('Lỗi Verify VNPay:', error);
-    res.status(500).json({ error: 'Lỗi hệ thống khi xác nhận thanh toán: ' + error.message });
-  }
-});
 
-/** Webhook IPN server-to-server từ VNPAY (xử lý cả Nạp tiền NAP_* lẫn thanh toán đơn hàng) */
+    if (mongoose.isValidObjectId(orderId)) {
+      const order = await Order.findById(orderId);
+      if (!order) {
+        return res.status(404).json({ status: 'failed', message: 'Không tìm thấy đơn hàng' });
+      }
+      const isPaid = ['escrow', 'released', 'paid'].includes(String(order.paymentStatus || '').toLowerCase());
+      const isCancelled = canonicalStatus(order.status) === 'Cancelled' || order.paymentStatus === 'refunded';
+      const status = isPaid ? 'paid' : (isCancelled ? 'failed' : 'pending');
+      return res.status(200).json({
+        orderId,
+        status,
+        paid: isPaid,
+        paymentStatus: order.paymentStatus,
+        orderStatus: order.status,
+        message: isPaid
+          ? 'Giao dịch VNPay thành công!'
+          : isCancelled
+            ? 'Đơn hàng đã bị hủy.'
+            : 'Đang chờ xác nhận thanh toán từ cổng VNPay...'
+      });
+    }
+
+    return res.status(404).json({ status: 'failed', message: 'Không tìm thấy phiên thanh toán hoặc đơn hàng' });
+  } catch (error) {
+    console.error('Lỗi tra cứu trạng thái VNPay:', error);
+    return res.status(500).json({ error: 'Lỗi hệ thống khi tra cứu trạng thái thanh toán' });
+  }
+};
+
+app.get('/api/vnpay/verify', handleVnpayVerifyReadOnly);
+app.post('/api/vnpay/verify', handleVnpayVerifyReadOnly);
+
+/**
+ * Webhook IPN server-to-server từ VNPAY (C5 - điểm duy nhất được phép ghi tiền nạp ví / chuyển đơn sang escrow):
+ * - Bắt buộc kiểm tra chữ ký `verifyVnpayChecksumStrict` (hằng-thời-gian, thiếu/sai -> 400).
+ * - Kiểm tra `vnp_TmnCode === getVnpTmnCode()`.
+ * - Kiểm tra mã `vnp_TxnRef` phải khớp một `PaymentSession` đã tạo từ server (kể cả mã nạp `NAP_<userId>_...`).
+ * - Kiểm tra `Number(vnp_Amount) === Math.round(session.amount * 100)`.
+ * - Kiểm tra `vnp_ResponseCode === '00'` và (nếu có) `vnp_TransactionStatus === '00'`.
+ * - Cổng nguyên tử idempotent: `PaymentSession.findOneAndUpdate({ _id: session._id, status: 'pending' }, { status: 'paid' })`.
+ * - Nạp ví: `$inc: { walletBalance: session.amount }` đúng theo số tiền lưu trong sessionบน server (không bao giờ tin amount từ client).
+ */
 app.get('/api/vnpay/vnpay_ipn', async (req, res) => {
   try {
-    let vnp_Params = { ...req.query };
+    const vnp_Params = { ...req.query };
     const secureHash = vnp_Params['vnp_SecureHash'];
-    const orderId = vnp_Params['vnp_TxnRef'];
-    const rspCode = vnp_Params['vnp_ResponseCode'];
+    const txnRef = String(vnp_Params['vnp_TxnRef'] || '').trim();
+    const rspCode = String(vnp_Params['vnp_ResponseCode'] || '');
+    const txStatus = vnp_Params['vnp_TransactionStatus'] !== undefined
+      ? String(vnp_Params['vnp_TransactionStatus'])
+      : rspCode;
+    const tmnCode = String(vnp_Params['vnp_TmnCode'] || '').trim();
+    const rawVnpAmount = Number(vnp_Params['vnp_Amount']);
 
-    if (verifyVnpayChecksumStrict(vnp_Params, secureHash)) {
-      if (rspCode === '00') {
-        if (orderId && orderId.startsWith('NAP_')) {
-          const parts = orderId.split('_');
-          const userId = parts[1];
-          const amount = parseInt(vnp_Params['vnp_Amount']) / 100;
-
-          const existingTx = await Transaction.findOne({ txnRef: orderId });
-          if (!existingTx) {
-            try {
-              await Transaction.create({
-                user: userId,
-                type: 'Nạp tiền',
-                amount,
-                status: 'Thành công',
-                txnRef: orderId,
-                description: `Nạp tiền ví HaiPay qua VNPay IPN (Mã GD: ${orderId})`
-              });
-              await User.findByIdAndUpdate(userId, { $inc: { walletBalance: amount } });
-            } catch (dupErr) {
-              if (dupErr.code !== 11000) {
-                console.error('Lỗi ghi nhận Transaction IPN:', dupErr);
-              }
-            }
-          }
-        } else if (orderId) {
-          const session = await PaymentSession.findOne({ parentOrderId: orderId });
-          if (session) {
-            await settlePaymentSession(orderId, {
-              gatewayPayload: vnp_Params,
-              paymentMethod: 'VNPAY'
-            });
-          } else if (mongoose.isValidObjectId(orderId)) {
-            const order = await Order.findById(orderId);
-            if (order && order.paymentStatus !== 'escrow') {
-              order.paymentStatus = 'escrow';
-              order.status = 'Pending';
-              order.paidAt = new Date();
-              await order.save();
-            }
-          }
-        }
-        res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
-      } else {
-        res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
-      }
-    } else {
-      res.status(200).json({ RspCode: '97', Message: 'Fail Checksum' });
+    // 1. Kiểm tra chữ ký HMAC-SHA512 strict
+    if (!verifyVnpayChecksumStrict(vnp_Params, secureHash)) {
+      return res.status(400).json({ RspCode: '97', Message: 'Invalid Checksum' });
     }
+
+    // 2. Kiểm tra vnp_TmnCode khớp cấu hình môi trường
+    const expectedTmn = getVnpTmnCode();
+    if (expectedTmn && tmnCode && tmnCode !== expectedTmn) {
+      return res.status(400).json({ RspCode: '97', Message: 'Invalid TmnCode' });
+    }
+
+    if (!txnRef) {
+      return res.status(400).json({ RspCode: '01', Message: 'Order not found' });
+    }
+
+    // 3. Tra PaymentSession đã khởi tạo từ server
+    const session = await PaymentSession.findOne({ parentOrderId: txnRef });
+    if (!session) {
+      return res.status(404).json({ RspCode: '01', Message: 'PaymentSession not found' });
+    }
+
+    // 4. Kiểm tra số tiền khớp tuyệt đối (vnp_Amount = session.amount * 100)
+    const expectedVnpAmount = Math.round(Number(session.amount) * 100);
+    if (!Number.isFinite(rawVnpAmount) || rawVnpAmount !== expectedVnpAmount) {
+      return res.status(400).json({ RspCode: '04', Message: 'Invalid amount' });
+    }
+
+    // 5. Nếu đã paid từ trước -> trả thành công idempotent, tuyệt đối không cộng tiền lần 2
+    if (session.status === 'paid') {
+      return res.status(200).json({ RspCode: '02', Message: 'Order already confirmed' });
+    }
+
+    // 6. Nếu giao dịch thất bại từ phía VNPay: chỉ cập nhật session pending -> failed, KHÔNG hủy đơn đã escrow/paid
+    if (rspCode !== '00' || txStatus !== '00') {
+      await PaymentSession.findOneAndUpdate(
+        { _id: session._id, status: 'pending' },
+        { $set: { status: 'failed', gatewayPayload: vnp_Params } }
+      );
+      return res.status(200).json({ RspCode: '00', Message: 'Confirm Failed Transaction' });
+    }
+
+    // 7. Nhánh 1: Nạp tiền Ví HaiPay (NAP_<userId>_...)
+    if (txnRef.startsWith('NAP_')) {
+      const lockedSession = await PaymentSession.findOneAndUpdate(
+        { _id: session._id, status: 'pending' },
+        {
+          $set: {
+            status: 'paid',
+            paidAt: new Date(),
+            gatewayPayload: vnp_Params
+          }
+        },
+        { new: true }
+      );
+
+      if (!lockedSession) {
+        return res.status(200).json({ RspCode: '02', Message: 'Order already confirmed' });
+      }
+
+      const creditAmount = Number(lockedSession.amount);
+      await User.findByIdAndUpdate(lockedSession.buyer, {
+        $inc: { walletBalance: creditAmount }
+      });
+
+      try {
+        await Transaction.create({
+          user: lockedSession.buyer,
+          type: 'Nạp tiền',
+          amount: creditAmount,
+          status: 'Thành công',
+          txnRef,
+          description: `Nạp tiền ví HaiPay qua VNPay IPN (Mã GD: ${txnRef})`
+        });
+      } catch (dupErr) {
+        if (dupErr.code !== 11000) {
+          console.error('Lỗi ghi nhận Transaction IPN:', dupErr.message);
+        }
+      }
+
+      return res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
+    }
+
+    // 8. Nhánh 2: Thanh toán đơn hàng qua settlePaymentSession (bên trong đã có cổng findOneAndUpdate status !== 'paid')
+    const settleRes = await settlePaymentSession(txnRef, {
+      gatewayPayload: { ...vnp_Params, stockDeducted: true },
+      paymentMethod: 'VNPAY'
+    });
+
+    if (settleRes.alreadyPaid) {
+      return res.status(200).json({ RspCode: '02', Message: 'Order already confirmed' });
+    }
+
+    return res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
   } catch (error) {
-    res.status(200).json({ RspCode: '99', Message: 'Unknown error' });
+    console.error('VNPay IPN Error:', error.message);
+    return res.status(500).json({ RspCode: '99', Message: 'Unknown error' });
   }
 });
 

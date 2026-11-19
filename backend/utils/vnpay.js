@@ -51,23 +51,32 @@ function signParams(params) {
   return crypto.createHmac('sha512', secret).update(Buffer.from(signData, 'utf-8')).digest('hex');
 }
 
-/**
- * Legacy-tolerant verification: returns true when no hash is supplied.
- * Kept for backwards compatibility with old callers.
- */
-function verifyVnpayChecksum(params, secureHash) {
-  if (!secureHash) return true;
-  return verifyVnpayChecksumStrict(params, secureHash);
-}
+const { timingSafeStringEqual } = require('./password');
 
-/** Strict verification: a missing hash is a failure. */
+/**
+ * Strict verification (C5):
+ * - Xóa hoàn toàn bản legacy trả true khi không có chữ ký.
+ * - Thiếu hoặc sai `vnp_SecureHash` -> trả về `false`.
+ * - So sánh hằng-thời-gian (`timingSafeStringEqual`) để chống timing attack.
+ */
 function verifyVnpayChecksumStrict(params, secureHash) {
-  if (!secureHash || !params) return false;
+  const hashToVerify = secureHash || (params && params.vnp_SecureHash);
+  if (!hashToVerify || typeof hashToVerify !== 'string' || !params || typeof params !== 'object') {
+    return false;
+  }
   const p = { ...params };
   delete p.vnp_SecureHash;
   delete p.vnp_SecureHashType;
-  return secureHash.toLowerCase() === signParams(p).toLowerCase();
+  let expected;
+  try {
+    expected = signParams(p);
+  } catch (e) {
+    return false;
+  }
+  return timingSafeStringEqual(hashToVerify.toLowerCase(), expected.toLowerCase());
 }
+
+const verifyVnpayChecksum = verifyVnpayChecksumStrict;
 
 function buildVnpayPaymentUrl({ orderId, amount, ipAddr = '127.0.0.1', orderInfo, returnUrl, orderType = 'other' }) {
   const tmn = getVnpTmnCode();

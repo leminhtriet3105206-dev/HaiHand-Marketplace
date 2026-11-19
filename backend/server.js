@@ -404,20 +404,7 @@ app.post('/login', async (req, res) => {
   }
 });
 
-/** [SSR] Đăng ký nhanh tài khoản từ trang login SSR cũ */
-app.post('/register', async (req, res) => {
-  try {
-    const { name, email, username, password, role } = req.body;
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) return res.render('login', { error: 'Email hoặc Username đã bị trùng!' });
-
-    const newUser = new User({ name, email, username, password, role });
-    await newUser.save();
-    res.render('login', { error: 'Tạo tài khoản thành công! Hãy đăng nhập.' });
-  } catch (error) {
-    res.render('login', { error: 'Lỗi hệ thống khi đăng ký!' });
-  }
-});
+// Đã xóa route POST /register trong server.js (C2 - Chặn lỗ hổng tự tạo tài khoản Admin qua SSR)
 
 /** [SSR] Hủy session và đăng xuất Admin */
 app.get('/logout', (req, res) => {
@@ -1302,11 +1289,20 @@ app.post('/api/users/login', async (req, res) => {
   }
 });
 
-/** Đăng ký tài khoản Khách hàng mới (chặn leo thang quyền Admin, băm mật khẩu bcrypt) */
+/** Đăng ký tài khoản Khách hàng mới (whitelist field, chặn leo thang quyền Admin, băm mật khẩu bcrypt) */
 app.post('/api/users/register', async (req, res) => {
   try {
-    const { name, phone, address, email, password } = req.body;
-    if (!name || !email || !password) return res.status(400).json({ message: 'Điền đủ Họ tên, Email, Mật khẩu!' });
+    const { name, phone, address, email, password } = req.body || {};
+    if (
+      typeof name !== 'string' ||
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      !name.trim() ||
+      !email.trim() ||
+      !password
+    ) {
+      return res.status(400).json({ message: 'Điền đủ Họ tên, Email, Mật khẩu!' });
+    }
 
     const requestedRole = req.body.role || req.body.roles;
     if (requestedRole && /(admin|quản trị|root|superuser)/i.test(String(requestedRole))) {
@@ -1319,15 +1315,18 @@ app.post('/api/users/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(String(password), 10);
 
+    // Whitelist tuyệt đối: không bao giờ nhận role, isSeller, walletBalance, pendingBalance, isAdmin từ client
     const newUser = new User({
       name: name.trim(),
       email: cleanEmail,
       password: hashedPassword,
-      phone: phone ? phone.trim() : '',
-      address: address ? address.trim() : '',
+      phone: typeof phone === 'string' ? phone.trim() : '',
+      address: typeof address === 'string' ? address.trim() : '',
       role: 'Khách hàng',
       sellerStatus: 'none',
-      isSeller: false
+      isSeller: false,
+      walletBalance: 0,
+      pendingBalance: 0
     });
     await newUser.save();
     const safe = sanitizeUser(newUser);

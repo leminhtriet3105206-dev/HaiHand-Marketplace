@@ -418,12 +418,16 @@ app.get("/api/posts/:id", async (req, res) => {
 
 app.post("/api/users/register", async (req, res) => {
   try {
-    const { name, email, phone, username, password } = req.body;
-    if (!email || !password) {
+    const { name, email, phone, username, password } = req.body || {};
+    if (typeof email !== "string" || typeof password !== "string" || !email.trim() || !password) {
       return res.status(400).json({ error: "Vui lòng nhập đầy đủ Email và Mật khẩu!" });
     }
-    const cleanEmail = String(email).trim().toLowerCase();
-    const cleanUsername = username ? String(username).trim() : cleanEmail.split("@")[0];
+    const requestedRole = req.body.role || req.body.roles;
+    if (requestedRole && /(admin|quản trị|root|superuser)/i.test(String(requestedRole))) {
+      return res.status(403).json({ error: "Không được phép chỉ định vai trò Quản trị viên!" });
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanUsername = typeof username === "string" && username.trim() ? username.trim() : cleanEmail.split("@")[0];
     const existing = await User.findOne({
       $or: [{ email: cleanEmail }, { username: cleanUsername }]
     });
@@ -433,22 +437,26 @@ app.post("/api/users/register", async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(String(password), 10);
     const newUser = new User({
-      name: name ? String(name).trim() : cleanUsername,
+      name: typeof name === "string" && name.trim() ? name.trim() : cleanUsername,
       email: cleanEmail,
-      phone: phone ? String(phone).trim() : "",
+      phone: typeof phone === "string" ? phone.trim() : "",
       username: cleanUsername,
       password: hashedPassword,
       role: "Khách hàng",
       isSeller: false,
       sellerStatus: "none",
-      status: "active"
+      status: "active",
+      walletBalance: 0,
+      pendingBalance: 0
     });
     await newUser.save();
     const userObj = newUser.toObject();
     delete userObj.password;
+    delete userObj.walletPin;
+    delete userObj.tokenVersion;
     res.status(201).json(userObj);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: "Lỗi máy chủ khi đăng ký" });
   }
 });
 

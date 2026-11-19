@@ -844,6 +844,16 @@ app.post("/admin/withdrawals/reject/:id", checkLogin, async (req, res) => {
         ? String(req.body.reason).trim()
         : 'Thông tin tài khoản nhận chưa chính xác hoặc không hợp lệ';
 
+      // M16: Ghi Transaction hoàn tiền rõ ràng cho lệnh rút bị từ chối
+      await Transaction.create({
+        user: tx.user,
+        type: 'Hoàn tiền',
+        amount: refundAmount,
+        status: 'Thành công',
+        txnRef: `WITHDRAW_REFUND_${tx._id}`,
+        description: `Hoàn tiền lệnh rút bị từ chối #${tx._id.toString().slice(-6).toUpperCase()} (${rejectReason})`
+      });
+
       await Notification.create({
         userId: tx.user,
         user: tx.user,
@@ -873,10 +883,10 @@ app.post("/admin/withdrawals/reject/:id", checkLogin, async (req, res) => {
   res.redirect("/admin/withdrawals");
 });
 
-// 3. Commerce - Quản lý đơn hàng
+// 3. Commerce - Quản lý đơn hàng (M7: lọc bỏ đơn đã soft-delete)
 app.get("/orders", checkLogin, async (req, res) => {
   try {
-    const orders = await safeQuery('orders', () => Order.find()
+    const orders = await safeQuery('orders', () => Order.find({ isDeleted: { $ne: true } })
       .populate('buyer', 'name phone email')
       .populate('seller', 'name phone email')
       .sort({ createdAt: -1 }), []);
@@ -928,7 +938,12 @@ app.post("/orders/update-status/:id", checkLogin, async (req, res) => {
       `);
     }
 
-    const nextStatus = req.body.status;
+    const ALLOWED_ADMIN_ORDER_STATUSES = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Completed', 'Cancelled'];
+    const nextStatus = String(req.body.status || '').trim();
+    if (!ALLOWED_ADMIN_ORDER_STATUSES.includes(nextStatus)) {
+      return res.status(400).send("Trạng thái đơn hàng không hợp lệ!");
+    }
+
     order.status = nextStatus;
     if (nextStatus === 'Delivered' || nextStatus === 'Đã giao hàng') {
       order.deliveredAt = order.deliveredAt || new Date();
@@ -1214,8 +1229,8 @@ app.post("/api/admin/refund-order/:orderId", checkLogin, async (req, res) => {
 });
 
 /**
- * POST /admin/orders/delete/:id
- * Chặn xóa cứng nếu đơn hàng đang giữ tiền ký quỹ (paymentStatus === 'escrow')
+ * POST /admin/orders/delete/:id (M7)
+ * Thay xóa cứng bằng soft-delete (`isDeleted: true, deletedAt: now`), cấm xóa nếu đơn đang giữ tiền ký quỹ (`paymentStatus === 'escrow'`).
  */
 app.post("/admin/orders/delete/:id", checkLogin, async (req, res) => {
   try {
@@ -1235,9 +1250,11 @@ app.post("/admin/orders/delete/:id", checkLogin, async (req, res) => {
       return res.status(400).send(msg);
     }
 
-    await Order.findByIdAndDelete(req.params.id);
+    await Order.findByIdAndUpdate(req.params.id, {
+      $set: { isDeleted: true, deletedAt: new Date() }
+    });
     if (req.headers.accept && req.headers.accept.includes('application/json')) {
-      return res.json({ success: true, message: "Đã xóa đơn hàng thành công" });
+      return res.json({ success: true, message: "Đã ẩn (soft-delete) đơn hàng thành công" });
     }
   } catch (e) {
     console.error("Delete order error:", e.message);

@@ -92,6 +92,7 @@ const {
 } = require('./controllers/checkoutController');
 const { transitionOrder } = require('./utils/orderStateMachine');
 const { processChatbot } = require('./services/chatbotService');
+const { indexProductImage } = require('./services/imageEmbeddingService');
 
 // --- Modular Express Routers ---
 const createSellerRouter = require('./routes/seller');
@@ -499,12 +500,12 @@ app.get('/api/admin/dashboard-stats', requireAdminJWT, async (req, res) => {
       ]
     };
     const PENDING = PENDING_PRODUCT_STATUSES;
-    const COMPLETED = ['Completed', 'Delivered', 'Hoàn thành', 'Đã giao thành công', 'Đã thanh toán (Admin giữ tiền)'];
+    // M1: GMV chỉ tính đơn đã chốt (Completed / Delivered), không tính đơn chưa chốt hoặc đang hủy
+    const COMPLETED = ['Completed', 'Delivered', 'Hoàn thành', 'Đã giao thành công', 'Đã giao hàng'];
 
-    const setting = (await safe('settings', () => Settings.findOne().lean(), null)) || { platformFeePercentage: 5 };
-    const feePercent = Number(setting.platformFeePercentage ?? setting.commissionRate ?? 5);
+    const feePercent = await safe('settings', () => fetchPlatformFeePercent(), 5);
 
-    const [userCount, lockedUserCount, postCount, pendingCount, gmvAgg] = await Promise.all([
+    const [userCount, lockedUserCount, postCount, pendingCount, gmvAgg, revAgg] = await Promise.all([
       safe('userCount', () => User.countDocuments(notDeleted), 0),
       safe('lockedUserCount', () => User.countDocuments(lockedFilter), 0),
       safe('productCount', () => Product.countDocuments({ status: { $nin: ['DELETED', ...PENDING] } }), 0),
@@ -512,10 +513,15 @@ app.get('/api/admin/dashboard-stats', requireAdminJWT, async (req, res) => {
       safe('gmv', () => Order.aggregate([
         { $match: { status: { $in: COMPLETED } } },
         { $group: { _id: null, total: { $sum: '$totalPrice' } } }
+      ]), []),
+      safe('revenue', () => Revenue.aggregate([
+        { $group: { _id: null, total: { $sum: '$commissionAmount' } } }
       ]), [])
     ]);
 
     const gmv = (gmvAgg[0] && gmvAgg[0].total) || 0;
+    // M1: Doanh thu sàn = tổng collection Revenue (nguồn sự thật kế toán)
+    const revenue = Math.round((revAgg[0] && revAgg[0].total) || 0);
     res.json({
       stats: {
         userCount,
@@ -524,7 +530,7 @@ app.get('/api/admin/dashboard-stats', requireAdminJWT, async (req, res) => {
         postCount,
         pendingCount,
         gmv,
-        revenue: Math.round(gmv * feePercent / 100),
+        revenue,
         platformFeePercentage: feePercent
       }
     });
@@ -621,16 +627,17 @@ app.get('/api/settings', async (req, res) => {
 });
 
 // --- 10.3. Quản lý Người dùng & Hồ sơ Đăng ký Seller ---
-/** [API] Danh sách người dùng có tìm kiếm, lọc trạng thái và phân trang */
+/** [API] Danh sách người dùng có tìm kiếm, lọc trạng thái và phân trang (M8: escapeRegex + limit <= 50) */
 app.get('/api/admin/users', requireAdminJWT, async (req, res) => {
   try {
     const { search, status, page = 1, limit = 10 } = req.query;
     let query = {};
-    if (search) {
+    if (typeof search === 'string' && search.trim()) {
+      const safeSearch = escapeRegex(search.trim());
       query.$or = [
-        { username: { $regex: search, $options: 'i' } },
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } }
+        { username: { $regex: safeSearch, $options: 'i' } },
+        { name: { $regex: safeSearch, $options: 'i' } },
+        { email: { $regex: safeSearch, $options: 'i' } }
       ];
     }
     if (status && status !== 'all') {
@@ -642,14 +649,17 @@ app.get('/api/admin/users', requireAdminJWT, async (req, res) => {
       query.isDeleted = { $ne: true };
     }
 
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
+
     const users = await User.find(query)
       .select('-password')
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
       .sort({ createdAt: -1 });
 
     const total = await User.countDocuments(query);
-    res.json({ users, total, totalPages: Math.ceil(total / limit) });
+    res.json({ users, total, totalPages: Math.ceil(total / limitNum) });
   } catch (error) { res.status(500).json({ message: 'Lỗi server' }); }
 });
 
@@ -783,22 +793,27 @@ app.post('/admin/reject-seller/:id', requireAdmin, async (req, res) => {
 });
 
 // --- 10.4. Quản lý Bài đăng, Danh mục & Báo cáo vi phạm ---
-/** [API] Danh sách bài đăng / sản phẩm có lọc trạng thái & phân trang cho Admin React */
+/** [API] Danh sách bài đăng / sản phẩm có lọc trạng thái & phân trang cho Admin React (M8: escapeRegex + limit <= 50) */
 app.get('/api/admin/posts', requireAdminJWT, async (req, res) => {
   try {
     const { search, status, page = 1, limit = 10 } = req.query;
     let query = {};
-    if (search) query.title = { $regex: search, $options: 'i' };
+    if (typeof search === 'string' && search.trim()) {
+      query.title = { $regex: escapeRegex(search.trim()), $options: 'i' };
+    }
     if (status && status !== 'all') query.status = status;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
 
     const posts = await Post.find(query)
       .populate('author', 'name username')
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
       .sort({ createdAt: -1 });
 
     const total = await Post.countDocuments(query);
-    res.json({ posts, total, totalPages: Math.ceil(total / limit) });
+    res.json({ posts, total, totalPages: Math.ceil(total / limitNum) });
   } catch (error) { res.status(500).json({ message: 'Lỗi server' }); }
 });
 
@@ -875,12 +890,13 @@ app.post('/admin/posts/delete/:id', requireAdmin, async (req, res) => {
     await mongoose.models.Report.deleteMany({ post: postId });
 
     if (deletedPost.author) {
-      await UserNotification.create({
-        user: deletedPost.author,
-        title: '🚫 Bài viết đã bị xóa!',
-        message: `Bài viết "${deletedPost.title}" của bạn đã bị Admin xóa do vi phạm tiêu chuẩn cộng đồng.`,
-        link: '/profile'
-      });
+      await sendNotification(
+        deletedPost.author,
+        '🚫 Bài viết đã bị xóa!',
+        `Bài viết "${deletedPost.title}" của bạn đã bị Admin xóa do vi phạm tiêu chuẩn cộng đồng.`,
+        'PRODUCT',
+        '/profile'
+      );
     }
 
     await mongoose.model('User').updateMany({}, {
@@ -976,25 +992,28 @@ const ELIGIBLE_RELEASE_STATUSES = [
   'Đã giao hàng'
 ];
 
-/** [API] Danh sách đơn hàng phân trang cho React Admin */
+/** [API] Danh sách đơn hàng phân trang cho React Admin (M8: limit <= 50) */
 app.get('/api/admin/orders', requireAdminJWT, async (req, res) => {
   try {
     const { status, page = 1, limit = 10 } = req.query;
     let query = {};
     if (status && status !== 'all') query.status = status;
 
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 10));
+
     const orders = await Order.find(query)
       .populate('buyer', 'name username')
       .populate('seller', 'name username')
       .populate('items')
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
       .sort({ createdAt: -1 });
 
     const total = await Order.countDocuments(query);
-    res.status(200).json({ orders, total, totalPages: Math.ceil(total / limit) });
+    res.status(200).json({ orders, total, totalPages: Math.ceil(total / limitNum) });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi server', error });
+    res.status(500).json({ message: 'Lỗi server' });
   }
 });
 
@@ -1164,11 +1183,16 @@ app.post('/api/admin/release-funds/:orderId', requireAdminJWT, async (req, res) 
     });
     await newRevenue.save();
 
-    await UserNotification.create({
-      user: sellerRef,
+    await sendNotification({
+      userId: sellerRef,
+      shopId: sellerRef,
+      recipientRole: 'seller',
+      type: 'PAYMENT',
+      orderId: order._id,
       title: '💰 Tiền đã về ví HaiPay!',
       message: `Tuyệt vời! Bạn vừa được giải ngân ${sellerReceive.toLocaleString('vi-VN')}đ từ đơn hàng #${order._id.toString().slice(-6).toUpperCase()} (Đã trừ ${feePercent}% phí sàn).`,
-      link: '/haipay'
+      link: '/haipay',
+      targetUrl: '/haipay'
     });
 
     res.json({
@@ -1273,7 +1297,7 @@ app.get('/admin/withdrawals', requireAdminJWT, async (req, res) => {
   }
 });
 
-/** [API] Admin xác nhận duyệt lệnh rút tiền (bắt buộc requireAdminJWT - C6) */
+/** [API] Admin xác nhận duyệt lệnh rút tiền (C6 & M16: idempotent qua findOneAndUpdate) */
 app.put('/api/admin/withdraw/:id/approve', requireAdminJWT, async (req, res) => {
   try {
     const { id } = req.params;
@@ -1288,6 +1312,45 @@ app.put('/api/admin/withdraw/:id/approve', requireAdminJWT, async (req, res) => 
     res.json({ message: 'Đã duyệt lệnh rút tiền thành công!', transaction: updatedTx });
   } catch (err) {
     res.status(500).json({ message: 'Lỗi khi duyệt lệnh' });
+  }
+});
+
+/** [API] Admin từ chối lệnh rút tiền & hoàn tiền nguyên tử về Ví HaiPay (M16: idempotent qua findOneAndUpdate) */
+app.put('/api/admin/withdraw/:id/reject', requireAdminJWT, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updatedTx = await Transaction.findOneAndUpdate(
+      { _id: id, type: 'Rút tiền', status: 'Đang xử lý' },
+      { $set: { status: 'Thất bại' } },
+      { new: true }
+    );
+    if (!updatedTx) {
+      return res.status(409).json({ message: 'Lệnh rút tiền đã được xử lý trước đó hoặc không tồn tại!' });
+    }
+    const refundAmount = Math.abs(Number(updatedTx.amount) || 0);
+    if (updatedTx.user && refundAmount > 0) {
+      await User.findByIdAndUpdate(updatedTx.user, {
+        $inc: { walletBalance: refundAmount }
+      });
+      await Transaction.create({
+        user: updatedTx.user,
+        type: 'Hoàn tiền',
+        amount: refundAmount,
+        status: 'Thành công',
+        txnRef: `WITHDRAW_REFUND_${updatedTx._id}`,
+        description: `Hoàn tiền lệnh rút bị từ chối #${updatedTx._id.toString().slice(-6).toUpperCase()}`
+      });
+      await sendNotification(
+        updatedTx.user,
+        '↩️ Lệnh rút tiền bị từ chối & Đã hoàn ví',
+        `Lệnh rút ${refundAmount.toLocaleString('vi-VN')}đ đã bị từ chối và hoàn lại vào Ví HaiPay của bạn.`,
+        'WITHDRAWAL',
+        '/haipay'
+      );
+    }
+    return res.json({ message: 'Đã từ chối lệnh rút tiền và hoàn ví thành công!', transaction: updatedTx });
+  } catch (err) {
+    return res.status(500).json({ message: 'Lỗi khi từ chối lệnh rút tiền' });
   }
 });
 
@@ -1879,7 +1942,7 @@ app.get('/api/posts', async (req, res) => {
     if (sort === 'price-desc') sortOption = { price: -1 };
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.max(1, parseInt(limit, 10) || 8);
+    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 8));
 
     const posts = await Post.find(query)
       .populate('author sellerId', 'name avatar shopInfo isSeller sellerStatus')
@@ -1949,6 +2012,15 @@ app.post('/api/posts', protect, isSeller, upload.array('images', 5), async (req,
     });
 
     await newPost.save();
+
+    // M13: Tạo image embedding bất đồng bộ (non-blocking, try/catch) sau khi đăng sản phẩm có ảnh
+    if (imagePaths.length > 0 && typeof indexProductImage === 'function') {
+      setImmediate(() => {
+        indexProductImage(newPost).catch((embedErr) => {
+          console.warn('[ImageEmbedding] Bỏ qua lỗi tạo vector ảnh (non-blocking):', embedErr.message);
+        });
+      });
+    }
 
     if (!isAutoApprove && initialStatus === 'pending') {
       try {
@@ -2056,6 +2128,15 @@ app.put('/api/posts/:id', protect, upload.array('images', 8), async (req, res) =
       { $set: updateData },
       { new: true, runValidators: true }
     );
+
+    if (updateData.images && updateData.images.length > 0 && updatedPost && typeof indexProductImage === 'function') {
+      setImmediate(() => {
+        indexProductImage(updatedPost).catch((embedErr) => {
+          console.warn('[ImageEmbedding] Bỏ qua lỗi cập nhật vector ảnh (non-blocking):', embedErr.message);
+        });
+      });
+    }
+
     res.status(200).json(updatedPost);
   } catch (error) {
     res.status(500).json({ message: 'Lỗi Server khi cập nhật sản phẩm' });
@@ -2803,6 +2884,29 @@ app.put('/api/orders/:orderId/cancel', protect, async (req, res) => {
     }
 
     const cancelledByRole = isAdmin ? 'admin' : (isSellerOwner ? 'seller' : 'buyer');
+
+    // M5: Chặn Buyer tự hủy trực tiếp khi đơn đã chuyển sang Processing (Shop đang chuẩn bị/đóng gói)
+    const currentCanon = canonicalStatus(order.status);
+    if (cancelledByRole === 'buyer' && currentCanon === 'Processing') {
+      if (sellerRef) {
+        await sendNotification({
+          userId: sellerRef,
+          shopId: sellerRef,
+          recipientRole: 'seller',
+          type: 'ORDER_STATUS',
+          orderId: order._id,
+          title: '📩 Khách hàng yêu cầu hủy đơn đang chuẩn bị',
+          message: `Người mua yêu cầu hủy đơn #${order._id.toString().slice(-6).toUpperCase()}: "${req.body?.cancelReason || req.body?.reason || 'Không rõ lý do'}". Vui lòng kiểm tra và xử lý.`,
+          link: '/seller-channel/orders',
+          targetUrl: '/seller-channel/orders'
+        });
+      }
+      return res.status(400).json({
+        code: 'CANCEL_REQUEST_SENT',
+        message: 'Shop đang chuẩn bị hàng (Processing), bạn không thể tự hủy trực tiếp. Yêu cầu hủy đã được gửi tới người bán để xem xét!'
+      });
+    }
+
     const cancelResult = await transitionOrder(order, 'Cancelled', cancelledByRole, {
       actorId: req.user._id,
       reason: req.body?.cancelReason || req.body?.reason || ''
@@ -2810,6 +2914,23 @@ app.put('/api/orders/:orderId/cancel', protect, async (req, res) => {
 
     if (!cancelResult.success) {
       return res.status(cancelResult.statusCode || 400).json({ message: cancelResult.message });
+    }
+
+    // M3 & M5: Đảm bảo gửi thông báo cho người bán khi buyer hủy đơn thành công
+    if (cancelledByRole === 'buyer' && sellerRef) {
+      try {
+        await sendNotification({
+          userId: sellerRef,
+          shopId: sellerRef,
+          recipientRole: 'seller',
+          type: 'ORDER_STATUS',
+          orderId: order._id,
+          title: '❌ Khách hàng đã hủy đơn hàng',
+          message: `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã bị người mua hủy (${req.body?.cancelReason || req.body?.reason || 'Khách đổi ý'}). Tồn kho đã được hoàn lại tự động.`,
+          link: '/seller-channel/orders',
+          targetUrl: '/seller-channel/orders'
+        });
+      } catch (e) {}
     }
 
     res.status(200).json({

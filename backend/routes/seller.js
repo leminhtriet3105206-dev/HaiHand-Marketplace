@@ -17,6 +17,7 @@ const {
 const shippingService = require('../services/shipping');
 const { cancelOrderWithRefundAndRestock } = require('../controllers/checkoutController');
 const { transitionOrder } = require('../utils/orderStateMachine');
+const { indexProductImage } = require('../services/imageEmbeddingService');
 const { pickAddressFields, formatAddress, isCompleteAddress } = require('../models/schemas/Address');
 
 module.exports = function createSellerRouter({ upload, sendNotification, sendAdminNotification, io }) {
@@ -373,6 +374,15 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       });
       await product.save();
 
+      // M13: Tạo image embedding bất đồng bộ (non-blocking, try/catch) khi Seller đăng sản phẩm có ảnh
+      if (imagePaths.length > 0 && typeof indexProductImage === 'function') {
+        setImmediate(() => {
+          indexProductImage(product).catch((embedErr) => {
+            console.warn('[ImageEmbedding] Bỏ qua lỗi tạo vector ảnh (non-blocking):', embedErr.message);
+          });
+        });
+      }
+
       // Trigger 1: When a user/seller creates a new Product/Post (and auto-approve is false), automatically create a notification for Admins
       if (!isAutoApprove && postStatus === 'pending') {
         try {
@@ -504,6 +514,16 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       }
 
       await product.save();
+
+      // M13: Cập nhật image embedding bất đồng bộ (non-blocking) khi Seller đổi ảnh sản phẩm
+      if (req.files && req.files.length > 0 && typeof indexProductImage === 'function') {
+        setImmediate(() => {
+          indexProductImage(product).catch((embedErr) => {
+            console.warn('[ImageEmbedding] Bỏ qua lỗi cập nhật vector ảnh (non-blocking):', embedErr.message);
+          });
+        });
+      }
+
       res.json({ message: 'Đã cập nhật sản phẩm', product });
     } catch (error) {
       res.status(500).json({ message: 'Lỗi cập nhật sản phẩm' });

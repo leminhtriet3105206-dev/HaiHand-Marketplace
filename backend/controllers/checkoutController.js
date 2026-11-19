@@ -785,8 +785,7 @@ async function processCheckout(req, res) {
     }
     console.error('Checkout error:', error);
     return res.status(500).json({
-      message: 'Lỗi trong quá trình tạo đơn hàng: ' + error.message,
-      error: error.message
+      message: 'Lỗi hệ thống trong quá trình tạo đơn hàng. Vui lòng thử lại sau!'
     });
   }
 }
@@ -889,7 +888,7 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
   };
 
   if (existingTrackingCode && cancelledBy !== 'system_ghn') {
-    console.warn(`⚠️ [OrderCancel] Đơn hàng #${order._id} đã có mã vận đơn (${existingTrackingCode}). Cần hủy vận đơn trên cổng GHN.`);
+    console.warn(`⚠️ [OrderCancel] Đơn hàng #${order._id} đã có mã vận đơn (${existingTrackingCode}). Gọi hủy vận đơn trên cổng GHN (best-effort).`);
     updateDoc.$push.trackingLogs = {
       status: 'cancel_requested',
       description: `Đơn hàng đã bị hủy (${cancelNote}). Cần hủy vận đơn ${existingTrackingCode} trên cổng GHN.`,
@@ -921,6 +920,15 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
       statusCode: 400,
       message: 'Đơn này đã bị hủy hoặc chuyển trạng thái từ trước rồi!'
     };
+  }
+
+  // M5: Gọi hủy vận đơn GHN best-effort nếu đơn đã có mã vận đơn và không phải do GHN tự hủy
+  if (existingTrackingCode && cancelledBy !== 'system_ghn' && typeof shippingService.cancelShipmentForOrder === 'function') {
+    try {
+      await shippingService.cancelShipmentForOrder(existingTrackingCode);
+    } catch (ghnCancelErr) {
+      console.warn('GHN best-effort cancel error:', ghnCancelErr.message);
+    }
   }
 
   // 1. Refund buyer & deduct seller pendingBalance if order was paid into escrow

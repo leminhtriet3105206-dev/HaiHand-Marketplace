@@ -29,7 +29,8 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       const { data } = await axios.post(`${API_URL}/api/users/login`, loginForm);
-      localStorage.setItem('user', JSON.stringify(data));
+      const { walletBalance, pendingBalance, walletPin, ...safeLocalUser } = data || {};
+      localStorage.setItem('user', JSON.stringify(safeLocalUser));
       window.dispatchEvent(new Event('userUpdated'));
       navigate('/');
     } catch (error) {
@@ -46,33 +47,17 @@ const LoginPage = () => {
     setIsLoading(true);
     
     try {
-        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        
-        await axios.post(`${API_URL}/api/users/send-otp`, { 
-            email: forgotEmail, 
-            generatedOtp: generatedOtp 
+        // M4: Xóa EmailJS ở frontend, chỉ gọi API backend sinh & gửi OTP bảo mật
+        const { data } = await axios.post(`${API_URL}/api/users/send-otp`, { 
+            email: forgotEmail.trim()
         });
-
         
-        const emailParams = {
-           service_id: 'service_4q86uoa',
-           template_id: 'template_v64f5jg',
-           user_id: 'FxVTIoEF4YTi7S87P', 
-           template_params: {
-                   email: forgotEmail,
-                   otp: generatedOtp
-           }
-        };
-
-        await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailParams);
-        
-        toast.info('Thông báo', "📩 Hệ thống HaiHand đã gửi mã xác nhận. Bác check hòm thư nhé!");
+        toast.info('Thông báo', "📩 " + (data?.message || "Nếu email tồn tại trong hệ thống, mã xác thực OTP đã được gửi đến hộp thư của bạn!"));
         setIsOtpSent(true); 
     } catch (error) {
         console.error("LỖI GỬI OTP:", error);
-        const detail = error.response?.data || error.message;
-        toast.error('Lỗi', "❌ Lỗi hệ thống: " + (typeof detail === 'string' ? detail : "Vui lòng thử lại sau!"));
+        const detail = error.response?.data?.message || error.message;
+        toast.error('Lỗi', "❌ " + (typeof detail === 'string' ? detail : "Vui lòng thử lại sau!"));
     }
     setIsLoading(false);
   };

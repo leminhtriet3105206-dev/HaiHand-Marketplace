@@ -219,8 +219,22 @@ async function createShipment({ order, from, to, weight, codAmount, items }) {
   };
 }
 
+/**
+ * M5: Hủy vận đơn trên cổng GHN (best-effort)
+ */
+async function cancelShipment(trackingCode) {
+  if (!trackingCode || !isConfigured()) {
+    return { cancelled: false, skipped: true };
+  }
+  const data = await ghn('/v2/switch-status/cancel', {
+    body: { order_codes: [String(trackingCode).trim()] },
+    withShop: true
+  });
+  return { cancelled: true, data };
+}
+
 module.exports = {
   NAME, CARRIER_LABEL,
   isConfigured,
-  calculateFee, createShipment, getProvinces, getDistricts, getWards
+  calculateFee, createShipment, cancelShipment, getProvinces, getDistricts, getWards
 };

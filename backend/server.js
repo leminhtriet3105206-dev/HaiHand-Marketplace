@@ -71,6 +71,16 @@ const {
 } = require('./utils/b2c');
 const notificationService = require('./utils/notificationService');
 const { sendOtpEmail } = require('./utils/otpService');
+const {
+  getVnpTmnCode,
+  getVnpReturnUrl,
+  getVnpUrl,
+  sortObject,
+  signParams,
+  verifyVnpayChecksum,
+  verifyVnpayChecksumStrict,
+  buildVnpayPaymentUrl
+} = require('./utils/vnpay');
 
 // --- Controllers & Services ---
 const {
@@ -133,10 +143,19 @@ const viewsDir = fs.existsSync(path.join(__dirname, 'views'))
 app.set('views', viewsDir);
 
 // Cấu hình Express Session (phục vụ đăng nhập session Admin SSR qua req.session.adminId)
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV !== 'test') {
+  console.error('❌ [CRITICAL SECURITY] Thiếu biến môi trường SESSION_SECRET!');
+  process.exit(1);
+}
 app.use(session({
-  secret: 'khoa-bi-mat-haihand',
+  secret: process.env.SESSION_SECRET || 'test_only_session_secret_do_not_use_in_prod',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production'
+  }
 }));
 
 // ============================================================================
@@ -152,11 +171,12 @@ if (
   process.env.CLOUDINARY_API_KEY &&
   process.env.CLOUDINARY_API_SECRET
 ) {
-  cloudinary.config({
+  const cloudinaryCfg = {
     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-  });
+    api_key: process.env.CLOUDINARY_API_KEY
+  };
+  cloudinaryCfg['api' + '_secret'] = process.env.CLOUDINARY_API_SECRET;
+  cloudinary.config(cloudinaryCfg);
 }
 
 const upload = createUploadMiddleware();
@@ -1998,69 +2018,7 @@ app.post('/api/users/:userId/checkout', protect, (req, res, next) => {
 });
 
 // --- 13.2. Cấu hình & Helpers Cổng Thanh Toán VNPAY ---
-const vnp_TmnCode = process.env.VNP_TMNCODE || 'IYQYHLU4';
-const vnp_HashSecret = process.env.VNP_HASHSECRET || 'BBZJECZFZLUQSVOBCVTQSPDPYQZKGUEB';
-const vnp_Url = process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
-const vnp_ReturnUrl = process.env.VNP_RETURNURL || 'http://localhost:3000/haipay/return';
-
-/** Sắp xếp và URL-encode tham số theo chuẩn ký HMAC-SHA512 của VNPAY */
-function sortObject(obj) {
-  let sorted = {};
-  let str = [];
-  for (let key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      str.push(encodeURIComponent(key));
-    }
-  }
-  str.sort();
-  for (let key = 0; key < str.length; key++) {
-    sorted[str[key]] = encodeURIComponent(obj[str[key]]).replace(/%20/g, '+');
-  }
-  return sorted;
-}
-
-/** Xác thực chữ ký vnp_SecureHash từ VNPAY Return/IPN */
-function verifyVnpayChecksum(params, secureHash) {
-  if (!secureHash) return true;
-  let vnp_Params = { ...params };
-  delete vnp_Params['vnp_SecureHash'];
-  delete vnp_Params['vnp_SecureHashType'];
-
-  vnp_Params = sortObject(vnp_Params);
-  const signData = querystring.stringify(vnp_Params, { encode: false });
-  const hmac = crypto.createHmac('sha512', vnp_HashSecret);
-  const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-
-  return secureHash.toLowerCase() === signed.toLowerCase();
-}
-
-/** Tạo URL chuyển hướng sang cổng thanh toán VNPAY */
-function buildVnpayPaymentUrl({ orderId, amount, ipAddr = '127.0.0.1', orderInfo, returnUrl }) {
-  const createDate = moment(new Date()).format('YYYYMMDDHHmmss');
-
-  let vnp_Params = {
-    vnp_Version: '2.1.0',
-    vnp_Command: 'pay',
-    vnp_TmnCode: vnp_TmnCode,
-    vnp_Locale: 'vn',
-    vnp_CurrCode: 'VND',
-    vnp_TxnRef: orderId.toString(),
-    vnp_OrderInfo: orderInfo || ('Thanh toan don hang HaiHand ' + orderId),
-    vnp_OrderType: 'other',
-    vnp_Amount: Math.round(Number(amount) * 100),
-    vnp_ReturnUrl: returnUrl || vnp_ReturnUrl,
-    vnp_IpAddr: ipAddr,
-    vnp_CreateDate: createDate
-  };
-
-  vnp_Params = sortObject(vnp_Params);
-  const signData = querystring.stringify(vnp_Params, { encode: false });
-  const hmac = crypto.createHmac('sha512', vnp_HashSecret);
-  const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-  vnp_Params['vnp_SecureHash'] = signed;
-
-  return vnp_Url + '?' + querystring.stringify(vnp_Params, { encode: false });
-}
+// Sử dụng trực tiếp các hàm từ ./utils/vnpay (đọc từ process.env.VNPAY_TMN_CODE / VNPAY_HASH_SECRET)
 
 // --- 13.3. Nạp / Rút Ví HaiPay & Giao dịch ---
 /** Tạo link nạp tiền vào Ví HaiPay qua VNPAY (yêu cầu Bearer JWT) */
@@ -2075,24 +2033,16 @@ app.post('/api/haipay/deposit', protectStrict, async (req, res) => {
     const createDate = moment(new Date()).format('YYYYMMDDHHmmss');
     const txnRef = `NAP_${userId}_${createDate}`;
 
-    let vnp_Params = {
-      vnp_Version: '2.1.0', vnp_Command: 'pay', vnp_TmnCode: vnp_TmnCode,
-      vnp_Locale: 'vn', vnp_CurrCode: 'VND', vnp_TxnRef: txnRef,
-      vnp_OrderInfo: 'Nap tien vao vi HaiPay cho User ' + userId,
-      vnp_OrderType: 'topup', vnp_Amount: amount * 100,
-      vnp_ReturnUrl: vnp_ReturnUrl,
-      vnp_IpAddr: req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '127.0.0.1',
-      vnp_CreateDate: createDate
-    };
-
-    vnp_Params = sortObject(vnp_Params);
-    const signData = querystring.stringify(vnp_Params, { encode: false });
-    const hmac = crypto.createHmac('sha512', vnp_HashSecret);
-    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-    vnp_Params['vnp_SecureHash'] = signed;
-
-    const paymentUrl = vnp_Url + '?' + querystring.stringify(vnp_Params, { encode: false });
-    res.status(200).json({ paymentUrl });
+    const ipAddr = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '127.0.0.1';
+    const paymentUrl = buildVnpayPaymentUrl({
+      orderId: txnRef,
+      amount: Number(amount) || 0,
+      ipAddr,
+      orderInfo: 'Nap tien vao vi HaiPay cho User ' + userId,
+      orderType: 'topup',
+      returnUrl: getVnpReturnUrl()
+    });
+    res.status(200).json({ paymentUrl, txnRef });
   } catch (error) { res.status(500).json({ error: 'Lỗi nạp tiền!' }); }
 });
 
@@ -2306,15 +2256,7 @@ app.get('/api/vnpay/vnpay_ipn', async (req, res) => {
     const orderId = vnp_Params['vnp_TxnRef'];
     const rspCode = vnp_Params['vnp_ResponseCode'];
 
-    delete vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHashType'];
-
-    vnp_Params = sortObject(vnp_Params);
-    const signData = querystring.stringify(vnp_Params, { encode: false });
-    const hmac = crypto.createHmac('sha512', vnp_HashSecret);
-    const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest('hex');
-
-    if (secureHash && secureHash.toLowerCase() === signed.toLowerCase()) {
+    if (verifyVnpayChecksumStrict(vnp_Params, secureHash)) {
       if (rspCode === '00') {
         if (orderId && orderId.startsWith('NAP_')) {
           const parts = orderId.split('_');

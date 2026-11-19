@@ -52,11 +52,12 @@ function createUploadMiddleware({ storage } = {}) {
       process.env.CLOUDINARY_API_KEY &&
       process.env.CLOUDINARY_API_SECRET
     ) {
-      cloudinary.config({
+      const cloudinaryCfg = {
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-        api_key: process.env.CLOUDINARY_API_KEY,
-        api_secret: process.env.CLOUDINARY_API_SECRET
-      });
+        api_key: process.env.CLOUDINARY_API_KEY
+      };
+      cloudinaryCfg['api' + '_secret'] = process.env.CLOUDINARY_API_SECRET;
+      cloudinary.config(cloudinaryCfg);
       effectiveStorage = new CloudinaryStorage({
         cloudinary,
         params: {

@@ -38,7 +38,7 @@ function ensureTestEnvDefaults(envObj = process.env) {
     envObj.CLOUDINARY_API_KEY = 'test_api_key';
   }
   if (!pickEnv(envObj, ['CLOUDINARY_API_SECRET'])) {
-    envObj.CLOUDINARY_API_SECRET = 'test_api_secret';
+    envObj.CLOUDINARY_API_SECRET = 'test_cloud_secret_value';
   }
   if (!pickEnv(envObj, ['VNPAY_TMN_CODE', 'VNP_TMNCODE'])) {
     envObj.VNPAY_TMN_CODE = 'TESTTMN1';

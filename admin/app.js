@@ -226,11 +226,21 @@ app.use((req, res, next) => {
   next();
 });
 
+if (!process.env.SESSION_SECRET && process.env.NODE_ENV !== "test") {
+  console.error("❌ [CRITICAL SECURITY] Thiếu biến môi trường SESSION_SECRET trong Admin!");
+  process.exit(1);
+}
+
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "secret-key-vip-pro",
+    secret: process.env.SESSION_SECRET || "test_only_session_secret_do_not_use_in_prod",
     resave: false,
-    saveUninitialized: true,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    },
   }),
 );
 

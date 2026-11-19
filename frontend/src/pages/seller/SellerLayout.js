@@ -2,7 +2,7 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
-import axios from 'axios';
+import axiosClient from '../../api/axiosClient';
 
 // Helper to format relative time in Vietnamese
 function formatTime(dateStr) {
@@ -68,7 +68,7 @@ const SellerLayout = () => {
     const fetchSellerNotifications = useCallback(async () => {
         if (!user?._id) return;
         try {
-            const { data } = await axios.get(`${API_URL}/api/notifications?role=seller`, {
+            const { data } = await axiosClient.get('/api/notifications?role=seller', {
                 headers: { userid: user._id }
             });
             setNotifications(data.notifications || []);
@@ -77,7 +77,7 @@ const SellerLayout = () => {
         } catch (err) {
             console.error('Lỗi tải thông báo Kênh Người Bán:', err);
         }
-    }, [API_URL, user?._id]);
+    }, [user?._id]);
 
     useEffect(() => {
         fetchSellerNotifications();
@@ -135,13 +135,13 @@ const SellerLayout = () => {
         setNotifications(prev => prev.map(n => n.type === typeKey ? { ...n, isRead: true } : n));
 
         try {
-            await axios.put(`${API_URL}/api/notifications/read-by-type`, { type: typeKey }, {
+            await axiosClient.put('/api/notifications/read-by-type', { type: typeKey }, {
                 headers: { userid: user._id }
             });
         } catch (e) {
             console.error('Lỗi đánh dấu đã đọc loại ' + typeKey, e);
         }
-    }, [API_URL, user?._id, unreadByType]);
+    }, [user?._id, unreadByType]);
 
     // Automatically clear order notifications when viewing the orders page
     useEffect(() => {
@@ -154,7 +154,7 @@ const SellerLayout = () => {
         setIsNotifOpen(false);
         if (!notif.isRead) {
             try {
-                await axios.put(`${API_URL}/api/notifications/${notif._id}/read`, {}, {
+                await axiosClient.put(`/api/notifications/${notif._id}/read`, {}, {
                     headers: { userid: user._id }
                 });
                 setNotifications(prev => prev.map(n => n._id === notif._id ? { ...n, isRead: true } : n));
@@ -175,7 +175,7 @@ const SellerLayout = () => {
 
     const handleMarkAllRead = async () => {
         try {
-            await axios.put(`${API_URL}/api/notifications/read-all`, { role: 'seller' }, {
+            await axiosClient.put('/api/notifications/read-all', { role: 'seller' }, {
                 headers: { userid: user._id }
             });
             setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));

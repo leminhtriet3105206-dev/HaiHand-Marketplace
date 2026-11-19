@@ -1,9 +1,46 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import axiosClient from '../../api/axiosClient';
 import { AppHeader } from '../../components/AppHeader';
 import { AppFooter } from '../../components/AppFooter';
 import { useToast } from '../../components/Toast';
+
+const GHN_MASTER_DATA_URL = 'https://online-gateway.ghn.vn/shiip/public-api/master-data';
+
+const getGhnHeaders = () => {
+  const token = process.env.REACT_APP_GHN_TOKEN;
+  const shopId = process.env.REACT_APP_GHN_SHOP_ID;
+  if (!token) return undefined;
+  return {
+    token,
+    ...(shopId ? { ShopId: shopId } : {}),
+  };
+};
+
+const extractLocationList = (payload) => {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  return [];
+};
+
+const normalizeProvince = (p) => {
+  const id = p?.ProvinceID ?? p?.id ?? '';
+  const name = p?.ProvinceName ?? p?.name ?? '';
+  return { ...p, ProvinceID: id, ProvinceName: name };
+};
+
+const normalizeDistrict = (d) => {
+  const id = d?.DistrictID ?? d?.id ?? '';
+  const name = d?.DistrictName ?? d?.name ?? '';
+  return { ...d, DistrictID: id, DistrictName: name };
+};
+
+const normalizeWard = (w) => {
+  const code = w?.WardCode ?? w?.code ?? '';
+  const name = w?.WardName ?? w?.name ?? '';
+  return { ...w, WardCode: String(code), WardName: name };
+};
 
 export default function CheckoutPage() {
   const location = useLocation();
@@ -73,12 +110,14 @@ export default function CheckoutPage() {
   const [appliedVoucher, setAppliedVoucher] = useState(null); // { code, discountAmount, label }
   const [voucherError, setVoucherError] = useState('');
 
-  // Wallet balance
+  // Wallet balance & PIN state (H8 & H11)
   const [walletInfo, setWalletInfo] = useState({
     isActive: !!currentUser?.isWalletActive,
     balance: Number(currentUser?.walletBalance) || 0,
+    hasPin: false,
     loading: false
   });
+  const [walletPin, setWalletPin] = useState('');
 
   // Submission / Loading
   const [submitting, setSubmitting] = useState(false);
@@ -162,6 +201,7 @@ export default function CheckoutPage() {
         setWalletInfo({
           isActive: !!res.data.isWalletActive,
           balance: Number(res.data.walletBalance) || 0,
+          hasPin: !!res.data.hasPin,
           loading: false
         });
       }
@@ -176,19 +216,54 @@ export default function CheckoutPage() {
     fetchWallet();
   }, [fetchAddresses, fetchWallet]);
 
-  // --- 7. Load Provinces Master Data when opening address modal ---
+  // --- 7. Load Provinces Master Data ON MOUNT ---
   useEffect(() => {
-    if (showNewAddressForm && provinces.length === 0) {
-      axiosClient
-        .get('/api/shipping/provinces')
-        .then((res) => {
-          if (Array.isArray(res.data)) setProvinces(res.data);
-        })
-        .catch((err) => console.warn('Lỗi tải tỉnh/thành:', err));
-    }
-  }, [showNewAddressForm, provinces.length]);
+    let isMounted = true;
+    const fetchProvinces = async () => {
+      const ghnHeaders = getGhnHeaders();
+      try {
+        const config = ghnHeaders ? { headers: ghnHeaders } : undefined;
+        const res = await axiosClient.get('/api/shipping/provinces', config);
+        let list = extractLocationList(res.data)
+          .map(normalizeProvince)
+          .filter((p) => p.ProvinceID !== '' && p.ProvinceName);
 
-  // Handle Province change -> Load Districts
+        if (list.length === 0 && ghnHeaders) {
+          const directRes = await axios.get(`${GHN_MASTER_DATA_URL}/province`, {
+            headers: ghnHeaders,
+          });
+          list = extractLocationList(directRes.data)
+            .map(normalizeProvince)
+            .filter((p) => p.ProvinceID !== '' && p.ProvinceName);
+        }
+
+        if (isMounted) setProvinces(list);
+      } catch (err) {
+        if (ghnHeaders) {
+          try {
+            const directRes = await axios.get(`${GHN_MASTER_DATA_URL}/province`, {
+              headers: ghnHeaders,
+            });
+            const list = extractLocationList(directRes.data)
+              .map(normalizeProvince)
+              .filter((p) => p.ProvinceID !== '' && p.ProvinceName);
+            if (isMounted) setProvinces(list);
+            return;
+          } catch (fallbackErr) {
+            console.warn('Lỗi tải tỉnh/thành trực tiếp từ GHN:', fallbackErr);
+          }
+        }
+        console.warn('Lỗi tải tỉnh/thành:', err);
+      }
+    };
+
+    fetchProvinces();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Handle Province change -> Reset District/Ward & Load Districts
   const handleProvinceChange = async (e) => {
     const provId = e.target.value;
     const selectedProv = provinces.find((p) => String(p.ProvinceID) === String(provId));
@@ -205,16 +280,47 @@ export default function CheckoutPage() {
     setWards([]);
 
     if (provId) {
+      const ghnHeaders = getGhnHeaders();
       try {
-        const res = await axiosClient.get(`/api/shipping/districts?provinceId=${provId}`);
-        if (Array.isArray(res.data)) setDistricts(res.data);
+        const config = ghnHeaders ? { headers: ghnHeaders } : undefined;
+        const res = await axiosClient.get(`/api/shipping/districts?provinceId=${provId}`, config);
+        let list = extractLocationList(res.data)
+          .map(normalizeDistrict)
+          .filter((d) => d.DistrictID !== '' && d.DistrictName);
+
+        if (list.length === 0 && ghnHeaders) {
+          const directRes = await axios.get(`${GHN_MASTER_DATA_URL}/district`, {
+            params: { province_id: Number(provId) },
+            headers: ghnHeaders,
+          });
+          list = extractLocationList(directRes.data)
+            .map(normalizeDistrict)
+            .filter((d) => d.DistrictID !== '' && d.DistrictName);
+        }
+
+        setDistricts(list);
       } catch (err) {
+        if (ghnHeaders) {
+          try {
+            const directRes = await axios.get(`${GHN_MASTER_DATA_URL}/district`, {
+              params: { province_id: Number(provId) },
+              headers: ghnHeaders,
+            });
+            const list = extractLocationList(directRes.data)
+              .map(normalizeDistrict)
+              .filter((d) => d.DistrictID !== '' && d.DistrictName);
+            setDistricts(list);
+            return;
+          } catch (fallbackErr) {
+            console.warn('Lỗi tải quận/huyện trực tiếp từ GHN:', fallbackErr);
+          }
+        }
         console.warn('Lỗi tải quận/huyện:', err);
       }
     }
   };
 
-  // Handle District change -> Load Wards
+  // Handle District change -> Reset Ward & Load Wards
   const handleDistrictChange = async (e) => {
     const distId = e.target.value;
     const selectedDist = districts.find((d) => String(d.DistrictID) === String(distId));
@@ -228,10 +334,41 @@ export default function CheckoutPage() {
     setWards([]);
 
     if (distId) {
+      const ghnHeaders = getGhnHeaders();
       try {
-        const res = await axiosClient.get(`/api/shipping/wards?districtId=${distId}`);
-        if (Array.isArray(res.data)) setWards(res.data);
+        const config = ghnHeaders ? { headers: ghnHeaders } : undefined;
+        const res = await axiosClient.get(`/api/shipping/wards?districtId=${distId}`, config);
+        let list = extractLocationList(res.data)
+          .map(normalizeWard)
+          .filter((w) => w.WardCode !== '' && w.WardName);
+
+        if (list.length === 0 && ghnHeaders) {
+          const directRes = await axios.get(`${GHN_MASTER_DATA_URL}/ward`, {
+            params: { district_id: Number(distId) },
+            headers: ghnHeaders,
+          });
+          list = extractLocationList(directRes.data)
+            .map(normalizeWard)
+            .filter((w) => w.WardCode !== '' && w.WardName);
+        }
+
+        setWards(list);
       } catch (err) {
+        if (ghnHeaders) {
+          try {
+            const directRes = await axios.get(`${GHN_MASTER_DATA_URL}/ward`, {
+              params: { district_id: Number(distId) },
+              headers: ghnHeaders,
+            });
+            const list = extractLocationList(directRes.data)
+              .map(normalizeWard)
+              .filter((w) => w.WardCode !== '' && w.WardName);
+            setWards(list);
+            return;
+          } catch (fallbackErr) {
+            console.warn('Lỗi tải phường/xã trực tiếp từ GHN:', fallbackErr);
+          }
+        }
         console.warn('Lỗi tải phường/xã:', err);
       }
     }
@@ -416,6 +553,9 @@ export default function CheckoutPage() {
       if (walletInfo.balance < grandTotal) {
         return toast.error('Số dư không đủ', `Số dư Ví (${formatPrice(walletInfo.balance)}) không đủ thanh toán ${formatPrice(grandTotal)}. Vui lòng nạp thêm hoặc chọn phương thức khác.`);
       }
+      if (!/^\d{6}$/.test(walletPin.trim())) {
+        return toast.warning('Yêu cầu Mã PIN Ví', 'Vui lòng nhập mã PIN Ví HaiPay (6 chữ số) để xác nhận thanh toán.');
+      }
     }
 
     setSubmitting(true);
@@ -438,7 +578,8 @@ export default function CheckoutPage() {
           fullAddress: selectedAddress.fullAddress || selectedAddress.street
         },
         saveAsDefault: false,
-        paymentMethod
+        paymentMethod,
+        ...(paymentMethod === 'HAIPAY' ? { walletPin: walletPin.trim() } : {})
       };
 
       const { data } = await axiosClient.post('/api/checkout', checkoutPayload);
@@ -889,6 +1030,32 @@ export default function CheckoutPage() {
                   </p>
                 </label>
               </div>
+
+              {/* Ô nhập Mã PIN Ví HaiPay khi chọn phương thức HAIPAY (H8) */}
+              {paymentMethod === 'HAIPAY' && (
+                <div className="mt-4 p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-extrabold text-stone-800 flex items-center gap-1.5">
+                      <span>🔒 Mã PIN Ví HaiPay (6 chữ số)</span>
+                    </label>
+                    <Link to="/haipay" className="text-[11px] font-bold text-amber-700 hover:underline">
+                      Quản lý / Thiết lập PIN Ví →
+                    </Link>
+                  </div>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="Nhập 6 chữ số mã PIN Ví HaiPay..."
+                    value={walletPin}
+                    onChange={(e) => setWalletPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="w-full sm:w-72 px-4 py-2.5 bg-white border border-amber-300 rounded-xl text-sm font-mono font-bold tracking-widest text-stone-900 outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                  />
+                  <p className="text-[11px] text-stone-500">
+                    Bắt buộc xác thực mã PIN Ví HaiPay để bảo vệ số dư tài khoản của bạn (tạm khóa 15 phút nếu nhập sai quá 5 lần).
+                  </p>
+                </div>
+              )}
             </div>
 
           </div>
@@ -1015,13 +1182,14 @@ export default function CheckoutPage() {
 
       {/* ================= MODAL: SELECT OR ADD NEW ADDRESS ================= */}
       {showAddressModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl animate-scale-up">
+        <div className="fixed inset-0 z-[1200] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full h-auto max-h-[90vh] overflow-y-auto p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-stone-200 mb-4">
               <h3 className="text-lg font-black text-stone-800">
                 {showNewAddressForm ? 'Thêm địa chỉ nhận hàng mới' : 'Chọn địa chỉ nhận hàng'}
               </h3>
               <button
+                type="button"
                 onClick={() => {
                   setShowAddressModal(false);
                   setShowNewAddressForm(false);
@@ -1034,22 +1202,22 @@ export default function CheckoutPage() {
 
             {!showNewAddressForm ? (
               /* Address List View */
-              <div className="space-y-3">
+              <div className="flex flex-col gap-3">
                 {addresses.length === 0 ? (
                   <p className="text-sm text-stone-500 py-6 text-center">Chưa có địa chỉ nào được lưu.</p>
                 ) : (
-                  addresses.map((addr) => {
+                  addresses.map((addr, addrIdx) => {
                     const isSelected = selectedAddress?._id === addr._id;
                     return (
                       <div
-                        key={addr._id}
+                        key={addr._id || `${addr.fullName}-${addr.phone}-${addrIdx}`}
                         onClick={() => {
                           setSelectedAddress(addr);
                           setShowAddressModal(false);
                         }}
                         className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
                           isSelected
-                            ? 'border-amber-500 bg-amber-50/40 shadow-xs'
+                            ? 'border-amber-500 bg-amber-50/40 shadow-sm'
                             : 'border-stone-200 hover:border-stone-300 bg-white'
                         }`}
                       >
@@ -1073,133 +1241,140 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => setShowNewAddressForm(true)}
-                  className="w-full py-3 border-2 border-dashed border-amber-400 text-amber-800 bg-amber-50/60 hover:bg-amber-100/70 font-bold text-xs rounded-2xl transition flex items-center justify-center gap-2 mt-4"
+                  className="w-full py-3 border-2 border-dashed border-amber-400 text-amber-800 bg-amber-50/60 hover:bg-amber-100/70 font-bold text-xs rounded-2xl transition flex items-center justify-center gap-2 mt-2"
                 >
                   <span>+ Thêm địa chỉ mới</span>
                 </button>
               </div>
             ) : (
               /* New Address Form with Cascading Master Data Dropdowns */
-              <form onSubmit={handleSaveAddress} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleSaveAddress} className="h-auto">
+                <div className="flex flex-col gap-4">
+                  {/* Contact Name & Phone */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        Họ và tên <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Nguyễn Văn A"
+                        value={newAddr.fullName}
+                        onChange={(e) => setNewAddr({ ...newAddr, fullName: e.target.value })}
+                        className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-stone-800 outline-none focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        Số điện thoại <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="0912345678"
+                        value={newAddr.phone}
+                        onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })}
+                        className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-stone-800 outline-none focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Province Dropdown */}
                   <div>
                     <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Họ và tên <span className="text-red-500">*</span>
+                      Tỉnh / Thành phố <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={newAddr.provinceId}
+                      onChange={handleProvinceChange}
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-stone-800 outline-none focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
+                    >
+                      <option value="">-- Chọn Tỉnh / Thành phố --</option>
+                      {provinces.map((province) => (
+                        <option key={province.ProvinceID} value={province.ProvinceID}>
+                          {province.ProvinceName}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* District & Ward Side-by-Side */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        Quận / Huyện <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        required
+                        disabled={!newAddr.provinceId}
+                        value={newAddr.districtId}
+                        onChange={handleDistrictChange}
+                        className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-stone-800 outline-none focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:opacity-50"
+                      >
+                        <option value="">-- Chọn Quận/Huyện --</option>
+                        {districts.map((district) => (
+                          <option key={district.DistrictID} value={district.DistrictID}>
+                            {district.DistrictName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-700 mb-1">
+                        Phường / Xã <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        required
+                        disabled={!newAddr.districtId}
+                        value={newAddr.wardCode}
+                        onChange={handleWardChange}
+                        className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-stone-800 outline-none focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 disabled:opacity-50"
+                      >
+                        <option value="">-- Chọn Phường/Xã --</option>
+                        {wards.map((ward) => (
+                          <option key={ward.WardCode} value={ward.WardCode}>
+                            {ward.WardName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Street Address */}
+                  <div>
+                    <label className="block text-xs font-bold text-stone-700 mb-1">
+                      Số nhà, tên đường <span className="text-red-500">*</span>
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="Nguyễn Văn A"
-                      value={newAddr.fullName}
-                      onChange={(e) => setNewAddr({ ...newAddr, fullName: e.target.value })}
-                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-amber-500"
+                      placeholder="VD: 123 Đường Nguyễn Huệ"
+                      value={newAddr.street}
+                      onChange={(e) => setNewAddr({ ...newAddr, street: e.target.value })}
+                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium text-stone-800 outline-none focus:bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Số điện thoại <span className="text-red-500">*</span>
-                    </label>
+
+                  {/* Default Address Checkbox */}
+                  <div className="flex items-center gap-2">
                     <input
-                      type="tel"
-                      required
-                      placeholder="0912345678"
-                      value={newAddr.phone}
-                      onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })}
-                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-amber-500"
+                      type="checkbox"
+                      id="saveDefaultCheck"
+                      checked={newAddr.isDefault}
+                      onChange={(e) => setNewAddr({ ...newAddr, isDefault: e.target.checked })}
+                      className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 cursor-pointer"
                     />
-                  </div>
-                </div>
-
-                {/* Cascading 3 Dropdowns */}
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Tỉnh / Thành phố <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    required
-                    value={newAddr.provinceId}
-                    onChange={handleProvinceChange}
-                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-amber-500"
-                  >
-                    <option value="">-- Chọn Tỉnh / Thành phố --</option>
-                    {provinces.map((p) => (
-                      <option key={p.ProvinceID} value={p.ProvinceID}>
-                        {p.ProvinceName}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Quận / Huyện <span className="text-red-500">*</span>
+                    <label htmlFor="saveDefaultCheck" className="text-xs font-medium text-stone-700 cursor-pointer">
+                      Đặt làm địa chỉ nhận hàng mặc định
                     </label>
-                    <select
-                      required
-                      disabled={!newAddr.provinceId}
-                      value={newAddr.districtId}
-                      onChange={handleDistrictChange}
-                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-amber-500 disabled:opacity-50"
-                    >
-                      <option value="">-- Chọn Quận/Huyện --</option>
-                      {districts.map((d) => (
-                        <option key={d.DistrictID} value={d.DistrictID}>
-                          {d.DistrictName}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-stone-700 mb-1">
-                      Phường / Xã <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      required
-                      disabled={!newAddr.districtId}
-                      value={newAddr.wardCode}
-                      onChange={handleWardChange}
-                      className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-amber-500 disabled:opacity-50"
-                    >
-                      <option value="">-- Chọn Phường/Xã --</option>
-                      {wards.map((w) => (
-                        <option key={w.WardCode} value={w.WardCode}>
-                          {w.WardName}
-                        </option>
-                      ))}
-                    </select>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-stone-700 mb-1">
-                    Số nhà, tên đường <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="VD: 123 Đường Nguyễn Huệ"
-                    value={newAddr.street}
-                    onChange={(e) => setNewAddr({ ...newAddr, street: e.target.value })}
-                    className="w-full px-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-amber-500"
-                  />
-                </div>
-
-                <div className="flex items-center gap-2 pt-1">
-                  <input
-                    type="checkbox"
-                    id="saveDefaultCheck"
-                    checked={newAddr.isDefault}
-                    onChange={(e) => setNewAddr({ ...newAddr, isDefault: e.target.checked })}
-                    className="w-4 h-4 rounded text-amber-500 focus:ring-amber-500 cursor-pointer"
-                  />
-                  <label htmlFor="saveDefaultCheck" className="text-xs font-medium text-stone-700 cursor-pointer">
-                    Đặt làm địa chỉ nhận hàng mặc định
-                  </label>
-                </div>
-
-                <div className="flex gap-2 justify-end pt-3 border-t border-stone-100">
+                {/* Action Buttons */}
+                <div className="flex justify-end gap-3 mt-6 pt-3 border-t border-stone-100">
                   <button
                     type="button"
                     onClick={() => setShowNewAddressForm(false)}
@@ -1210,7 +1385,7 @@ export default function CheckoutPage() {
                   <button
                     type="submit"
                     disabled={savingAddress}
-                    className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-xs transition disabled:opacity-50"
+                    className="px-6 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs rounded-xl shadow-sm transition disabled:opacity-50"
                   >
                     {savingAddress ? 'Đang lưu...' : 'Lưu địa chỉ'}
                   </button>

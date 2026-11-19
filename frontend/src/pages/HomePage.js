@@ -8,6 +8,51 @@ import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
 
+const toSvgDataUri = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`;
+
+const DEFAULT_BANNERS = [
+  {
+    _id: 'default-banner-1',
+    title: 'Săn Đồ Cũ Chất - Giá Tốt Mỗi Ngày',
+    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1E293B"/><stop offset="55%" stop-color="#0F172A"/><stop offset="100%" stop-color="#1E1B4B"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg1)"/><circle cx="670" cy="110" r="170" fill="#FACC15" opacity="0.14"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="44" font-weight="bold">Săn Đồ Cũ Chất</text><text x="64" y="286" fill="#FACC15" font-family="Arial,sans-serif" font-size="44" font-weight="bold">Giá Hời Mỗi Ngày</text><text x="64" y="346" fill="#CBD5E1" font-family="Arial,sans-serif" font-size="20">Hàng ngàn sản phẩm công nghệ, thời trang đã kiểm duyệt.</text></svg>`),
+    targetUrl: '/products',
+    openInNewTab: false,
+    isFallback: true,
+  },
+  {
+    _id: 'default-banner-2',
+    title: 'An Tâm Mua Sắm Với HaiPay Escrow',
+    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#064E3B"/><stop offset="55%" stop-color="#065F46"/><stop offset="100%" stop-color="#0F172A"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg2)"/><circle cx="640" cy="480" r="190" fill="#10B981" opacity="0.16"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Giao Dịch An Toàn</text><text x="64" y="286" fill="#6EE7B7" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Nhận Hàng Mới Trả</text><text x="64" y="346" fill="#D1FAE5" font-family="Arial,sans-serif" font-size="20">Bảo vệ thanh toán trung gian HaiPay minh bạch.</text></svg>`),
+    targetUrl: '/register-seller',
+    openInNewTab: false,
+    isFallback: true,
+  },
+  {
+    _id: 'default-banner-3',
+    title: 'Đăng Bán Nhanh - Giao Hàng Toàn Quốc',
+    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#312E81"/><stop offset="55%" stop-color="#4338CA"/><stop offset="100%" stop-color="#1E1B4B"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg3)"/><circle cx="650" cy="140" r="180" fill="#A855F7" opacity="0.20"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Biến Đồ Không Dùng</text><text x="64" y="286" fill="#FACC15" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Thành Thu Nhập Ngay</text><text x="64" y="346" fill="#E0E7FF" font-family="Arial,sans-serif" font-size="20">Tạo tin đăng nhanh, theo dõi giao vận tự động.</text></svg>`),
+    targetUrl: '/create-post',
+    openInNewTab: false,
+    isFallback: true,
+  },
+];
+
+const resolveBannerImageUrl = (rawUrl, adminUrl, apiUrl) => {
+  if (!rawUrl || typeof rawUrl !== 'string') return DEFAULT_BANNERS[0].imageUrl;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return DEFAULT_BANNERS[0].imageUrl;
+  if (/^(https?:\/\/|data:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/banners/')) {
+    return `${apiUrl}${trimmed}`;
+  }
+  if (trimmed.startsWith('/uploads/')) {
+    return `${adminUrl}${trimmed}`;
+  }
+  return trimmed;
+};
+
 // --- Skeleton Component ---
 const ProductSkeleton = () => (
   <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-stone-100 animate-pulse flex flex-col h-full">
@@ -44,14 +89,11 @@ export default function HomePage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
-  const bannerImages = useMemo(() => [
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuA-zPGuXVJem8xfroANf5_FLYZr20mL9sBx_w-IJsUgjPb_SjT8R3gsryBj6lQNHlpsRIMMumvRQQ4JYh14ekpQq87raEcLM5M3DIYA1zykxGLscHnqnwf6RtyRG9E-51zYB-ZlqLjUnk5G4PDg34yxHfMrQ18wuS0ZeIHmiNasgJF0jzAPlFhB7SkgVnw968RJwQro7KFvZl36CB2tPbpUhwGQUS8V2FIDBOTQJU8zOhHaVO-6nt7c",
-    "https://images.unsplash.com/photo-1581539250439-c96689b516cb?q=80&w=2072&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1555529902-5261145633bf?q=80&w=2070&auto=format&fit=crop"
-  ], []);
+  const [banners, setBanners] = useState(DEFAULT_BANNERS);
   const [currentBanner, setCurrentBanner] = useState(0);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000'; 
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+  const ADMIN_URL = process.env.REACT_APP_ADMIN_URL || 'http://localhost:4001';
   const { user } = useAuth();
 
   useEffect(() => {
@@ -130,16 +172,54 @@ export default function HomePage() {
     fetchPosts(nextPage, selectedCategory, keyword, locationFilter);
   }, [page, selectedCategory, keyword, locationFilter, fetchPosts]);
 
+  const fetchBanners = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/banners`);
+      if (Array.isArray(data) && data.length > 0) {
+        setBanners(data);
+        setCurrentBanner(0);
+      } else {
+        setBanners(DEFAULT_BANNERS);
+      }
+    } catch (error) {
+      setBanners(DEFAULT_BANNERS);
+    }
+  }, [API_URL]);
+
+  const handleBannerClick = useCallback((banner) => {
+    const rawTarget = String(banner?.targetUrl || '').trim();
+    if (!rawTarget) return;
+
+    if (/^https?:\/\//i.test(rawTarget)) {
+      if (banner?.openInNewTab) {
+        window.open(rawTarget, '_blank', 'noopener,noreferrer');
+      } else {
+        window.location.href = rawTarget;
+      }
+      return;
+    }
+
+    const internalPath = rawTarget.startsWith('/') ? rawTarget : `/${rawTarget}`;
+    if (banner?.openInNewTab) {
+      window.open(internalPath, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(internalPath);
+    }
+  }, [navigate]);
+
   useEffect(() => {
     fetchPosts(1, 'Tất cả', '', 'Tất cả khu vực');
     fetchCategories();
-    
+    fetchBanners();
+  }, [fetchPosts, fetchCategories, fetchBanners]);
+
+  useEffect(() => {
+    if (!banners || banners.length <= 1) return undefined;
     const timer = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % bannerImages.length);
-    }, 3500);
-    
+      setCurrentBanner((prev) => (prev + 1) % banners.length);
+    }, 4000);
     return () => clearInterval(timer);
-  }, [fetchPosts, fetchCategories, bannerImages.length]);
+  }, [banners]);
 
   const toggleFavorite = useCallback(async (e, postId) => {
       e.stopPropagation(); 
@@ -208,44 +288,96 @@ export default function HomePage() {
              </div>
            </div>
            <div className="w-full md:w-[45%] lg:w-[50%] relative shrink-0 min-h-[250px] md:min-h-full group">
-             <div className="absolute inset-0 w-full h-full bg-stone-100">
-               {bannerImages.map((img, idx) => (
-                 <img 
-                   key={idx}
-                   src={img} 
-                   alt={`Banner ${idx + 1}`} 
-                   loading="lazy"
-                   className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${currentBanner === idx ? 'opacity-100' : 'opacity-0'}`} 
-                 />
-               ))}
+             <div className="absolute inset-0 w-full h-full bg-stone-900 overflow-hidden">
+               {banners.map((banner, idx) => {
+                 const activeIndex = banners.length > 0 ? currentBanner % banners.length : 0;
+                 const isSlideActive = activeIndex === idx;
+                 const hasTarget = Boolean(banner && banner.targetUrl && String(banner.targetUrl).trim());
+                 const imgSrc = resolveBannerImageUrl(banner?.imageUrl, ADMIN_URL, API_URL);
+                 return (
+                   <div
+                     key={banner?._id || idx}
+                     onClick={() => hasTarget && handleBannerClick(banner)}
+                     role={hasTarget ? 'link' : undefined}
+                     tabIndex={isSlideActive && hasTarget ? 0 : -1}
+                     onKeyDown={(e) => {
+                       if (hasTarget && (e.key === 'Enter' || e.key === ' ')) {
+                         e.preventDefault();
+                         handleBannerClick(banner);
+                       }
+                     }}
+                     title={hasTarget ? `${banner?.title ? banner.title + ' - ' : ''}Nhấn để xem chi tiết` : (banner?.title || `Banner ${idx + 1}`)}
+                     className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
+                       isSlideActive ? 'opacity-100 z-[1] pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
+                     } ${hasTarget ? 'cursor-pointer' : ''}`}
+                   >
+                     <img
+                       src={imgSrc}
+                       alt={banner?.title || `Banner ${idx + 1}`}
+                       className="w-full h-full object-cover"
+                       onError={(e) => {
+                         if (e.currentTarget.dataset.fallbackApplied) return;
+                         e.currentTarget.dataset.fallbackApplied = '1';
+                         e.currentTarget.src = DEFAULT_BANNERS[idx % DEFAULT_BANNERS.length].imageUrl;
+                       }}
+                     />
+                     {banner?.title && !banner?.isFallback && (
+                       <div className="pointer-events-none absolute top-3 left-3 max-w-[85%] px-3 py-1.5 rounded-full bg-stone-950/65 backdrop-blur-sm text-white text-xs font-semibold shadow-sm truncate">
+                         {banner.title}
+                       </div>
+                     )}
+                   </div>
+                 );
+               })}
                {/* Indicators */}
-               <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
-                 {bannerImages.map((_, idx) => (
-                   <button 
-                     key={idx}
-                     onClick={() => setCurrentBanner(idx)}
-                     className={`h-2 rounded-full transition-all duration-300 ${currentBanner === idx ? 'bg-[#FACC15] w-8' : 'bg-white/70 w-2 hover:bg-white'}`}
-                     aria-label={`Go to slide ${idx + 1}`}
-                   />
-                 ))}
-               </div>
-               
+               {banners.length > 1 && (
+                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
+                   {banners.map((_, idx) => {
+                     const activeIndex = banners.length > 0 ? currentBanner % banners.length : 0;
+                     return (
+                       <button
+                         key={idx}
+                         type="button"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setCurrentBanner(idx);
+                         }}
+                         className={`h-2 rounded-full transition-all duration-300 ${activeIndex === idx ? 'bg-[#FACC15] w-8' : 'bg-white/70 w-2 hover:bg-white'}`}
+                         aria-label={`Go to slide ${idx + 1}`}
+                       />
+                     );
+                   })}
+                 </div>
+               )}
+
                {/* Navigation Arrows */}
-               <button 
-                 onClick={() => setCurrentBanner(prev => (prev === 0 ? bannerImages.length - 1 : prev - 1))}
-                 className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/50 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
-                 aria-label="Previous slide"
-               >
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
-               </button>
-               <button 
-                 onClick={() => setCurrentBanner(prev => (prev === bannerImages.length - 1 ? 0 : prev + 1))}
-                 className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/50 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
-                 aria-label="Next slide"
-               >
-                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-               </button>
-               
+               {banners.length > 1 && (
+                 <>
+                   <button
+                     type="button"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setCurrentBanner(prev => (prev === 0 ? banners.length - 1 : prev - 1));
+                     }}
+                     className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/25 hover:bg-black/55 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 rounded-r-lg"
+                     aria-label="Previous slide"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+                   </button>
+                   <button
+                     type="button"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setCurrentBanner(prev => (prev >= banners.length - 1 ? 0 : prev + 1));
+                     }}
+                     className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/25 hover:bg-black/55 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 rounded-l-lg"
+                     aria-label="Next slide"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                   </button>
+                 </>
+               )}
+
              </div>
            </div>
         </section>

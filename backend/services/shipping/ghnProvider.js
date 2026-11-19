@@ -1,16 +1,24 @@
 /**
  * GHN (Giao Hàng Nhanh) provider.
  * Docs: https://api.ghn.vn/home/docs/detail
+ * Prod base: https://online-gateway.ghn.vn/shiip/public-api
  * Sandbox base: https://dev-online-gateway.ghn.vn/shiip/public-api
  */
 const NAME = 'ghn';
 const CARRIER_LABEL = 'Giao Hàng Nhanh (GHN)';
 
+const PROD_GHN_URL = 'https://online-gateway.ghn.vn/shiip/public-api';
+const DEV_GHN_URL = 'https://dev-online-gateway.ghn.vn/shiip/public-api';
+
 const TIMEOUT_MS = 10000;
 const cache = new Map(); // master-data cache (rarely changes)
 
 function getBaseUrl() {
-  return (process.env.GHN_API_URL || 'https://dev-online-gateway.ghn.vn/shiip/public-api').replace(/\/$/, '');
+  return (process.env.GHN_API_URL || PROD_GHN_URL).replace(/\/$/, '');
+}
+
+function getAlternateBaseUrl(primaryUrl) {
+  return String(primaryUrl).includes('dev-online-gateway.ghn.vn') ? PROD_GHN_URL : DEV_GHN_URL;
 }
 
 function getToken() {
@@ -23,6 +31,23 @@ function getShopId() {
 
 function isConfigured() {
   return Boolean(getToken() && getShopId());
+}
+
+async function fetchGhnEndpoint(baseUrl, path, { method = 'POST', headers, body }) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch(baseUrl + path, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : undefined,
+      signal: ctrl.signal
+    });
+    const json = await res.json().catch(() => ({}));
+    return { res, json };
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function ghn(path, { method = 'POST', body, withShop = false } = {}) {
@@ -41,27 +66,24 @@ async function ghn(path, { method = 'POST', body, withShop = false } = {}) {
     headers.ShopId = String(shopId);
   }
 
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(getBaseUrl() + path, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-      signal: ctrl.signal
-    });
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok || (json.code && json.code !== 200)) {
-      const msg = json.code_message_value || json.message || `GHN HTTP ${res.status}`;
-      const err = new Error(msg);
-      err.status = res.status;
-      err.ghn = json;
-      throw err;
-    }
-    return json.data;
-  } finally {
-    clearTimeout(timer);
+  const primaryUrl = getBaseUrl();
+  let { res, json } = await fetchGhnEndpoint(primaryUrl, path, { method, headers, body });
+
+  // Nếu bị lỗi 401 do token thuộc môi trường khác (Prod <-> Dev), tự động retry sang cổng còn lại
+  if (res.status === 401 || json?.code === 401) {
+    const alternateUrl = getAlternateBaseUrl(primaryUrl);
+    console.warn(`⚠️ [GHN Provider] HTTP 401 tại ${primaryUrl}${path}, tự động thử lại sang ${alternateUrl}${path}`);
+    ({ res, json } = await fetchGhnEndpoint(alternateUrl, path, { method, headers, body }));
   }
+
+  if (!res.ok || (json.code && json.code !== 200)) {
+    const msg = json.code_message_value || json.message || `GHN HTTP ${res.status}`;
+    const err = new Error(msg);
+    err.status = res.status;
+    err.ghn = json;
+    throw err;
+  }
+  return json.data;
 }
 
 async function cached(key, fn) {
@@ -74,22 +96,38 @@ async function cached(key, fn) {
 async function getProvinces() {
   return cached('provinces', async () => {
     const data = await ghn('/master-data/province', { method: 'GET' });
-    return (data || []).map((p) => ({ id: p.ProvinceID, name: p.ProvinceName }))
-      .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+    return (data || []).map((p) => ({
+      id: p.ProvinceID,
+      name: p.ProvinceName,
+      ProvinceID: p.ProvinceID,
+      ProvinceName: p.ProvinceName
+    })).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
   });
 }
 
 async function getDistricts(provinceId) {
   return cached(`d:${provinceId}`, async () => {
     const data = await ghn('/master-data/district', { body: { province_id: Number(provinceId) } });
-    return (data || []).map((d) => ({ id: d.DistrictID, name: d.DistrictName, provinceId: d.ProvinceID }));
+    return (data || []).map((d) => ({
+      id: d.DistrictID,
+      name: d.DistrictName,
+      provinceId: d.ProvinceID,
+      DistrictID: d.DistrictID,
+      DistrictName: d.DistrictName
+    }));
   });
 }
 
 async function getWards(districtId) {
   return cached(`w:${districtId}`, async () => {
     const data = await ghn('/master-data/ward', { body: { district_id: Number(districtId) } });
-    return (data || []).map((w) => ({ code: w.WardCode, name: w.WardName, districtId: w.DistrictID }));
+    return (data || []).map((w) => ({
+      code: w.WardCode,
+      name: w.WardName,
+      districtId: w.DistrictID,
+      WardCode: w.WardCode,
+      WardName: w.WardName
+    }));
   });
 }
 
@@ -145,10 +183,19 @@ async function createShipment({ order, from, to, weight, codAmount, items }) {
     payment_type_id: 1, // shop pays carrier (buyer already paid shipping to platform)
     required_note: 'CHOXEMHANGKHONGTHU',
     client_order_code: order._id.toString(),
-    from_name: from.fullName, from_phone: from.phone, from_address: from.street,
-    from_ward_name: from.wardName, from_district_name: from.districtName, from_province_name: from.provinceName,
-    to_name: to.fullName, to_phone: to.phone, to_address: [to.street, to.wardName, to.districtName, to.provinceName].filter(Boolean).join(', '),
-    to_ward_code: String(to.wardCode), to_district_id: Number(to.districtId),
+    from_name: from.fullName,
+    from_phone: from.phone,
+    from_address: from.street,
+    from_district_id: Number(from.districtId) || 1442,
+    from_ward_code: String(from.wardCode || '20101'),
+    from_ward_name: from.wardName,
+    from_district_name: from.districtName,
+    from_province_name: from.provinceName,
+    to_name: to.fullName,
+    to_phone: to.phone,
+    to_address: [to.street, to.wardName, to.districtName, to.provinceName].filter(Boolean).join(', '),
+    to_ward_code: String(to.wardCode),
+    to_district_id: Number(to.districtId),
     cod_amount: Math.round(codAmount || 0),
     weight: Math.max(1, Math.round(Number(weight) || 500)),
     length: 20, width: 15, height: 10,
@@ -172,8 +219,22 @@ async function createShipment({ order, from, to, weight, codAmount, items }) {
   };
 }
 
+/**
+ * M5: Hủy vận đơn trên cổng GHN (best-effort)
+ */
+async function cancelShipment(trackingCode) {
+  if (!trackingCode || !isConfigured()) {
+    return { cancelled: false, skipped: true };
+  }
+  const data = await ghn('/v2/switch-status/cancel', {
+    body: { order_codes: [String(trackingCode).trim()] },
+    withShop: true
+  });
+  return { cancelled: true, data };
+}
+
 module.exports = {
   NAME, CARRIER_LABEL,
   isConfigured,
-  calculateFee, createShipment, getProvinces, getDistricts, getWards
+  calculateFee, createShipment, cancelShipment, getProvinces, getDistricts, getWards
 };

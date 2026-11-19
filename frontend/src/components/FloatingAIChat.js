@@ -68,7 +68,7 @@ const FloatingAIChat = () => {
                 ...prev,
                 {
                     sender: 'bot',
-                    text: '⚠️ Không thể kết nối tới mô hình AI. Hãy đảm bảo bạn đã khởi động LM Studio (port 1235) trên máy nhé!',
+                    text: '⚠️ Trợ lý AI hiện đang tạm thời bận. Bạn vui lòng thử lại sau ít phút nhé!',
                     products: []
                 }
             ]);

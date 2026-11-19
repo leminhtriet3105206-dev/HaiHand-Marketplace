@@ -5,33 +5,64 @@ import axios from 'axios';
 const PaymentResultPage = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const [status, setStatus] = useState('⏳ Đang xử lý giao dịch...');
+    const [status, setStatus] = useState('⏳ Đang kiểm tra trạng thái thanh toán từ máy chủ...');
 
     useEffect(() => {
-        const verifyPayment = async () => {
-            const responseCode = searchParams.get('vnp_ResponseCode');
-            const orderId = searchParams.get('vnp_TxnRef');
-            const user = JSON.parse(localStorage.getItem('user'));
+        let isMounted = true;
+        let pollTimer = null;
+        let attempts = 0;
+        const maxAttempts = 5;
 
-            if (!responseCode || !orderId || !user) {
-                setStatus('❌ Dữ liệu không hợp lệ!'); return;
+        const orderId = searchParams.get('vnp_TxnRef') || searchParams.get('orderId');
+        const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+
+        const pollPaymentStatus = async () => {
+            if (!orderId) {
+                if (isMounted) setStatus('❌ Không tìm thấy mã đơn hàng để kiểm tra!');
+                return;
             }
 
-            const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
             try {
-                await axios.post(`${API_URL}/api/vnpay/verify`, {
-                    orderId, responseCode, userId: user._id
+                const isTopup = orderId.startsWith('NAP_');
+                const endpoint = isTopup ? '/api/haipay/verify' : '/api/vnpay/verify';
+                const res = await axios.get(`${API_URL}${endpoint}`, {
+                    params: isTopup ? { txnRef: orderId } : { orderId }
                 });
-                
-                if (responseCode === '00') {
-                    setStatus('🎉 Thanh toán thành công! Admin đang giữ tiền của bạn.');
-                    window.dispatchEvent(new Event('cartUpdated')); 
-                } else {
-                    setStatus('❌ Giao dịch thất bại hoặc bạn đã hủy thanh toán!');
+
+                const currentStatus = res.data?.status;
+                if (!isMounted) return;
+
+                if (currentStatus === 'paid' || res.data?.paid === true) {
+                    setStatus('🎉 Thanh toán thành công! Hệ thống ký quỹ (Escrow) đã ghi nhận giao dịch của bạn.');
+                    window.dispatchEvent(new Event('cartUpdated'));
+                    return;
                 }
-            } catch (error) { setStatus('❌ Lỗi hệ thống khi xác nhận giao dịch!'); }
+
+                if (currentStatus === 'failed') {
+                    setStatus('❌ Giao dịch thất bại hoặc đã bị hủy!');
+                    return;
+                }
+
+                attempts += 1;
+                if (attempts < maxAttempts) {
+                    setStatus(`⏳ Đang chờ xác nhận thanh toán từ cổng VNPAY (lần ${attempts}/${maxAttempts})...`);
+                    pollTimer = setTimeout(pollPaymentStatus, 2000);
+                } else {
+                    setStatus('⏳ Giao dịch đang được đối soát tự động (IPN). Vui lòng kiểm tra trong mục Đơn mua sau ít phút.');
+                }
+            } catch (error) {
+                if (isMounted) {
+                    setStatus('❌ Không thể kiểm tra trạng thái giao dịch. Vui lòng xem trong Đơn mua của bạn!');
+                }
+            }
         };
-        verifyPayment();
+
+        pollPaymentStatus();
+
+        return () => {
+            isMounted = false;
+            if (pollTimer) clearTimeout(pollTimer);
+        };
     }, [searchParams]);
 
     return (

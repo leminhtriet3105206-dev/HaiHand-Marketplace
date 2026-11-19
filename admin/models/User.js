@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
   isBanned: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
+  tokenVersion: { type: Number, default: 0 },
   isSeller: { type: Boolean, default: false },
   sellerStatus: { 
     type: String, 
@@ -22,6 +23,15 @@ const userSchema = new mongoose.Schema({
   sellerAppliedAt: { type: Date },
   sellerApprovedAt: { type: Date },
   sellerRejectionReason: { type: String, default: '' },
+  walletBalance: { type: Number, default: 0 },
+  pendingBalance: { type: Number, default: 0 },
+  isWalletActive: { type: Boolean, default: false },
+  walletPhone: { type: String, default: '' },
+  bankInfo: {
+    name: { type: String, default: '' },
+    accountNumber: { type: String, default: '' },
+    accountName: { type: String, default: '' }
+  },
   shopInfo: {
     shopName: { type: String, default: '' },
     description: { type: String, default: '' },
@@ -32,6 +42,6 @@ const userSchema = new mongoose.Schema({
     taxCode: { type: String, default: '' }
   },
   date: { type: Date, default: Date.now },
-}, { timestamps: true });
+}, { timestamps: true, strict: false });
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);

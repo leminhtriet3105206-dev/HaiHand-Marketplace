@@ -53,6 +53,7 @@ const {
   withdrawLimiter
 } = require('./middleware/security');
 const { createUploadMiddleware } = require('./middleware/upload');
+const { escapeRegex } = require('./middleware/validate');
 const errorHandler = require('./middleware/errorHandler');
 const {
   CATALOG_VISIBLE,
@@ -1446,53 +1447,39 @@ app.post('/api/users/reset-password-otp', async (req, res) => {
   }
 });
 
-/** Tìm kiếm người dùng theo tên/email để bắt đầu trò chuyện */
+/** Tìm kiếm người dùng theo tên để bắt đầu trò chuyện (C7 & M8: escapeRegex, trần limit <= 20, không trả email, validate exclude ObjectId) */
 app.get('/api/users/search', async (req, res) => {
   try {
-    const query = req.query.q;
+    const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
     const excludeId = req.query.exclude;
-    if (!query || query.trim() === '') return res.status(200).json([]);
+    if (!query) return res.status(200).json([]);
 
-    const usersFound = await User.find({
-      $and: [
-        { _id: { $ne: excludeId } },
-        { $or: [{ name: { $regex: query, $options: 'i' } }, { email: { $regex: query, $options: 'i' } }] }
-      ]
-    }).select('name email avatar');
-    res.status(200).json(usersFound);
-  } catch (error) { res.status(500).json({ message: 'Lỗi server khi tìm kiếm' }); }
+    const safePattern = escapeRegex(query);
+    const maxLimit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 20));
+    const conditions = [{ name: { $regex: safePattern, $options: 'i' } }];
+
+    if (excludeId && typeof excludeId === 'string' && mongoose.Types.ObjectId.isValid(excludeId)) {
+      conditions.push({ _id: { $ne: excludeId } });
+    }
+
+    const usersFound = await User.find({ $and: conditions })
+      .select('name avatar shopInfo isSeller sellerStatus isVerified')
+      .limit(maxLimit);
+
+    res.status(200).json(usersFound.map((u) => publicUser(u)));
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi server khi tìm kiếm' });
+  }
 });
 
-/** Lấy hồ sơ cá nhân theo Bearer JWT (ưu tiên) hoặc query/header userId */
-app.get('/api/users/profile', async (req, res) => {
+/** Lấy hồ sơ cá nhân theo Bearer JWT (C7: bắt buộc protect, XÓA hoàn toàn nhận userid từ query/header) */
+app.get('/api/users/profile', protect, async (req, res) => {
   try {
-    let userId = req.query.id || req.query.userId || req.headers['userid'];
-
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-      try {
-        const decoded = jwt.verify(token, getJwtSecret());
-        if (decoded && (decoded.id || decoded._id)) {
-          userId = decoded.id || decoded._id;
-        }
-      } catch (tokenErr) { }
-    }
-
-    if (!userId) {
-      return res.status(401).json({ message: 'Vui lòng cung cấp User ID hoặc Token xác thực' });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(400).json({ message: 'User ID không hợp lệ' });
-    }
-
-    const user = await User.findById(userId).select('-password');
+    const user = await User.findById(req.user._id).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'Không tìm thấy người dùng trong hệ thống' });
     }
-
-    res.status(200).json(sanitizeUser(user));
+    res.status(200).json(sanitizeUser(user, { keepOwnerFields: true }));
   } catch (error) {
     console.error('Lỗi khi lấy thông tin người dùng:', error);
     res.status(500).json({ message: 'Lỗi server khi lấy thông tin cá nhân' });
@@ -1558,7 +1545,7 @@ app.get('/api/users/public-profile/:userId', async (req, res) => {
     }
     const responseRate = conversationsReceived.length > 0 ? Math.round((repliedCount / conversationsReceived.length) * 100) : 100;
 
-    return res.status(200).json({ user, posts, reviews, followersCount, followingCount, avgRating, responseRate });
+    return res.status(200).json({ user: publicUser(user), posts, reviews, followersCount, followingCount, avgRating, responseRate });
   } catch (error) {
     console.error('Lỗi sập Profile:', error.message);
     return res.status(200).json({ user: {}, posts: [], reviews: [], followersCount: 0, followingCount: 0, avgRating: 5 });
@@ -1629,9 +1616,9 @@ app.get('/api/users/:userId/follow-list', async (req, res) => {
 
     let list = [];
     if (type === 'followers') {
-      list = await mongoose.models.Follow.find({ following: userId }).populate('follower', 'name avatar email');
+      list = await mongoose.models.Follow.find({ following: userId }).populate('follower', 'name avatar');
     } else {
-      list = await mongoose.models.Follow.find({ follower: userId }).populate('following', 'name avatar email');
+      list = await mongoose.models.Follow.find({ follower: userId }).populate('following', 'name avatar');
     }
 
     list = list.filter(item => item.follower && item.following);
@@ -2280,10 +2267,11 @@ const handleHaiPayVerifyReadOnly = async (req, res) => {
 app.get('/api/haipay/verify', handleHaiPayVerifyReadOnly);
 app.post('/api/haipay/verify', handleHaiPayVerifyReadOnly);
 
-/** Lấy lịch sử giao dịch ví HaiPay của User */
-app.get('/api/users/:userId/transactions', async (req, res) => {
+/** Lấy lịch sử giao dịch ví HaiPay của User (C7: bắt buộc protect + chỉ chủ tài khoản hoặc Admin) */
+app.get('/api/users/:userId/transactions', protect, requireOwnerOrAdmin('userId'), async (req, res) => {
   try {
-    const trans = await Transaction.find({ user: req.params.userId }).sort({ createdAt: -1 });
+    const targetId = req.user.role === 'Admin' && req.params.userId ? req.params.userId : req.user._id;
+    const trans = await Transaction.find({ user: targetId }).sort({ createdAt: -1 });
     res.json(trans);
   } catch (error) { res.status(500).json({ message: 'Lỗi lấy lịch sử' }); }
 });
@@ -2731,15 +2719,49 @@ app.put('/api/orders/:orderId/receive', protect, async (req, res) => {
 });
 
 /**
- * Lấy thông tin cơ bản của một User theo ID (ẩn password).
- * ĐẶT Ở CUỐI NHÓM `/api/users/*` ĐỂ KHÔNG CHẶN CÁC ROUTE TĨNH NHƯ `/search`, `/profile`...
+ * Lấy thông tin của một User theo ID (C7:
+ * - Nếu là chủ tài khoản hoặc Admin có Bearer JWT hợp lệ -> trả sanitizeUser đầy đủ.
+ * - Nếu là người khác hoặc khách vãng lai -> chỉ trả publicUser (không lộ email/phone/cccd/taxId/bankInfo/walletBalance/walletPin)).
  */
 app.get('/api/users/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'ID người dùng không hợp lệ' });
+    }
+    const user = await User.findById(req.params.id).select('-password');
     if (!user) return res.status(404).json({ message: 'Không tìm thấy user' });
-    res.status(200).json(sanitizeUser(user));
-  } catch (err) { res.status(500).json({ message: 'Lỗi server' }); }
+
+    let isOwnerOrAdmin = false;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], getJwtSecret());
+        const callerId = decoded?.id || decoded?._id;
+        if (callerId) {
+          const caller = await User.findById(callerId).select('_id role status isBanned isDeleted tokenVersion');
+          const callerTv = typeof caller?.tokenVersion === 'number' ? caller.tokenVersion : 0;
+          const tokenTv = typeof decoded.tv === 'number' ? decoded.tv : 0;
+          if (
+            caller &&
+            caller.status !== 'locked' &&
+            !caller.isBanned &&
+            !caller.isDeleted &&
+            callerTv === tokenTv &&
+            (caller.role === 'Admin' || String(caller._id) === String(req.params.id))
+          ) {
+            isOwnerOrAdmin = true;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (isOwnerOrAdmin) {
+      return res.status(200).json(sanitizeUser(user, { keepOwnerFields: true }));
+    }
+    return res.status(200).json(publicUser(user));
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi server' });
+  }
 });
 
 // ============================================================================

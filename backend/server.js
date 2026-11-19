@@ -64,7 +64,7 @@ const corsOptions = {
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'UserId', 'X-Requested-With', 'Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'UserId', 'X-Requested-With', 'Origin', 'x-anonymous-id', 'X-Anonymous-Id'],
   exposedHeaders: ['Content-Range', 'X-Content-Range']
 };
 
@@ -80,7 +80,7 @@ app.use((req, res, next) => {
   }
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, userid, UserId');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, userid, UserId, x-anonymous-id');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }

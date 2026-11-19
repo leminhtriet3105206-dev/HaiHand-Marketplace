@@ -177,16 +177,33 @@ export default function CheckoutPage() {
   }, [fetchAddresses, fetchWallet]);
 
   // --- 7. Load Provinces Master Data when opening address modal ---
+  // Có retry vì server Render có thể khởi động chậm (cold start) ở lần gọi đầu.
   useEffect(() => {
-    if (showNewAddressForm && provinces.length === 0) {
-      axiosClient
-        .get('/api/shipping/provinces')
-        .then((res) => {
-          if (Array.isArray(res.data)) setProvinces(res.data);
-        })
-        .catch((err) => console.warn('Lỗi tải tỉnh/thành:', err));
-    }
-  }, [showNewAddressForm, provinces.length]);
+    if (!showNewAddressForm || provinces.length > 0) return;
+    let cancelled = false;
+
+    const loadProvinces = async (attempt = 1) => {
+      try {
+        const res = await axiosClient.get('/api/shipping/provinces', { timeout: 60000 });
+        if (!cancelled && Array.isArray(res.data) && res.data.length > 0) {
+          setProvinces(res.data);
+          return;
+        }
+        throw new Error('Danh sách tỉnh/thành trống');
+      } catch (err) {
+        console.warn(`Lỗi tải tỉnh/thành (lần ${attempt}):`, err?.message || err);
+        if (cancelled) return;
+        if (attempt < 3) {
+          setTimeout(() => loadProvinces(attempt + 1), 1500 * attempt);
+        } else {
+          toast.error('Lỗi', 'Không tải được danh sách Tỉnh/Thành phố. Vui lòng thử lại sau.');
+        }
+      }
+    };
+
+    loadProvinces();
+    return () => { cancelled = true; };
+  }, [showNewAddressForm, provinces.length, toast]);
 
   // Handle Province change -> Load Districts
   const handleProvinceChange = async (e) => {

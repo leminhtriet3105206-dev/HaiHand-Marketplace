@@ -1,5 +1,5 @@
 const express = require('express');
-const { protect, isSeller, isAdmin } = require('../middleware/auth');
+const { protect, isSeller, isAdmin, requireAdminJWT } = require('../middleware/auth');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const { Post } = require('../models/Product');
@@ -106,7 +106,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
-  router.get('/api/admin/seller-applications', isAdmin, async (req, res) => {
+  router.get('/api/admin/seller-applications', requireAdminJWT, async (req, res) => {
     try {
       const status = req.query.status || 'pending';
       const query = status === 'all'
@@ -121,7 +121,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
-  router.put('/api/admin/approve-seller/:id', isAdmin, async (req, res) => {
+  router.put('/api/admin/approve-seller/:id', requireAdminJWT, async (req, res) => {
     try {
       const user = await User.findById(req.params.id);
       if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
@@ -154,7 +154,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
-  router.put('/api/admin/reject-seller/:id', isAdmin, async (req, res) => {
+  router.put('/api/admin/reject-seller/:id', requireAdminJWT, async (req, res) => {
     try {
       const user = await User.findById(req.params.id);
       if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });

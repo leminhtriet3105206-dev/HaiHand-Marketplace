@@ -641,7 +641,7 @@ app.get('/users', requireAdmin, async (req, res) => {
 });
 
 /** [SSR] Form sửa thông tin người dùng */
-app.get('/users/edit/:id', async (req, res) => {
+app.get('/users/edit/:id', requireAdminJWT, async (req, res) => {
   try {
     const user = await mongoose.model('User').findById(req.params.id);
     if (!user) return res.redirect('/users');
@@ -651,11 +651,16 @@ app.get('/users/edit/:id', async (req, res) => {
   }
 });
 
-/** [SSR] Lưu cập nhật thông tin người dùng */
-app.post('/users/edit/:id', async (req, res) => {
+/** [SSR/API] Lưu cập nhật thông tin người dùng (bao gồm đổi role -> bắt buộc requireAdminJWT - C6) */
+app.post('/users/edit/:id', requireAdminJWT, async (req, res) => {
   try {
-    const { name, email, phone, role } = req.body;
-    await mongoose.model('User').findByIdAndUpdate(req.params.id, { name, email, phone, role });
+    const { name, email, phone, role } = req.body || {};
+    const updateFields = {};
+    if (typeof name === 'string') updateFields.name = name.trim();
+    if (typeof email === 'string') updateFields.email = email.trim().toLowerCase();
+    if (typeof phone === 'string') updateFields.phone = phone.trim();
+    if (typeof role === 'string') updateFields.role = role.trim();
+    await mongoose.model('User').findByIdAndUpdate(req.params.id, updateFields);
     res.redirect('/users');
   } catch (err) {
     res.status(500).send('Lỗi cập nhật người dùng');
@@ -934,8 +939,8 @@ app.get('/orders', requireAdmin, async (req, res) => {
   }
 });
 
-/** [SSR] Alias trang quản lý đơn hàng Admin */
-app.get('/admin/orders', async (req, res) => {
+/** [SSR] Alias trang quản lý đơn hàng Admin (bắt buộc requireAdminJWT - C6) */
+app.get('/admin/orders', requireAdminJWT, async (req, res) => {
   try {
     const orders = await Order.find()
       .populate('buyer', 'name email phone')
@@ -985,7 +990,7 @@ app.post('/orders/update-status/:id', requireAdmin, async (req, res) => {
  * - Dùng Order.findOneAndUpdate có điều kiện để chống race condition / double payout.
  * - Chuyển tiền nguyên tử từ seller.pendingBalance sang seller.walletBalance, ghi Transaction + Revenue.
  */
-app.post('/api/admin/release-funds/:orderId', requireAdmin, async (req, res) => {
+app.post('/api/admin/release-funds/:orderId', requireAdminJWT, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
@@ -1096,7 +1101,7 @@ app.post('/api/admin/release-funds/:orderId', requireAdmin, async (req, res) => 
 });
 
 /** [API] Admin hoàn tiền đơn hàng hủy về ví HaiPay người mua */
-app.post('/api/admin/refund-order/:orderId', requireAdmin, async (req, res) => {
+app.post('/api/admin/refund-order/:orderId', requireAdminJWT, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
@@ -1156,8 +1161,8 @@ app.get('/admin/revenue', requireAdmin, async (req, res) => {
   }
 });
 
-/** [SSR] Danh sách lệnh rút tiền đang chờ xử lý */
-app.get('/admin/withdrawals', async (req, res) => {
+/** [SSR] Danh sách lệnh rút tiền đang chờ xử lý (bắt buộc requireAdminJWT - C6) */
+app.get('/admin/withdrawals', requireAdminJWT, async (req, res) => {
   try {
     const withdrawalsData = await Transaction.find({ type: 'Rút tiền', status: 'Đang xử lý' }).populate('user');
 
@@ -1171,12 +1176,19 @@ app.get('/admin/withdrawals', async (req, res) => {
   }
 });
 
-/** [API] Admin xác nhận duyệt lệnh rút tiền */
-app.put('/api/admin/withdraw/:id/approve', async (req, res) => {
+/** [API] Admin xác nhận duyệt lệnh rút tiền (bắt buộc requireAdminJWT - C6) */
+app.put('/api/admin/withdraw/:id/approve', requireAdminJWT, async (req, res) => {
   try {
     const { id } = req.params;
-    await Transaction.findByIdAndUpdate(id, { status: 'success' });
-    res.json({ message: 'Đã duyệt lệnh rút tiền thành công!' });
+    const updatedTx = await Transaction.findOneAndUpdate(
+      { _id: id, type: 'Rút tiền', status: 'Đang xử lý' },
+      { $set: { status: 'Thành công' } },
+      { new: true }
+    );
+    if (!updatedTx) {
+      return res.status(409).json({ message: 'Lệnh rút tiền đã được xử lý trước đó hoặc không tồn tại!' });
+    }
+    res.json({ message: 'Đã duyệt lệnh rút tiền thành công!', transaction: updatedTx });
   } catch (err) {
     res.status(500).json({ message: 'Lỗi khi duyệt lệnh' });
   }
@@ -1188,8 +1200,8 @@ app.get('/admin/chat', requireAdmin, (req, res) => {
   res.render('admin-chat', { active: 'chat' });
 });
 
-/** [API] Lấy danh sách thông báo cấp hệ thống dành cho Admin Portal */
-app.get('/api/admin/notifications', async (req, res) => {
+/** [API] Lấy danh sách thông báo cấp hệ thống dành cho Admin Portal (bắt buộc requireAdminJWT - C6) */
+app.get('/api/admin/notifications', requireAdminJWT, async (req, res) => {
   try {
     const adminFilter = {
       $or: [
@@ -1202,11 +1214,11 @@ app.get('/api/admin/notifications', async (req, res) => {
     const notifs = await Notification.find(adminFilter).sort({ createdAt: -1 }).limit(limit);
     const unreadCount = await Notification.countDocuments({ ...adminFilter, isRead: false });
     res.json({ notifications: notifs, unreadCount });
-  } catch (error) { res.status(500).json({ error: 'Lỗi: ' + error.message }); }
+  } catch (error) { res.status(500).json({ error: 'Lỗi tải thông báo' }); }
 });
 
-/** [API] Đánh dấu tất cả thông báo Admin là đã đọc */
-app.post('/api/admin/notifications/read', async (req, res) => {
+/** [API] Đánh dấu tất cả thông báo Admin là đã đọc (bắt buộc requireAdminJWT - C6) */
+app.post('/api/admin/notifications/read', requireAdminJWT, async (req, res) => {
   try {
     const adminFilter = {
       $or: [
@@ -1218,14 +1230,14 @@ app.post('/api/admin/notifications/read', async (req, res) => {
     await Notification.updateMany({ ...adminFilter, isRead: false }, { isRead: true });
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: 'Lỗi cập nhật thông báo: ' + error.message });
+    res.status(500).json({ error: 'Lỗi cập nhật thông báo' });
   }
 });
 
 /** [API] Lấy thông tin Admin đầu mối để mở chat CSKH */
 app.get('/api/admin/contact', async (req, res) => {
   try {
-    const admin = await User.findOne({ role: 'Admin' }).select('_id name avatar email');
+    const admin = await User.findOne({ role: 'Admin' }).select('_id name avatar');
     if (!admin) return res.status(404).json({ message: 'Chưa có Admin nào trong hệ thống!' });
     res.status(200).json(admin);
   } catch (error) {
@@ -1233,8 +1245,8 @@ app.get('/api/admin/contact', async (req, res) => {
   }
 });
 
-/** [API] Đếm số tin nhắn chưa đọc gửi tới Admin */
-app.get('/api/admin/unread-chats', async (req, res) => {
+/** [API] Đếm số tin nhắn chưa đọc gửi tới Admin (bắt buộc requireAdminJWT - C6) */
+app.get('/api/admin/unread-chats', requireAdminJWT, async (req, res) => {
   try {
     const admin = await User.findOne({ role: 'Admin' });
     if (!admin) return res.json({ count: 0 });
@@ -1243,18 +1255,7 @@ app.get('/api/admin/unread-chats', async (req, res) => {
   } catch (error) { res.json({ count: 0 }); }
 });
 
-/** [API] Bắn thử thông báo real-time tới kênh Admin để kiểm tra Socket */
-app.get('/api/admin/test-notif', async (req, res) => {
-  try {
-    const notif = await sendAdminNotification(
-      '🔔 Thông báo Test Hệ thống',
-      'Tuyệt vời! Hệ thống chuông báo của Admin đang hoạt động rất trơn tru!',
-      '/dashboard',
-      'SYSTEM'
-    );
-    res.json({ message: 'Đã bắn thông báo test!', notif });
-  } catch (error) { res.status(500).json({ error: 'Lỗi: ' + error.message }); }
-});
+// Đã xóa hẳn GET /api/admin/test-notif (C6)
 
 // ============================================================================
 // SECTION 11: USER ACCOUNT, PROFILE, MẬT KHẨU, THEO DÕI & YÊU THÍCH
@@ -1498,15 +1499,32 @@ app.get('/api/users/profile', async (req, res) => {
   }
 });
 
-/** Cập nhật thông tin hồ sơ cá nhân & avatar lên Cloudinary */
-app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
+/** Cập nhật thông tin hồ sơ cá nhân & avatar lên Cloudinary (C6: bắt buộc protect + requireOwnerOrAdmin, chỉ nhận whitelist field) */
+app.put('/api/users/profile/:id', protect, requireOwnerOrAdmin('id'), upload.single('avatar'), async (req, res) => {
   try {
-    const updateData = { ...req.body };
+    const body = req.body || {};
+    const updateData = {};
+    const ALLOWED_PROFILE_FIELDS = ['name', 'phone', 'avatar', 'bio', 'address', 'gender', 'birthday', 'dob'];
 
-    if (req.file) updateData.avatar = req.file.path;
-    const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select('-password');
-    res.status(200).json(sanitizeUser(updatedUser));
-  } catch (err) { res.status(500).json({ message: 'Lỗi cập nhật' }); }
+    for (const field of ALLOWED_PROFILE_FIELDS) {
+      if (body[field] !== undefined && typeof body[field] === 'string') {
+        updateData[field] = body[field].trim();
+      }
+    }
+    if (updateData.birthday !== undefined && updateData.dob === undefined) {
+      updateData.dob = updateData.birthday;
+    }
+
+    if (req.file) {
+      updateData.avatar = req.file.path || req.file.secure_url || req.file.filename;
+    }
+
+    const targetId = req.user.role === 'Admin' && req.params.id ? req.params.id : req.user._id;
+    const updatedUser = await User.findByIdAndUpdate(targetId, { $set: updateData }, { new: true }).select('-password');
+    res.status(200).json(sanitizeUser(updatedUser, { keepOwnerFields: true }));
+  } catch (err) {
+    res.status(500).json({ message: 'Lỗi cập nhật' });
+  }
 });
 
 /** Lấy trang hồ sơ công khai của một Shop/Seller (sản phẩm, đánh giá, follow, tỷ lệ phản hồi chat) */
@@ -1567,11 +1585,17 @@ app.get('/api/users/follow-status', async (req, res) => {
   }
 });
 
-/** Theo dõi / Bỏ theo dõi người bán (kèm thông báo tới người được theo dõi) */
-app.post('/api/users/follow', async (req, res) => {
+/** Theo dõi / Bỏ theo dõi người bán (C6: bắt buộc protect, followerId lấy từ token) */
+app.post('/api/users/follow', protect, async (req, res) => {
   try {
-    const { followerId, followingId } = req.body;
-    if (followerId === followingId) return res.status(400).json({ message: 'Không thể tự theo dõi chính mình!' });
+    const followerId = req.user._id.toString();
+    const { followingId } = req.body || {};
+    if (!followingId || !mongoose.Types.ObjectId.isValid(followingId)) {
+      return res.status(400).json({ message: 'ID người được theo dõi không hợp lệ!' });
+    }
+    if (followerId === String(followingId)) {
+      return res.status(400).json({ message: 'Không thể tự theo dõi chính mình!' });
+    }
 
     const existingFollow = await Follow.findOne({ follower: followerId, following: followingId });
 
@@ -1581,12 +1605,13 @@ app.post('/api/users/follow', async (req, res) => {
     } else {
       await Follow.create({ follower: followerId, following: followingId });
 
-      await UserNotification.create({
-        user: followingId,
-        title: '👤 Có người theo dõi mới!',
-        message: 'Một người dùng vừa bắt đầu theo dõi bạn.',
-        link: `/public-profile/${followerId}`
-      });
+      await sendNotification(
+        followingId,
+        '👤 Có người theo dõi mới!',
+        'Một người dùng vừa bắt đầu theo dõi bạn.',
+        'SYSTEM',
+        `/public-profile/${followerId}`
+      );
       return res.json({ message: 'Đã theo dõi', isFollowing: true });
     }
   } catch (e) { res.status(500).json({ error: 'Lỗi hệ thống' }); }
@@ -1618,28 +1643,32 @@ app.get('/api/users/:userId/follow-list', async (req, res) => {
   }
 });
 
-/** Thêm / Xóa sản phẩm khỏi danh sách yêu thích (Favorites toggle) */
-app.post('/api/users/favorites', async (req, res) => {
+/** Thêm / Xóa sản phẩm khỏi danh sách yêu thích (C6: bắt buộc protect, userId lấy từ token) */
+app.post('/api/users/favorites', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.body.userId);
+    const postId = req.body?.postId;
+    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ error: 'ID sản phẩm không hợp lệ' });
+    }
+    const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ error: 'User not found' });
 
     if (!user.favorites) user.favorites = [];
-    const postIdStr = req.body.postId.toString();
+    const postIdStr = postId.toString();
     const index = user.favorites.findIndex(id => id.toString() === postIdStr);
 
-    if (index === -1) user.favorites.push(req.body.postId);
+    if (index === -1) user.favorites.push(postId);
     else user.favorites.splice(index, 1);
 
     await user.save();
-    res.status(200).json({ message: 'Ok' });
+    res.status(200).json({ message: 'Ok', favorites: user.favorites });
   } catch (error) { res.status(500).json({ error: 'Lỗi' }); }
 });
 
-/** Lấy danh sách sản phẩm yêu thích của User */
-app.get('/api/users/favorites/:userId', async (req, res) => {
+/** Lấy danh sách sản phẩm yêu thích của User (C6: bắt buộc protect + requireOwnerOrAdmin) */
+app.get('/api/users/favorites/:userId', protect, requireOwnerOrAdmin('userId'), async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId).populate('favorites');
+    const user = await User.findById(req.user._id).populate('favorites');
     res.status(200).json(user ? user.favorites : []);
   } catch (error) { res.status(200).json([]); }
 });
@@ -1872,33 +1901,90 @@ app.get('/api/posts/:id', async (req, res, next) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi' }); }
 });
 
-/** Cập nhật thông tin sản phẩm theo ID */
-app.put('/api/posts/:id', upload.array('images', 5), async (req, res) => {
+/** Cập nhật thông tin sản phẩm theo ID (C6: chỉ chủ sản phẩm hoặc Admin, whitelist field, cấm đổi status/moderationStatus/sellerId) */
+app.put('/api/posts/:id', protect, upload.array('images', 8), async (req, res) => {
   try {
-    const { title, price, category, location, description, quantity, details } = req.body;
-    let updateData = { title, price, category, location, description, quantity };
+    const existingPost = await Post.findById(req.params.id);
+    if (!existingPost) {
+      return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+    }
+
+    const ownerId = existingPost.sellerId || existingPost.author;
+    const isOwner = ownerId && String(ownerId) === String(req.user._id);
+    const isAdminUser = req.user.role === 'Admin';
+    if (!isOwner && !isAdminUser) {
+      return res.status(403).json({ message: 'Bạn không có quyền chỉnh sửa sản phẩm của người khác' });
+    }
+
+    const { title, name, price, category, location, description, quantity, stockQuantity, condition, details, sku } = req.body || {};
+    const updateData = {};
+
+    const resolvedName = (name !== undefined ? name : title);
+    if (resolvedName !== undefined && typeof resolvedName === 'string' && resolvedName.trim()) {
+      updateData.title = resolvedName.trim();
+      updateData.name = resolvedName.trim();
+    }
+    if (price !== undefined) {
+      const numPrice = Number(price);
+      if (!Number.isFinite(numPrice) || numPrice < 1000) {
+        return res.status(400).json({ message: 'Giá sản phẩm không hợp lệ (tối thiểu 1.000đ)' });
+      }
+      updateData.price = numPrice;
+    }
+    if (category !== undefined && typeof category === 'string') updateData.category = category.trim();
+    if (location !== undefined && typeof location === 'string') updateData.location = location.trim();
+    if (description !== undefined && typeof description === 'string') updateData.description = description;
+    if (condition !== undefined && typeof condition === 'string') updateData.condition = condition.trim();
+    if (sku !== undefined && typeof sku === 'string') updateData.sku = sku.trim();
+
+    if (quantity !== undefined || stockQuantity !== undefined) {
+      const rawStock = stockQuantity !== undefined ? stockQuantity : quantity;
+      const numStock = Number(rawStock);
+      if (!Number.isFinite(numStock) || numStock < 0 || !Number.isInteger(numStock)) {
+        return res.status(400).json({ message: 'Số lượng tồn kho phải là số nguyên >= 0' });
+      }
+      updateData.quantity = numStock;
+      updateData.stockQuantity = numStock;
+    }
 
     if (details) {
       try {
-        updateData.details = JSON.parse(details);
-        if (updateData.details.condition) updateData.condition = updateData.details.condition;
-      } catch (e) { }
+        updateData.details = typeof details === 'string' ? JSON.parse(details) : details;
+        if (updateData.details?.condition && !updateData.condition) {
+          updateData.condition = updateData.details.condition;
+        }
+      } catch (e) {}
     }
 
     if (req.files && req.files.length > 0) {
-      updateData.images = req.files.map(file => file.path || file.filename);
+      updateData.images = req.files.map(file => file.path || file.secure_url || file.filename);
     }
 
-    const updatedPost = await Post.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const updatedPost = await Post.findByIdAndUpdate(
+      req.params.id,
+      { $set: updateData },
+      { new: true, runValidators: true }
+    );
     res.status(200).json(updatedPost);
-  } catch (error) { res.status(500).json({ message: 'Lỗi Server: ' + error.message }); }
+  } catch (error) {
+    res.status(500).json({ message: 'Lỗi Server khi cập nhật sản phẩm' });
+  }
 });
 
-/** Xóa sản phẩm theo ID và gỡ khỏi giỏ hàng / yêu thích của tất cả Users */
-app.delete('/api/posts/:id', async (req, res) => {
+/** Xóa sản phẩm theo ID và gỡ khỏi giỏ hàng / yêu thích của tất cả Users (C6: chỉ chủ sản phẩm hoặc Admin) */
+app.delete('/api/posts/:id', protect, async (req, res) => {
   try {
+    const existingPost = await Post.findById(req.params.id);
+    if (!existingPost) return res.status(404).json({ message: 'Không tìm thấy bài đăng để xóa' });
+
+    const ownerId = existingPost.sellerId || existingPost.author;
+    const isOwner = ownerId && String(ownerId) === String(req.user._id);
+    const isAdminUser = req.user.role === 'Admin';
+    if (!isOwner && !isAdminUser) {
+      return res.status(403).json({ message: 'Bạn không có quyền xóa sản phẩm của người khác' });
+    }
+
     const deletedPost = await Post.findByIdAndDelete(req.params.id);
-    if (!deletedPost) return res.status(404).json({ message: 'Không tìm thấy bài đăng để xóa' });
 
     await mongoose.model('User').updateMany({}, {
       $pull: {
@@ -1907,25 +1993,22 @@ app.delete('/api/posts/:id', async (req, res) => {
       }
     });
 
-    res.status(200).json({ message: 'Đã trảm thành công!' });
+    res.status(200).json({ message: 'Đã xóa sản phẩm thành công!' });
   } catch (error) {
     res.status(500).json({ message: 'Lỗi Server khi xóa bài' });
   }
 });
 
-// --- Giỏ hàng (Cart APIs) ---
+// --- Giỏ hàng (Cart APIs - C6: bắt buộc protect, userId lấy từ token) ---
 /** Lấy chi tiết giỏ hàng của User */
-app.get('/api/users/cart/:userId', async (req, res) => {
+app.get('/api/users/cart/:userId', protect, requireOwnerOrAdmin('userId'), async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
-      return res.status(200).json([]);
-    }
-    const user = await User.findById(req.params.userId);
+    const user = await User.findById(req.user._id);
     if (!user || !user.cart) return res.status(200).json([]);
 
-    let cartWithDetails = [];
-    for (let item of user.cart) {
-      const postDetail = await Post.findById(item.product).populate('author sellerId', 'name email avatar shopInfo isSeller sellerStatus');
+    const cartWithDetails = [];
+    for (const item of user.cart) {
+      const postDetail = await Post.findById(item.product).populate('author sellerId', 'name avatar shopInfo isSeller sellerStatus');
       if (postDetail) cartWithDetails.push({ product: postDetail, quantity: item.quantity });
     }
     res.status(200).json(cartWithDetails);
@@ -1933,18 +2016,18 @@ app.get('/api/users/cart/:userId', async (req, res) => {
 });
 
 /** Xóa toàn bộ giỏ hàng (đặt TRƯỚC route xóa từng món để tránh khớp nhầm `clear` vào `:postId`) */
-app.delete('/api/users/cart/clear/:userId', async (req, res) => {
+app.delete('/api/users/cart/clear/:userId', protect, requireOwnerOrAdmin('userId'), async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId);
+    const user = await User.findById(req.user._id);
     if (user) { user.cart = []; await user.save(); }
     res.status(200).json([]);
   } catch (error) { res.status(500).json({ message: 'Lỗi Server' }); }
 });
 
 /** Xóa một sản phẩm khỏi giỏ hàng */
-app.delete('/api/users/cart/:userId/:postId', async (req, res) => {
+app.delete('/api/users/cart/:userId/:postId', protect, requireOwnerOrAdmin('userId'), async (req, res) => {
   try {
-    const user = await User.findById(req.params.userId);
+    const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'Không tìm thấy user' });
     user.cart = user.cart.filter(item => item.product && item.product.toString() !== req.params.postId);
     await user.save();
@@ -1952,19 +2035,44 @@ app.delete('/api/users/cart/:userId/:postId', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi Server' }); }
 });
 
-/** Thêm hoặc cộng dồn số lượng sản phẩm vào giỏ hàng */
-app.post('/api/users/cart', async (req, res) => {
+/** Thêm hoặc cộng dồn số lượng sản phẩm vào giỏ hàng (C6 & M10: userId lấy từ token, quantity là số nguyên dương >= 1, <= tồn kho) */
+app.post('/api/users/cart', protect, async (req, res) => {
   try {
-    const { userId, postId, quantity } = req.body;
-    const user = await User.findById(userId);
+    const { postId, quantity = 1 } = req.body || {};
+    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ message: 'ID sản phẩm không hợp lệ' });
+    }
+
+    if (typeof quantity === 'object' || typeof quantity === 'boolean' || String(quantity).includes('.')) {
+      return res.status(400).json({ message: 'Số lượng sản phẩm phải là số nguyên dương (>= 1)' });
+    }
+    const parsedQty = Number(quantity);
+    if (!Number.isFinite(parsedQty) || !Number.isInteger(parsedQty) || parsedQty < 1) {
+      return res.status(400).json({ message: 'Số lượng sản phẩm phải là số nguyên dương (>= 1)' });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+    }
+    const maxStock = post.stockQuantity ?? post.quantity ?? 1;
+    if (parsedQty > maxStock) {
+      return res.status(400).json({ message: `Sản phẩm chỉ còn ${maxStock} cái trong kho` });
+    }
+
+    const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
     if (!user.cart) user.cart = [];
 
-    const itemIndex = user.cart.findIndex(item => item.product && item.product.toString() === postId);
+    const itemIndex = user.cart.findIndex(item => item.product && item.product.toString() === String(postId));
     if (itemIndex > -1) {
-      user.cart[itemIndex].quantity += quantity;
+      const nextQty = user.cart[itemIndex].quantity + parsedQty;
+      if (nextQty > maxStock) {
+        return res.status(400).json({ message: `Tổng số lượng trong giỏ (${nextQty}) vượt quá tồn kho (${maxStock})` });
+      }
+      user.cart[itemIndex].quantity = nextQty;
     } else {
-      user.cart.push({ product: postId, quantity });
+      user.cart.push({ product: postId, quantity: parsedQty });
     }
     await user.save();
     res.status(200).json(user.cart);
@@ -1972,28 +2080,75 @@ app.post('/api/users/cart', async (req, res) => {
 });
 
 // --- Đánh giá & Báo cáo vi phạm ---
-/** Tạo đánh giá cho đơn hàng đã hoàn thành */
-app.post('/api/reviews', async (req, res) => {
+/** Tạo đánh giá cho đơn hàng đã hoàn thành (C6 & H17: protect, buyer từ token, order phải Completed, cổng atomic isReviewed: false -> true, rating 1-5 integer) */
+app.post('/api/reviews', protect, async (req, res) => {
   try {
-    const { seller, buyer, rating, comment, orderId } = req.body;
-    const order = await Order.findById(orderId);
-    if (order.isReviewed) return res.status(400).json({ message: 'Đơn hàng này đã được đánh giá rồi!' });
+    const { seller, rating, comment, orderId } = req.body || {};
+    if (!orderId || !mongoose.Types.ObjectId.isValid(orderId)) {
+      return res.status(400).json({ message: 'Mã đơn hàng (orderId) không hợp lệ!' });
+    }
 
-    const newReview = new Review({ seller, buyer, rating, comment, orderId });
+    const numRating = Number(rating);
+    if (!Number.isInteger(numRating) || numRating < 1 || numRating > 5 || String(rating).includes('.')) {
+      return res.status(400).json({ message: 'Điểm đánh giá (rating) phải là số nguyên từ 1 đến 5!' });
+    }
+    if (typeof comment !== 'string' || !comment.trim()) {
+      return res.status(400).json({ message: 'Vui lòng nhập nội dung đánh giá!' });
+    }
+
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ message: 'Không tìm thấy đơn hàng!' });
+    }
+
+    const buyerId = orderBuyerId(order);
+    if (!buyerId || String(buyerId) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Bạn chỉ có thể đánh giá đơn hàng do chính bạn đặt mua!' });
+    }
+
+    if (canonicalStatus(order.status) !== 'Completed') {
+      return res.status(400).json({ message: 'Chỉ có thể đánh giá sau khi đơn hàng đã Hoàn thành (Completed)!' });
+    }
+
+    if (order.isReviewed) {
+      return res.status(400).json({ message: 'Đơn hàng này đã được đánh giá rồi!' });
+    }
+
+    // Cổng nguyên tử chống đánh giá trùng 2 lần
+    const lockedOrder = await Order.findOneAndUpdate(
+      { _id: order._id, isReviewed: { $ne: true } },
+      { $set: { isReviewed: true } },
+      { new: true }
+    );
+    if (!lockedOrder) {
+      return res.status(400).json({ message: 'Đơn hàng này đã được đánh giá rồi!' });
+    }
+
+    const sellerId = orderSellerId(order) || seller;
+    const newReview = new Review({
+      seller: sellerId,
+      buyer: req.user._id,
+      rating: numRating,
+      comment: comment.trim(),
+      orderId: order._id
+    });
     await newReview.save();
 
-    order.isReviewed = true;
-    await order.save();
-
-    res.status(200).json({ message: 'Đánh giá thành công!' });
+    res.status(200).json({ message: 'Đánh giá thành công!', review: newReview });
   } catch (error) { res.status(500).json({ error: 'Lỗi gửi đánh giá' }); }
 });
 
-/** Người dùng gửi báo cáo bài đăng vi phạm tới Admin */
-app.post('/api/reports', async (req, res) => {
+/** Người dùng gửi báo cáo bài đăng vi phạm tới Admin (C6: bắt buộc protect, reporter lấy từ token) */
+app.post('/api/reports', protect, async (req, res) => {
   try {
-    const { reporterId, postId, reason } = req.body;
-    await Report.create({ reporter: reporterId, post: postId, reason });
+    const { postId, reason } = req.body || {};
+    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ error: 'ID bài đăng không hợp lệ' });
+    }
+    if (typeof reason !== 'string' || !reason.trim()) {
+      return res.status(400).json({ error: 'Vui lòng nhập lý do báo cáo' });
+    }
+    await Report.create({ reporter: req.user._id, post: postId, reason: reason.trim() });
 
     await sendAdminNotification(
       '🚩 Có báo cáo mới!',
@@ -2186,17 +2341,43 @@ app.post('/api/users/:userId/withdraw', protectStrict, async (req, res) => {
 });
 
 // --- 13.4. Cổng Thanh Toán Đơn Hàng VNPAY ---
-/** Khởi tạo link thanh toán VNPAY cho đơn hàng */
-app.post('/api/vnpay/create_payment_url', async (req, res) => {
+/** Khởi tạo link thanh toán VNPAY cho đơn hàng (C6: bắt buộc protect, lấy số tiền từ PaymentSession/Order trong DB) */
+app.post('/api/vnpay/create_payment_url', protect, async (req, res) => {
   try {
-    const { amount, orderId } = req.body;
-    if (!orderId) {
+    const { orderId } = req.body || {};
+    if (!orderId || typeof orderId !== 'string') {
       return res.status(400).json({ error: 'Thiếu mã đơn hàng (orderId)' });
     }
+
+    let finalAmount = 0;
+    const session = await PaymentSession.findOne({ parentOrderId: orderId });
+    if (session) {
+      if (req.user.role !== 'Admin' && String(session.buyer) !== String(req.user._id)) {
+        return res.status(403).json({ error: 'Bạn không phải người mua của phiên thanh toán này' });
+      }
+      finalAmount = Number(session.amount) || 0;
+    } else if (mongoose.isValidObjectId(orderId)) {
+      const order = await Order.findById(orderId);
+      if (!order) {
+        return res.status(404).json({ error: 'Không tìm thấy đơn hàng' });
+      }
+      const buyerId = orderBuyerId(order);
+      if (req.user.role !== 'Admin' && String(buyerId) !== String(req.user._id)) {
+        return res.status(403).json({ error: 'Bạn không phải người mua của đơn hàng này' });
+      }
+      finalAmount = Number(order.totalPrice) || 0;
+    } else {
+      return res.status(404).json({ error: 'Không tìm thấy phiên thanh toán hoặc đơn hàng' });
+    }
+
+    if (finalAmount <= 0) {
+      return res.status(400).json({ error: 'Số tiền thanh toán không hợp lệ' });
+    }
+
     const ipAddr = req.headers['x-forwarded-for'] || req.connection?.remoteAddress || req.socket?.remoteAddress || '127.0.0.1';
     const paymentUrl = buildVnpayPaymentUrl({
       orderId,
-      amount: Number(amount) || 0,
+      amount: finalAmount,
       ipAddr
     });
     res.status(200).json({ paymentUrl });
@@ -2565,13 +2746,16 @@ app.get('/api/users/:id', async (req, res) => {
 // SECTION 14: THÔNG BÁO NGƯỜI DÙNG, CHAT 1-1, CHATBOT AI & SOCKET.IO REAL-TIME
 // ============================================================================
 
-// --- 14.1. Thông báo (Notifications APIs) ---
+// --- 14.1. Thông báo (Notifications APIs - C6: bắt buộc protect, userId lấy từ token) ---
 /** Lấy danh sách thông báo tách biệt theo scope (admin / seller / buyer) và đếm unreadByType */
-app.get('/api/notifications', async (req, res) => {
+app.get('/api/notifications', protect, async (req, res) => {
   try {
     const { role, scope, type, limit } = req.query;
 
     if (scope === 'admin' || role === 'admin') {
+      if (req.user.role !== 'Admin') {
+        return res.status(403).json({ message: 'Bạn không có quyền truy cập thông báo Quản trị viên' });
+      }
       const adminFilter = {
         $or: [
           { targetRole: 'admin' },
@@ -2579,7 +2763,7 @@ app.get('/api/notifications', async (req, res) => {
           { type: { $in: ['SELLER', 'PRODUCT', 'WITHDRAWAL', 'REPORT'] } }
         ]
       };
-      if (type) {
+      if (type && typeof type === 'string') {
         adminFilter.type = type;
       }
       const maxLimit = Math.min(100, Math.max(1, parseInt(limit, 10) || 30));
@@ -2593,19 +2777,7 @@ app.get('/api/notifications', async (req, res) => {
       });
     }
 
-    let userId = req.headers['userid'] || req.query.userId;
-    if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      try {
-        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], getJwtSecret());
-        userId = decoded.id || decoded._id;
-      } catch (e) {}
-    }
-
-    if (!userId) {
-      return res.json({ notifications: [], unreadCount: 0, unreadByType: {} });
-    }
-
-    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
+    const userObjectId = req.user._id;
 
     const baseQuery = {
       $or: [
@@ -2641,7 +2813,7 @@ app.get('/api/notifications', async (req, res) => {
       ];
     }
 
-    if (type) {
+    if (type && typeof type === 'string') {
       baseQuery.type = type;
     }
 
@@ -2689,27 +2861,15 @@ app.get('/api/notifications', async (req, res) => {
     });
   } catch (error) {
     console.error('Lỗi lấy danh sách thông báo:', error);
-    res.status(500).json({ error: 'Lỗi lấy danh sách thông báo: ' + error.message });
+    res.status(500).json({ error: 'Lỗi lấy danh sách thông báo' });
   }
 });
 
-/** Đánh dấu đã đọc tất cả thông báo của User (lọc tùy chọn theo role/type) */
-app.put('/api/notifications/read-all', async (req, res) => {
+/** Đánh dấu đã đọc tất cả thông báo của User (C6: bắt buộc protect, userId lấy từ token) */
+app.put('/api/notifications/read-all', protect, async (req, res) => {
   try {
-    let userId = req.headers['userid'] || req.body.userId || req.query.userId;
-    if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      try {
-        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], getJwtSecret());
-        userId = decoded.id || decoded._id;
-      } catch (e) {}
-    }
-
-    if (!userId) {
-      return res.status(400).json({ error: 'Thiếu userId' });
-    }
-
-    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
-    const { role, type } = req.body;
+    const userObjectId = req.user._id;
+    const { role, type } = req.body || {};
 
     const filter = {
       $or: [
@@ -2722,7 +2882,7 @@ app.put('/api/notifications/read-all', async (req, res) => {
       isRead: false
     };
 
-    if (type) {
+    if (type && typeof type === 'string') {
       filter.type = type;
     }
 
@@ -2745,23 +2905,15 @@ app.put('/api/notifications/read-all', async (req, res) => {
   }
 });
 
-/** Đánh dấu đã đọc thông báo theo từng nhóm type (VD: NEW_ORDER trên sidebar Seller) */
-app.put('/api/notifications/read-by-type', async (req, res) => {
+/** Đánh dấu đã đọc thông báo theo từng nhóm type (C6: bắt buộc protect, userId lấy từ token) */
+app.put('/api/notifications/read-by-type', protect, async (req, res) => {
   try {
-    let userId = req.headers['userid'] || req.body.userId || req.query.userId;
-    if (!userId && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      try {
-        const decoded = jwt.verify(req.headers.authorization.split(' ')[1], getJwtSecret());
-        userId = decoded.id || decoded._id;
-      } catch (e) {}
+    const userObjectId = req.user._id;
+    const type = req.body?.type || req.query?.type;
+    if (!type || typeof type !== 'string') {
+      return res.status(400).json({ error: 'Thiếu type' });
     }
 
-    const type = req.body.type || req.query.type;
-    if (!userId || !type) {
-      return res.status(400).json({ error: 'Thiếu userId hoặc type' });
-    }
-
-    const userObjectId = mongoose.Types.ObjectId.isValid(userId) ? new mongoose.Types.ObjectId(userId) : userId;
     const filter = {
       $or: [
         { userId: userObjectId },
@@ -2779,32 +2931,33 @@ app.put('/api/notifications/read-by-type', async (req, res) => {
   }
 });
 
-/** Đánh dấu đã đọc 1 thông báo theo ID */
-app.put('/api/notifications/:id/read', async (req, res) => {
+/** Đánh dấu đã đọc 1 thông báo theo ID (C6: bắt buộc protect, chỉ chủ thông báo hoặc Admin) */
+app.put('/api/notifications/:id/read', protect, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ error: 'ID thông báo không hợp lệ' });
     }
-    const updated = await Notification.findByIdAndUpdate(req.params.id, { isRead: true }, { new: true });
+    const filter = req.user.role === 'Admin'
+      ? { _id: req.params.id }
+      : {
+          _id: req.params.id,
+          $or: [{ userId: req.user._id }, { user: req.user._id }, { shopId: req.user._id }]
+        };
+    const updated = await Notification.findOneAndUpdate(filter, { isRead: true }, { new: true });
+    if (!updated) {
+      return res.status(404).json({ error: 'Không tìm thấy thông báo' });
+    }
     res.json({ success: true, notification: updated });
   } catch (error) {
     res.status(500).json({ error: 'Lỗi cập nhật thông báo' });
   }
 });
 
-// --- 14.2. Tin nhắn Chat 1-1 (Messages APIs) ---
-/** [Dev Tool] Xóa sạch lịch sử tin nhắn trong DB */
-app.get('/api/messages/clear-all', async (req, res) => {
-  try {
-    await Message.deleteMany({});
-    res.status(200).send("<h1 style='color:green; text-align:center; margin-top:50px;'>✅ ĐÃ DỌN SẠCH RÁC TIN NHẮN!</h1>");
-  } catch (e) { res.status(500).send('Lỗi dọn rác!'); }
-});
-
+// --- 14.2. Tin nhắn Chat 1-1 (Messages APIs - C6: XÓA GET /api/messages/clear-all, gắn protect cho mọi route chat) ---
 /** Lấy danh sách hội thoại gần nhất kèm số tin chưa đọc của mỗi hội thoại (đặt TRƯỚC `/:user1/:user2`) */
-app.get('/api/messages/conversations/:userId', async (req, res) => {
+app.get('/api/messages/conversations/:userId', protect, requireOwnerOrAdmin('userId'), async (req, res) => {
   try {
-    const userId = req.params.userId;
+    const userId = req.user._id.toString();
     const messages = await Message.find({ $or: [{ sender: userId }, { receiver: userId }] })
       .sort({ timestamp: -1 }).populate('sender receiver', 'name avatar verified badge').populate('post', 'title price condition author');
 
@@ -2833,20 +2986,21 @@ app.get('/api/messages/conversations/:userId', async (req, res) => {
 });
 
 /** Đếm tổng số tin nhắn chưa đọc của User (đặt TRƯỚC `/:user1/:user2`) */
-app.get('/api/messages/unread-count/:userId', async (req, res) => {
+app.get('/api/messages/unread-count/:userId', protect, requireOwnerOrAdmin('userId'), async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
-      return res.status(200).json({ count: 0 });
-    }
-    const count = await Message.countDocuments({ receiver: req.params.userId, isRead: false });
+    const count = await Message.countDocuments({ receiver: req.user._id, isRead: false });
     res.status(200).json({ count });
   } catch (err) { res.status(200).json({ count: 0 }); }
 });
 
-/** Lấy lịch sử tin nhắn giữa 2 người dùng user1 và user2 */
-app.get('/api/messages/:user1/:user2', async (req, res) => {
+/** Lấy lịch sử tin nhắn giữa 2 người dùng user1 và user2 (chỉ cho phép khi người gọi là 1 trong 2 người hoặc Admin) */
+app.get('/api/messages/:user1/:user2', protect, async (req, res) => {
   try {
     const { user1, user2 } = req.params;
+    const callerId = String(req.user._id);
+    if (req.user.role !== 'Admin' && callerId !== String(user1) && callerId !== String(user2)) {
+      return res.status(403).json({ message: 'Bạn không có quyền đọc tin nhắn của người khác' });
+    }
     const messages = await Message.find({
       $or: [{ sender: user1, receiver: user2 }, { sender: user2, receiver: user1 }]
     }).populate('post', 'title price image author').sort({ timestamp: 1 });
@@ -2854,25 +3008,32 @@ app.get('/api/messages/:user1/:user2', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi' }); }
 });
 
-/** Gửi tin nhắn mới (hỗ trợ đính kèm 1 ảnh lên Cloudinary và gắn sản phẩm đang hỏi) */
-app.post('/api/messages', upload.single('image'), async (req, res) => {
+/** Gửi tin nhắn mới (C6 & H13: bắt buộc protect, sender lấy từ token, giới hạn upload) */
+app.post('/api/messages', protect, uploadLimiter, upload.single('image'), async (req, res) => {
   try {
+    const receiverId = req.body?.receiverId;
+    if (!receiverId || !mongoose.Types.ObjectId.isValid(receiverId)) {
+      return res.status(400).json({ message: 'Người nhận tin nhắn không hợp lệ' });
+    }
+    const text = typeof req.body?.text === 'string' ? req.body.text : '';
+    const postId = req.body?.postId && mongoose.Types.ObjectId.isValid(req.body.postId) ? req.body.postId : null;
+
     const newMessage = new Message({
-      sender: req.body.senderId,
-      receiver: req.body.receiverId,
-      content: req.body.text || '',
-      post: req.body.postId || null
+      sender: req.user._id,
+      receiver: receiverId,
+      content: text,
+      post: postId
     });
 
     if (req.file) {
-      newMessage.images = [req.file.path];
+      newMessage.images = [req.file.path || req.file.secure_url || req.file.filename];
     }
     await newMessage.save();
 
     await sendNotification(
-      req.body.receiverId,
+      receiverId,
       '💬 Tin nhắn mới',
-      req.body.text ? `"${req.body.text.substring(0, 30)}..."` : 'Bạn nhận được 1 hình ảnh mới.',
+      text ? `"${text.substring(0, 30)}..."` : 'Bạn nhận được 1 hình ảnh mới.',
       'MESSAGE',
       '/chat'
     );
@@ -2885,15 +3046,19 @@ app.post('/api/messages', upload.single('image'), async (req, res) => {
   }
 });
 
-/** Đánh dấu đã đọc tin nhắn và thông báo chat tương ứng */
-app.put('/api/messages/mark-read', async (req, res) => {
+/** Đánh dấu đã đọc tin nhắn và thông báo chat tương ứng (C6: bắt buộc protect, receiver lấy từ token) */
+app.put('/api/messages/mark-read', protect, async (req, res) => {
   try {
+    const otherId = req.body?.otherId;
+    if (!otherId || !mongoose.Types.ObjectId.isValid(otherId)) {
+      return res.status(400).json({ message: 'otherId không hợp lệ' });
+    }
     await Message.updateMany(
-      { sender: req.body.otherId, receiver: req.body.userId, isRead: false },
+      { sender: otherId, receiver: req.user._id, isRead: false },
       { $set: { isRead: true } }
     );
     await Notification.updateMany(
-      { userId: req.body.userId, type: 'MESSAGE', isRead: false },
+      { userId: req.user._id, type: 'MESSAGE', isRead: false },
       { $set: { isRead: true } }
     );
     res.status(200).json({ message: 'Đã đọc' });

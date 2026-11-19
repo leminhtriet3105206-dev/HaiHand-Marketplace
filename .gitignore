@@ -35,4 +35,6 @@ yarn-error.log*
 
 # Backend uploads
 backend/uploads/
+admin/public/uploads/
 uploads/
+!.env.example

@@ -244,7 +244,8 @@ const Message = mongoose.models.Message || mongoose.model('Message', new mongoos
 const Revenue = mongoose.models.Revenue || mongoose.model('Revenue', new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   commissionAmount: { type: Number, required: true },
-  description: { type: String, default: 'Chiết khấu 5% từ đơn hàng' }
+  commissionRate: { type: Number, default: null },
+  description: { type: String, default: 'Chiết khấu phí sàn từ đơn hàng' }
 }, { timestamps: true }));
 
 // Model Đánh giá Shop sau khi hoàn thành đơn hàng

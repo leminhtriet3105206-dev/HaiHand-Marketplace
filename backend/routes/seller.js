@@ -18,6 +18,7 @@ const shippingService = require('../services/shipping');
 const { cancelOrderWithRefundAndRestock } = require('../controllers/checkoutController');
 const { transitionOrder } = require('../utils/orderStateMachine');
 const safeRefreshProductSearch = (product, forceImage = false) => {
+  if (process.env.NODE_ENV === 'test') return;
   setImmediate(() => {
     try {
       const { refreshProductSearch } = require('../services/chatbotService');

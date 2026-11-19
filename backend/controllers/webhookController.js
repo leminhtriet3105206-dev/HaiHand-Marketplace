@@ -1,7 +1,8 @@
 const Order = require('../models/Order');
 const { cancelOrderWithRefundAndRestock } = require('./checkoutController');
+const { transitionOrder } = require('../utils/orderStateMachine');
 const { sendNotification } = require('../utils/notificationService');
-const { orderBuyerId, orderSellerId } = require('../utils/b2c');
+const { orderBuyerId, orderSellerId, canonicalStatus } = require('../utils/b2c');
 
 /**
  * Controller: Xử lý Webhook cập nhật trạng thái vận đơn thời gian thực từ GHN (Giao Hàng Nhanh)
@@ -192,14 +193,36 @@ const handleGHNWebhook = async (req, res) => {
     }
 
     if (lowerStatus === 'delivered') {
-      order.status = 'Delivered';
-      order.deliveredAt = new Date();
-      if (typeof order.save === 'function') {
-        await order.save();
+      const currentCanon = canonicalStatus(order.status);
+      if (currentCanon === 'Shipped') {
+        await transitionOrder(order, 'Delivered', 'system_ghn', {
+          reason: logDescription,
+          extraSet: {
+            shippingStatus: order.shippingStatus,
+            ...(order.trackingCode ? { trackingCode: order.trackingCode } : {})
+          },
+          notify: false,
+          allowUnpaidToCodFallback: true
+        });
+      } else if (!['Cancelled', 'Completed'].includes(currentCanon)) {
+        // Nếu đơn cũ còn ở Processing nhưng GHN báo delivered thì chuyển qua Shipped -> Delivered
+        if (currentCanon === 'Processing') {
+          await transitionOrder(order, 'Shipped', 'system_ghn', {
+            reason: 'GHN đang giao hàng',
+            notify: false,
+            allowUnpaidToCodFallback: true
+          });
+          await transitionOrder(order, 'Delivered', 'system_ghn', {
+            reason: logDescription,
+            extraSet: { shippingStatus: order.shippingStatus },
+            notify: false,
+            allowUnpaidToCodFallback: true
+          });
+        }
       }
 
       try {
-        if (buyerId) {
+        if (buyerId && canonicalStatus(order.status) === 'Delivered') {
           await sendNotification({
             userId: buyerId,
             recipientRole: 'buyer',
@@ -211,7 +234,7 @@ const handleGHNWebhook = async (req, res) => {
             targetUrl: '/profile?tab=orders_buy'
           });
         }
-        if (sellerId) {
+        if (sellerId && canonicalStatus(order.status) === 'Delivered') {
           await sendNotification({
             userId: sellerId,
             shopId: sellerId,
@@ -237,11 +260,18 @@ const handleGHNWebhook = async (req, res) => {
     }
 
     if (['picking', 'picked', 'storing', 'transporting', 'sorting', 'delivering'].includes(lowerStatus)) {
-      order.status = 'Shipped';
-    }
-
-    // 7. Lưu thay đổi vào MongoDB
-    if (typeof order.save === 'function') {
+      const currentCanon = canonicalStatus(order.status);
+      if (currentCanon === 'Processing') {
+        await transitionOrder(order, 'Shipped', 'system_ghn', {
+          reason: logDescription,
+          extraSet: { shippingStatus: order.shippingStatus },
+          notify: false,
+          allowUnpaidToCodFallback: true
+        });
+      } else if (typeof order.save === 'function') {
+        await order.save();
+      }
+    } else if (typeof order.save === 'function') {
       await order.save();
     }
 

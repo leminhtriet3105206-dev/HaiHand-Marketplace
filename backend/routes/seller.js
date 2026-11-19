@@ -15,6 +15,7 @@ const {
 } = require('../utils/b2c');
 const shippingService = require('../services/shipping');
 const { cancelOrderWithRefundAndRestock } = require('../controllers/checkoutController');
+const { transitionOrder } = require('../utils/orderStateMachine');
 const { pickAddressFields, formatAddress, isCompleteAddress } = require('../models/schemas/Address');
 
 module.exports = function createSellerRouter({ upload, sendNotification, sendAdminNotification, io }) {
@@ -477,8 +478,8 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       }
 
       if (next === 'Cancelled') {
-        const cancelResult = await cancelOrderWithRefundAndRestock(order, {
-          cancelledBy: 'seller',
+        const cancelResult = await transitionOrder(order, 'Cancelled', 'seller', {
+          actorId: req.user._id,
           reason: req.body.cancelReason || 'Người bán hủy đơn'
         });
         if (!cancelResult.success) {
@@ -501,31 +502,35 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
 
       // If transitioning to Shipped or Processing and order does not have a carrier shipment yet,
       // invoke shipping service (GHN or configured carrier) to register shipment with carrier API
+      const extraSet = {};
       if ((next === 'Shipped' || next === 'Processing') && (!order.shippingCode || !order.shipment?.trackingCode)) {
         try {
           const shipmentResult = await shippingService.createShipmentForOrder(order);
           if (shipmentResult) {
-            order.shipment = shipmentResult;
-            order.shippingCode = shipmentResult.trackingCode || shippingCode || order.shippingCode;
-            order.shippingCarrier = shipmentResult.carrier || shippingCarrier || order.shippingCarrier;
+            extraSet.shipment = shipmentResult;
+            extraSet.shippingCode = shipmentResult.trackingCode || shippingCode || order.shippingCode;
+            extraSet.shippingCarrier = shipmentResult.carrier || shippingCarrier || order.shippingCarrier;
           }
         } catch (shipErr) {
           console.warn('⚠️ [Shipping] Error creating carrier shipment during status update:', shipErr.message);
-          if (shippingCode) order.shippingCode = shippingCode;
-          if (shippingCarrier) order.shippingCarrier = shippingCarrier;
+          if (shippingCode) extraSet.shippingCode = shippingCode;
+          if (shippingCarrier) extraSet.shippingCarrier = shippingCarrier;
         }
       }
 
-      order.status = next;
-      if (shippingCode && !order.shippingCode) order.shippingCode = shippingCode;
-      if (shippingCarrier && !order.shippingCarrier) order.shippingCarrier = shippingCarrier;
-      if (next === 'Delivered') order.deliveredAt = new Date();
-      if (next === 'Completed') order.completedAt = new Date();
-      if (next === 'Cancelled') {
-        order.cancelledAt = new Date();
-        order.cancelReason = req.body.cancelReason || '';
+      if (shippingCode && !order.shippingCode && !extraSet.shippingCode) extraSet.shippingCode = shippingCode;
+      if (shippingCarrier && !order.shippingCarrier && !extraSet.shippingCarrier) extraSet.shippingCarrier = shippingCarrier;
+
+      const transitionResult = await transitionOrder(order, next, 'seller', {
+        actorId: req.user._id,
+        reason: `Người bán cập nhật trạng thái sang ${next}`,
+        extraSet,
+        notify: false
+      });
+
+      if (!transitionResult.success) {
+        return res.status(transitionResult.statusCode || 400).json({ message: transitionResult.message });
       }
-      await order.save();
 
       const buyerId = orderBuyerId(order);
       if (sendNotification && buyerId) {
@@ -538,7 +543,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         );
       }
 
-      res.json({ message: 'Đã cập nhật đơn hàng', order });
+      res.json({ message: 'Đã cập nhật đơn hàng', order: transitionResult.order });
     } catch (error) {
       res.status(500).json({ message: 'Lỗi cập nhật đơn hàng: ' + error.message });
     }
@@ -601,20 +606,37 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         };
       }
 
-      order.shipment = shipmentResult;
-      order.trackingCode = shipmentResult.trackingCode || '';
-      order.shippingCode = shipmentResult.trackingCode || '';
-      order.shippingCarrier = shipmentResult.carrier || 'Giao Hàng Nhanh';
-      order.shippingStatus = order.shippingStatus || 'ready_to_pick';
-      order.status = 'Processing'; // Đang chuẩn bị hàng
-      await order.save();
+      const extraSet = {
+        shipment: shipmentResult,
+        trackingCode: shipmentResult.trackingCode || '',
+        shippingCode: shipmentResult.trackingCode || '',
+        shippingCarrier: shipmentResult.carrier || 'Giao Hàng Nhanh',
+        shippingStatus: order.shippingStatus || 'ready_to_pick'
+      };
+      if (order.paymentMethod) {
+        extraSet.paymentMethod = order.paymentMethod;
+      }
+
+      const transitionResult = await transitionOrder(order, 'Processing', 'seller', {
+        actorId: req.user._id,
+        reason: 'Người bán chuẩn bị hàng & tạo vận đơn',
+        extraSet,
+        notify: false,
+        allowUnpaidToCodFallback: true
+      });
+
+      if (!transitionResult.success) {
+        return res.status(transitionResult.statusCode || 400).json({
+          message: transitionResult.message
+        });
+      }
 
       const buyerId = orderBuyerId(order);
       if (sendNotification && buyerId) {
         await sendNotification(
           buyerId,
           '📦 Shop đang chuẩn bị hàng',
-          `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được Shop chuẩn bị với mã vận đơn ${order.shippingCode} (${order.shippingCarrier}).`,
+          `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được Shop chuẩn bị với mã vận đơn ${extraSet.shippingCode} (${extraSet.shippingCarrier}).`,
           'ORDER',
           '/profile?tab=orders_buy'
         );
@@ -623,9 +645,9 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       return res.status(200).json({
         success: true,
         message: '🎉 Chuẩn bị hàng thành công! Đã tạo mã vận đơn từ hãng vận chuyển.',
-        trackingCode: order.shippingCode,
-        carrier: order.shippingCarrier,
-        order
+        trackingCode: extraSet.shippingCode,
+        carrier: extraSet.shippingCarrier,
+        order: transitionResult.order
       });
     } catch (error) {
       console.error('Prepare order error:', error);

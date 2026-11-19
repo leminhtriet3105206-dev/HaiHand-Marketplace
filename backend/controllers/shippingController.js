@@ -20,7 +20,8 @@ try {
   };
 }
 const Order = require('../models/Order');
-const { orderSellerId } = require('../utils/b2c');
+const { orderSellerId, canonicalStatus } = require('../utils/b2c');
+const { transitionOrder } = require('../utils/orderStateMachine');
 const { handleGHNWebhook } = require('./webhookController');
 
 const PROD_GHN_URL = 'https://online-gateway.ghn.vn/shiip/public-api';
@@ -306,29 +307,52 @@ const createShipmentGHN = async (req, res) => {
       console.warn(`⚠️ [GHN Ship] Sử dụng mã vận đơn nội bộ fallback (${order_code}) cho đơn #${order._id}`);
     }
 
-    // 10. Cập nhật Order vào Database
-    order.trackingCode = order_code;
-    order.shippingCode = order_code;
-    order.status = 'Processing';
-    order.shippingCarrier = usedFallback ? 'Giao Hàng Nhanh (GHN - Nội bộ)' : 'Giao Hàng Nhanh (GHN)';
-    order.shippingStatus = order.shippingStatus || 'ready_to_pick';
+    // 10. Cập nhật Order vào Database (qua transitionOrder nếu đang ở Pending, hoặc cập nhật trực tiếp nếu đã ở Processing)
+    const nextCarrier = usedFallback ? 'Giao Hàng Nhanh (GHN - Nội bộ)' : 'Giao Hàng Nhanh (GHN)';
+    const nextShipment = {
+      ...(order.shipment || {}),
+      provider: usedFallback ? 'mock' : 'ghn',
+      carrier: nextCarrier,
+      trackingCode: order_code,
+      fee: ghnData?.data?.total_fee || Number(order.shippingFee) || 25000,
+      ...(ghnData?.data?.expected_delivery_time ? { expectedDeliveryTime: new Date(ghnData.data.expected_delivery_time) } : {}),
+      createdAt: new Date(),
+      ...(ghnData?.data ? { raw: ghnData.data } : {})
+    };
 
-    if (!order.shipment) {
-      order.shipment = {};
+    const currentCanon = canonicalStatus(order.status);
+    if (currentCanon === 'Pending') {
+      const tr = await transitionOrder(order, 'Processing', 'seller', {
+        actorId: req.user._id,
+        reason: 'Người bán tạo vận đơn GHN',
+        extraSet: {
+          trackingCode: order_code,
+          shippingCode: order_code,
+          shippingCarrier: nextCarrier,
+          shippingStatus: order.shippingStatus || 'ready_to_pick',
+          shipment: nextShipment,
+          paymentMethod: order.paymentMethod
+        },
+        notify: false,
+        allowUnpaidToCodFallback: true
+      });
+      if (!tr.success) {
+        return res.status(tr.statusCode || 400).json({
+          success: false,
+          message: tr.message
+        });
+      }
+    } else {
+      order.trackingCode = order_code;
+      order.shippingCode = order_code;
+      order.status = 'Processing';
+      order.shippingCarrier = nextCarrier;
+      order.shippingStatus = order.shippingStatus || 'ready_to_pick';
+      order.shipment = nextShipment;
+      if (typeof order.save === 'function') {
+        await order.save();
+      }
     }
-    order.shipment.provider = usedFallback ? 'mock' : 'ghn';
-    order.shipment.carrier = order.shippingCarrier;
-    order.shipment.trackingCode = order_code;
-    order.shipment.fee = ghnData?.data?.total_fee || Number(order.shippingFee) || 25000;
-    if (ghnData?.data?.expected_delivery_time) {
-      order.shipment.expectedDeliveryTime = new Date(ghnData.data.expected_delivery_time);
-    }
-    order.shipment.createdAt = new Date();
-    if (ghnData?.data) {
-      order.shipment.raw = ghnData.data;
-    }
-
-    await order.save();
 
     // 11. Gửi thông báo đến người mua
     try {

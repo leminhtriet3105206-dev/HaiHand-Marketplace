@@ -75,7 +75,26 @@ const orderSchema = new mongoose.Schema({
   completedAt: { type: Date },
   cancelledAt: { type: Date },
   cancelReason: { type: String, default: '' },
-  isReviewed: { type: Boolean, default: false }
+  isReviewed: { type: Boolean, default: false },
+  stockDeducted: { type: Boolean, default: true },
+  settled: { type: Boolean, default: false },
+  dispute: {
+    isDisputed: { type: Boolean, default: false },
+    reason: { type: String, default: '' },
+    status: { type: String, enum: ['none', 'open', 'resolved_refund', 'resolved_release'], default: 'none' },
+    createdAt: { type: Date },
+    resolvedAt: { type: Date }
+  },
+  statusHistory: [
+    {
+      from: { type: String },
+      to: { type: String, required: true },
+      actor: { type: String, default: 'system' },
+      actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      reason: { type: String, default: '' },
+      changedAt: { type: Date, default: Date.now }
+    }
+  ]
 }, { timestamps: true });
 
 orderSchema.pre('save', function (next) {

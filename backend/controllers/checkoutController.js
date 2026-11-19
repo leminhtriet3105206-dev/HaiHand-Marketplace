@@ -752,17 +752,24 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
       paymentStatus: nextPaymentStatus,
       cancelledAt: now,
       cancelReason: cancelNote
+    },
+    $push: {
+      statusHistory: {
+        from: current,
+        to: 'Cancelled',
+        actor: cancelledBy,
+        reason: cancelNote,
+        changedAt: now
+      }
     }
   };
 
   if (existingTrackingCode && cancelledBy !== 'system_ghn') {
     console.warn(`⚠️ [OrderCancel] Đơn hàng #${order._id} đã có mã vận đơn (${existingTrackingCode}). Cần hủy vận đơn trên cổng GHN.`);
-    updateDoc.$push = {
-      trackingLogs: {
-        status: 'cancel_requested',
-        description: `Đơn hàng đã bị hủy (${cancelNote}). Cần hủy vận đơn ${existingTrackingCode} trên cổng GHN.`,
-        updated_at: now
-      }
+    updateDoc.$push.trackingLogs = {
+      status: 'cancel_requested',
+      description: `Đơn hàng đã bị hủy (${cancelNote}). Cần hủy vận đơn ${existingTrackingCode} trên cổng GHN.`,
+      updated_at: now
     };
   }
 

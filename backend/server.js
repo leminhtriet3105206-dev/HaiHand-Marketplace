@@ -78,6 +78,7 @@ const {
   settlePaymentSession,
   cancelOrderWithRefundAndRestock
 } = require('./controllers/checkoutController');
+const { transitionOrder } = require('./utils/orderStateMachine');
 const { processChatbot } = require('./services/chatbotService');
 
 // --- Modular Express Routers ---
@@ -946,13 +947,14 @@ app.get('/admin/orders', async (req, res) => {
   }
 });
 
-/** [SSR] Cập nhật trạng thái đơn hàng từ trang /orders (chặn đổi đơn đã chốt sổ / hủy) */
+/** [SSR] Cập nhật trạng thái đơn hàng từ trang /orders (qua transitionOrder + cancelOrderWithRefundAndRestock) */
 app.post('/orders/update-status/:id', requireAdmin, async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).send('Không tìm thấy đơn hàng');
 
-    if (order.status === 'Đã thanh toán cho người bán' || order.status === 'Đã hủy') {
+    const currentCanon = canonicalStatus(order.status);
+    if (currentCanon === 'Completed' || currentCanon === 'Cancelled' || order.status === 'Đã thanh toán cho người bán' || order.status === 'Đã hủy') {
       return res.status(400).send(`
                 <div style="text-align:center; padding: 50px; font-family: sans-serif;">
                     <h2 style="color: red;">⛔ LỖI BẢO MẬT HỆ THỐNG</h2>
@@ -962,8 +964,15 @@ app.post('/orders/update-status/:id', requireAdmin, async (req, res) => {
             `);
     }
 
-    order.status = req.body.status;
-    await order.save();
+    const targetStatus = canonicalStatus(req.body.status);
+    const tr = await transitionOrder(order, targetStatus, 'admin', {
+      actorId: req.adminId || req.user?._id,
+      reason: 'Admin cập nhật trạng thái đơn hàng'
+    });
+
+    if (!tr.success) {
+      return res.status(tr.statusCode || 400).send(tr.message);
+    }
 
     res.redirect('/orders');
   } catch (error) {
@@ -2401,7 +2410,7 @@ app.get('/api/orders/seller/:sellerId', protect, async (req, res) => {
   } catch (error) { res.status(500).json({ error: 'Lỗi lấy đơn hàng của người bán' }); }
 });
 
-/** Seller xác nhận đơn hàng từ Pending -> Processing */
+/** Seller xác nhận đơn hàng từ Pending -> Processing (qua transitionOrder) */
 app.put('/api/orders/:orderId/confirm', protect, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId).populate('seller sellerId buyer buyerId');
@@ -2417,20 +2426,29 @@ app.put('/api/orders/:orderId/confirm', protect, async (req, res) => {
       return res.status(403).json({ message: 'Đơn hàng này không thuộc Shop của bạn' });
     }
 
-    const current = canonicalStatus(order.status);
-    if (!['Pending'].includes(current)) {
-      return res.status(400).json({ message: 'Trạng thái đơn hàng không hợp lệ để xác nhận' });
-    }
-    order.status = 'Processing';
-    await order.save();
-
-    await Notification.create({
-      title: '📦 Người bán đã chốt đơn!',
-      message: `Shop đã xác nhận đơn hàng #${order._id.toString().slice(-6).toUpperCase()}.`,
-      orderId: order._id
+    const tr = await transitionOrder(order, 'Processing', isAdmin ? 'admin' : 'seller', {
+      actorId: req.user._id,
+      reason: 'Shop xác nhận đơn hàng',
+      notify: false
     });
 
-    res.status(200).json({ message: 'Đã xác nhận đơn hàng!', order });
+    if (!tr.success) {
+      return res.status(tr.statusCode || 400).json({ message: tr.message });
+    }
+
+    const buyerId = orderBuyerId(order);
+    if (buyerId) {
+      await sendNotification(
+        buyerId,
+        '📦 Người bán đã chốt đơn!',
+        `Shop đã xác nhận đơn hàng #${order._id.toString().slice(-6).toUpperCase()}.`,
+        'ORDER',
+        '/profile?tab=orders_buy',
+        { orderId: order._id }
+      );
+    }
+
+    res.status(200).json({ message: 'Đã xác nhận đơn hàng!', order: tr.order });
   } catch (error) { res.status(500).json({ message: 'Lỗi xác nhận đơn' }); }
 });
 
@@ -2456,8 +2474,8 @@ app.put('/api/orders/:orderId/cancel', protect, async (req, res) => {
     }
 
     const cancelledByRole = isAdmin ? 'admin' : (isSellerOwner ? 'seller' : 'buyer');
-    const cancelResult = await cancelOrderWithRefundAndRestock(order, {
-      cancelledBy: cancelledByRole,
+    const cancelResult = await transitionOrder(order, 'Cancelled', cancelledByRole, {
+      actorId: req.user._id,
       reason: req.body?.cancelReason || req.body?.reason || ''
     });
 
@@ -2475,7 +2493,7 @@ app.put('/api/orders/:orderId/cancel', protect, async (req, res) => {
   }
 });
 
-/** Người mua xác nhận đã nhận hàng (Shipped -> Delivered hoặc Delivered -> Completed) */
+/** Người mua xác nhận đã nhận hàng (Shipped -> Delivered hoặc Delivered -> Completed qua transitionOrder) */
 app.put('/api/orders/:orderId/receive', protect, async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
@@ -2496,11 +2514,17 @@ app.put('/api/orders/:orderId/receive', protect, async (req, res) => {
       return res.status(400).json({ message: 'Đơn hàng chưa được giao, không thể xác nhận!' });
     }
 
-    order.status = current === 'Shipped' ? 'Delivered' : 'Completed';
-    if (order.status === 'Delivered') order.deliveredAt = new Date();
-    if (order.status === 'Completed') order.completedAt = new Date();
-    await order.save();
-    res.status(200).json({ message: 'Cảm ơn bạn đã xác nhận nhận hàng!', order });
+    const nextStatus = current === 'Shipped' ? 'Delivered' : 'Completed';
+    const tr = await transitionOrder(order, nextStatus, isAdmin ? 'admin' : 'buyer', {
+      actorId: req.user._id,
+      reason: 'Người mua xác nhận đã nhận hàng'
+    });
+
+    if (!tr.success) {
+      return res.status(tr.statusCode || 400).json({ message: tr.message });
+    }
+
+    res.status(200).json({ message: 'Cảm ơn bạn đã xác nhận nhận hàng!', order: tr.order });
   } catch (error) { res.status(500).json({ error: 'Lỗi xác nhận' }); }
 });
 

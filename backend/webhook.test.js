@@ -20,6 +20,8 @@ app.use('/api/webhook', webhookRouter);
 describe('POST /api/webhook/ghn - GHN Real-time Shipping Tracking Webhook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    delete process.env.GHN_WEBHOOK_TOKEN;
+    delete process.env.GHN_WEBHOOK_SECRET;
   });
 
   /**
@@ -151,7 +153,7 @@ describe('POST /api/webhook/ghn - GHN Real-time Shipping Tracking Webhook', () =
   });
 
   /**
-   * Test Case 5: Error Handling - Lỗi kết nối Database trả về 500
+   * Test Case 5: Error Handling - Lỗi kết nối Database trả về 500 (ẩn chi tiết lỗi DB - M9)
    */
   test('Case 5 (Database Error): Trả về 500 khi Database gặp sự cố bất ngờ', async () => {
     Order.findById.mockRejectedValue(new Error('MongoDB connection lost'));
@@ -166,7 +168,8 @@ describe('POST /api/webhook/ghn - GHN Real-time Shipping Tracking Webhook', () =
 
     expect(res.status).toBe(500);
     expect(res.body.success).toBe(false);
-    expect(res.body.error).toBe('MongoDB connection lost');
+    expect(res.body.error).toBeUndefined();
+    expect(res.body.trackingLogs).toBeUndefined();
   });
 });
 

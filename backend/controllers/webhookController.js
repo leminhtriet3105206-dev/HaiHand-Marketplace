@@ -3,35 +3,72 @@ const { cancelOrderWithRefundAndRestock } = require('./checkoutController');
 const { transitionOrder } = require('../utils/orderStateMachine');
 const { sendNotification } = require('../utils/notificationService');
 const { orderBuyerId, orderSellerId, canonicalStatus } = require('../utils/b2c');
+const { timingSafeStringEqual } = require('../utils/password');
+const { normalizeIp } = require('../utils/vnpay');
 
 /**
  * Controller: Xử lý Webhook cập nhật trạng thái vận đơn thời gian thực từ GHN (Giao Hàng Nhanh)
  * Endpoint: POST /api/webhook/ghn
- * Security:
- * - Nếu biến môi trường `GHN_WEBHOOK_SECRET` được cấu hình, bắt buộc kiểm tra token trong
- *   `req.headers['x-ghn-secret']`, `req.headers['x-webhook-secret']`, `req.query.secret` hoặc `req.body.secret`.
- * Business Logic:
- * - Khi `lowerStatus` thuộc `['cancel', 'returned']`: Gọi `cancelOrderWithRefundAndRestock` để hoàn tiền
- *   ví HaiPay cho Buyer, trừ `pendingBalance` của Seller và hoàn lại tồn kho nguyên tử.
- * - Khi `lowerStatus === 'return'`: Cập nhật `order.shippingStatus = 'return'` và gửi thông báo cho Seller & Buyer.
- * - Khi `lowerStatus === 'delivered'`: Cập nhật `order.status = 'Delivered'`, `order.deliveredAt = new Date()`,
- *   và gửi Notification nhắc Buyer xác nhận "Đã nhận được hàng".
+ * Security (C10):
+ * - Bắt buộc kiểm tra header/token bí mật (`GHN_WEBHOOK_TOKEN` hoặc `GHN_WEBHOOK_SECRET`, so sánh hằng-thời-gian)
+ *   và/hoặc IP allowlist (`GHN_WEBHOOK_IP_ALLOWLIST`).
+ * - Map trạng thái GHN -> trạng thái nội bộ qua `transitionOrder` (chỉ chuyển hợp lệ, ví dụ `Shipped -> Delivered`;
+ *   nếu đơn đã `Cancelled` hoặc `Completed` thì bỏ qua việc đổi trạng thái).
+ * - Khi GHN báo `cancel` / `returned` -> gọi `cancelOrderWithRefundAndRestock`.
+ * - Response chỉ trả `{ ok: true, success: true, shippingStatus }`, TUYỆT ĐỐI KHÔNG trả `trackingLogs` hoặc chi tiết lỗi DB (M9).
+ * - Log đầy đủ mọi sự kiện bị từ chối.
  */
 const handleGHNWebhook = async (req, res) => {
   try {
-    // 0. Kiểm tra bảo mật Webhook nếu GHN_WEBHOOK_SECRET được cấu hình
-    const configuredSecret = process.env.GHN_WEBHOOK_SECRET
-      ? String(process.env.GHN_WEBHOOK_SECRET).trim()
-      : '';
+    // 0. Kiểm tra IP Allowlist nếu được cấu hình qua env
+    const ipAllowlist = (process.env.GHN_WEBHOOK_IP_ALLOWLIST || '')
+      .split(',')
+      .map((ip) => ip.trim())
+      .filter(Boolean);
+
+    if (ipAllowlist.length > 0) {
+      const callerIp = normalizeIp(req);
+      if (!ipAllowlist.includes(callerIp)) {
+        console.warn(`⚠️ [GHN Webhook Rejected] IP ${callerIp} không nằm trong GHN_WEBHOOK_IP_ALLOWLIST`);
+        return res.status(401).json({
+          ok: false,
+          success: false,
+          message: 'Từ chối truy cập: IP không hợp lệ'
+        });
+      }
+    }
+
+    // 0.1. Kiểm tra token bí mật GHN_WEBHOOK_TOKEN / GHN_WEBHOOK_SECRET bằng so sánh hằng-thời-gian
+    const configuredSecret = (process.env.GHN_WEBHOOK_TOKEN || process.env.GHN_WEBHOOK_SECRET || '').trim();
+    if (!configuredSecret && process.env.NODE_ENV !== 'test') {
+      console.warn('⚠️ [GHN Webhook Rejected] Chưa cấu hình GHN_WEBHOOK_TOKEN trên máy chủ');
+      return res.status(401).json({
+        ok: false,
+        success: false,
+        message: 'Từ chối truy cập: Chưa cấu hình GHN_WEBHOOK_TOKEN'
+      });
+    }
+
     if (configuredSecret) {
-      const providedSecret =
+      const rawBearer = req.headers?.authorization?.startsWith('Bearer ')
+        ? req.headers.authorization.slice(7).trim()
+        : '';
+      const providedSecret = String(
+        req.headers?.['x-ghn-token'] ||
         req.headers?.['x-ghn-secret'] ||
         req.headers?.['x-webhook-secret'] ||
+        rawBearer ||
+        req.query?.token ||
         req.query?.secret ||
+        req.body?.token ||
         req.body?.secret ||
-        '';
-      if (String(providedSecret).trim() !== configuredSecret) {
+        ''
+      ).trim();
+
+      if (!providedSecret || !timingSafeStringEqual(providedSecret, configuredSecret)) {
+        console.warn('⚠️ [GHN Webhook Rejected] Token xác thực GHN Webhook thiếu hoặc không khớp');
         return res.status(401).json({
+          ok: false,
           success: false,
           message: 'Từ chối truy cập: Chữ ký / Secret token của GHN Webhook không hợp lệ!'
         });
@@ -41,8 +78,10 @@ const handleGHNWebhook = async (req, res) => {
     // 1. Trích xuất thông tin từ GHN Webhook Payload
     const { ClientOrderCode, Status, Reason, OrderCode, Description } = req.body || {};
 
-    if (!ClientOrderCode || !Status) {
+    if (!ClientOrderCode || !Status || typeof ClientOrderCode !== 'string' || typeof Status !== 'string') {
+      console.warn('⚠️ [GHN Webhook Rejected] Payload thiếu ClientOrderCode hoặc Status');
       return res.status(400).json({
+        ok: false,
         success: false,
         message: 'Thiếu thông tin bắt buộc: ClientOrderCode hoặc Status từ GHN Webhook!'
       });
@@ -52,9 +91,28 @@ const handleGHNWebhook = async (req, res) => {
     const order = await Order.findById(ClientOrderCode);
 
     if (!order) {
+      console.warn(`⚠️ [GHN Webhook Rejected] Không tìm thấy đơn hàng ClientOrderCode=${ClientOrderCode}`);
       return res.status(404).json({
+        ok: false,
         success: false,
-        message: `Không tìm thấy đơn hàng với ClientOrderCode: ${ClientOrderCode}`
+        message: 'Không tìm thấy đơn hàng tương ứng'
+      });
+    }
+
+    const currentCanon = canonicalStatus(order.status);
+    const normalizedStatus = String(Status).trim();
+    const lowerStatus = normalizedStatus.toLowerCase();
+
+    // Nếu đơn hàng đã Cancelled hoặc Completed -> bỏ qua việc đổi trạng thái (C10)
+    if (['Cancelled', 'Completed'].includes(currentCanon)) {
+      console.warn(
+        `ℹ️ [GHN Webhook Ignored] Đơn hàng #${order._id} đã ở trạng thái "${currentCanon}", bỏ qua sự kiện GHN "${normalizedStatus}"`
+      );
+      return res.status(200).json({
+        ok: true,
+        success: true,
+        ignored: true,
+        message: 'Đơn hàng đã ở trạng thái kết thúc, bỏ qua cập nhật'
       });
     }
 
@@ -70,7 +128,7 @@ const handleGHNWebhook = async (req, res) => {
       `Cập nhật trạng thái vận chuyển từ GHN: ${Status}`;
 
     const newTrackingLog = {
-      status: String(Status).trim(),
+      status: normalizedStatus,
       description: String(logDescription).trim(),
       updated_at: new Date()
     };
@@ -78,26 +136,24 @@ const handleGHNWebhook = async (req, res) => {
     order.trackingLogs.push(newTrackingLog);
 
     // 5. Cập nhật trạng thái giao hàng chính (shippingStatus) của Order
-    const normalizedStatus = String(Status).trim();
     order.shippingStatus = normalizedStatus;
 
     if (OrderCode && !order.trackingCode) {
       order.trackingCode = String(OrderCode).trim();
     }
 
-    const lowerStatus = normalizedStatus.toLowerCase();
     const buyerId = orderBuyerId(order);
     const sellerId = orderSellerId(order);
-    const shortOrderCode = order._id ? order._id.toString().slice(-6).toUpperCase() : String(ClientOrderCode).slice(-6).toUpperCase();
+    const shortOrderCode = order._id
+      ? order._id.toString().slice(-6).toUpperCase()
+      : String(ClientOrderCode).slice(-6).toUpperCase();
 
     // 6. Đồng bộ trạng thái tổng của đơn hàng (Order.status) và luồng tài chính / tồn kho
     if (['cancel', 'returned'].includes(lowerStatus)) {
-      // Lưu trước trackingLogs và shippingStatus
       if (typeof order.save === 'function') {
         await order.save();
       }
 
-      // Gọi cancelOrderWithRefundAndRestock để tự động hoàn tiền Escrow cho Buyer, trừ pendingBalance của Seller và hoàn lại tồn kho
       const cancelResult = await cancelOrderWithRefundAndRestock(order, {
         cancelledBy: 'system_ghn',
         reason: logDescription
@@ -141,10 +197,9 @@ const handleGHNWebhook = async (req, res) => {
       }
 
       return res.status(200).json({
+        ok: true,
         success: true,
-        message: 'Đã xử lý hủy/hoàn trả vận đơn GHN, hoàn tiền và hoàn kho thành công!',
-        shippingStatus: order.shippingStatus,
-        trackingLogs: order.trackingLogs
+        shippingStatus: order.shippingStatus
       });
     }
 
@@ -185,15 +240,13 @@ const handleGHNWebhook = async (req, res) => {
       }
 
       return res.status(200).json({
+        ok: true,
         success: true,
-        message: 'Cập nhật trạng thái đang hoàn hàng (return) thành công!',
-        shippingStatus: order.shippingStatus,
-        trackingLogs: order.trackingLogs
+        shippingStatus: order.shippingStatus
       });
     }
 
     if (lowerStatus === 'delivered') {
-      const currentCanon = canonicalStatus(order.status);
       if (currentCanon === 'Shipped') {
         await transitionOrder(order, 'Delivered', 'system_ghn', {
           reason: logDescription,
@@ -204,21 +257,10 @@ const handleGHNWebhook = async (req, res) => {
           notify: false,
           allowUnpaidToCodFallback: true
         });
-      } else if (!['Cancelled', 'Completed'].includes(currentCanon)) {
-        // Nếu đơn cũ còn ở Processing nhưng GHN báo delivered thì chuyển qua Shipped -> Delivered
-        if (currentCanon === 'Processing') {
-          await transitionOrder(order, 'Shipped', 'system_ghn', {
-            reason: 'GHN đang giao hàng',
-            notify: false,
-            allowUnpaidToCodFallback: true
-          });
-          await transitionOrder(order, 'Delivered', 'system_ghn', {
-            reason: logDescription,
-            extraSet: { shippingStatus: order.shippingStatus },
-            notify: false,
-            allowUnpaidToCodFallback: true
-          });
-        }
+      } else {
+        console.warn(
+          `⚠️ [GHN Webhook Transition Rejected] Không thể chuyển đơn #${order._id} từ "${currentCanon}" sang "Delivered"`
+        );
       }
 
       try {
@@ -252,15 +294,13 @@ const handleGHNWebhook = async (req, res) => {
       }
 
       return res.status(200).json({
+        ok: true,
         success: true,
-        message: 'Cập nhật trạng thái vận đơn GHN thành công!',
-        shippingStatus: order.shippingStatus,
-        trackingLogs: order.trackingLogs
+        shippingStatus: order.shippingStatus
       });
     }
 
     if (['picking', 'picked', 'storing', 'transporting', 'sorting', 'delivering'].includes(lowerStatus)) {
-      const currentCanon = canonicalStatus(order.status);
       if (currentCanon === 'Processing') {
         await transitionOrder(order, 'Shipped', 'system_ghn', {
           reason: logDescription,
@@ -275,19 +315,17 @@ const handleGHNWebhook = async (req, res) => {
       await order.save();
     }
 
-    // 8. Phản hồi 200 OK ngay lập tức để GHN Server không bị timeout hoặc retry
     return res.status(200).json({
+      ok: true,
       success: true,
-      message: 'Cập nhật trạng thái vận đơn GHN thành công!',
-      shippingStatus: order.shippingStatus,
-      trackingLogs: order.trackingLogs
+      shippingStatus: order.shippingStatus
     });
   } catch (error) {
     console.error('❌ [GHN Webhook Error]:', error.message);
     return res.status(500).json({
+      ok: false,
       success: false,
-      message: 'Lỗi máy chủ khi xử lý GHN Webhook',
-      error: error.message
+      message: 'Lỗi máy chủ khi xử lý GHN Webhook'
     });
   }
 };

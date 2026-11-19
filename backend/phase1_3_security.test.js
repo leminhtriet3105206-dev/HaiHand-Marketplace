@@ -116,11 +116,18 @@ describe('Phase 1/3 - GHN webhook', () => {
   app.use(express.json());
   app.use('/api/webhook', webhookRouter);
   const oldSecret = process.env.GHN_WEBHOOK_SECRET;
+  const oldToken = process.env.GHN_WEBHOOK_TOKEN;
 
-  beforeEach(() => jest.restoreAllMocks());
+  beforeEach(() => {
+    jest.restoreAllMocks();
+    delete process.env.GHN_WEBHOOK_TOKEN;
+    delete process.env.GHN_WEBHOOK_SECRET;
+  });
   afterEach(() => {
     if (oldSecret === undefined) delete process.env.GHN_WEBHOOK_SECRET;
     else process.env.GHN_WEBHOOK_SECRET = oldSecret;
+    if (oldToken === undefined) delete process.env.GHN_WEBHOOK_TOKEN;
+    else process.env.GHN_WEBHOOK_TOKEN = oldToken;
   });
 
   test('Có GHN_WEBHOOK_SECRET: thiếu/sai secret -> 401; đúng -> 200', async () => {

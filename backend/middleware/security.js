@@ -77,6 +77,7 @@ function makeLimiter({ windowMs, max, message, keyGenerator }) {
     max,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: { xForwardedForHeader: false, keyGeneratorIpFallback: false },
     ...(keyGenerator ? { keyGenerator } : {}),
     handler: (req, res) => {
       return res.status(429).json({

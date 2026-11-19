@@ -85,10 +85,11 @@ const SellerDashboard = () => {
                         <i className="fas fa-coins"></i>
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Doanh thu thực nhận</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Doanh thu đơn hoàn tất</p>
                         <h3 className="text-xl font-black text-slate-800 mt-0.5">{formatCurrency(stats?.revenue)}</h3>
                         <p className="text-[11px] text-emerald-600 font-bold mt-0.5">
-                            <i className="fas fa-check-circle mr-1"></i>Đã trừ 5% phí sàn
+                            <i className="fas fa-check-circle mr-1"></i>
+                            Đã giải ngân: {formatCurrency(stats?.releasedRevenue ?? stats?.revenue)} (đã trừ {stats?.platformFeePercentage ?? 5}% phí sàn)
                         </p>
                     </div>
                 </div>

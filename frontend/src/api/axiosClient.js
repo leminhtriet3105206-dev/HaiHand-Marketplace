@@ -9,14 +9,13 @@ const axiosClient = axios.create({
 axiosClient.interceptors.request.use((config) => {
   try {
     const stored = localStorage.getItem('user');
-    if (stored && stored !== 'undefined') {
-      const user = JSON.parse(stored);
-      if (user?.token) {
-        config.headers.Authorization = `Bearer ${user.token}`;
-      }
-      if (user?._id) {
-        config.headers.userid = user._id;
-      }
+    const user = stored && stored !== 'undefined' ? JSON.parse(stored) : null;
+    const token =
+      user?.token ||
+      localStorage.getItem('token') ||
+      localStorage.getItem('haipay_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
   } catch (e) { }
   return config;
@@ -37,11 +36,15 @@ export const persistUser = (user) => {
     }
   })();
   const next = { ...prev, ...user };
+  // M11: Không lưu walletBalance / pendingBalance / walletPin nhạy cảm trong localStorage
+  delete next.walletBalance;
+  delete next.pendingBalance;
+  delete next.walletPin;
   if (user.token) next.token = user.token;
   else if (prev.token) next.token = prev.token;
   localStorage.setItem('user', JSON.stringify(next));
   window.dispatchEvent(new Event('userUpdated'));
-  return next;
+  return { ...next, walletBalance: user.walletBalance, pendingBalance: user.pendingBalance };
 };
 
 export const getSellerEntryPath = (user) => {

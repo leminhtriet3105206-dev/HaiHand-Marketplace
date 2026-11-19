@@ -71,60 +71,38 @@ const HaiPayReturn = () => {
 
       try {
         if (isTopup) {
-          // Case 1: Wallet Deposit
-          if (responseCode === '00') {
-            await axios.post(`${API_URL}/api/haipay/verify`, {
-              txnRef,
-              responseCode,
-              amount: rawAmount,
-              vnp_Params: allParams,
-              secureHash
-            });
-
-            // Update user balance in localStorage
-            try {
-              const currentUser = JSON.parse(localStorage.getItem('user'));
-              if (currentUser) {
-                currentUser.walletBalance = (currentUser.walletBalance || 0) + actualAmount;
-                localStorage.setItem('user', JSON.stringify(currentUser));
-                window.dispatchEvent(new Event('userUpdated'));
-              }
-            } catch (e) {
-              console.warn('Update local user balance warning:', e);
-            }
-
-            setIsSuccess(true);
-            setStatusMessage('Nạp tiền vào Ví HaiPay thành công! Số dư đã được cập nhật.');
-          } else {
-            setIsSuccess(false);
-            setStatusMessage(VNPAY_RESPONSE_MESSAGES[responseCode] || 'Nạp tiền thất bại hoặc bạn đã hủy giao dịch.');
-          }
-        } else {
-          // Case 2: Order Checkout Payment
-          const currentUser = (() => {
-            try {
-              const stored = localStorage.getItem('user');
-              return stored ? JSON.parse(stored) : null;
-            } catch {
-              return null;
-            }
-          })();
-
-          await axios.post(`${API_URL}/api/vnpay/verify`, {
-            orderId: txnRef,
-            responseCode,
-            userId: currentUser?._id,
-            vnp_Params: allParams,
-            secureHash
+          // Case 1: Wallet Deposit (Read-only poll from server DB)
+          const res = await axios.get(`${API_URL}/api/haipay/verify`, {
+            params: { txnRef }
           });
 
-          if (responseCode === '00') {
+          if (res.data?.status === 'paid' || res.data?.paid === true) {
+            window.dispatchEvent(new Event('userUpdated'));
+            setIsSuccess(true);
+            setStatusMessage('Nạp tiền vào Ví HaiPay thành công! Số dư đã được cập nhật.');
+          } else if (res.data?.status === 'failed' || (responseCode && responseCode !== '00')) {
+            setIsSuccess(false);
+            setStatusMessage(VNPAY_RESPONSE_MESSAGES[responseCode] || 'Nạp tiền thất bại hoặc bạn đã hủy giao dịch.');
+          } else {
+            setIsSuccess(responseCode === '00');
+            setStatusMessage(res.data?.message || 'Giao dịch đang chờ cổng VNPAY xác nhận (IPN)...');
+          }
+        } else {
+          // Case 2: Order Checkout Payment (Read-only poll from server DB)
+          const res = await axios.get(`${API_URL}/api/vnpay/verify`, {
+            params: { orderId: txnRef }
+          });
+
+          if (res.data?.status === 'paid' || res.data?.paid === true) {
             setIsSuccess(true);
             setStatusMessage('Thanh toán đơn hàng thành công qua VNPAY! Người bán đang chuẩn bị đơn hàng.');
             window.dispatchEvent(new Event('cartUpdated'));
-          } else {
+          } else if (res.data?.status === 'failed' || (responseCode && responseCode !== '00')) {
             setIsSuccess(false);
             setStatusMessage(VNPAY_RESPONSE_MESSAGES[responseCode] || 'Thanh toán đơn hàng thất bại hoặc bạn đã hủy giao dịch.');
+          } else {
+            setIsSuccess(responseCode === '00');
+            setStatusMessage(res.data?.message || 'Giao dịch đang chờ cổng VNPAY xác nhận (IPN)...');
           }
         }
       } catch (error) {

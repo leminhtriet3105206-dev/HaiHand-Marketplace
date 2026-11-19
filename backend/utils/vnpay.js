@@ -2,10 +2,32 @@ const crypto = require('crypto');
 const moment = require('moment');
 const querystring = require('qs');
 
-const vnp_TmnCode = process.env.VNP_TMNCODE || 'IYQYHLU4';
-const vnp_HashSecret = process.env.VNP_HASHSECRET || 'BBZJECZFZLUQSVOBCVTQSPDPYQZKGUEB';
-const vnp_Url = process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
-const vnp_ReturnUrl = process.env.VNP_RETURNURL || 'http://localhost:3000/haipay/return';
+const { ensureTestEnvDefaults } = require('../config/env');
+
+if (process.env.NODE_ENV === 'test') {
+  ensureTestEnvDefaults(process.env);
+}
+
+function getVnpTmnCode() {
+  return process.env.VNPAY_TMN_CODE || process.env.VNP_TMNCODE || '';
+}
+
+function getVnpHashSecret() {
+  return process.env.VNPAY_HASH_SECRET || process.env.VNP_HASHSECRET || '';
+}
+
+function getVnpUrl() {
+  return process.env.VNPAY_URL || process.env.VNP_URL || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html';
+}
+
+function getVnpReturnUrl() {
+  return process.env.VNPAY_RETURN_URL || process.env.VNP_RETURNURL || 'http://localhost:3000/haipay/return';
+}
+
+const vnp_TmnCode = getVnpTmnCode();
+const vnp_HashSecret = getVnpHashSecret();
+const vnp_Url = getVnpUrl();
+const vnp_ReturnUrl = getVnpReturnUrl();
 
 function sortObject(obj) {
   const sorted = {};
@@ -21,46 +43,63 @@ function sortObject(obj) {
 }
 
 function signParams(params) {
+  const secret = getVnpHashSecret();
+  if (!secret) {
+    throw new Error('Missing VNPAY_HASH_SECRET in environment variables');
+  }
   const signData = querystring.stringify(sortObject(params), { encode: false });
-  return crypto.createHmac('sha512', vnp_HashSecret).update(Buffer.from(signData, 'utf-8')).digest('hex');
+  return crypto.createHmac('sha512', secret).update(Buffer.from(signData, 'utf-8')).digest('hex');
 }
+
+const { timingSafeStringEqual } = require('./password');
 
 /**
- * Legacy-tolerant verification: returns true when no hash is supplied.
- * Kept for backwards compatibility with old callers.
+ * Strict verification (C5):
+ * - Xóa hoàn toàn bản legacy trả true khi không có chữ ký.
+ * - Thiếu hoặc sai `vnp_SecureHash` -> trả về `false`.
+ * - So sánh hằng-thời-gian (`timingSafeStringEqual`) để chống timing attack.
  */
-function verifyVnpayChecksum(params, secureHash) {
-  if (!secureHash) return true;
-  return verifyVnpayChecksumStrict(params, secureHash);
-}
-
-/** Strict verification: a missing hash is a failure. */
 function verifyVnpayChecksumStrict(params, secureHash) {
-  if (!secureHash || !params) return false;
+  const hashToVerify = secureHash || (params && params.vnp_SecureHash);
+  if (!hashToVerify || typeof hashToVerify !== 'string' || !params || typeof params !== 'object') {
+    return false;
+  }
   const p = { ...params };
   delete p.vnp_SecureHash;
   delete p.vnp_SecureHashType;
-  return secureHash.toLowerCase() === signParams(p).toLowerCase();
+  let expected;
+  try {
+    expected = signParams(p);
+  } catch (e) {
+    return false;
+  }
+  return timingSafeStringEqual(hashToVerify.toLowerCase(), expected.toLowerCase());
 }
 
-function buildVnpayPaymentUrl({ orderId, amount, ipAddr = '127.0.0.1', orderInfo, returnUrl }) {
+const verifyVnpayChecksum = verifyVnpayChecksumStrict;
+
+function buildVnpayPaymentUrl({ orderId, amount, ipAddr = '127.0.0.1', orderInfo, returnUrl, orderType = 'other' }) {
+  const tmn = getVnpTmnCode();
+  if (!tmn) {
+    throw new Error('Missing VNPAY_TMN_CODE in environment variables');
+  }
   const params = {
     vnp_Version: '2.1.0',
     vnp_Command: 'pay',
-    vnp_TmnCode: vnp_TmnCode,
+    vnp_TmnCode: tmn,
     vnp_Locale: 'vn',
     vnp_CurrCode: 'VND',
     vnp_TxnRef: orderId.toString(),
     vnp_OrderInfo: orderInfo || ('Thanh toan don hang HaiHand ' + orderId),
-    vnp_OrderType: 'other',
+    vnp_OrderType: orderType,
     vnp_Amount: Math.round(Number(amount) * 100),
-    vnp_ReturnUrl: returnUrl || vnp_ReturnUrl,
+    vnp_ReturnUrl: returnUrl || getVnpReturnUrl(),
     vnp_IpAddr: ipAddr,
     vnp_CreateDate: moment(new Date()).format('YYYYMMDDHHmmss')
   };
   const sorted = sortObject(params);
   sorted.vnp_SecureHash = signParams(params);
-  return vnp_Url + '?' + querystring.stringify(sorted, { encode: false });
+  return getVnpUrl() + '?' + querystring.stringify(sorted, { encode: false });
 }
 
 function normalizeIp(req) {
@@ -76,6 +115,10 @@ module.exports = {
   vnp_HashSecret,
   vnp_Url,
   vnp_ReturnUrl,
+  getVnpTmnCode,
+  getVnpHashSecret,
+  getVnpUrl,
+  getVnpReturnUrl,
   sortObject,
   signParams,
   verifyVnpayChecksum,

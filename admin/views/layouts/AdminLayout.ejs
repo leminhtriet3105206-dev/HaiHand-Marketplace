@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
     <title><%= typeof pageTitle !== 'undefined' ? pageTitle : 'HaiHand Admin Portal' %></title>
     
-    <!-- Instant Dark Mode Detection Script (Prevents flash of white) -->
+    <!-- Instant Dark Mode Detection & Global CSRF Fetch / Form Auto-Injection (H16) -->
     <script>
         (function() {
             try {
@@ -17,6 +18,40 @@
                     document.documentElement.classList.remove('dark');
                 }
             } catch(e) {}
+
+            // Auto-attach X-CSRF-Token on all state-changing fetch calls
+            const origFetch = window.fetch;
+            if (typeof origFetch === 'function') {
+                window.fetch = function(input, init) {
+                    const opts = Object.assign({}, init || {});
+                    const method = String(opts.method || 'GET').toUpperCase();
+                    if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+                        const meta = document.querySelector('meta[name="csrf-token"]');
+                        const token = meta ? meta.getAttribute('content') : '';
+                        if (token) {
+                            opts.headers = Object.assign({}, opts.headers || {}, {
+                                'X-CSRF-Token': token
+                            });
+                        }
+                    }
+                    return origFetch.call(this, input, opts);
+                };
+            }
+
+            // Auto-inject _csrf hidden input on all POST forms before submit
+            document.addEventListener('submit', function(e) {
+                const form = e.target;
+                if (!form || String(form.method || 'GET').toUpperCase() !== 'POST') return;
+                const meta = document.querySelector('meta[name="csrf-token"]');
+                const token = meta ? meta.getAttribute('content') : '';
+                if (token && !form.querySelector('input[name="_csrf"]')) {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = '_csrf';
+                    input.value = token;
+                    form.appendChild(input);
+                }
+            }, true);
         })();
     </script>
 

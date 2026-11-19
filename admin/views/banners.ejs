@@ -1,0 +1,599 @@
+<div class="max-w-7xl mx-auto">
+    <!-- Header Banner Card -->
+    <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white dark:bg-slate-900/90 p-5 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+        <div>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-indigo-600 dark:from-purple-400 dark:to-indigo-300 flex items-center gap-2">
+                <span>🖼️</span>
+                <span>Quản lý Banner Trang Chủ (Hero Carousel)</span>
+            </h1>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                Hỗ trợ kéo-thả ảnh tĩnh (<span class="font-semibold">JPG, PNG, WEBP, AVIF, SVG</span>) &amp; <span class="font-bold text-purple-600 dark:text-purple-400">ảnh động GIF</span> (giữ nguyên chuyển động, tối đa 20MB) kèm link điều hướng.
+            </p>
+        </div>
+        <div class="flex items-center gap-2 shrink-0">
+            <span class="px-3.5 py-2 rounded-2xl bg-purple-50 dark:bg-purple-900/30 border border-purple-200/70 dark:border-purple-800 text-xs font-bold text-purple-700 dark:text-purple-300">
+                Tổng Banner: <%= banners.length %>
+            </span>
+            <a href="http://localhost:3000" target="_blank" rel="noopener noreferrer" class="px-3.5 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-semibold text-slate-700 dark:text-slate-200 transition flex items-center gap-1.5">
+                <i class="fas fa-external-link-alt text-[10px]"></i>
+                <span>Xem Trang chủ</span>
+            </a>
+        </div>
+    </div>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+        <div class="mb-5 p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300 text-sm font-medium flex items-center justify-between">
+            <span><i class="fas fa-exclamation-triangle mr-2"></i><%= error %></span>
+            <a href="/banners" class="text-xs font-bold underline ml-4">Đóng</a>
+        </div>
+    <% } %>
+
+    <% if (typeof success !== 'undefined' && success) { %>
+        <div class="mb-5 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-sm font-medium flex items-center justify-between">
+            <span><i class="fas fa-check-circle mr-2"></i><%= success %></span>
+            <a href="/banners" class="text-xs font-bold underline ml-4">Đóng</a>
+        </div>
+    <% } %>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+        <!-- CỘT TRÁI: FORM THÊM BANNER (KÉO THẢ + URL + PREVIEW GIF) -->
+        <div class="lg:w-[38%]">
+            <div class="bg-white dark:bg-slate-900/90 p-5 sm:p-6 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm sticky top-4">
+                <h3 class="text-base font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                    <span class="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 flex items-center justify-center text-sm">
+                        <i class="fas fa-plus"></i>
+                    </span>
+                    <span>Thêm Banner mới</span>
+                </h3>
+
+                <form id="addBannerForm" action="/banners/add" method="POST" enctype="multipart/form-data" class="space-y-4">
+                    <input type="hidden" name="hasFormFlags" value="1" />
+
+                    <!-- Drag & Drop Zone -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                            Tải ảnh / GIF lên (Kéo &amp; thả hoặc Click chọn)
+                        </label>
+                        <div
+                            id="addDropZone"
+                            class="relative group cursor-pointer rounded-2xl border-2 border-dashed border-purple-300 dark:border-purple-700/80 bg-purple-50/40 dark:bg-slate-800/50 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:border-purple-500 transition-all p-4 text-center"
+                        >
+                            <input
+                                id="addBannerFile"
+                                type="file"
+                                name="imageFile"
+                                accept=".jpg,.jpeg,.png,.webp,.gif,.avif,.svg,image/*"
+                                class="hidden"
+                            />
+                            <div id="addDropPlaceholder" class="py-4 space-y-1.5">
+                                <div class="w-11 h-11 mx-auto rounded-2xl bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300 flex items-center justify-center text-xl">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                </div>
+                                <p class="text-xs font-bold text-slate-700 dark:text-slate-200">
+                                    Kéo thả ảnh hoặc GIF vào đây
+                                </p>
+                                <p class="text-[11px] text-slate-400 dark:text-slate-500">
+                                    JPG, PNG, WEBP, AVIF, GIF • Tối đa 20MB
+                                </p>
+                            </div>
+
+                            <!-- Live Preview Container -->
+                            <div id="addPreviewWrapper" class="hidden relative rounded-xl overflow-hidden bg-slate-950/5 dark:bg-black/30">
+                                <img id="addPreviewImg" src="" alt="Preview Banner" class="w-full h-44 object-cover rounded-xl" />
+                                <span id="addGifBadge" class="hidden absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-purple-600 text-white text-[10px] font-extrabold tracking-wider shadow">
+                                    GIF ĐỘNG
+                                </span>
+                                <button
+                                    type="button"
+                                    id="addClearFileBtn"
+                                    class="absolute top-2 right-2 px-2.5 py-1 rounded-lg bg-slate-900/75 hover:bg-rose-600 text-white text-[11px] font-semibold transition"
+                                >
+                                    <i class="fas fa-times mr-1"></i>Đổi ảnh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direct Image URL -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                            Hoặc dán URL ảnh / GIF trực tiếp
+                        </label>
+                        <input
+                            id="addImageUrlInput"
+                            type="text"
+                            name="imageUrl"
+                            placeholder="https://... hoặc /uploads/banner.gif"
+                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
+                        />
+                    </div>
+
+                    <!-- Title -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                            Tiêu đề / Ghi chú Banner (tùy chọn)
+                        </label>
+                        <input
+                            type="text"
+                            name="title"
+                            placeholder="VD: Sale Tháng 11 - Săn Đồ Cũ Giá Hời"
+                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
+                        />
+                    </div>
+
+                    <!-- Target URL -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                            Link đích khi click vào Banner (targetUrl)
+                        </label>
+                        <input
+                            id="addTargetUrlInput"
+                            type="text"
+                            name="targetUrl"
+                            placeholder="VD: /products, /post/123 hoặc https://..."
+                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500 transition-all"
+                        />
+                        <div class="flex flex-wrap gap-1.5 mt-2">
+                            <button type="button" data-fill-target="/products" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-[11px] font-medium text-slate-600 dark:text-slate-300 transition">/products</button>
+                            <button type="button" data-fill-target="/register-seller" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-[11px] font-medium text-slate-600 dark:text-slate-300 transition">/register-seller</button>
+                            <button type="button" data-fill-target="/create-post" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-[11px] font-medium text-slate-600 dark:text-slate-300 transition">/create-post</button>
+                        </div>
+                    </div>
+
+                    <!-- Order & Checkboxes -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                                Thứ tự hiển thị
+                            </label>
+                            <input
+                                type="number"
+                                name="order"
+                                value="0"
+                                min="0"
+                                class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                            />
+                        </div>
+                        <div class="flex flex-col justify-end space-y-2 pb-1">
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300">
+                                <input type="checkbox" name="isActive" value="true" checked class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" />
+                                <span>Hiển thị ngay</span>
+                            </label>
+                            <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300">
+                                <input type="checkbox" name="openInNewTab" value="true" class="w-4 h-4 rounded text-purple-600 focus:ring-purple-500" />
+                                <span>Mở tab mới</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        class="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-sm font-bold shadow-lg shadow-purple-500/20 transition transform active:scale-[0.99]"
+                    >
+                        <i class="fas fa-save mr-1.5"></i> Lưu &amp; Thêm Banner
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI: DANH SÁCH BANNER HIỆN TẠI -->
+        <div class="lg:w-[62%]">
+            <div class="bg-white dark:bg-slate-900/90 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <h3 class="text-base font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                        <span>📋</span>
+                        <span>Danh sách Banner Carousel (<%= banners.length %>)</span>
+                    </h3>
+                    <span class="text-[11px] text-slate-400 dark:text-slate-500">Sắp xếp theo thứ tự tăng dần</span>
+                </div>
+
+                <% if (!banners || banners.length === 0) { %>
+                    <div class="p-12 text-center">
+                        <div class="w-16 h-16 mx-auto mb-3 rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-3xl">
+                            🖼️
+                        </div>
+                        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                            Chưa có Banner tùy chỉnh nào trong hệ thống
+                        </p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                            Trang chủ hiện đang dùng 3 Banner mặc định an toàn. Hãy tải lên ảnh hoặc GIF ở biểu mẫu bên trái để thay đổi Hero Banner ngay lập tức!
+                        </p>
+                    </div>
+                <% } else { %>
+                    <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                        <% banners.forEach(function(b) { 
+                            const isGif = /\.gif($|\?)/i.test(b.imageUrl || "");
+                            const targetPreviewHref = (b.targetUrl || "").startsWith("http")
+                                ? b.targetUrl
+                                : (b.targetUrl ? "http://localhost:3000" + (b.targetUrl.startsWith("/") ? "" : "/") + b.targetUrl : "");
+                        %>
+                            <div class="p-4 sm:p-5 flex flex-col sm:flex-row gap-4 items-start sm:items-center hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition">
+                                <!-- Thumbnail -->
+                                <div class="relative w-full sm:w-44 h-28 rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 shrink-0 group">
+                                    <img
+                                        src="<%= b.imageUrl %>"
+                                        alt="<%= b.title || 'Banner' %>"
+                                        class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                                        onerror="this.src='https://placehold.co/600x360/f3f4f6/9ca3af?text=Loi+Anh'"
+                                    />
+                                    <span class="absolute top-2 left-2 px-2 py-0.5 rounded-lg bg-slate-900/75 text-white text-[10px] font-bold">
+                                        #<%= b.order || 0 %>
+                                    </span>
+                                    <% if (isGif) { %>
+                                        <span class="absolute bottom-2 left-2 px-2 py-0.5 rounded-lg bg-purple-600/95 text-white text-[10px] font-extrabold tracking-wider shadow">
+                                            GIF
+                                        </span>
+                                    <% } %>
+                                </div>
+
+                                <!-- Metadata & Actions -->
+                                <div class="flex-1 min-w-0 space-y-1.5 w-full">
+                                    <div class="flex items-start justify-between gap-2">
+                                        <div>
+                                            <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate">
+                                                <%= b.title || 'Banner không tiêu đề' %>
+                                            </h4>
+                                            <p class="text-[11px] text-slate-400 dark:text-slate-500 truncate max-w-md" title="<%= b.imageUrl %>">
+                                                <%= b.imageUrl %>
+                                            </p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            data-toggle-id="<%= b._id %>"
+                                            class="banner-toggle-btn shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer <%= b.isActive ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300' %>"
+                                        >
+                                            <%= b.isActive ? '● Đang hiện' : '○ Đang ẩn' %>
+                                        </button>
+                                    </div>
+
+                                    <div class="flex flex-wrap items-center gap-2 pt-0.5 text-xs">
+                                        <span class="text-slate-500 dark:text-slate-400 font-medium">Link đích:</span>
+                                        <% if (b.targetUrl) { %>
+                                            <a
+                                                href="<%= targetPreviewHref %>"
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 font-semibold hover:underline max-w-xs truncate"
+                                            >
+                                                <i class="fas fa-link text-[10px]"></i>
+                                                <span class="truncate"><%= b.targetUrl %></span>
+                                            </a>
+                                            <% if (b.openInNewTab) { %>
+                                                <span class="px-2 py-0.5 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[10px] font-semibold">
+                                                    Tab mới
+                                                </span>
+                                            <% } %>
+                                        <% } else { %>
+                                            <span class="text-slate-400 italic text-[11px]">Không gắn link điều hướng</span>
+                                        <% } %>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 pt-2">
+                                        <button
+                                            type="button"
+                                            class="banner-edit-btn px-3 py-1.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 text-xs font-bold transition"
+                                            data-id="<%= b._id %>"
+                                            data-title="<%= b.title || '' %>"
+                                            data-image-url="<%= b.imageUrl || '' %>"
+                                            data-target-url="<%= b.targetUrl || '' %>"
+                                            data-order="<%= b.order || 0 %>"
+                                            data-active="<%= b.isActive ? '1' : '0' %>"
+                                            data-newtab="<%= b.openInNewTab ? '1' : '0' %>"
+                                        >
+                                            <i class="fas fa-edit mr-1"></i> Sửa
+                                        </button>
+                                        <form action="/banners/delete/<%= b._id %>" method="POST" class="inline" onsubmit="return confirm('Xác nhận xóa vĩnh viễn Banner này?');">
+                                            <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
+                                            <button type="submit" class="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-900/30 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-bold transition cursor-pointer">
+                                                <i class="fas fa-trash-alt mr-1"></i> Xóa
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT MODAL -->
+    <div id="editBannerModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4">
+        <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <h3 class="text-base font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+                    <span>✏️</span>
+                    <span>Chỉnh sửa Banner</span>
+                </h3>
+                <button type="button" id="closeEditModalBtn" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-rose-500 flex items-center justify-center">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="editBannerForm" action="" method="POST" enctype="multipart/form-data" class="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                <input type="hidden" name="hasFormFlags" value="1" />
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">
+                        Đổi ảnh / GIF mới (kéo thả hoặc click vào ảnh)
+                    </label>
+                    <div id="editDropZone" class="relative cursor-pointer rounded-2xl border-2 border-dashed border-purple-300 dark:border-purple-700 p-2 bg-slate-50 dark:bg-slate-800/60 hover:border-purple-500 transition">
+                        <input id="editBannerFile" type="file" name="imageFile" accept=".jpg,.jpeg,.png,.webp,.gif,.avif,.svg,image/*" class="hidden" />
+                        <img id="editPreviewImg" src="" alt="Edit Preview" class="w-full h-40 object-cover rounded-xl" />
+                        <span id="editGifBadge" class="hidden absolute top-3 left-3 px-2 py-0.5 rounded-lg bg-purple-600 text-white text-[10px] font-extrabold shadow">
+                            GIF ĐỘNG
+                        </span>
+                        <span class="absolute bottom-3 right-3 px-2.5 py-1 rounded-lg bg-slate-900/75 text-white text-[11px] font-semibold">
+                            <i class="fas fa-upload mr-1"></i>Chọn / thả ảnh mới
+                        </span>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">URL ảnh / GIF</label>
+                    <input id="editImageUrlInput" type="text" name="imageUrl" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-slate-100" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Tiêu đề / Ghi chú</label>
+                    <input id="editTitleInput" type="text" name="title" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-slate-100" />
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Link đích (targetUrl)</label>
+                    <input id="editTargetUrlInput" type="text" name="targetUrl" placeholder="/products hoặc https://..." class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-slate-100" />
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Thứ tự</label>
+                        <input id="editOrderInput" type="number" name="order" min="0" class="w-full px-3.5 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-slate-800 dark:text-slate-100" />
+                    </div>
+                    <div class="flex flex-col justify-end space-y-2 pb-1">
+                        <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300">
+                            <input id="editActiveInput" type="checkbox" name="isActive" value="true" class="w-4 h-4 rounded text-purple-600" />
+                            <span>Đang hiển thị</span>
+                        </label>
+                        <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300">
+                            <input id="editNewTabInput" type="checkbox" name="openInNewTab" value="true" class="w-4 h-4 rounded text-purple-600" />
+                            <span>Mở tab mới</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" id="cancelEditModalBtn" class="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold">
+                        Hủy
+                    </button>
+                    <button type="submit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-xs font-bold shadow">
+                        Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var addDropZone = document.getElementById('addDropZone');
+    var addFileInput = document.getElementById('addBannerFile');
+    var addPlaceholder = document.getElementById('addDropPlaceholder');
+    var addPreviewWrapper = document.getElementById('addPreviewWrapper');
+    var addPreviewImg = document.getElementById('addPreviewImg');
+    var addGifBadge = document.getElementById('addGifBadge');
+    var addClearBtn = document.getElementById('addClearFileBtn');
+    var addUrlInput = document.getElementById('addImageUrlInput');
+    var addTargetInput = document.getElementById('addTargetUrlInput');
+
+    function isGifSource(nameOrUrl, mimeType) {
+        if (mimeType && String(mimeType).toLowerCase() === 'image/gif') return true;
+        return /\.gif($|\?)/i.test(String(nameOrUrl || ''));
+    }
+
+    function showAddPreview(src, isGif) {
+        if (!src) {
+            addPreviewImg.src = '';
+            addPreviewWrapper.classList.add('hidden');
+            addPlaceholder.classList.remove('hidden');
+            addGifBadge.classList.add('hidden');
+            return;
+        }
+        addPreviewImg.src = src;
+        addPreviewWrapper.classList.remove('hidden');
+        addPlaceholder.classList.add('hidden');
+        if (isGif) addGifBadge.classList.remove('hidden');
+        else addGifBadge.classList.add('hidden');
+    }
+
+    function bindDropZone(zoneEl, inputEl, onFileSelected) {
+        if (!zoneEl || !inputEl) return;
+
+        zoneEl.addEventListener('click', function(e) {
+            if (e.target.closest('#addClearFileBtn')) return;
+            inputEl.click();
+        });
+
+        ['dragenter', 'dragover'].forEach(function(evtName) {
+            zoneEl.addEventListener(evtName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                zoneEl.classList.add('border-purple-600', 'bg-purple-100/70', 'dark:bg-purple-900/40');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(function(evtName) {
+            zoneEl.addEventListener(evtName, function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                zoneEl.classList.remove('border-purple-600', 'bg-purple-100/70', 'dark:bg-purple-900/40');
+            });
+        });
+
+        zoneEl.addEventListener('drop', function(e) {
+            var files = e.dataTransfer && e.dataTransfer.files;
+            if (!files || !files.length) return;
+            try {
+                var dt = new DataTransfer();
+                dt.items.add(files[0]);
+                inputEl.files = dt.files;
+            } catch (err) {
+                inputEl.files = files;
+            }
+            onFileSelected(files[0]);
+        });
+
+        inputEl.addEventListener('change', function() {
+            if (inputEl.files && inputEl.files[0]) {
+                onFileSelected(inputEl.files[0]);
+            }
+        });
+    }
+
+    bindDropZone(addDropZone, addFileInput, function(file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            showAddPreview(ev.target.result, isGifSource(file.name, file.type));
+        };
+        reader.readAsDataURL(file);
+    });
+
+    if (addClearBtn) {
+        addClearBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (addFileInput) addFileInput.value = '';
+            var typedUrl = addUrlInput ? addUrlInput.value.trim() : '';
+            if (typedUrl) {
+                showAddPreview(typedUrl, isGifSource(typedUrl, ''));
+            } else {
+                showAddPreview('', false);
+            }
+        });
+    }
+
+    if (addUrlInput) {
+        addUrlInput.addEventListener('input', function() {
+            if (addFileInput && addFileInput.files && addFileInput.files.length > 0) return;
+            var val = addUrlInput.value.trim();
+            showAddPreview(val, isGifSource(val, ''));
+        });
+    }
+
+    document.querySelectorAll('[data-fill-target]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            if (addTargetInput) addTargetInput.value = btn.getAttribute('data-fill-target') || '';
+        });
+    });
+
+    // Toggle Active Status via AJAX
+    document.querySelectorAll('.banner-toggle-btn').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+            var id = btn.getAttribute('data-toggle-id');
+            if (!id) return;
+            btn.disabled = true;
+            try {
+                var res = await fetch('/api/admin/banners/toggle/' + id, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                var data = await res.json();
+                if (res.ok && data.success && data.banner) {
+                    var active = Boolean(data.banner.isActive);
+                    btn.textContent = active ? '● Đang hiện' : '○ Đang ẩn';
+                    btn.className = 'banner-toggle-btn shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-bold transition cursor-pointer ' + (
+                        active
+                            ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                    );
+                }
+            } catch (err) {
+                console.error('Toggle banner failed:', err);
+            } finally {
+                btn.disabled = false;
+            }
+        });
+    });
+
+    // Edit Modal Logic
+    var editModal = document.getElementById('editBannerModal');
+    var editForm = document.getElementById('editBannerForm');
+    var editDropZone = document.getElementById('editDropZone');
+    var editFileInput = document.getElementById('editBannerFile');
+    var editPreviewImg = document.getElementById('editPreviewImg');
+    var editGifBadge = document.getElementById('editGifBadge');
+    var editImageUrlInput = document.getElementById('editImageUrlInput');
+    var editTitleInput = document.getElementById('editTitleInput');
+    var editTargetUrlInput = document.getElementById('editTargetUrlInput');
+    var editOrderInput = document.getElementById('editOrderInput');
+    var editActiveInput = document.getElementById('editActiveInput');
+    var editNewTabInput = document.getElementById('editNewTabInput');
+    var closeEditBtn = document.getElementById('closeEditModalBtn');
+    var cancelEditBtn = document.getElementById('cancelEditModalBtn');
+
+    function closeEditModal() {
+        if (!editModal) return;
+        editModal.classList.add('hidden');
+        editModal.classList.remove('flex');
+    }
+
+    document.querySelectorAll('.banner-edit-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var id = btn.getAttribute('data-id');
+            var title = btn.getAttribute('data-title') || '';
+            var imageUrl = btn.getAttribute('data-image-url') || '';
+            var targetUrl = btn.getAttribute('data-target-url') || '';
+            var order = btn.getAttribute('data-order') || '0';
+            var active = btn.getAttribute('data-active') === '1';
+            var newTab = btn.getAttribute('data-newtab') === '1';
+
+            editForm.action = '/banners/edit/' + id;
+            if (editFileInput) editFileInput.value = '';
+            editImageUrlInput.value = imageUrl;
+            editTitleInput.value = title;
+            editTargetUrlInput.value = targetUrl;
+            editOrderInput.value = order;
+            editActiveInput.checked = active;
+            editNewTabInput.checked = newTab;
+            editPreviewImg.src = imageUrl;
+            if (isGifSource(imageUrl, '')) editGifBadge.classList.remove('hidden');
+            else editGifBadge.classList.add('hidden');
+
+            editModal.classList.remove('hidden');
+            editModal.classList.add('flex');
+        });
+    });
+
+    bindDropZone(editDropZone, editFileInput, function(file) {
+        var reader = new FileReader();
+        reader.onload = function(ev) {
+            editPreviewImg.src = ev.target.result;
+            if (isGifSource(file.name, file.type)) editGifBadge.classList.remove('hidden');
+            else editGifBadge.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    });
+
+    if (editImageUrlInput) {
+        editImageUrlInput.addEventListener('input', function() {
+            if (editFileInput && editFileInput.files && editFileInput.files.length > 0) return;
+            var val = editImageUrlInput.value.trim();
+            if (val) {
+                editPreviewImg.src = val;
+                if (isGifSource(val, '')) editGifBadge.classList.remove('hidden');
+                else editGifBadge.classList.add('hidden');
+            }
+        });
+    }
+
+    if (closeEditBtn) closeEditBtn.addEventListener('click', closeEditModal);
+    if (cancelEditBtn) cancelEditBtn.addEventListener('click', closeEditModal);
+    if (editModal) {
+        editModal.addEventListener('click', function(e) {
+            if (e.target === editModal) closeEditModal();
+        });
+    }
+})();
+</script>
+

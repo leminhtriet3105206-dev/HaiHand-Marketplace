@@ -29,45 +29,37 @@ const HaiPayResult = () => {
 
             const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
-            // Case A: HaiPay Wallet Topup
+            // Case A: HaiPay Wallet Topup (Read-only poll from server DB)
             if (txnRef.startsWith('NAP_')) {
                 setIsOrder(false);
-                if (responseCode === '00') {
-                    try {
-                        await axios.post(`${API_URL}/api/haipay/verify`, {
-                            txnRef, responseCode, amount, vnp_Params: allParams, secureHash
-                        });
-                        setStatus('🎉 Nạp tiền Ví HaiPay thành công! Số dư đã được cập nhật.');
-
-                        const currentUser = JSON.parse(localStorage.getItem('user'));
-                        if (currentUser) {
-                            const actualAmount = parseInt(amount) / 100;
-                            currentUser.walletBalance = (currentUser.walletBalance || 0) + actualAmount;
-                            localStorage.setItem('user', JSON.stringify(currentUser));
-                            window.dispatchEvent(new Event('userUpdated'));
-                        }
-                    } catch (error) {
-                        setStatus('❌ ' + (error.response?.data?.message || 'Lỗi hệ thống khi cộng tiền vào ví!'));
-                    }
-                } else {
-                    setStatus('❌ Nạp tiền thất bại hoặc bạn đã hủy giao dịch.');
-                }
-            } else {
-                // Case B: Order Checkout Payment
-                setIsOrder(true);
                 try {
-                    const currentUser = JSON.parse(localStorage.getItem('user'));
-                    await axios.post(`${API_URL}/api/vnpay/verify`, {
-                        orderId: txnRef, responseCode, userId: currentUser?._id, vnp_Params: allParams, secureHash
-                    });
-                    if (responseCode === '00') {
-                        setStatus('🎉 Thanh toán đơn hàng thành công qua VNPAY! Người bán đang chuẩn bị hàng.');
-                        window.dispatchEvent(new Event('cartUpdated'));
+                    const res = await axios.get(`${API_URL}/api/haipay/verify`, { params: { txnRef } });
+                    if (res.data?.status === 'paid' || res.data?.paid === true) {
+                        setStatus('🎉 Nạp tiền Ví HaiPay thành công! Số dư đã được cập nhật.');
+                        window.dispatchEvent(new Event('userUpdated'));
+                    } else if (res.data?.status === 'failed' || (responseCode && responseCode !== '00')) {
+                        setStatus('❌ Nạp tiền thất bại hoặc bạn đã hủy giao dịch.');
                     } else {
-                        setStatus('❌ Thanh toán đơn hàng thất bại hoặc bạn đã hủy giao dịch!');
+                        setStatus('⏳ Giao dịch đang chờ cổng VNPAY xác nhận (IPN)...');
                     }
                 } catch (error) {
-                    setStatus('❌ ' + (error.response?.data?.message || 'Lỗi hệ thống khi xác nhận thanh toán đơn hàng!'));
+                    setStatus('❌ ' + (error.response?.data?.message || 'Lỗi hệ thống khi kiểm tra trạng thái nạp tiền!'));
+                }
+            } else {
+                // Case B: Order Checkout Payment (Read-only poll from server DB)
+                setIsOrder(true);
+                try {
+                    const res = await axios.get(`${API_URL}/api/vnpay/verify`, { params: { orderId: txnRef } });
+                    if (res.data?.status === 'paid' || res.data?.paid === true) {
+                        setStatus('🎉 Thanh toán đơn hàng thành công qua VNPAY! Người bán đang chuẩn bị hàng.');
+                        window.dispatchEvent(new Event('cartUpdated'));
+                    } else if (res.data?.status === 'failed' || (responseCode && responseCode !== '00')) {
+                        setStatus('❌ Thanh toán đơn hàng thất bại hoặc bạn đã hủy giao dịch!');
+                    } else {
+                        setStatus('⏳ Giao dịch đang chờ cổng VNPAY xác nhận (IPN)...');
+                    }
+                } catch (error) {
+                    setStatus('❌ ' + (error.response?.data?.message || 'Lỗi hệ thống khi kiểm tra trạng thái thanh toán đơn hàng!'));
                 }
             }
         };

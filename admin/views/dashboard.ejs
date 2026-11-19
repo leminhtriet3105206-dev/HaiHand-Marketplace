@@ -400,13 +400,12 @@
                                         </p>
                                     </div>
                                 </div>
-                                <a 
-                                    href="/post/approve/<%= post._id %>" 
-                                    onclick="return confirm('Duyệt sản phẩm này?')" 
-                                    class="text-[11px] font-bold text-white bg-purple-600 hover:bg-purple-700 px-3.5 py-1.5 rounded-xl shadow-sm shadow-purple-500/25 transition shrink-0"
-                                >
-                                    DUYỆT
-                                </a>
+                                <form action="/post/approve/<%= post._id %>" method="POST" class="inline shrink-0" onsubmit="return confirm('Duyệt sản phẩm này?')">
+                                    <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
+                                    <button type="submit" class="text-[11px] font-bold text-white bg-purple-600 hover:bg-purple-700 px-3.5 py-1.5 rounded-xl shadow-sm shadow-purple-500/25 transition cursor-pointer">
+                                        DUYỆT
+                                    </button>
+                                </form>
                             </div>
                         <% }) %>
                     </div>

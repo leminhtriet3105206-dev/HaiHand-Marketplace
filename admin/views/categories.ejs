@@ -111,9 +111,12 @@
                                         <a href="/categories/edit/<%= cat._id %>" class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 border border-blue-200/60 dark:border-blue-800/60 px-3 py-1.5 rounded-xl font-bold transition text-xs">
                                             ✏️ Sửa
                                         </a>
-                                        <a href="/categories/delete/<%= cat._id %>" class="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200/60 dark:border-rose-800/60 px-3 py-1.5 rounded-xl font-bold transition text-xs" onclick="return confirm('Bạn có chắc chắn muốn xóa danh mục này?')">
-                                            🗑️ Xóa
-                                        </a>
+                                        <form action="/categories/delete/<%= cat._id %>" method="POST" class="inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa danh mục này?')">
+                                            <input type="hidden" name="_csrf" value="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>" />
+                                            <button type="submit" class="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 border border-rose-200/60 dark:border-rose-800/60 px-3 py-1.5 rounded-xl font-bold transition text-xs cursor-pointer">
+                                                🗑️ Xóa
+                                            </button>
+                                        </form>
                                     </td>
                                 </tr>
                                 <% }) %>

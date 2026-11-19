@@ -27,6 +27,8 @@ const orderSchema = new mongoose.Schema({
   itemsSubtotal: { type: Number, default: 0 },
   shippingFee: { type: Number, default: 0 },
   totalPrice: { type: Number, required: true }, // itemsSubtotal + shippingFee
+  commissionRate: { type: Number }, // Platform fee % snapshot at order creation (e.g. 5)
+  sellerReceive: { type: Number }, // Net payout to seller snapshot at order creation
 
   phone: { type: String, required: true },
   address: { type: String, required: true }, // formatted snapshot (legacy readers)
@@ -73,7 +75,26 @@ const orderSchema = new mongoose.Schema({
   completedAt: { type: Date },
   cancelledAt: { type: Date },
   cancelReason: { type: String, default: '' },
-  isReviewed: { type: Boolean, default: false }
+  isReviewed: { type: Boolean, default: false },
+  stockDeducted: { type: Boolean, default: true },
+  settled: { type: Boolean, default: false },
+  dispute: {
+    isDisputed: { type: Boolean, default: false },
+    reason: { type: String, default: '' },
+    status: { type: String, enum: ['none', 'open', 'resolved_refund', 'resolved_release'], default: 'none' },
+    createdAt: { type: Date },
+    resolvedAt: { type: Date }
+  },
+  statusHistory: [
+    {
+      from: { type: String },
+      to: { type: String, required: true },
+      actor: { type: String, default: 'system' },
+      actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      reason: { type: String, default: '' },
+      changedAt: { type: Date, default: Date.now }
+    }
+  ]
 }, { timestamps: true });
 
 orderSchema.pre('save', function (next) {

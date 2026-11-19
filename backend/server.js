@@ -32,7 +32,28 @@ const OtpToken = require('./models/OtpToken');
 const Banner = require('./models/Banner');
 
 // --- Auth Middlewares & Business Helpers ---
-const { protect, protectStrict, isSeller } = require('./middleware/auth');
+const {
+  protect,
+  protectStrict,
+  requireOwnerOrAdmin,
+  requireAdminJWT,
+  isSeller,
+  isAdmin
+} = require('./middleware/auth');
+const {
+  createCorsMiddleware,
+  createHelmetMiddleware,
+  mongoSanitizeMiddleware,
+  getAllowedOrigins,
+  globalLimiter,
+  loginLimiter,
+  otpLimiter,
+  chatbotLimiter,
+  uploadLimiter,
+  withdrawLimiter
+} = require('./middleware/security');
+const { createUploadMiddleware } = require('./middleware/upload');
+const errorHandler = require('./middleware/errorHandler');
 const {
   CATALOG_VISIBLE,
   PENDING_PRODUCT_STATUSES,
@@ -43,7 +64,9 @@ const {
   orderSellerId,
   isEscrow,
   sanitizeUser,
+  publicUser,
   signUserToken,
+  signRefreshToken,
   getJwtSecret
 } = require('./utils/b2c');
 const notificationService = require('./utils/notificationService');
@@ -67,62 +90,25 @@ const addressRouter = require('./routes/address');
 const app = express();
 
 // ============================================================================
-// SECTION 2: CẤU HÌNH CORS, HTTP SERVER & SOCKET.IO SERVER
+// SECTION 2: CẤU HÌNH CORS, SECURITY HEADERS (HELMET), RATE LIMIT & SOCKET.IO
 // ============================================================================
-// Whitelist các origin hợp lệ (Frontend React, Admin EJS, Vercel) và bật credentials
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:4001',
-  'http://127.0.0.1:4001',
-  'https://haihand-marketplace.vercel.app'
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Cho phép linh hoạt khi chạy Docker / dev container
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'UserId', 'X-Requested-With', 'Origin', 'token', 'Token', 'ShopId', 'shopid'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
-};
-
-app.use(cors(corsOptions));
-app.options('{*path}', cors(corsOptions));
-
-// Middleware bổ sung CORS headers cho preflight OPTIONS & mọi response
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-  }
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, userid, UserId, token, Token, ShopId, shopid');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+app.use(createHelmetMiddleware());
+const corsMiddleware = createCorsMiddleware();
+app.use(corsMiddleware);
+app.options('{*path}', corsMiddleware);
+app.use(globalLimiter);
 
 // Khởi tạo HTTP Server bọc Express App và gắn Socket.IO server
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://localhost:4001',
-      'http://127.0.0.1:4001',
-      'https://haihand-marketplace.vercel.app'
-    ],
+    origin(origin, callback) {
+      const allowed = getAllowedOrigins();
+      if (!origin || allowed.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Origin not allowed by Socket.IO CORS'), false);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     credentials: true
   }
@@ -131,9 +117,10 @@ const io = new Server(server, {
 // ============================================================================
 // SECTION 3: MIDDLEWARE CƠ BẢN, STATIC FILES, VIEW ENGINE (EJS) & SESSION
 // ============================================================================
-// Parse JSON / URL-encoded body và phục vụ tài nguyên tĩnh
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Parse JSON / URL-encoded body, sanitize NoSQL injection và phục vụ tài nguyên tĩnh
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+app.use(mongoSanitizeMiddleware);
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
@@ -152,29 +139,26 @@ app.use(session({
 }));
 
 // ============================================================================
-// SECTION 4: CẤU HÌNH UPLOAD ẢNH (CLOUDINARY & MULTER)
+// SECTION 4: CẤU HÌNH UPLOAD ẢNH (CLOUDINARY & MULTER - DÙNG CHUNG QUA middleware/upload.js)
 // ============================================================================
-// Lưu trữ ảnh sản phẩm, avatar, ảnh chat trực tiếp lên Cloudinary (folder HaiHand_Images)
-cloudinary.config({
-  cloud_name: 'dbznseukv',
-  api_key: '184464981981638',
-  api_secret: '-UKbuZxsQKgmKL3-p47oQDQJDrc'
-});
-
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: {
-    folder: 'HaiHand_Images',
-    allowed_formats: ['jpg', 'png', 'jpeg', 'webp']
-  }
-});
+if (
+  process.env.CLOUDINARY_CLOUD_NAME &&
+  process.env.CLOUDINARY_API_KEY &&
+  process.env.CLOUDINARY_API_SECRET
+) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+}
 
-const upload = multer({ storage: storage });
+const upload = createUploadMiddleware();
 
 // ============================================================================
 // SECTION 5: KẾT NỐI MONGODB ATLAS & KHỞI TẠO TRƯỜNG MẶC ĐỊNH B2C
@@ -2873,10 +2857,10 @@ app.put('/api/messages/mark-read', async (req, res) => {
 
 // --- 14.3. Chatbot AI (LM Studio & MongoDB RAG) ---
 /** Xử lý câu hỏi Chatbot AI hỗ trợ tìm sản phẩm & tư vấn chính sách HaiHand */
-app.post('/api/chatbot/ask', async (req, res) => {
+app.post('/api/chatbot/ask', chatbotLimiter, async (req, res) => {
   try {
     const { message, history } = req.body;
-    if (!message) {
+    if (!message || typeof message !== 'string') {
       return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn (message)' });
     }
 
@@ -2885,10 +2869,13 @@ app.post('/api/chatbot/ask', async (req, res) => {
   } catch (error) {
     console.error('Lỗi Chatbot:', error);
     res.status(500).json({
-      error: 'Không thể xử lý yêu cầu với AI. Hãy kiểm tra xem bạn đã bật server LM Studio ở cổng 1235 chưa!'
+      error: 'Trợ lý AI hiện đang tạm thời bận. Vui lòng thử lại sau ít phút!'
     });
   }
 });
+
+// Global Error Handler Middleware (0.3 / M9)
+app.use(errorHandler);
 
 // --- 14.4. Socket.IO Real-time Event Handlers ---
 /** Quản lý kết nối WebSocket: room cá nhân (`user_<id>`), room Admin (`admin_system_room`), chat & trạng thái online */

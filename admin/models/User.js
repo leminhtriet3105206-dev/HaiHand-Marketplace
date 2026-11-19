@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
   isBanned: { type: Boolean, default: false },
   isDeleted: { type: Boolean, default: false },
   deletedAt: { type: Date, default: null },
+  tokenVersion: { type: Number, default: 0 },
   isSeller: { type: Boolean, default: false },
   sellerStatus: { 
     type: String, 

@@ -160,23 +160,91 @@ function isEscrow(order) {
   return order.paymentStatus === 'escrow' || order.status === 'Đã thanh toán (Admin giữ tiền)';
 }
 
-function sanitizeUser(user) {
+const SENSITIVE_USER_FIELDS = [
+  'password',
+  'walletPin',
+  'cccd',
+  'taxId',
+  'bankInfo',
+  'tokenVersion',
+  'firebaseUid',
+  'pinFailedAttempts',
+  'pinLockedUntil'
+];
+
+function sanitizeUser(user, { keepOwnerFields = false } = {}) {
   if (!user) return null;
   const o = typeof user.toObject === 'function' ? user.toObject() : { ...user };
-  delete o.password;
+  for (const field of SENSITIVE_USER_FIELDS) {
+    if (keepOwnerFields && ['bankInfo', 'cccd', 'taxId'].includes(field)) {
+      continue;
+    }
+    delete o[field];
+  }
   return o;
 }
 
-function signUserToken(user) {
+function publicUser(user) {
+  if (!user) return null;
+  const o = typeof user.toObject === 'function' ? user.toObject() : { ...user };
+  const safeShopInfo = o.shopInfo
+    ? {
+        shopName: o.shopInfo.shopName || '',
+        description: o.shopInfo.description || '',
+        address: o.shopInfo.address || '',
+        avatar: o.shopInfo.avatar || '',
+        banner: o.shopInfo.banner || ''
+      }
+    : undefined;
+
+  return {
+    _id: o._id,
+    name: o.name || '',
+    username: o.username || '',
+    avatar: o.avatar || '',
+    avatarFrame: o.avatarFrame || 'none',
+    profileTitle: o.profileTitle || 'Người Mới',
+    bio: o.bio || '',
+    role: o.role || 'Khách hàng',
+    isVerified: !!o.isVerified,
+    isSeller: !!o.isSeller,
+    sellerStatus: o.sellerStatus || 'none',
+    shopInfo: safeShopInfo,
+    rating: o.rating ?? 0,
+    createdAt: o.createdAt,
+    lastActive: o.lastActive
+  };
+}
+
+function signUserToken(user, { expiresIn, tokenType = 'access', extra = {} } = {}) {
+  const tv = typeof user.tokenVersion === 'number' ? user.tokenVersion : 0;
+  const ttl = expiresIn || process.env.JWT_EXPIRES_IN || '2h';
   return jwt.sign(
     {
       id: user._id,
       role: user.role,
       isSeller: !!user.isSeller,
-      sellerStatus: user.sellerStatus || 'none'
+      sellerStatus: user.sellerStatus || 'none',
+      tv,
+      tokenType,
+      ...extra
     },
     getJwtSecret(),
-    { expiresIn: '7d' }
+    { expiresIn: ttl }
+  );
+}
+
+function signRefreshToken(user, { expiresIn } = {}) {
+  const tv = typeof user.tokenVersion === 'number' ? user.tokenVersion : 0;
+  const ttl = expiresIn || process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+  return jwt.sign(
+    {
+      id: user._id,
+      tv,
+      tokenType: 'refresh'
+    },
+    getJwtSecret(),
+    { expiresIn: ttl }
   );
 }
 
@@ -200,6 +268,8 @@ module.exports = {
   orderSellerId,
   isEscrow,
   sanitizeUser,
+  publicUser,
   signUserToken,
+  signRefreshToken,
   displayProductName
 };

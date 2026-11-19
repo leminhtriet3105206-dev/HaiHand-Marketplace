@@ -168,24 +168,23 @@ if (!ADMIN_DB_URI) {
     .catch((err) => console.error("Lỗi kết nối MongoDB:", err.message));
 }
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:4001',
-  'http://127.0.0.1:4001',
-  'https://haihand-marketplace.vercel.app'
-];
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:4001,http://127.0.0.1:4001')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+    if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(null, true);
+      const err = new Error(`Origin ${origin} không nằm trong danh sách CORS_ORIGINS được phép`);
+      err.statusCode = 403;
+      callback(err, false);
     }
   },
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'UserId', 'X-Requested-With', 'Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin', 'X-CSRF-Token'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
 }));
 app.use(express.urlencoded({ extended: true }));

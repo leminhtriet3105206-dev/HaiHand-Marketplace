@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const mongoose = require('mongoose');
 const User = require('../models/User');
 const Order = require('../models/Order');
@@ -229,8 +230,8 @@ async function processCheckout(req, res) {
       }
     }
 
-    // 2. Normalize requested items (including optional variantName / sku)
-    const normalizedItems = [];
+    // 2. Normalize requested items & merge duplicate product/variant rows BEFORE stock check (H0, M6)
+    const mergedMap = new Map();
     const buyerCart = Array.isArray(buyer.cart) ? buyer.cart : [];
 
     for (const it of items) {
@@ -246,24 +247,38 @@ async function processCheckout(req, res) {
       } else if (it && (it.productId || it._id || it.product)) {
         pId = (it.productId || it._id || it.product).toString();
         const rawQty = it.quantity !== undefined ? it.quantity : 1;
-        const parsed = parseInt(rawQty, 10);
-        if (isNaN(parsed) || parsed < 1 || !Number.isInteger(parsed) || String(rawQty).includes('.')) {
+        if (typeof rawQty === 'object' || typeof rawQty === 'boolean' || String(rawQty).includes('.')) {
+          return res.status(400).json({ message: 'Số lượng sản phẩm không hợp lệ (phải là số nguyên dương >= 1)' });
+        }
+        const parsed = Number(rawQty);
+        if (!Number.isFinite(parsed) || !Number.isInteger(parsed) || parsed < 1) {
           return res.status(400).json({ message: 'Số lượng sản phẩm không hợp lệ (phải là số nguyên dương >= 1)' });
         }
         qty = parsed;
         if (it.variantName) variantName = String(it.variantName).trim();
         if (it.sku) sku = String(it.sku).trim();
+      } else {
+        return res.status(400).json({ message: 'Sản phẩm trong đơn hàng không hợp lệ' });
       }
-      if (pId && mongoose.Types.ObjectId.isValid(pId)) {
-        normalizedItems.push({ productId: pId, quantity: qty, variantName, sku });
+
+      if (!pId || !mongoose.Types.ObjectId.isValid(pId)) {
+        return res.status(400).json({ message: `Mã sản phẩm (${pId || 'null'}) không hợp lệ` });
+      }
+
+      const mergeKey = `${pId}::${sku}::${variantName}`;
+      if (mergedMap.has(mergeKey)) {
+        mergedMap.get(mergeKey).quantity += qty;
+      } else {
+        mergedMap.set(mergeKey, { productId: pId, quantity: qty, variantName, sku });
       }
     }
 
+    const normalizedItems = Array.from(mergedMap.values());
     if (normalizedItems.length === 0) {
       return res.status(400).json({ message: 'Danh sách sản phẩm không hợp lệ' });
     }
 
-    // 3. Load products from DB and validate availability, ownership, and variants
+    // 3. Load products from DB and validate availability, ownership, and variants (reject deleted/missing items)
     const productIds = [...new Set(normalizedItems.map((n) => n.productId))];
     const dbProducts = await Post.find({ _id: { $in: productIds } });
     if (!dbProducts || dbProducts.length === 0) {
@@ -271,18 +286,32 @@ async function processCheckout(req, res) {
     }
 
     const productMap = new Map(dbProducts.map((p) => [p._id.toString(), p]));
+    // Tổng hợp số lượng theo từng productId để kiểm tra tổng tồn kho khi mua nhiều biến thể của cùng 1 sản phẩm
+    const totalQtyPerProduct = {};
+    for (const item of normalizedItems) {
+      totalQtyPerProduct[item.productId] = (totalQtyPerProduct[item.productId] || 0) + item.quantity;
+    }
+
     const groupsBySeller = {};
 
     for (const item of normalizedItems) {
       const p = productMap.get(item.productId);
-      if (!p) {
-        return res.status(404).json({ message: `Không tìm thấy sản phẩm (${item.productId}) trong hệ thống` });
+      if (!p || p.status === 'DELETED' || p.isDeleted === true) {
+        return res.status(404).json({ message: `Sản phẩm (${item.productId}) đã bị xóa hoặc không tồn tại trong hệ thống` });
       }
 
-      // Check product status is active / APPROVED
-      if (!CATALOG_VISIBLE.includes(p.status)) {
+      // Check product status is active / APPROVED and not locked
+      if (!CATALOG_VISIBLE.includes(p.status) || p.moderationStatus === 'locked' || p.moderationStatus === 'rejected') {
         return res.status(400).json({
           message: `Sản phẩm "${displayProductName(p)}" hiện không khả dụng để đặt mua (Trạng thái: ${p.status}).`
+        });
+      }
+
+      // Check positive product price (>= 1000)
+      const basePrice = Number(p.price);
+      if (!Number.isFinite(basePrice) || basePrice < 1000) {
+        return res.status(400).json({
+          message: `Sản phẩm "${displayProductName(p)}" có giá bán không hợp lệ.`
         });
       }
 
@@ -312,6 +341,11 @@ async function processCheckout(req, res) {
             message: `Phân loại "${item.variantName || item.sku}" của sản phẩm "${displayProductName(p)}" không tồn tại!`
           });
         }
+        if (matchedVariant.price !== undefined && matchedVariant.price !== null && Number(matchedVariant.price) < 1000) {
+          return res.status(400).json({
+            message: `Giá phân loại "${matchedVariant.name || matchedVariant.sku}" không hợp lệ!`
+          });
+        }
         const varStock = Number(matchedVariant.stock ?? 0);
         if (varStock < item.quantity) {
           return res.status(400).json({
@@ -320,10 +354,10 @@ async function processCheckout(req, res) {
         }
       }
 
-      const currentStock = p.stockQuantity ?? p.quantity ?? 0;
-      if (currentStock < item.quantity) {
+      const currentStock = Number(p.stockQuantity ?? p.quantity ?? 0);
+      if (currentStock <= 0 || currentStock < totalQtyPerProduct[item.productId]) {
         return res.status(400).json({
-          message: `Sản phẩm "${displayProductName(p)}" chỉ còn ${currentStock} cái trong kho, không đủ số lượng ${item.quantity}.`
+          message: `Sản phẩm "${displayProductName(p)}" chỉ còn ${currentStock} cái trong kho, không đủ số lượng ${totalQtyPerProduct[item.productId]}.`
         });
       }
 
@@ -414,6 +448,11 @@ async function processCheckout(req, res) {
     }
 
     const finalAmount = totalItemsSubtotal + totalShippingFee;
+    if (!Number.isFinite(finalAmount) || finalAmount <= 0 || totalItemsSubtotal <= 0) {
+      return res.status(400).json({
+        message: 'Tổng tiền đơn hàng không hợp lệ (finalAmount phải > 0)!'
+      });
+    }
 
     // Pre-check HaiPay balance if using wallet
     if (paymentMethod === 'HAIPAY') {
@@ -490,9 +529,9 @@ async function processCheckout(req, res) {
       }
     }
 
-    // 6. Generate parentOrderId sharing across all sub-orders
+    // 6. Generate cryptographically random parentOrderId sharing across all sub-orders (H0, M6)
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const randSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const randSuffix = crypto.randomBytes(6).toString('hex').toUpperCase();
     const parentOrderId = `HH${dateStr}${randSuffix}`;
 
     // 7. Create Order documents (commission calculated strictly on itemsSubtotal)
@@ -529,7 +568,8 @@ async function processCheckout(req, res) {
         shippingService: pkg.shippingService,
         paymentMethod,
         paymentStatus: paymentMethod === 'HAIPAY' ? 'escrow' : 'unpaid',
-        status: 'Pending'
+        status: 'Pending',
+        stockDeducted: true
       });
 
       await newOrder.save();
@@ -751,7 +791,8 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
       status: 'Cancelled',
       paymentStatus: nextPaymentStatus,
       cancelledAt: now,
-      cancelReason: cancelNote
+      cancelReason: cancelNote,
+      stockDeducted: false
     },
     $push: {
       statusHistory: {
@@ -835,22 +876,25 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
     }
   }
 
-  // 2. Sum quantities per product accurately and atomically restore stock & decrement soldCount
+  // 2. Sum quantities per product accurately and atomically restore stock & decrement soldCount ONLY IF stockDeducted !== false (H1)
+  const shouldRestock = order.stockDeducted !== false;
   const qtyByProduct = {};
-  if (Array.isArray(order.orderItems) && order.orderItems.length > 0) {
-    for (const item of order.orderItems) {
-      const pid = item.productId?._id || item.productId;
-      if (pid) {
-        const key = pid.toString();
-        qtyByProduct[key] = (qtyByProduct[key] || 0) + (Number(item.quantity) || 1);
+  if (shouldRestock) {
+    if (Array.isArray(order.orderItems) && order.orderItems.length > 0) {
+      for (const item of order.orderItems) {
+        const pid = item.productId?._id || item.productId;
+        if (pid) {
+          const key = pid.toString();
+          qtyByProduct[key] = (qtyByProduct[key] || 0) + (Number(item.quantity) || 1);
+        }
       }
-    }
-  } else if (Array.isArray(order.items) && order.items.length > 0) {
-    for (const rawId of order.items) {
-      const pid = rawId?._id || rawId;
-      if (pid) {
-        const key = pid.toString();
-        qtyByProduct[key] = (qtyByProduct[key] || 0) + 1;
+    } else if (Array.isArray(order.items) && order.items.length > 0) {
+      for (const rawId of order.items) {
+        const pid = rawId?._id || rawId;
+        if (pid) {
+          const key = pid.toString();
+          qtyByProduct[key] = (qtyByProduct[key] || 0) + 1;
+        }
       }
     }
   }
@@ -897,8 +941,48 @@ async function cancelOrderWithRefundAndRestock(orderOrId, { cancelledBy = 'buyer
   };
 }
 
+/**
+ * Background / Scheduled Job (H2):
+ * Hủy các đơn VNPAY `Pending` chưa thanh toán (`paymentStatus: 'unpaid'`) đã quá 15 phút
+ * và hoàn trả kho nguyên tử (idempotent, dùng `transitionOrder`).
+ */
+async function cancelExpiredVnpayOrders({ maxAgeMs = 15 * 60 * 1000 } = {}) {
+  const cutoff = new Date(Date.now() - maxAgeMs);
+  const expiredOrders = await Order.find({
+    paymentMethod: 'VNPAY',
+    paymentStatus: 'unpaid',
+    status: { $in: ['Pending', 'Chờ xác nhận', 'Chờ thanh toán VNPay'] },
+    createdAt: { $lte: cutoff }
+  });
+
+  const { transitionOrder } = require('../utils/orderStateMachine');
+  const cancelledIds = [];
+
+  for (const order of expiredOrders) {
+    try {
+      const res = await transitionOrder(order, 'Cancelled', 'system', {
+        reason: 'Quá hạn thanh toán VNPAY (15 phút)'
+      });
+      if (res.success) {
+        cancelledIds.push(order._id);
+        if (order.parentOrderId) {
+          await PaymentSession.updateOne(
+            { parentOrderId: order.parentOrderId, status: 'pending' },
+            { $set: { status: 'failed' } }
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('cancelExpiredVnpayOrders warning:', err.message);
+    }
+  }
+
+  return { count: cancelledIds.length, cancelledIds };
+}
+
 module.exports = {
   processCheckout,
   settlePaymentSession,
-  cancelOrderWithRefundAndRestock
+  cancelOrderWithRefundAndRestock,
+  cancelExpiredVnpayOrders
 };

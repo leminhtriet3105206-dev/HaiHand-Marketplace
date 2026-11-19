@@ -276,12 +276,40 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
+  const parsePositiveIntOrZero = (raw, fieldName, { min = 0 } = {}) => {
+    if (raw === undefined || raw === null || raw === '') return null;
+    if (typeof raw === 'object' || typeof raw === 'boolean' || String(raw).includes('.')) {
+      throw new Error(`${fieldName} phải là số nguyên >= ${min}`);
+    }
+    const num = Number(raw);
+    if (!Number.isFinite(num) || !Number.isInteger(num) || num < min) {
+      throw new Error(`${fieldName} phải là số nguyên >= ${min}`);
+    }
+    return num;
+  };
+
   router.post('/api/seller/products', protect, isSeller, upload.array('images', 8), async (req, res) => {
     try {
-      const { name, title, sku, price, originalPrice, stockQuantity, quantity, category, location, description, condition, status, variants, details } = req.body;
-      const displayName = (name || title || '').trim();
-      if (!displayName || !price || !category) {
+      const { name, title, sku, price, originalPrice, stockQuantity, quantity, category, location, description, condition, variants, details } = req.body || {};
+      const displayName = typeof (name || title) === 'string' ? (name || title).trim() : '';
+      if (!displayName || price === undefined || price === null || price === '' || !category || typeof category !== 'string') {
         return res.status(400).json({ message: 'Vui lòng nhập tên, giá và danh mục.' });
+      }
+
+      let numPrice;
+      let numOriginalPrice = 0;
+      let stock = 0;
+      try {
+        numPrice = parsePositiveIntOrZero(price, 'Giá sản phẩm', { min: 1000 });
+        if (originalPrice !== undefined && originalPrice !== null && originalPrice !== '') {
+          numOriginalPrice = parsePositiveIntOrZero(originalPrice, 'Giá gốc', { min: 0 });
+        }
+        const rawStock = stockQuantity !== undefined && stockQuantity !== null && stockQuantity !== ''
+          ? stockQuantity
+          : (quantity !== undefined && quantity !== null && quantity !== '' ? quantity : 0);
+        stock = parsePositiveIntOrZero(rawStock, 'Số lượng tồn kho', { min: 0 });
+      } catch (valErr) {
+        return res.status(400).json({ message: valErr.message });
       }
 
       const imagePaths = (req.files || []).map((file) => file.path || file.secure_url || file.filename);
@@ -289,8 +317,6 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       if (details) {
         try { parsedDetails = typeof details === 'string' ? JSON.parse(details) : details; } catch (e) { parsedDetails = {}; }
       }
-
-      const stock = Number(stockQuantity != null ? stockQuantity : quantity) || 0;
 
       // Check Auto-Approve setting from GlobalSetting
       let isAutoApprove = false;
@@ -300,26 +326,28 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         isAutoApprove = setting && setting.autoApprovePosts === true;
       } catch (e) {}
 
-      const postStatus = stock <= 0 ? 'out_of_stock' : (status === 'inactive' ? 'inactive' : (isAutoApprove ? 'active' : 'pending'));
+      const moderationStatus = isAutoApprove ? 'approved' : 'pending';
+      const postStatus = stock <= 0 ? 'out_of_stock' : (isAutoApprove ? 'active' : 'pending');
 
       const product = new Post({
         name: displayName,
         title: displayName,
-        sku: sku || '',
-        price: Number(price),
-        originalPrice: Number(originalPrice) || 0,
+        sku: typeof sku === 'string' ? sku.trim() : '',
+        price: numPrice,
+        originalPrice: numOriginalPrice,
         stockQuantity: stock,
         quantity: stock,
-        category,
-        location: location || (req.user.shopInfo && req.user.shopInfo.address) || 'Toàn quốc',
-        description: description || '',
-        condition: condition || parsedDetails.condition || 'Mới',
+        category: category.trim(),
+        location: (typeof location === 'string' && location.trim()) || (req.user.shopInfo && req.user.shopInfo.address) || 'Toàn quốc',
+        description: typeof description === 'string' ? description : '',
+        condition: (typeof condition === 'string' && condition.trim()) || parsedDetails.condition || 'Mới',
         images: imagePaths,
         sellerId: req.user._id,
         author: req.user._id,
         variants: parseVariants(variants),
         details: parsedDetails,
-        status: postStatus
+        status: postStatus,
+        moderationStatus
       });
       await product.save();
 
@@ -366,38 +394,140 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         return res.status(403).json({ message: 'Không phải sản phẩm của Shop bạn' });
       }
 
-      const wasPending = PENDING_PRODUCT_STATUSES.includes(product.status);
-      const fields = ['name', 'title', 'sku', 'price', 'originalPrice', 'stockQuantity', 'quantity', 'category', 'location', 'description', 'condition', 'status'];
-      fields.forEach((key) => {
-        if (req.body[key] !== undefined) product[key] = req.body[key];
-      });
-      if (wasPending && product.status === 'active') {
-        const Settings = require('../models/Settings');
-        const settings = await Settings.getGlobal();
-        if (settings.autoApprovePosts !== true) {
-          product.status = 'pending';
+      if (product.moderationStatus === 'locked' || product.status === 'DELETED') {
+        return res.status(403).json({
+          message: 'Sản phẩm này đã bị Quản trị viên khóa/ẩn do vi phạm. Bạn không thể chỉnh sửa hoặc bật lại!'
+        });
+      }
+
+      const body = req.body || {};
+      let contentChanged = false;
+
+      if (body.price !== undefined) {
+        try {
+          const nextPrice = parsePositiveIntOrZero(body.price, 'Giá sản phẩm', { min: 1000 });
+          if (nextPrice !== product.price) contentChanged = true;
+          product.price = nextPrice;
+        } catch (e) {
+          return res.status(400).json({ message: e.message });
         }
       }
-      if (req.body.name && !req.body.title) product.title = req.body.name;
-      if (req.body.title && !req.body.name) product.name = req.body.title;
-      if (req.body.stockQuantity != null) product.quantity = Number(req.body.stockQuantity);
-      if (req.body.quantity != null && req.body.stockQuantity == null) product.stockQuantity = Number(req.body.quantity);
-      if (req.body.variants) product.variants = parseVariants(req.body.variants);
-      if (req.body.details) {
+
+      if (body.originalPrice !== undefined && body.originalPrice !== '') {
         try {
-          product.details = typeof req.body.details === 'string' ? JSON.parse(req.body.details) : req.body.details;
-        } catch (e) { }
+          product.originalPrice = parsePositiveIntOrZero(body.originalPrice, 'Giá gốc', { min: 0 });
+        } catch (e) {
+          return res.status(400).json({ message: e.message });
+        }
+      }
+
+      if (body.stockQuantity !== undefined || body.quantity !== undefined) {
+        const rawStock = body.stockQuantity !== undefined ? body.stockQuantity : body.quantity;
+        try {
+          const nextStock = parsePositiveIntOrZero(rawStock, 'Số lượng tồn kho', { min: 0 });
+          product.stockQuantity = nextStock;
+          product.quantity = nextStock;
+        } catch (e) {
+          return res.status(400).json({ message: e.message });
+        }
+      }
+
+      const nextName = body.name !== undefined ? body.name : body.title;
+      if (nextName !== undefined && typeof nextName === 'string' && nextName.trim()) {
+        if (nextName.trim() !== product.name) contentChanged = true;
+        product.name = nextName.trim();
+        product.title = nextName.trim();
+      }
+
+      if (body.description !== undefined && typeof body.description === 'string') {
+        if (body.description !== product.description) contentChanged = true;
+        product.description = body.description;
+      }
+
+      const stringFields = ['sku', 'category', 'location', 'condition'];
+      stringFields.forEach((key) => {
+        if (body[key] !== undefined && typeof body[key] === 'string') {
+          product[key] = body[key].trim();
+        }
+      });
+
+      if (body.variants !== undefined) {
+        product.variants = parseVariants(body.variants);
+      }
+      if (body.details !== undefined) {
+        try {
+          product.details = typeof body.details === 'string' ? JSON.parse(body.details) : body.details;
+        } catch (e) {}
       }
       if (req.files && req.files.length > 0) {
-        product.images = req.files.map((file) => file.path || file.filename);
+        product.images = req.files.map((file) => file.path || file.secure_url || file.filename);
+        contentChanged = true;
       }
-      if (Number(product.stockQuantity) <= 0) product.status = 'out_of_stock';
+
+      // H3: Bỏ `status` khỏi danh sách field cho sửa trực tiếp; nếu sửa giá/ảnh/mô tả của sản phẩm đã duyệt và autoApprovePosts !== true -> quay lại pending
+      let isAutoApprove = false;
+      try {
+        const Settings = require('../models/Settings');
+        const settings = await Settings.findOne();
+        isAutoApprove = settings && settings.autoApprovePosts === true;
+      } catch (e) {}
+
+      if (contentChanged && !isAutoApprove) {
+        product.moderationStatus = 'pending';
+        product.status = Number(product.stockQuantity) <= 0 ? 'out_of_stock' : 'pending';
+      } else if (Number(product.stockQuantity) <= 0) {
+        product.status = 'out_of_stock';
+      } else if (product.status === 'out_of_stock' && Number(product.stockQuantity) > 0) {
+        product.status = product.moderationStatus === 'approved' ? 'active' : 'pending';
+      }
+
       await product.save();
       res.json({ message: 'Đã cập nhật sản phẩm', product });
     } catch (error) {
       res.status(500).json({ message: 'Lỗi cập nhật sản phẩm' });
     }
   });
+
+  /**
+   * PATCH / PUT /api/seller/products/:id/visibility
+   * Nút ẩn/hiện riêng cho Seller (H3): chỉ cho phép khi sản phẩm đã `approved` và không bị Admin `locked`.
+   */
+  const toggleSellerProductVisibility = async (req, res) => {
+    try {
+      const product = await Post.findById(req.params.id);
+      if (!product) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
+      if (productOwnerId(product) !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Không phải sản phẩm của Shop bạn' });
+      }
+      if (product.moderationStatus === 'locked' || product.status === 'DELETED') {
+        return res.status(403).json({
+          message: 'Sản phẩm đã bị Admin khóa/ẩn. Bạn không thể tự bật lại!'
+        });
+      }
+      if (product.moderationStatus && product.moderationStatus !== 'approved' && product.status !== 'active' && product.status !== 'inactive') {
+        return res.status(400).json({
+          message: 'Chỉ có thể bật/tắt hiển thị cho sản phẩm đã được Admin duyệt (approved)!'
+        });
+      }
+
+      const desiredVisible = req.body?.visible !== undefined
+        ? Boolean(req.body.visible)
+        : product.status === 'inactive';
+
+      if (desiredVisible) {
+        product.status = Number(product.stockQuantity) <= 0 ? 'out_of_stock' : 'active';
+      } else {
+        product.status = 'inactive';
+      }
+      await product.save();
+      res.json({ message: desiredVisible ? 'Đã hiển thị sản phẩm' : 'Đã ẩn sản phẩm', product });
+    } catch (error) {
+      res.status(500).json({ message: 'Lỗi thay đổi trạng thái hiển thị sản phẩm' });
+    }
+  };
+
+  router.patch('/api/seller/products/:id/visibility', protect, isSeller, toggleSellerProductVisibility);
+  router.put('/api/seller/products/:id/visibility', protect, isSeller, toggleSellerProductVisibility);
 
   router.delete('/api/seller/products/:id', protect, isSeller, async (req, res) => {
     try {

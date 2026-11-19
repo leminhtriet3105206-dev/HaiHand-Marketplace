@@ -765,26 +765,29 @@ app.get('/posts', requireAdmin, async (req, res) => {
   } catch (error) { res.render('posts', { posts: [], searchQuery: '' }); }
 });
 
-/** [SSR] Ẩn/Xóa mềm bài đăng (đặt status = DELETED) */
+/** [SSR] Ẩn/Xóa mềm bài đăng (đặt status = DELETED, moderationStatus = locked - H3) */
 app.get('/posts/delete/:id', requireAdmin, async (req, res) => {
-  try { await Post.findByIdAndUpdate(req.params.id, { status: 'DELETED' }); res.redirect('/posts'); } catch (e) { res.redirect('/posts'); }
+  try { await Post.findByIdAndUpdate(req.params.id, { status: 'DELETED', moderationStatus: 'locked' }); res.redirect('/posts'); } catch (e) { res.redirect('/posts'); }
 });
 
-/** [SSR] Duyệt bài đăng (chuyển status = active và thông báo người bán) */
+/** [SSR] Duyệt bài đăng (chuyển moderationStatus = approved, status = active hoặc out_of_stock theo tồn kho - H3) */
 app.get('/posts/approve/:id', requireAdmin, async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).send('Không tìm thấy bài viết');
 
-    post.status = 'active';
+    const stock = Number(post.stockQuantity ?? post.quantity ?? 1);
+    post.moderationStatus = 'approved';
+    post.status = stock <= 0 ? 'out_of_stock' : 'active';
     await post.save();
 
-    await UserNotification.create({
-      user: post.author,
-      title: '✅ Tin đăng đã được duyệt!',
-      message: `Tin đăng "${post.title}" của bạn đã chính thức hiển thị trên chợ. Chúc bạn mau chốt đơn nhé!`,
-      link: `/post/${post._id}`
-    });
+    await sendNotification(
+      post.author || post.sellerId,
+      '✅ Tin đăng đã được duyệt!',
+      `Tin đăng "${post.title || post.name}" của bạn đã chính thức hiển thị trên chợ. Chúc bạn mau chốt đơn nhé!`,
+      'PRODUCT',
+      `/post/${post._id}`
+    );
 
     res.redirect('/posts');
   } catch (error) {

@@ -69,12 +69,12 @@ export default function HomePage() {
     else setIsLoadingMore(true);
 
     try {
-      let url = `${API_URL}/api/posts?page=${currentPage}&limit=10`;
-      if (currentCategory !== 'Tất cả' && currentCategory !== 'Kết quả tìm kiếm') url += `&category=${currentCategory}`;
-      if (currentKeyword.trim()) url += `&search=${currentKeyword}`;
-      if (loc !== 'Tất cả khu vực') url += `&location=${loc}`;
+      const params = new URLSearchParams({ page: String(currentPage), limit: '10' });
+      if (currentCategory !== 'Tất cả' && currentCategory !== 'Kết quả tìm kiếm') params.set('category', currentCategory);
+      if (currentKeyword.trim()) params.set('search', currentKeyword.trim());
+      if (loc !== 'Tất cả khu vực') params.set('location', loc);
 
-      const { data } = await axios.get(url);
+      const { data } = await axios.get(`${API_URL}/api/posts?${params}`);
 
       if (currentPage === 1) setPosts(data);
       else setPosts(prev => [...prev, ...data]);

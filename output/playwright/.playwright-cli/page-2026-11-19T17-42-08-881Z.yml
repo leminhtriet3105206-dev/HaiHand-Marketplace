@@ -1,0 +1,185 @@
+- generic [ref=e3]:
+  - generic [ref=e1625]:
+    - banner [ref=e1626]:
+      - generic [ref=e1627]:
+        - link [ref=e1628] [cursor=pointer]:
+          - /url: /
+          - img "HaiHand" [ref=e1629]
+        - generic [ref=e1631]:
+          - textbox "Tìm kiếm đồ cũ, điện tử, thời trang..." [ref=e1632]
+          - button "Tìm kiếm" [ref=e1633] [cursor=pointer]
+        - generic [ref=e1636]:
+          - navigation [ref=e1637]:
+            - link "Tìm kiếm bằng hình ảnh" [ref=e1638] [cursor=pointer]:
+              - /url: /image-search
+            - link "Khám phá" [ref=e1639] [cursor=pointer]:
+              - /url: /products
+          - generic [ref=e1641]:
+            - link "Đăng nhập" [ref=e1642] [cursor=pointer]:
+              - /url: /login
+            - generic [ref=e1643]: "|"
+            - link "Đăng ký" [ref=e1644] [cursor=pointer]:
+              - /url: /register
+          - link " Kênh Người Bán" [ref=e1645] [cursor=pointer]:
+            - /url: /register-seller
+            - generic [ref=e1646]: 
+            - text: Kênh Người Bán
+    - main [ref=e1647]:
+      - navigation [ref=e1648]:
+        - link "Trang chủ" [ref=e1649] [cursor=pointer]:
+          - /url: /
+        - generic [ref=e1652]: ›
+        - link "Điện tử & Công nghệ" [ref=e1653] [cursor=pointer]:
+          - /url: /post/6af17dc12e06332d9bb40ead
+        - generic [ref=e1654]: ›
+        - generic [ref=e1655]: Bàn phím cơ không dây Keychron K2 V2 nhôm Led RGB switch Gateron Brown
+      - generic [ref=e1656]:
+        - generic [ref=e1657]:
+          - generic [ref=e1659]:
+            - img "Bàn phím cơ không dây Keychron K2 V2 nhôm Led RGB switch Gateron Brown" [ref=e1660]
+            - button [ref=e1661] [cursor=pointer]
+          - generic [ref=e1668]:
+            - heading "Bảo đảm thanh toán & giao nhận" [level=4] [ref=e1669]
+            - paragraph [ref=e1670]: Hỗ trợ thanh toán bảo đảm qua VNPay, Ví HaiPay hoặc COD. Kiểm tra hàng và đổi trả 48h.
+          - generic [ref=e1671]:
+            - generic [ref=e1672]:
+              - button "Mô tả người bán" [ref=e1673] [cursor=pointer]
+              - button "Checklist kiểm hàng" [ref=e1674] [cursor=pointer]
+              - button "Thanh toán & Vận chuyển" [ref=e1675] [cursor=pointer]
+            - generic [ref=e1678]:
+              - heading "Lý do thanh lý & Lịch sử sử dụng" [level=4] [ref=e1679]
+              - paragraph [ref=e1680]: Layout 75% gọn gàng hỗ trợ tốt cả Mac và Windows, switch gõ đầm tay không gây ồn văn phòng.
+          - generic [ref=e1681]:
+            - generic [ref=e1682]:
+              - heading "Đánh giá từ khách đã mua (0)" [level=4] [ref=e1683]
+              - generic [ref=e1684]:
+                - generic [ref=e1685]: ★
+                - text: 5.0 / 5.0
+            - paragraph [ref=e1687]: Người bán này chưa có đánh giá nào.
+        - generic [ref=e1688]:
+          - generic [ref=e1689]:
+            - generic [ref=e1690]:
+              - generic [ref=e1691]: "Mã tin: #6AF17D"
+              - generic [ref=e1692]: •
+              - generic [ref=e1693]: Đăng 10 ngày trước
+            - heading "Bàn phím cơ không dây Keychron K2 V2 nhôm Led RGB switch Gateron Brown" [level=1] [ref=e1694]
+            - generic [ref=e1695]: 1.450.000 ₫
+            - generic [ref=e1698]:
+              - generic [ref=e1699]:
+                - paragraph [ref=e1700]: Tình trạng
+                - paragraph [ref=e1701]: Chưa cập nhật
+              - generic [ref=e1702]:
+                - paragraph [ref=e1703]: Kho hàng
+                - paragraph [ref=e1704]: 1 sản phẩm
+              - generic [ref=e1705]:
+                - paragraph [ref=e1706]: Hãng
+                - paragraph [ref=e1707]: Chưa cập nhật
+              - generic [ref=e1708]:
+                - paragraph [ref=e1709]: Danh mục
+                - paragraph [ref=e1710]: Điện tử & Công nghệ
+            - generic [ref=e1715]:
+              - paragraph [ref=e1716]: TP. Hồ Chí Minh
+              - paragraph [ref=e1717]: Hỗ trợ giao tận nơi hoặc test trực tiếp tại nhà.
+            - generic [ref=e1718]:
+              - generic [ref=e1719]:
+                - link [ref=e1720] [cursor=pointer]:
+                  - /url: /public-profile/69b7ceea4a9e0d2895de52f3
+                  - img "Seller" [ref=e1721]
+                - generic [ref=e1722]:
+                  - link [ref=e1723] [cursor=pointer]:
+                    - /url: /public-profile/69b7ceea4a9e0d2895de52f3
+                    - heading "tu nguyen" [level=4] [ref=e1724]
+                  - paragraph [ref=e1725]: Cá nhân • Đã xác thực
+                - link "Hồ sơ" [ref=e1726] [cursor=pointer]:
+                  - /url: /public-profile/69b7ceea4a9e0d2895de52f3
+              - generic [ref=e1727]:
+                - generic [ref=e1728]:
+                  - paragraph [ref=e1729]: ★ 5.0
+                  - paragraph [ref=e1730]: Đánh giá
+                - generic [ref=e1731]:
+                  - paragraph [ref=e1732]: 98%
+                  - paragraph [ref=e1733]: Phản hồi
+                - generic [ref=e1734]:
+                  - paragraph [ref=e1735]: "0"
+                  - paragraph [ref=e1736]: Đã bán
+            - generic [ref=e1737]:
+              - button "Mua ngay" [ref=e1738] [cursor=pointer]
+              - generic [ref=e1741]:
+                - button "Chat ngay" [ref=e1742] [cursor=pointer]
+                - button [ref=e1745] [cursor=pointer]
+            - generic [ref=e1748]:
+              - generic [ref=e1749]: Đồng kiểm tận tay
+              - generic [ref=e1752]: Trả hàng 48 giờ
+          - generic [ref=e1755]:
+            - heading "Mẹo mua đồ an toàn" [level=4] [ref=e1756]
+            - paragraph [ref=e1759]: Nên hẹn gặp giao dịch tại nhà riêng hoặc nơi công cộng đông đúc. Tuyệt đối không chuyển tiền cọc trước khi xem hàng.
+            - link "Đọc trọn bộ cẩm nang an toàn →" [ref=e1760] [cursor=pointer]:
+              - /url: /post/6af17dc12e06332d9bb40ead
+    - contentinfo [ref=e1761]:
+      - generic [ref=e1762]:
+        - generic [ref=e1763]:
+          - link [ref=e1764] [cursor=pointer]:
+            - /url: /
+            - img "HaiHand" [ref=e1765]
+          - paragraph [ref=e1766]: Nền tảng thương mại điện tử đồ cũ C2C. Mua sắm an toàn, tiện lợi và tiết kiệm cho mọi nhà.
+          - generic [ref=e1767]:
+            - link [ref=e1768] [cursor=pointer]:
+              - /url: /
+            - link [ref=e1771] [cursor=pointer]:
+              - /url: /
+        - generic [ref=e1774]:
+          - heading "Chăm sóc khách hàng" [level=4] [ref=e1775]
+          - list [ref=e1776]:
+            - listitem [ref=e1777]:
+              - link "Trung tâm trợ giúp" [ref=e1778] [cursor=pointer]:
+                - /url: /help-center
+            - listitem [ref=e1779]:
+              - link "Hướng dẫn mua đồ cũ an toàn" [ref=e1780] [cursor=pointer]:
+                - /url: /safe-buying-guide
+            - listitem [ref=e1781]:
+              - link "Quy trình giải quyết tranh chấp" [ref=e1782] [cursor=pointer]:
+                - /url: /dispute-resolution
+            - listitem [ref=e1783]:
+              - link "Câu hỏi thường gặp" [ref=e1784] [cursor=pointer]:
+                - /url: /faq
+        - generic [ref=e1785]:
+          - heading "Về HaiHand" [level=4] [ref=e1786]
+          - list [ref=e1787]:
+            - listitem [ref=e1788]:
+              - link "Giới thiệu HaiHand" [ref=e1789] [cursor=pointer]:
+                - /url: /about
+            - listitem [ref=e1790]:
+              - link "Tuyển dụng" [ref=e1791] [cursor=pointer]:
+                - /url: /careers
+            - listitem [ref=e1792]:
+              - link "Tiêu chuẩn cộng đồng" [ref=e1793] [cursor=pointer]:
+                - /url: /community-standards
+            - listitem [ref=e1794]:
+              - link "Tác động môi trường" [ref=e1795] [cursor=pointer]:
+                - /url: /environmental-impact
+        - generic [ref=e1796]:
+          - heading "Thanh toán & Vận chuyển" [level=4] [ref=e1797]
+          - generic [ref=e1798]:
+            - generic [ref=e1799]: VNPay
+            - generic [ref=e1800]: Ví HaiPay
+            - generic [ref=e1801]: COD
+        - generic [ref=e1802]:
+          - heading "Quy chế sàn TMĐT" [level=4] [ref=e1803]
+          - list [ref=e1804]:
+            - listitem [ref=e1805]:
+              - link "Quy chế hoạt động" [ref=e1806] [cursor=pointer]:
+                - /url: /terms
+            - listitem [ref=e1807]:
+              - link "Chính sách bảo mật" [ref=e1808] [cursor=pointer]:
+                - /url: /privacy
+            - listitem [ref=e1809]:
+              - link "Biểu phí minh bạch" [ref=e1810] [cursor=pointer]:
+                - /url: /fee-structure
+      - paragraph [ref=e1812]: "© 2025 HaiHand - Mua bán đồ cũ văn minh, tiết kiệm. Mã số doanh nghiệp: 0108992384."
+  - generic [ref=e208]:
+    - button "✕" [ref=e209] [cursor=pointer]
+    - generic "Tư vấn chăm sóc khách hàng" [ref=e210] [cursor=pointer]: 🎧
+  - generic "Trợ lý AI HaiHand - Bấm để tư vấn & tìm đồ" [ref=e214] [cursor=pointer]:
+    - generic [ref=e215]:
+      - generic [ref=e216]: 🤖
+      - generic [ref=e217]: AI

@@ -4,6 +4,12 @@ const { Post } = require('../models/Product');
 const { embedImage, imageAsDataUrl, indexProductImage, IMAGE_EMBEDDING_MODEL } = require('./imageEmbeddingService');
 const excludedPhotos = new Map((require('../data/image-search-bad-photos.json') || [])
   .map((item) => [item.id, item.firstImage]));
+let imageReranker;
+try {
+  imageReranker = require('../data/image-reranker.json');
+} catch (_) {
+  imageReranker = null;
+}
 
 const LM_STUDIO_URL = process.env.LM_STUDIO_URL || 'http://localhost:1235/v1';
 const CHAT_MODEL = process.env.AI_MODEL || 'qwen3-vl-4b-instruct';
@@ -27,6 +33,22 @@ const embeddings = new OpenAIEmbeddings({
   apiKey: 'lm-studio',
   configuration: { baseURL: LM_STUDIO_URL }
 });
+
+function imageRerankerProbability(score, textRank) {
+  if (!imageReranker?.crossValidation?.accepted) return null;
+  const raw = [
+    Number(score),
+    textRank ? 1 / Math.sqrt(textRank) : 0,
+    textRank && textRank <= 10 ? 1 : 0,
+    textRank == null ? 1 : 0
+  ];
+  const features = raw.map((value, index) => (
+    (value - imageReranker.scaler.mean[index]) / imageReranker.scaler.scale[index]
+  ));
+  const value = imageReranker.weights[0]
+    + features.reduce((sum, feature, index) => sum + feature * imageReranker.weights[index + 1], 0);
+  return 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, value))));
+}
 
 const SYSTEM_PROMPT = `Bạn là Trợ lý AI của sàn đồ cũ HaiHand.
 - Chỉ trả lời về sản phẩm, mua bán, giao hàng, thanh toán, đổi trả và chính sách HaiHand.
@@ -276,6 +298,25 @@ function hasUsableProductName(product) {
   return !(words.length === 2 && words[0].length === 1 && words[1].length >= 10);
 }
 
+function isVehicleInventoryRequest(message) {
+  const text = searchWords(message).join(' ');
+  return /\bxe\b/.test(text)
+    && /(liet ke|cac loai|nhung xe|xe gi|xe nao|danh sach)/.test(text);
+}
+
+function isWholeVehicle(product) {
+  const name = searchWords(product.title || product.name).join(' ');
+  return !/(mu bao hiem|non full face|khoa|camera hanh trinh|bom lop|kich binh|nhot|phu tung|lop xe|ac quy)/.test(name);
+}
+
+async function listVehicleProducts() {
+  const products = await Post.find({
+    ...productFilter({}),
+    category: 'Xe cộ & Phụ tùng'
+  }).select('title name price category location images description condition').limit(50).lean();
+  return products.filter(isWholeVehicle).slice(0, 10);
+}
+
 async function fallbackSearch(filter) {
   const query = productFilter(filter);
   const terms = [...(filter.keywords || []), filter.semanticQuery]
@@ -383,6 +424,16 @@ async function processChatbot(userMessage, history = []) {
     return { reply: 'Mình không thể hỗ trợ yêu cầu này. Mình có thể giúp bạn về sản phẩm hoặc đơn hàng nhé.', products: [] };
   }
 
+  if (isVehicleInventoryRequest(message)) {
+    const products = publicProducts(await listVehicleProducts());
+    return {
+      reply: products.length
+        ? `Hiện cửa hàng có ${products.length} tin xe nguyên chiếc: ${products.map((product) => product.name).join(', ')}.`
+        : 'Hiện cửa hàng chưa có tin xe nguyên chiếc đang bán.',
+      products
+    };
+  }
+
   const filter = await extractSearch(message, '');
   if (filter.intent === 'policy' || filter.intent === 'support') {
     return { reply: policyReply(message), products: [] };
@@ -459,7 +510,13 @@ async function processImageSearch(image, userMessage = '') {
   if (!message && verified.length && filter.semanticQuery) {
     try {
       const textCandidates = await vectorSearch(filter.semanticQuery, filter);
-      if (textCandidates.length >= 10) {
+      const textRanks = new Map(textCandidates.map((product, index) => [String(product._id), index + 1]));
+      if (imageReranker?.crossValidation?.accepted) {
+        verified = verified.filter((product) => {
+          const probability = imageRerankerProbability(product.score, textRanks.get(String(product._id)));
+          return probability != null && probability >= imageReranker.threshold;
+        });
+      } else if (textCandidates.length >= 10) {
         const textTop = new Set(textCandidates.slice(0, 10).map((product) => String(product._id)));
         verified = verified.filter((product) => textTop.has(String(product._id)));
       }
@@ -477,4 +534,5 @@ async function processImageSearch(image, userMessage = '') {
 }
 
 module.exports = { processChatbot, processImageSearch, imageVectorSearch, vectorSearch, filterRelevantProducts,
+  imageRerankerProbability,
   buildProductText, describeImage, refreshProductSearch, embeddings, EMBEDDING_MODEL };

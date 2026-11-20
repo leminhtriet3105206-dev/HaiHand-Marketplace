@@ -8,10 +8,11 @@ const path = require('path');
 const http = require('http');
 const { Server } = require('socket.io');
 const crypto = require('crypto');
-const moment = require('moment');
+const jwt = require('jsonwebtoken');
 const querystring = require('qs');
 const Notification = require('./models/Notification');
 const User = require('./models/User');
+const SupportConversation = require('./models/SupportConversation');
 const Order = require('./models/Order');
 const { Product, Post } = require('./models/Product');
 const { protect, isSeller } = require('./middleware/auth');
@@ -35,6 +36,8 @@ const shippingRouter = require('./routes/shipping');
 const addressRouter = require('./routes/address');
 const PaymentSession = require('./models/PaymentSession');
 const { processCheckout, settlePaymentSession } = require('./controllers/checkoutController');
+const { buildVnpayPaymentUrl: buildSignedVnpayPaymentUrl, formatVnpayDate, verifyVnpayChecksumStrict } = require('./utils/vnpay');
+const { isHash, verifyPassword, hashPassword } = require('./utils/password');
 
 const app = express();
 
@@ -1071,36 +1074,35 @@ app.get('/api/users/search', async (req, res) => {
 
 app.put('/api/users/change-password/:id', async (req, res) => {
   try {
+    const bearer = req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];
+    if (!bearer) return res.status(401).json({ message: 'Vui lòng đăng nhập.' });
+    const decoded = jwt.verify(bearer, process.env.JWT_SECRET || 'secret123');
+    if (String(decoded.id || decoded._id) !== req.params.id) return res.status(403).json({ message: 'Không thể đổi mật khẩu người khác.' });
     const { oldPassword, newPassword } = req.body;
     const user = await User.findById(req.params.id);
     if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
-    if (user.password !== oldPassword) return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng!' });
-    user.password = newPassword;
+    if (!(await verifyPassword(oldPassword, user.password))) return res.status(400).json({ message: 'Mật khẩu hiện tại không đúng!' });
+    user.password = await hashPassword(newPassword);
     await user.save();
     res.status(200).json({ message: 'Đổi mật khẩu thành công!' });
-  } catch (err) { res.status(500).json({ message: 'Lỗi server khi đổi mật khẩu' }); }
+  } catch (err) { res.status(err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError' ? 401 : 500).json({ message: 'Không thể đổi mật khẩu. Vui lòng đăng nhập lại.' }); }
 });
 
 app.post('/api/users/forgot-password', async (req, res) => {
-  try {
-    const { email, phone, newPassword } = req.body;
-    const user = await User.findOne({ email });
-    if (!user) return res.status(404).json({ message: 'Email này chưa đăng ký tài khoản!' });
-    if (!user.phone) return res.status(400).json({ message: 'Chưa cập nhật SĐT, liên hệ Admin.' });
-    if (user.phone !== phone) return res.status(400).json({ message: 'SĐT không chính xác!' });
-    user.password = newPassword;
-    await user.save();
-    res.status(200).json({ message: 'Lấy lại mật khẩu thành công!' });
-  } catch (err) { res.status(500).json({ message: 'Lỗi server' }); }
+  res.status(410).json({ message: 'Vui lòng đặt lại mật khẩu bằng mã OTP.' });
 });
 
 app.post('/api/users/login', async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email, password });
-    if (!user) return res.status(401).json({ message: 'Sai email hoặc mật khẩu' });
+    const user = await User.findOne({ email: String(email || '').trim().toLowerCase() });
+    if (!user || !(await verifyPassword(String(password || ''), user.password))) return res.status(401).json({ message: 'Sai email hoặc mật khẩu' });
     if (user.status === 'locked' || user.isBanned) {
       return res.status(403).json({ message: 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ ban quản trị để được hỗ trợ.' });
+    }
+    if (!isHash(user.password)) {
+      user.password = await hashPassword(password);
+      await user.save();
     }
     const safe = sanitizeUser(user);
     const token = signUserToken(user);
@@ -1130,7 +1132,7 @@ app.post('/api/users/register', async (req, res) => {
     const newUser = new User({
       name: name.trim(),
       email: cleanEmail,
-      password,
+      password: await hashPassword(password),
       phone: phone ? phone.trim() : '',
       address: address ? address.trim() : '',
       role: 'Khách hàng', // Strictly forced safe default
@@ -1181,12 +1183,17 @@ app.get('/api/users/profile', async (req, res) => {
 
 app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
   try {
-    const updateData = { ...req.body };
-
+    const bearer = req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];
+    if (!bearer) return res.status(401).json({ message: 'Vui lòng đăng nhập.' });
+    const decoded = jwt.verify(bearer, process.env.JWT_SECRET || 'secret123');
+    if (String(decoded.id || decoded._id) !== req.params.id) return res.status(403).json({ message: 'Không thể sửa hồ sơ người khác.' });
+    const allowed = ['name', 'phone', 'address', 'bio', 'cccd', 'username', 'taxId', 'gender', 'dob', 'avatarFrame', 'profileTitle'];
+    const updateData = Object.fromEntries(allowed.filter(key => req.body[key] !== undefined).map(key => [key, req.body[key]]));
     if (req.file) updateData.avatar = req.file.path;
     const updatedUser = await User.findByIdAndUpdate(req.params.id, updateData, { new: true }).select('-password');
+    if (!updatedUser) return res.status(404).json({ message: 'Không tìm thấy người dùng.' });
     res.status(200).json(sanitizeUser(updatedUser));
-  } catch (err) { res.status(500).json({ message: 'Lỗi cập nhật' }); }
+  } catch (err) { res.status(err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError' ? 401 : 500).json({ message: 'Không thể cập nhật hồ sơ. Vui lòng đăng nhập lại.' }); }
 });
 
 app.get('/api/posts', async (req, res) => {
@@ -1224,9 +1231,9 @@ app.get('/api/posts', async (req, res) => {
       if (!isNaN(numMax) && numMax > 0) query.price.$lte = numMax;
     }
 
-    let sortOption = { createdAt: -1 };
-    if (sort === 'price-asc') sortOption = { price: 1 };
-    if (sort === 'price-desc') sortOption = { price: -1 };
+    let sortOption = { createdAt: -1, _id: -1 };
+    if (sort === 'price-asc') sortOption = { price: 1, _id: -1 };
+    if (sort === 'price-desc') sortOption = { price: -1, _id: -1 };
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const limitNum = Math.max(1, parseInt(limit, 10) || 8);
@@ -1303,46 +1310,8 @@ function sortObject(obj) {
   return sorted;
 }
 
-function verifyVnpayChecksum(params, secureHash) {
-  if (!secureHash) return true;
-  let vnp_Params = { ...params };
-  delete vnp_Params['vnp_SecureHash'];
-  delete vnp_Params['vnp_SecureHashType'];
-
-  vnp_Params = sortObject(vnp_Params);
-  let signData = querystring.stringify(vnp_Params, { encode: false });
-  let hmac = crypto.createHmac("sha512", vnp_HashSecret);
-  let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
-
-  return secureHash.toLowerCase() === signed.toLowerCase();
-}
-
 function buildVnpayPaymentUrl({ orderId, amount, ipAddr = '127.0.0.1', orderInfo, returnUrl }) {
-  const date = new Date();
-  const createDate = moment(date).format('YYYYMMDDHHmmss');
-
-  let vnp_Params = {
-    'vnp_Version': '2.1.0',
-    'vnp_Command': 'pay',
-    'vnp_TmnCode': vnp_TmnCode,
-    'vnp_Locale': 'vn',
-    'vnp_CurrCode': 'VND',
-    'vnp_TxnRef': orderId.toString(),
-    'vnp_OrderInfo': orderInfo || ('Thanh toan don hang HaiHand ' + orderId),
-    'vnp_OrderType': 'other',
-    'vnp_Amount': Math.round(Number(amount) * 100),
-    'vnp_ReturnUrl': returnUrl || vnp_ReturnUrl,
-    'vnp_IpAddr': ipAddr,
-    'vnp_CreateDate': createDate
-  };
-
-  vnp_Params = sortObject(vnp_Params);
-  const signData = querystring.stringify(vnp_Params, { encode: false });
-  const hmac = crypto.createHmac("sha512", vnp_HashSecret);
-  const signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
-  vnp_Params['vnp_SecureHash'] = signed;
-
-  return vnp_Url + '?' + querystring.stringify(vnp_Params, { encode: false });
+  return buildSignedVnpayPaymentUrl({ orderId, amount, ipAddr, orderInfo, returnUrl });
 }
 
 // ==========================================
@@ -2361,7 +2330,7 @@ app.post('/api/haipay/deposit', async (req, res) => {
   try {
     const { amount, userId } = req.body;
     let date = new Date();
-    let createDate = moment(date).format('YYYYMMDDHHmmss');
+    let createDate = formatVnpayDate(date);
     let txnRef = `NAP_${userId}_${createDate}`;
 
     let vnp_Params = {
@@ -2371,7 +2340,8 @@ app.post('/api/haipay/deposit', async (req, res) => {
       'vnp_OrderType': 'topup', 'vnp_Amount': amount * 100,
       'vnp_ReturnUrl': vnp_ReturnUrl,
       'vnp_IpAddr': req.headers['x-forwarded-for'] || req.connection?.remoteAddress || '127.0.0.1',
-      'vnp_CreateDate': createDate
+      'vnp_CreateDate': createDate,
+      'vnp_ExpireDate': formatVnpayDate(new Date(date.getTime() + 15 * 60 * 1000))
     };
 
     vnp_Params = sortObject(vnp_Params);
@@ -2389,11 +2359,11 @@ app.post('/api/haipay/verify', async (req, res) => {
   try {
     const { txnRef, responseCode, amount, vnp_Params, secureHash } = req.body;
 
-    if (secureHash && vnp_Params) {
-      const isValid = verifyVnpayChecksum(vnp_Params, secureHash);
-      if (!isValid) {
-        return res.status(400).json({ message: 'Chữ ký checksum không hợp lệ (Invalid Checksum)!' });
-      }
+    if (!verifyVnpayChecksumStrict(vnp_Params, secureHash) ||
+        vnp_Params.vnp_TmnCode !== vnp_TmnCode || vnp_Params.vnp_TxnRef !== txnRef ||
+        vnp_Params.vnp_ResponseCode !== responseCode || vnp_Params.vnp_Amount !== String(amount) ||
+        vnp_Params.vnp_TransactionStatus !== '00') {
+      return res.status(400).json({ message: 'Kết quả VNPAY không hợp lệ.' });
     }
 
     if (responseCode === '00') {
@@ -2456,17 +2426,19 @@ app.post('/api/vnpay/verify', async (req, res) => {
     const { orderId, responseCode, vnp_Params, secureHash } = req.body;
     if (!orderId) return res.status(400).json({ message: 'Thiếu mã đơn hàng!' });
 
-    if (secureHash && vnp_Params) {
-      const isValid = verifyVnpayChecksum(vnp_Params, secureHash);
-      if (!isValid) {
-        return res.status(400).json({ message: 'Chữ ký checksum không hợp lệ (Invalid Checksum)!' });
-      }
+    if (!verifyVnpayChecksumStrict(vnp_Params, secureHash) ||
+        vnp_Params.vnp_TmnCode !== vnp_TmnCode || vnp_Params.vnp_TxnRef !== orderId ||
+        vnp_Params.vnp_ResponseCode !== responseCode) {
+      return res.status(400).json({ message: 'Kết quả VNPAY không hợp lệ.' });
     }
 
     // 1. Check if orderId matches PaymentSession (Multi-Vendor Checkout parentOrderId)
     const session = await PaymentSession.findOne({ parentOrderId: orderId });
     if (session) {
-      if (responseCode === '00') {
+      if (session.method !== 'VNPAY' || String(session.amount * 100) !== vnp_Params.vnp_Amount) {
+        return res.status(400).json({ message: 'Số tiền hoặc phương thức thanh toán không khớp đơn hàng.' });
+      }
+      if (responseCode === '00' && vnp_Params.vnp_TransactionStatus === '00') {
         const result = await settlePaymentSession(orderId, {
           gatewayPayload: { vnp_Params, responseCode },
           paymentMethod: 'VNPAY'
@@ -2493,7 +2465,10 @@ app.post('/api/vnpay/verify', async (req, res) => {
     const order = await Order.findById(orderId);
     if (!order) return res.status(404).json({ message: 'Không tìm thấy đơn hàng' });
 
-    if (responseCode === '00') {
+    if (String(order.totalPrice * 100) !== vnp_Params.vnp_Amount || order.paymentMethod !== 'VNPAY') {
+      return res.status(400).json({ message: 'Số tiền hoặc phương thức thanh toán không khớp đơn hàng.' });
+    }
+    if (responseCode === '00' && vnp_Params.vnp_TransactionStatus === '00') {
       order.paymentStatus = 'escrow';
       order.status = 'Pending';
       order.paidAt = new Date();
@@ -2528,21 +2503,15 @@ app.post('/api/vnpay/verify', async (req, res) => {
 
 app.get('/api/vnpay/vnpay_ipn', async (req, res) => {
   try {
-    let vnp_Params = { ...req.query };
-    let secureHash = vnp_Params['vnp_SecureHash'];
-    let orderId = vnp_Params['vnp_TxnRef'];
-    let rspCode = vnp_Params['vnp_ResponseCode'];
+    const vnp_Params = { ...req.query };
+    const orderId = vnp_Params.vnp_TxnRef;
+    const rspCode = vnp_Params.vnp_ResponseCode;
 
-    delete vnp_Params['vnp_SecureHash'];
-    delete vnp_Params['vnp_SecureHashType'];
+    if (!verifyVnpayChecksumStrict(vnp_Params, vnp_Params.vnp_SecureHash) || vnp_Params.vnp_TmnCode !== vnp_TmnCode) {
+      return res.status(200).json({ RspCode: '97', Message: 'Fail Checksum' });
+    }
 
-    vnp_Params = sortObject(vnp_Params);
-    let signData = querystring.stringify(vnp_Params, { encode: false });
-    let hmac = crypto.createHmac("sha512", vnp_HashSecret);
-    let signed = hmac.update(Buffer.from(signData, 'utf-8')).digest("hex");
-
-    if (secureHash && secureHash.toLowerCase() === signed.toLowerCase()) {
-      if (rspCode === '00') {
+    if (rspCode === '00' && vnp_Params.vnp_TransactionStatus === '00') {
         if (orderId && orderId.startsWith('NAP_')) {
           const parts = orderId.split('_');
           const userId = parts[1];
@@ -2571,6 +2540,9 @@ app.get('/api/vnpay/vnpay_ipn', async (req, res) => {
           // Check if parentOrderId matches PaymentSession
           const session = await PaymentSession.findOne({ parentOrderId: orderId });
           if (session) {
+            if (session.method !== 'VNPAY' || String(session.amount * 100) !== vnp_Params.vnp_Amount) {
+              return res.status(200).json({ RspCode: '04', Message: 'Invalid amount or method' });
+            }
             await settlePaymentSession(orderId, {
               gatewayPayload: vnp_Params,
               paymentMethod: 'VNPAY'
@@ -2578,6 +2550,9 @@ app.get('/api/vnpay/vnpay_ipn', async (req, res) => {
           } else if (mongoose.isValidObjectId(orderId)) {
             const order = await Order.findById(orderId);
             if (order && order.paymentStatus !== 'escrow') {
+              if (order.paymentMethod !== 'VNPAY' || String(order.totalPrice * 100) !== vnp_Params.vnp_Amount) {
+                return res.status(200).json({ RspCode: '04', Message: 'Invalid amount or method' });
+              }
               order.paymentStatus = 'escrow';
               order.status = 'Pending';
               order.paidAt = new Date();
@@ -2585,12 +2560,9 @@ app.get('/api/vnpay/vnpay_ipn', async (req, res) => {
             }
           }
         }
-        res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
-      } else {
-        res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
-      }
+      res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
     } else {
-      res.status(200).json({ RspCode: '97', Message: 'Fail Checksum' });
+      res.status(200).json({ RspCode: '00', Message: 'Confirm Success' });
     }
   } catch (error) {
     res.status(200).json({ RspCode: '99', Message: 'Unknown error' });
@@ -2684,6 +2656,39 @@ app.post('/api/users/reset-password-otp', async (req, res) => {
 });
 
 // --- API CHATBOT AI (LM STUDIO & MONGODB) ---
+async function supportCustomer(req, res, next) {
+  try {
+    const token = req.headers.authorization?.match(/^Bearer (.+)$/)?.[1];
+    if (!token) return res.status(401).json({ message: 'Vui lòng đăng nhập để liên hệ tư vấn.' });
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret123');
+    const user = await User.findById(decoded.id || decoded._id).select('_id');
+    if (!user) return res.status(401).json({ message: 'Phiên đăng nhập không hợp lệ.' });
+    req.supportCustomerId = user._id;
+    next();
+  } catch { res.status(401).json({ message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.' }); }
+}
+
+app.get('/api/support/conversation', supportCustomer, async (req, res) => {
+  try {
+    const conversation = await SupportConversation.findOne({ customer: req.supportCustomerId }).lean();
+    res.json(conversation || { status: 'none', messages: [] });
+  } catch { res.status(500).json({ message: 'Không tải được hội thoại hỗ trợ.' }); }
+});
+
+app.post('/api/support/messages', supportCustomer, async (req, res) => {
+  const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
+  if (!content || content.length > 2000) return res.status(400).json({ message: 'Tin nhắn phải có từ 1 đến 2000 ký tự.' });
+  try {
+    const conversation = await SupportConversation.findOneAndUpdate(
+      { customer: req.supportCustomerId },
+      { $setOnInsert: { customer: req.supportCustomerId, status: 'pending' },
+        $push: { messages: { sender: 'customer', content } }, $inc: { unreadCount: 1 } },
+      { new: true, upsert: true, runValidators: true }
+    );
+    res.status(201).json(conversation);
+  } catch { res.status(500).json({ message: 'Không gửi được yêu cầu hỗ trợ.' }); }
+});
+
 app.post('/api/chatbot/ask', async (req, res) => {
   try {
     const { message, history } = req.body;

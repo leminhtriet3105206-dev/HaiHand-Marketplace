@@ -18,6 +18,22 @@ const FloatingAIChat = () => {
 
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
+    const handleHumanHandoff = () => {
+        const transcript = messages
+            .filter(message => message.text)
+            .slice(-6)
+            .map(message => `${message.sender === 'user' ? 'Khách hàng' : 'Trợ lý AI'}: ${message.text}`)
+            .join('\n')
+            .slice(0, 1500);
+
+        window.dispatchEvent(new CustomEvent('haihand:open-support', {
+            detail: {
+                message: `Tôi muốn được tư vấn trực tiếp.${transcript ? `\n\nNội dung trao đổi gần nhất với Trợ lý AI:\n${transcript}` : ''}`
+            }
+        }));
+        setIsOpen(false);
+    };
+
     // Tự động cuộn xuống cuối khi có tin nhắn mới
     useEffect(() => {
         if (isOpen) {
@@ -120,29 +136,28 @@ const FloatingAIChat = () => {
                             background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%)'
                         }}
                     >
-                        <div className="d-flex align-items-center gap-2">
+                        <div className="d-flex align-items-center gap-2" style={{ minWidth: 0, flex: 1 }}>
                             <div 
                                 className="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
                                 style={{ width: '38px', height: '38px', fontSize: '20px' }}
                             >
                                 🤖
                             </div>
-                            <div>
-                                <h6 className="m-0 fw-bold" style={{ fontSize: '15px' }}>Trợ lý AI HaiHand</h6>
+                            <div style={{ minWidth: 0 }}>
+                                <h6 className="m-0 fw-bold text-truncate" style={{ fontSize: '15px' }}>Trợ lý AI HaiHand</h6>
                                 <div className="d-flex align-items-center gap-1" style={{ fontSize: '11px', opacity: 0.9 }}>
                                     <span className="bg-success rounded-circle" style={{ width: '7px', height: '7px' }}></span>
                                     <span>Qwen3-VL + RAG</span>
                                 </div>
                             </div>
                         </div>
-                        <button 
-                            onClick={() => setIsOpen(false)}
-                            className="btn btn-sm text-white rounded-circle d-flex align-items-center justify-content-center"
-                            style={{ width: '30px', height: '30px', background: 'rgba(255,255,255,0.2)', border: 'none' }}
-                            title="Đóng chat"
-                        >
-                            ✕
-                        </button>
+                        <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                            <button type="button" onClick={handleHumanHandoff} className="btn btn-sm btn-warning rounded-pill" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                                🎧 Gặp tư vấn viên
+                            </button>
+                            <button onClick={() => setIsOpen(false)} className="btn btn-sm text-white rounded-circle d-flex align-items-center justify-content-center"
+                                style={{ width: '30px', height: '30px', background: 'rgba(255,255,255,0.2)', border: 'none' }} title="Đóng chat">✕</button>
+                        </div>
                     </div>
 
                     {/* 2. Vùng tin nhắn (Tự co giãn & cuộn mượt) */}

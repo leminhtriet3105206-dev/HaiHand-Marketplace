@@ -1,0 +1,34 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e1814]:
+      - generic [ref=e1815]:
+        - img "HaiHand" [ref=e1817] [cursor=pointer]
+        - paragraph [ref=e1818]: TRUY CẬP HỆ THỐNG
+      - generic [ref=e1820]:
+        - generic [ref=e1821]:
+          - generic [ref=e1822]: Địa chỉ Email
+          - textbox "user@gmail.com" [ref=e1823]
+        - generic [ref=e1824]:
+          - generic [ref=e1825]:
+            - generic [ref=e1826]: Mật khẩu
+            - generic [ref=e1827] [cursor=pointer]: Quên?
+          - generic [ref=e1828]:
+            - textbox [ref=e1829]
+            - button "👁️" [ref=e1830] [cursor=pointer]
+        - button "Đăng nhập" [ref=e1831] [cursor=pointer]
+        - generic [ref=e1832]:
+          - text: Chưa có tài khoản?
+          - link "Tham gia HaiHand" [ref=e1833] [cursor=pointer]:
+            - /url: /register
+    - generic [ref=e208]:
+      - button "✕" [ref=e209] [cursor=pointer]
+      - generic "Tư vấn chăm sóc khách hàng" [ref=e210] [cursor=pointer]: 🎧
+    - generic "Trợ lý AI HaiHand - Bấm để tư vấn & tìm đồ" [ref=e214] [cursor=pointer]:
+      - generic [ref=e215]:
+        - generic [ref=e216]: 🤖
+        - generic [ref=e217]: AI
+  - generic [ref=e1835] [cursor=pointer]:
+    - generic [ref=e1841]:
+      - generic [ref=e1842]: Chú ý
+      - generic [ref=e1843]: Bạn phải đăng nhập thì mới mua được nha!
+    - button [ref=e1844]

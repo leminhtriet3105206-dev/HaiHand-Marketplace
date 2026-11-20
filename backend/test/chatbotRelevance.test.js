@@ -43,6 +43,35 @@ test('chatbot only returns products accepted as relevant', async () => {
   assert.equal(call, 3);
 });
 
+test('vehicle inventory lists complete vehicles and excludes accessories', async () => {
+  let modelCalls = 0;
+  class ChatOpenAI { async invoke() { modelCalls++; return { content: '' }; } }
+  class Model {}
+  const rows = [
+    { _id: 'wave', title: 'Xe máy Honda Wave Alpha', category: 'Xe cộ & Phụ tùng' },
+    { _id: 'bike', title: 'Xe đạp địa hình', category: 'Xe cộ & Phụ tùng' },
+    { _id: 'pump', title: 'Bơm lốp ô tô kiêm kích bình xe máy', category: 'Xe cộ & Phụ tùng' },
+    { _id: 'helmet', title: 'Mũ bảo hiểm Fullface', category: 'Xe cộ & Phụ tùng' }
+  ];
+  const query = { select() { return this; }, limit() { return this; }, async lean() { return rows; } };
+  const Post = { find: () => query };
+  const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
+  const module = { exports: {} };
+  vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
+    (name) => ({
+      '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings: Model },
+      '@langchain/core/messages': {}, '../models/Product': { Post },
+      './imageEmbeddingService': {}
+    })[name], module, { env: {} }, console
+  );
+
+  const result = await module.exports.processChatbot('Liệt kê các loại xe có tại cửa hàng');
+  assert.deepEqual(Array.from(result.products, (product) => product._id), ['wave', 'bike']);
+  assert.match(result.reply, /2 tin xe nguyên chiếc/);
+  assert.doesNotMatch(result.reply, /Bơm lốp|Mũ bảo hiểm/);
+  assert.equal(modelCalls, 0);
+});
+
 test('chatbot answer cannot deny a product already selected from Atlas', async () => {
   let call = 0;
   class ChatOpenAI { async invoke() { return { content: [

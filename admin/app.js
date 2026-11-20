@@ -18,6 +18,8 @@ const cors = require("cors");
 const Post = require("./models/Post");
 const Product = require("./models/Product");
 const User = require("./models/User");
+const Message = require("./models/Message");
+const SupportConversation = require('./models/SupportConversation');
 const Category = require("./models/Category");
 const GlobalSetting = require("./models/GlobalSetting");
 // Minimal Order model: required so Revenue.populate('orderId') can resolve the 'Order' ref.
@@ -634,6 +636,85 @@ app.get("/admin/chat", checkLogin, (req, res) => {
   res.render("admin-chat", { active: 'chat' });
 });
 
+// Mobile support chat uses the same Admin account returned by /api/admin/contact.
+async function supportAccount() {
+  return User.findOne({ role: 'Admin' }).select('_id');
+}
+
+app.get('/api/admin/support/conversations', checkLogin, async (req, res) => {
+  try {
+    const conversations = await SupportConversation.find().sort({ updatedAt: -1 }).limit(500)
+      .populate('customer', 'name email').lean();
+    const queue = conversations.filter(item => item.customer).map(item => ({
+      customerId: String(item.customer._id), name: item.customer.name || item.customer.email || 'Khách hàng',
+      lastMessage: item.messages.at(-1)?.content || '', unreadCount: item.unreadCount || 0,
+      status: item.status, timestamp: item.updatedAt
+    }));
+    const admin = await supportAccount();
+    if (admin) {
+      const existing = new Set(queue.map(item => item.customerId));
+      const legacy = await Message.find({ $or: [{ sender: admin._id }, { receiver: admin._id }] })
+        .sort({ timestamp: -1 }).limit(500).lean();
+      const byCustomer = new Map();
+      for (const message of legacy) {
+        const incoming = String(message.receiver) === String(admin._id);
+        const customerId = String(incoming ? message.sender : message.receiver);
+        if (existing.has(customerId)) continue;
+        if (!byCustomer.has(customerId)) byCustomer.set(customerId, {
+          customerId, lastMessage: message.content || 'Hình ảnh', unreadCount: 0,
+          timestamp: message.timestamp, status: 'active'
+        });
+        if (incoming && !message.isRead) byCustomer.get(customerId).unreadCount++;
+      }
+      const customers = await User.find({ _id: { $in: [...byCustomer.keys()] } }).select('name email').lean();
+      for (const customer of customers) {
+        const item = byCustomer.get(String(customer._id));
+        queue.push({ ...item, name: customer.name || customer.email || 'Khách hàng' });
+      }
+    }
+    res.json(queue.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)));
+  } catch (error) { res.status(500).json({ error: 'Không tải được hội thoại CSKH.' }); }
+});
+
+app.get('/api/admin/support/messages/:customerId', checkLogin, async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    if (!mongoose.isValidObjectId(customerId)) return res.status(400).json({ error: 'Khách hàng không hợp lệ.' });
+    const conversation = await SupportConversation.findOneAndUpdate(
+      { customer: customerId }, { $set: { unreadCount: 0 } }, { new: true }).lean();
+    if (conversation) return res.json({ status: conversation.status, messages: conversation.messages });
+    const admin = await supportAccount();
+    if (!admin) return res.status(404).json({ error: 'Chưa có yêu cầu hỗ trợ.' });
+    const messages = await Message.find({ $or: [
+      { sender: customerId, receiver: admin._id }, { sender: admin._id, receiver: customerId }
+    ] }).sort({ timestamp: -1 }).limit(200).lean();
+    await Message.updateMany({ sender: customerId, receiver: admin._id, isRead: false }, { $set: { isRead: true } });
+    res.json({ status: 'active', messages: messages.reverse().map(item => ({
+      sender: String(item.sender) === String(admin._id) ? 'admin' : 'customer', content: item.content || (item.images?.length ? 'Khách hàng đã gửi hình ảnh' : '')
+    })) });
+  } catch (error) { res.status(500).json({ error: 'Không tải được tin nhắn CSKH.' }); }
+});
+
+app.post('/api/admin/support/messages/:customerId', checkLogin, async (req, res) => {
+  try {
+    const { customerId } = req.params;
+    const content = String(req.body.content || '').trim();
+    if (!mongoose.isValidObjectId(customerId) || !content || content.length > 2000)
+      return res.status(400).json({ error: 'Tin nhắn không hợp lệ (tối đa 2000 ký tự).' });
+    const conversation = await SupportConversation.findOneAndUpdate(
+      { customer: customerId },
+      { $push: { messages: { sender: 'admin', content, createdAt: new Date() } }, $set: { status: 'active' } },
+      { new: true, runValidators: true }
+    );
+    if (conversation) return res.status(201).json(conversation);
+    const admin = await supportAccount();
+    if (!admin || !await Message.exists({ sender: customerId, receiver: admin._id }))
+      return res.status(404).json({ error: 'Chưa có yêu cầu hỗ trợ từ khách hàng.' });
+    const message = await Message.create({ sender: admin._id, receiver: customerId, content });
+    res.status(201).json(message);
+  } catch (error) { res.status(500).json({ error: 'Không gửi được tin nhắn CSKH.' }); }
+});
+
 // Helper filter to isolate admin/system-level notifications from personal user notifications
 const getAdminNotifFilter = () => ({
   $or: [
@@ -684,7 +765,13 @@ app.post("/api/admin/notifications/read", checkLogin, async (req, res) => {
 });
 
 app.get("/api/admin/unread-chats", checkLogin, async (req, res) => {
-  res.json({ count: 0 });
+  try {
+    const admin = await supportAccount();
+    const legacyCount = admin ? await Message.countDocuments({ receiver: admin._id, isRead: false }) : 0;
+    const queued = await SupportConversation.aggregate([{ $group: { _id: null, count: { $sum: '$unreadCount' } } }]);
+    const count = legacyCount + (queued[0]?.count || 0);
+    res.json({ count });
+  } catch (error) { res.status(500).json({ error: 'Không tải được số tin nhắn chưa đọc.' }); }
 });
 
 app.get("/api/admin/test-notif", checkLogin, async (req, res) => {

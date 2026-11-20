@@ -8,6 +8,7 @@
     "rag:index": "node scripts/index-rag-products.js",
     "image:export-training": "node scripts/export-image-training-data.js",
     "image:eval": "node scripts/evaluate-image-search.js",
+    "image:train-reranker": "node scripts/train-image-reranker.js",
     "test": "jest --testPathIgnorePatterns=test/chatbotRelevance.test.js && node --test test/chatbotRelevance.test.js"
   },
   "keywords": [],

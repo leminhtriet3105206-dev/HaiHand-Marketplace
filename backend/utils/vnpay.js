@@ -1,5 +1,4 @@
 const crypto = require('crypto');
-const moment = require('moment');
 const querystring = require('qs');
 
 const vnp_TmnCode = process.env.VNP_TMNCODE || 'IYQYHLU4';
@@ -40,7 +39,17 @@ function verifyVnpayChecksumStrict(params, secureHash) {
   const p = { ...params };
   delete p.vnp_SecureHash;
   delete p.vnp_SecureHashType;
-  return secureHash.toLowerCase() === signParams(p).toLowerCase();
+  if (!/^[0-9a-f]{128}$/i.test(secureHash)) return false;
+  return crypto.timingSafeEqual(Buffer.from(secureHash, 'hex'), Buffer.from(signParams(p), 'hex'));
+}
+
+function formatVnpayDate(date) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+  }).formatToParts(date);
+  const value = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${value.year}${value.month}${value.day}${value.hour}${value.minute}${value.second}`;
 }
 
 function buildVnpayPaymentUrl({ orderId, amount, ipAddr = '127.0.0.1', orderInfo, returnUrl }) {
@@ -56,7 +65,8 @@ function buildVnpayPaymentUrl({ orderId, amount, ipAddr = '127.0.0.1', orderInfo
     vnp_Amount: Math.round(Number(amount) * 100),
     vnp_ReturnUrl: returnUrl || vnp_ReturnUrl,
     vnp_IpAddr: ipAddr,
-    vnp_CreateDate: moment(new Date()).format('YYYYMMDDHHmmss')
+    vnp_CreateDate: formatVnpayDate(new Date()),
+    vnp_ExpireDate: formatVnpayDate(new Date(Date.now() + 15 * 60 * 1000))
   };
   const sorted = sortObject(params);
   sorted.vnp_SecureHash = signParams(params);
@@ -80,6 +90,7 @@ module.exports = {
   signParams,
   verifyVnpayChecksum,
   verifyVnpayChecksumStrict,
+  formatVnpayDate,
   buildVnpayPaymentUrl,
   normalizeIp
 };

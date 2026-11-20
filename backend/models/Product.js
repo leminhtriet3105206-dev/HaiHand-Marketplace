@@ -26,8 +26,6 @@ const productSchema = new mongoose.Schema({
   textEmbedding: { type: [Number], default: undefined, select: false },
   embeddingModel: { type: String, default: '', select: false },
   imageEmbedding: { type: [Number], default: undefined, select: false },
-  imageEmbeddings: { type: [[Number]], default: undefined, select: false },
-  imageEmbeddingImages: { type: [String], default: undefined, select: false },
   imageEmbeddingModel: { type: String, default: '', select: false },
   status: {
     type: String,

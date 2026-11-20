@@ -6,7 +6,7 @@ const { Post } = require('../models/Product');
 const { canonicalStatus } = require('../utils/b2c');
 
 async function migrate() {
-  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
   if (!uri) {
     console.error('Thiếu MONGO_URI');
     process.exit(1);

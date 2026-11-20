@@ -3,7 +3,7 @@ const { protect, isSeller, isAdmin } = require('../middleware/auth');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const { Post } = require('../models/Product');
-const { refreshProductSearch } = require('../services/chatbotService');
+const { indexProductImage } = require('../services/imageEmbeddingService');
 const {
   sanitizeUser,
   canonicalStatus,
@@ -195,6 +195,71 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
+  router.get('/api/seller/analytics', protect, isSeller, async (req, res) => {
+    try {
+      const sellerId = req.user._id;
+      const products = await Post.find({ $or: [{ sellerId }, { author: sellerId }] })
+        .select('name title price stockQuantity quantity soldCount images category status')
+        .lean();
+
+      const productIds = products.map((p) => p._id);
+      const UserEvent = require('../models/UserEvent');
+
+      const eventStats = await UserEvent.aggregate([
+        {
+          $match: {
+            productId: { $in: productIds },
+            type: { $in: ['product_view', 'cart_add', 'purchase'] }
+          }
+        },
+        {
+          $group: {
+            _id: { productId: '$productId', type: '$type' },
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      const statsMap = new Map();
+      for (const stat of eventStats) {
+        if (!stat._id?.productId) continue;
+        const pid = stat._id.productId.toString();
+        if (!statsMap.has(pid)) {
+          statsMap.set(pid, { views: 0, cartAdds: 0, purchases: 0 });
+        }
+        const record = statsMap.get(pid);
+        if (stat._id.type === 'product_view') record.views = stat.count;
+        else if (stat._id.type === 'cart_add') record.cartAdds = stat.count;
+        else if (stat._id.type === 'purchase') record.purchases = stat.count;
+      }
+
+      const items = products.map((p) => {
+        const s = statsMap.get(p._id.toString()) || { views: 0, cartAdds: 0, purchases: 0 };
+        const views = s.views;
+        const cartAdds = s.cartAdds;
+        const purchases = Math.max(s.purchases, p.soldCount || 0);
+        const conversionRate = views > 0 ? Number(((purchases / views) * 100).toFixed(1)) : 0;
+        return {
+          _id: p._id,
+          name: p.title || p.name || 'Sản phẩm',
+          price: p.price,
+          category: p.category,
+          image: p.images?.[0] || '',
+          stock: p.stockQuantity ?? p.quantity ?? 0,
+          status: p.status,
+          views,
+          cartAdds,
+          purchases,
+          conversionRate
+        };
+      });
+
+      res.json({ success: true, items });
+    } catch (error) {
+      res.status(500).json({ message: 'Lỗi tải phân tích sản phẩm: ' + error.message });
+    }
+  });
+
   router.get('/api/seller/shop', protect, isSeller, async (req, res) => {
     res.json({ shopInfo: req.user.shopInfo || {}, user: sanitizeUser(req.user) });
   });
@@ -297,7 +362,11 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       });
       await product.save();
 
-      await refreshProductSearch(product);
+      try {
+        await indexProductImage(product);
+      } catch (error) {
+        console.warn(`Không tạo được image embedding cho ${product._id}: ${error.message}`);
+      }
 
       // Trigger 1: When a user/seller creates a new Product/Post (and auto-approve is false), automatically create a notification for Admins
       if (!isAutoApprove && postStatus === 'pending') {
@@ -361,7 +430,6 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       }
       if (Number(product.stockQuantity) <= 0) product.status = 'out_of_stock';
       await product.save();
-      await refreshProductSearch(product, Boolean(req.files?.length));
       res.json({ message: 'Đã cập nhật sản phẩm', product });
     } catch (error) {
       res.status(500).json({ message: 'Lỗi cập nhật sản phẩm' });

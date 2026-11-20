@@ -5,6 +5,7 @@ import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import { RecommendationSection } from '../components/RecommendationSection';
 
 export default function CartPage() {
   const toast = useToast();
@@ -461,6 +462,19 @@ export default function CartPage() {
 
           </div>
         )}
+
+        {/* You May Also Like Recommendation */}
+        <div className="mt-12">
+          <RecommendationSection
+            title="Có thể bạn cũng thích"
+            subtitle="Gợi ý bổ sung phù hợp cho đơn hàng của bạn"
+            icon="🛍️"
+            fetchUrl="/api/recommendations/for-you"
+            sourceName="cart"
+            currentUser={currentUser}
+            limit={5}
+          />
+        </div>
       </main>
 
       <AppFooter />

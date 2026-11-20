@@ -40,5 +40,9 @@ yarn-error.log*
 # Backend uploads
 backend/uploads/
 backend/.cache/
-backend/training-data/
-uploads/
+uploads
+
+# Other
+.codegraph/
+scratch_screen.html
+*.lnk

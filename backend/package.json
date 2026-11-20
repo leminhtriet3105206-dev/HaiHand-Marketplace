@@ -9,7 +9,7 @@
     "image:export-training": "node scripts/export-image-training-data.js",
     "image:eval": "node scripts/evaluate-image-search.js",
     "image:train-reranker": "node scripts/train-image-reranker.js",
-    "test": "jest --testPathIgnorePatterns=test/chatbotRelevance.test.js && node --test test/chatbotRelevance.test.js"
+    "test": "jest --runInBand shippingController.test.js webhook.test.js test/behaviorAndRecommendation.test.js test/trackApi.test.js test/ghnLocations.test.js test/shippingQuoteFallback.test.js test/vnpayPaymentUrl.test.js && node --test test/chatbotRelevance.test.js test/password.test.js"
   },
   "keywords": [],
   "author": "",

@@ -19,6 +19,27 @@ axiosClient.interceptors.request.use((config) => {
       }
     }
   } catch (e) { }
+
+  // Attach anonymousId ONLY for recommendation & tracking APIs.
+  // Gửi qua query/body thay vì custom header để không kích hoạt CORS preflight
+  // (header lạ như `x-anonymous-id` sẽ bị chặn nếu server chưa cho phép,
+  // làm hỏng cả các API khác như /api/shipping/provinces).
+  try {
+    const anonId = localStorage.getItem('haihand_anon_id');
+    const url = String(config.url || '');
+    const needsAnon = url.includes('/api/recommendations') || url.includes('/api/track');
+    if (needsAnon && anonId && anonId !== 'undefined') {
+      const method = String(config.method || 'get').toLowerCase();
+      if (method === 'get') {
+        config.params = { ...(config.params || {}), anonymousId: anonId };
+      } else if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
+        if (!config.data.anonymousId) config.data = { ...config.data, anonymousId: anonId };
+      } else {
+        config.params = { ...(config.params || {}), anonymousId: anonId };
+      }
+    }
+  } catch (e) { }
+
   return config;
 });
 

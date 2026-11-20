@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { trackChatProductClick, getAnonymousId } from '../utils/tracker';
 
 const FloatingAIChat = () => {
     const navigate = useNavigate();
@@ -13,8 +14,10 @@ const FloatingAIChat = () => {
         }
     ]);
     const [input, setInput] = useState('');
+    const [selectedImage, setSelectedImage] = useState(null);
     const [loading, setLoading] = useState(false);
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
@@ -43,12 +46,14 @@ const FloatingAIChat = () => {
 
     const handleSend = async (messageText) => {
         const textToSend = messageText || input;
-        if (!textToSend.trim() || loading) return;
+        if ((!textToSend.trim() && !selectedImage) || loading) return;
 
-        const messageToSend = textToSend.trim();
-        const userMsg = { sender: 'user', text: messageToSend, products: [] };
+        const imageToSend = selectedImage;
+        const messageToSend = textToSend.trim() || 'Tìm sản phẩm tương tự hình ảnh này';
+        const userMsg = { sender: 'user', text: messageToSend, image: imageToSend, products: [] };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
+        setSelectedImage(null);
         setLoading(true);
 
         try {
@@ -61,9 +66,19 @@ const FloatingAIChat = () => {
                     content: m.text
                 }));
 
+            const userStored = (() => {
+                try {
+                    const u = localStorage.getItem('user');
+                    return u ? JSON.parse(u) : null;
+                } catch { return null; }
+            })();
+
             const res = await axios.post(`${API_URL}/api/chatbot/ask`, {
                 message: messageToSend,
-                history: historyToSend
+                history: historyToSend,
+                image: imageToSend,
+                userId: userStored?._id || null,
+                anonymousId: getAnonymousId()
             });
 
             const botReply = res.data.reply || 'Xin lỗi, mình chưa tìm thấy thông tin phù hợp.';
@@ -86,6 +101,23 @@ const FloatingAIChat = () => {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleImageSelect = (event) => {
+        const file = event.target.files?.[0];
+        event.target.value = '';
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+            window.alert('Vui lòng chọn một tệp hình ảnh.');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            window.alert('Hình ảnh phải nhỏ hơn 5 MB.');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => setSelectedImage(reader.result);
+        reader.readAsDataURL(file);
     };
 
     // Helper format chữ: biến **chữ đậm** thành <strong>
@@ -184,6 +216,14 @@ const FloatingAIChat = () => {
                                     </div>
                                 )}
                                 <div style={{ maxWidth: '85%' }}>
+                                    {msg.image && (
+                                        <img
+                                            src={msg.image}
+                                            alt="Hình ảnh tìm kiếm"
+                                            className="rounded-3 mb-2 shadow-sm"
+                                            style={{ width: '160px', maxHeight: '140px', objectFit: 'cover' }}
+                                        />
+                                    )}
                                     <div 
                                         className="p-3 shadow-sm"
                                         style={{
@@ -203,6 +243,7 @@ const FloatingAIChat = () => {
                                                 <div 
                                                     key={pIdx}
                                                     onClick={() => {
+                                                        trackChatProductClick(prod);
                                                         if (prod._id) navigate(`/post/${prod._id}`);
                                                     }}
                                                     className="bg-white border rounded-3 p-2 d-flex align-items-center gap-2 shadow-sm transition"
@@ -289,6 +330,41 @@ const FloatingAIChat = () => {
                         onSubmit={(e) => { e.preventDefault(); handleSend(); }} 
                         className="p-2 bg-white border-top d-flex gap-2 align-items-center flex-shrink-0"
                     >
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageSelect}
+                            style={{ display: 'none' }}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={loading}
+                            className="btn rounded-circle bg-light d-flex justify-content-center align-items-center flex-shrink-0"
+                            style={{ width: '38px', height: '38px', border: 'none' }}
+                            title="Tìm sản phẩm bằng hình ảnh"
+                        >
+                            📷
+                        </button>
+                        {selectedImage && (
+                            <div className="position-relative flex-shrink-0">
+                                <img
+                                    src={selectedImage}
+                                    alt="Ảnh đã chọn"
+                                    className="rounded-2"
+                                    style={{ width: '38px', height: '38px', objectFit: 'cover' }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedImage(null)}
+                                    className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger border-0"
+                                    aria-label="Bỏ ảnh đã chọn"
+                                >
+                                    ×
+                                </button>
+                            </div>
+                        )}
                         <input 
                             type="text" 
                             className="form-control rounded-pill bg-light border-0 px-3" 
@@ -300,7 +376,7 @@ const FloatingAIChat = () => {
                         />
                         <button 
                             type="submit" 
-                            disabled={loading || !input.trim()}
+                            disabled={loading || (!input.trim() && !selectedImage)}
                             className="btn rounded-circle text-white shadow-sm d-flex justify-content-center align-items-center flex-shrink-0" 
                             style={{ 
                                 width: '38px', 

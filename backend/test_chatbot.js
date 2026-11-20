@@ -5,7 +5,7 @@ const { processChatbot } = require('./services/chatbotService');
 async function runTest() {
     console.log("1. Đang kết nối MongoDB...");
     try {
-        const uri = process.env.MONGODB_URI || process.env.MONGO_URI || process.env.MONGODB_ATLAS_URI;
+        const uri = process.env.MONGODB_URI || process.env.MONGO_URI;
         await mongoose.connect(uri);
         console.log("-> Kết nối MongoDB Atlas thành công!");
 

@@ -70,9 +70,32 @@ const Notification = mongoose.models.Notification || mongoose.model('Notificatio
   isRead: { type: Boolean, default: false }
 }, { timestamps: true, strict: false }), 'notifications');
 
-const ADMIN_DB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+const UserEvent = mongoose.models.UserEvent || mongoose.model('UserEvent', new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  anonymousId: String,
+  sessionId: String,
+  type: String,
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+  category: String,
+  price: Number,
+  query: String,
+  source: String,
+  meta: Object,
+  createdAt: { type: Date, default: Date.now }
+}, { timestamps: false, strict: false }), 'user_events');
+
+const UserInterestProfile = mongoose.models.UserInterestProfile || mongoose.model('UserInterestProfile', new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  anonymousId: String,
+  categories: Object,
+  priceRange: Object,
+  segment: String,
+  lastEventAt: Date
+}, { timestamps: true, strict: false }), 'user_interest_profiles');
+
+const ADMIN_DB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 if (!ADMIN_DB_URI) {
-  console.error("❌ Thiếu biến môi trường MONGO_URI, MONGODB_URI hoặc MONGODB_ATLAS_URI trong Admin!");
+  console.error("❌ Thiếu biến môi trường MONGO_URI trong Admin!");
 } else {
   mongoose
     .connect(ADMIN_DB_URI)
@@ -1025,6 +1048,203 @@ app.get("/categories/delete/:id", checkLogin, async (req, res) => {
     res.redirect("/categories");
   } catch (err) {
     res.redirect("/categories");
+  }
+});
+
+// --- BEHAVIOR ANALYTICS & RECOMMENDATION METRICS ROUTE ---
+app.get("/admin/behavior-analytics", checkLogin, async (req, res) => {
+  try {
+    const days = parseInt(req.query.days, 10) === 30 ? 30 : 7;
+    const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    // 1. Phễu chuyển đổi (Views -> Cart Adds -> Purchases)
+    const funnelStats = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: { $in: ['product_view', 'cart_add', 'purchase'] }
+        }
+      },
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const funnelMap = { product_view: 0, cart_add: 0, purchase: 0 };
+    funnelStats.forEach(item => { funnelMap[item._id] = item.count; });
+
+    const views = funnelMap.product_view || 0;
+    const cartAdds = funnelMap.cart_add || 0;
+    const purchases = funnelMap.purchase || 0;
+
+    const viewToCartCr = views > 0 ? Number(((cartAdds / views) * 100).toFixed(1)) : 0;
+    const cartToPurchaseCr = cartAdds > 0 ? Number(((purchases / cartAdds) * 100).toFixed(1)) : 0;
+    const overallCr = views > 0 ? Number(((purchases / views) * 100).toFixed(2)) : 0;
+
+    // 2. CTR từng khối gợi ý
+    const recoStats = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: { $in: ['recommendation_impression', 'recommendation_click', 'chat_product_click'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            source: '$source',
+            type: '$type'
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const sourceMap = {
+      recently_viewed: { name: 'Sản phẩm bạn đã xem', icon: '🕒', code: 'recently_viewed', impressions: 0, clicks: 0 },
+      for_you: { name: 'Gợi ý cho bạn', icon: '✨', code: 'for_you', impressions: 0, clicks: 0 },
+      similar: { name: 'Sản phẩm tương tự', icon: '🔍', code: 'similar', impressions: 0, clicks: 0 },
+      also_viewed: { name: 'Người xem cũng xem', icon: '👥', code: 'also_viewed', impressions: 0, clicks: 0 },
+      chatbot: { name: 'Trợ lý AI Chatbot', icon: '🤖', code: 'chatbot', impressions: 0, clicks: 0 },
+      cart: { name: 'Gợi ý trong Giỏ hàng', icon: '🛍️', code: 'cart', impressions: 0, clicks: 0 }
+    };
+
+    recoStats.forEach(item => {
+      const src = item._id.source;
+      const target = sourceMap[src] || (sourceMap[src] = { name: src, icon: '📌', code: src, impressions: 0, clicks: 0 });
+      if (item._id.type === 'recommendation_impression') target.impressions += item.count;
+      else if (item._id.type === 'recommendation_click' || item._id.type === 'chat_product_click') target.clicks += item.count;
+    });
+
+    const recoBlocks = Object.values(sourceMap).map(b => ({
+      ...b,
+      ctr: b.impressions > 0 ? Number(((b.clicks / b.impressions) * 100).toFixed(1)) : (b.clicks > 0 ? 100 : 0)
+    }));
+
+    // 3. Top 10 sản phẩm xem nhiều nhất
+    const topViewAgg = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: 'product_view',
+          productId: { $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$productId',
+          viewCount: { $sum: 1 }
+        }
+      },
+      { $sort: { viewCount: -1 } },
+      { $limit: 10 }
+    ]);
+
+    const topProductIds = topViewAgg.map(i => i._id);
+    const topDbProducts = await Product.find({ _id: { $in: topProductIds } }).select('title name price category images').lean();
+    const prodInfoMap = new Map(topDbProducts.map(p => [p._id.toString(), p]));
+
+    const topProducts = topViewAgg.map(item => {
+      const p = prodInfoMap.get(item._id.toString()) || {};
+      return {
+        _id: item._id,
+        title: p.title || p.name || 'Sản phẩm',
+        price: p.price || 0,
+        category: p.category || 'Khác',
+        viewCount: item.viewCount
+      };
+    });
+
+    // 4. Phân bố sở thích theo danh mục
+    const catAgg = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          category: { $ne: '', $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 8 }
+    ]);
+
+    const totalCatCount = catAgg.reduce((sum, c) => sum + c.count, 0) || 1;
+    const categoryStats = catAgg.map(c => ({
+      category: c._id,
+      count: c.count,
+      percent: Math.round((c.count / totalCatCount) * 100)
+    }));
+
+    // 5. Từ khóa tìm kiếm phổ biến
+    const searchAgg = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: 'search',
+          query: { $ne: '', $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: '$query',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 15 }
+    ]);
+
+    const topSearches = searchAgg.map(s => ({ query: s._id, count: s.count }));
+
+    // Zero result searches
+    const zeroSearchesAgg = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: 'search',
+          'meta.resultsCount': 0
+        }
+      },
+      {
+        $group: {
+          _id: '$query',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+    const zeroResultSearches = zeroSearchesAgg.map(s => ({ query: s._id, count: s.count }));
+
+    res.render('behaviorAnalytics', {
+      active: 'analytics',
+      days,
+      funnel: {
+        views,
+        cartAdds,
+        purchases,
+        viewToCartCr,
+        cartToPurchaseCr,
+        overallCr
+      },
+      recoBlocks,
+      topProducts,
+      categoryStats,
+      topSearches,
+      zeroResultSearches,
+      currentUser: req.session?.user
+    });
+  } catch (error) {
+    console.error('Error in behavior analytics dashboard:', error);
+    res.status(500).send('Lỗi máy chủ khi tải trang phân tích hành vi: ' + error.message);
   }
 });
 

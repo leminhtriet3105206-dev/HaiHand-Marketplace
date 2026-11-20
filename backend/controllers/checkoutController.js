@@ -11,6 +11,7 @@ const { pickAddressFields, isCompleteAddress, formatAddress } = require('../mode
 const { addAddressToUser } = require('../routes/address');
 const { productOwnerId, displayProductName, orderSellerId } = require('../utils/b2c');
 const { buildVnpayPaymentUrl, normalizeIp } = require('../utils/vnpay');
+const { recordServerEvent } = require('../services/behaviorAnalysisService');
 
 /**
  * Helper to settle payment for a paymentSession (called by VNPAY verify/IPN or HaiPay)
@@ -460,6 +461,31 @@ async function processCheckout(req, res) {
         targetUrl: '/profile?tab=orders_buy'
       });
     } catch (e) {}
+
+    // Server-side purchase tracking for behavioral recommendation engine
+    try {
+      for (const order of savedOrders) {
+        if (Array.isArray(order.items)) {
+          for (const item of order.items) {
+            recordServerEvent({
+              userId: buyer._id,
+              type: 'purchase',
+              productId: item.productId,
+              price: item.price,
+              source: 'checkout',
+              meta: {
+                orderId: order._id,
+                parentOrderId,
+                paymentMethod,
+                quantity: item.quantity
+              }
+            });
+          }
+        }
+      }
+    } catch (trackErr) {
+      console.warn('Purchase event tracking warning:', trackErr.message);
+    }
 
     return res.status(200).json({
       success: true,

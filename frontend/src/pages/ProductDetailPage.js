@@ -4,6 +4,12 @@ import axios from 'axios';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { useToast } from '../components/Toast';
+import { RecommendationSection } from '../components/RecommendationSection';
+import {
+  trackProductView,
+  startProductDwellTracker,
+  trackEvent
+} from '../utils/tracker';
 
 
 export default function ProductDetailPage() {
@@ -22,12 +28,20 @@ export default function ProductDetailPage() {
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
+    let cleanupDwell = () => {};
+
     const fetchPostAndReviews = async () => {
       try {
         const { data } = await axios.get(`${API_URL}/api/posts/${id}`);
         setPost(data);
         if (data.images && data.images.length > 0) setMainImage(data.images[0]);
         else if (data.image) setMainImage(data.image); 
+
+        // Track product view (with 30-min deduplication)
+        trackProductView(data, 'detail');
+
+        // Track real product dwell time
+        cleanupDwell = startProductDwellTracker(data, 'detail');
 
         if (data.author?._id) {
             const profileRes = await axios.get(`${API_URL}/api/users/public-profile/${data.author._id}`);
@@ -39,6 +53,10 @@ export default function ProductDetailPage() {
       }
     };
     fetchPostAndReviews();
+
+    return () => {
+      cleanupDwell();
+    };
   }, [id, navigate, API_URL]);
 
   const getImageUrl = (imgStr) => {
@@ -58,6 +76,13 @@ export default function ProductDetailPage() {
             postId: post._id,
             quantity: 1
         });
+        trackEvent({
+          type: 'cart_add',
+          productId: post._id,
+          category: post.category,
+          price: post.price,
+          source: 'detail'
+        });
         window.dispatchEvent(new Event('cartUpdated')); 
         if (isBuyNow) navigate('/cart');
         else toast.success('Thành công', "🛒 Đã thêm sản phẩm vào giỏ hàng thành công!");
@@ -72,6 +97,13 @@ export default function ProductDetailPage() {
         navigate('/login');
         return;
     }
+    trackEvent({
+      type: 'chat_product_click',
+      productId: post._id,
+      category: post.category,
+      price: post.price,
+      source: 'detail'
+    });
     navigate('/chat', { state: { receiver: post.author, post: post } });
   };
 
@@ -356,6 +388,46 @@ export default function ProductDetailPage() {
             </div>
 
           </div>
+        </div>
+
+        {/* Similar Products Recommendation */}
+        <div className="mt-12">
+          <RecommendationSection
+            title="Sản phẩm tương tự"
+            subtitle="Các sản phẩm có đặc điểm, mức giá và danh mục tương đồng"
+            icon="🔍"
+            fetchUrl={`/api/recommendations/similar/${id}`}
+            sourceName="similar"
+            currentUser={currentUser}
+            limit={5}
+          />
+        </div>
+
+        {/* Also Viewed Products Recommendation */}
+        <div className="mt-8">
+          <RecommendationSection
+            title="Người xem sản phẩm này cũng xem"
+            subtitle="Được nhiều khách hàng khác quan tâm cùng lúc"
+            icon="👥"
+            fetchUrl={`/api/recommendations/also-viewed/${id}`}
+            sourceName="also_viewed"
+            currentUser={currentUser}
+            limit={5}
+          />
+        </div>
+
+        {/* Recently Viewed Products */}
+        <div className="mt-8">
+          <RecommendationSection
+            title="Sản phẩm bạn đã xem gần đây"
+            subtitle="Dễ dàng xem lại các sản phẩm bạn vừa ghé qua"
+            icon="🕒"
+            fetchUrl="/api/recommendations/recently-viewed"
+            localFirst={true}
+            sourceName="recently_viewed_detail"
+            currentUser={currentUser}
+            limit={5}
+          />
         </div>
       </main>
       

@@ -18,6 +18,7 @@ const { Product, Post } = require('./models/Product');
 const { protect, isSeller } = require('./middleware/auth');
 const Transaction = require('./models/Transaction');
 const Settings = require('./models/Settings');
+const Banner = require('./models/Banner');
 const {
   CATALOG_VISIBLE,
   canonicalStatus,
@@ -31,16 +32,22 @@ const {
 } = require('./utils/b2c');
 const createSellerRouter = require('./routes/seller');
 const haipayRouter = require('./routes/haipay');
-const { processChatbot, processImageSearch, refreshProductSearch } = require('./services/chatbotService');
+const { indexProductImage } = require('./services/imageEmbeddingService');
 const shippingRouter = require('./routes/shipping');
 const addressRouter = require('./routes/address');
 const PaymentSession = require('./models/PaymentSession');
 const { processCheckout, settlePaymentSession } = require('./controllers/checkoutController');
 const { buildVnpayPaymentUrl: buildSignedVnpayPaymentUrl, formatVnpayDate, verifyVnpayChecksumStrict } = require('./utils/vnpay');
 const { isHash, verifyPassword, hashPassword } = require('./utils/password');
+const trackRouter = require('./routes/track');
+const recommendationsRouter = require('./routes/recommendations');
+const {
+  recordServerEvent,
+  mergeUserIdentity,
+  runNightlyMaintenance
+} = require('./services/behaviorAnalysisService');
 
 const app = express();
-
 
 const allowedOrigins = [
   'http://localhost:3000',
@@ -60,7 +67,7 @@ const corsOptions = {
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'UserId', 'X-Requested-With', 'Origin'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'UserId', 'X-Requested-With', 'Origin', 'x-anonymous-id', 'X-Anonymous-Id'],
   exposedHeaders: ['Content-Range', 'X-Content-Range']
 };
 
@@ -76,7 +83,7 @@ app.use((req, res, next) => {
   }
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, userid, UserId');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, userid, UserId, x-anonymous-id');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
@@ -137,13 +144,13 @@ const storage = new CloudinaryStorage({
 
 const upload = multer({ storage: storage });
 
-const DB_URL = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+const DB_URL = process.env.MONGO_URI || process.env.MONGODB_URI;
 
 const connectDB = async () => {
-  const primaryUri = DB_URL;
+  const primaryUri = process.env.MONGO_URI || process.env.MONGODB_URI;
 
   if (!primaryUri) {
-    console.error('❌ Thiếu biến môi trường MONGO_URI, MONGODB_URI hoặc MONGODB_ATLAS_URI!');
+    console.error('❌ Thiếu biến môi trường MONGO_URI!');
     return false;
   }
 
@@ -264,7 +271,14 @@ app.use('/api/haipay', haipayRouter);
 app.use('/api/shipping', shippingRouter);
 app.use('/api/users/me/addresses', addressRouter);
 app.use('/api/addresses', addressRouter);
+app.use('/api', trackRouter);
+app.use('/api', recommendationsRouter);
 app.post('/api/checkout', protect, processCheckout);
+
+// Schedule nightly maintenance for behavioral engine (runs once every 24h)
+setInterval(() => {
+  runNightlyMaintenance().catch((err) => console.warn('Nightly maintenance schedule error:', err.message));
+}, 24 * 60 * 60 * 1000).unref();
 
 app.get('/login', (req, res) => res.render('login', { error: null }));
 
@@ -986,14 +1000,47 @@ app.get('/admin/reports', requireAdmin, async (req, res) => {
   }
 });
 
+/** [API] Lấy thông tin Admin đầu mối để mở chat CSKH (fallback sang Settings mặc định để tránh lỗi console) */
 app.get('/api/admin/contact', async (req, res) => {
   try {
+    let settings = null;
+    let admin = null;
+    if (mongoose.connection.readyState === 1) {
+      [admin, settings] = await Promise.all([
+        User.findOne({ role: 'Admin' }).select('_id name avatar').lean().catch(() => null),
+        Settings.getGlobal().catch(() => null)
+      ]);
+    }
 
-    const admin = await User.findOne({ role: 'Admin' }).select('_id name avatar email');
-    if (!admin) return res.status(404).json({ message: "Chưa có Admin nào trong hệ thống!" });
-    res.status(200).json(admin);
+    const supportHotline = settings?.supportHotline || '1900-6868';
+    const supportEmail = settings?.supportEmail || settings?.contactEmail || 'cskh@haihand.vn';
+
+    if (admin) {
+      return res.status(200).json({
+        ...admin,
+        supportHotline,
+        supportEmail
+      });
+    }
+
+    return res.status(200).json({
+      _id: null,
+      name: 'Hỗ trợ CSKH HaiHand',
+      avatar: '',
+      supportHotline,
+      supportEmail,
+      isFallback: true
+    });
   } catch (error) {
-    res.status(500).json({ message: "Lỗi lấy thông tin Admin" });
+    console.error('Lỗi lấy thông tin Admin (/api/admin/contact):', error.message);
+    return res.status(200).json({
+      _id: null,
+      name: 'Hỗ trợ CSKH HaiHand',
+      avatar: '',
+      supportHotline: '1900-6868',
+      supportEmail: 'cskh@haihand.vn',
+      isFallback: true
+    });
   }
 });
 
@@ -1094,7 +1141,7 @@ app.post('/api/users/forgot-password', async (req, res) => {
 
 app.post('/api/users/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, anonymousId } = req.body;
     const user = await User.findOne({ email: String(email || '').trim().toLowerCase() });
     if (!user || !(await verifyPassword(String(password || ''), user.password))) return res.status(401).json({ message: 'Sai email hoặc mật khẩu' });
     if (user.status === 'locked' || user.isBanned) {
@@ -1106,6 +1153,14 @@ app.post('/api/users/login', async (req, res) => {
     }
     const safe = sanitizeUser(user);
     const token = signUserToken(user);
+
+    // Merge anonymous browsing events if anonymousId was passed
+    if (anonymousId && typeof anonymousId === 'string') {
+      setImmediate(() => {
+        mergeUserIdentity(anonymousId, user._id).catch((e) => console.warn('Login merge warning:', e.message));
+      });
+    }
+
     res.status(200).json({ ...safe, token });
   } catch (err) {
     res.status(500).json({ message: 'Lỗi server khi đăng nhập: ' + err.message });
@@ -1140,6 +1195,14 @@ app.post('/api/users/register', async (req, res) => {
       isSeller: false
     });
     await newUser.save();
+
+    // Merge anonymous browsing events if anonymousId was passed
+    if (req.body.anonymousId && typeof req.body.anonymousId === 'string') {
+      setImmediate(() => {
+        mergeUserIdentity(req.body.anonymousId, newUser._id).catch((e) => console.warn('Register merge warning:', e.message));
+      });
+    }
+
     const safe = sanitizeUser(newUser);
     res.status(201).json({ message: 'Đăng ký thành công', user: { ...safe, token: signUserToken(newUser) } });
   } catch (error) { res.status(500).json({ message: 'Lỗi server khi đăng ký' }); }
@@ -1196,6 +1259,210 @@ app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
   } catch (err) { res.status(err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError' ? 401 : 500).json({ message: 'Không thể cập nhật hồ sơ. Vui lòng đăng nhập lại.' }); }
 });
 
+/** Lấy trang hồ sơ công khai của một Shop/Seller (sản phẩm, đánh giá, follow, tỷ lệ phản hồi chat) */
+app.get('/api/users/public-profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(404).json({ message: 'ID không hợp lệ' });
+    }
+
+    const user = await User.findById(userId).select('-password');
+    if (!user) return res.status(404).json({ message: 'Không tìm thấy user' });
+
+    let followersCount = 0;
+    let followingCount = 0;
+    try {
+      followersCount = await Follow.countDocuments({ following: userId });
+      followingCount = await Follow.countDocuments({ follower: userId });
+    } catch (err) { console.log('Lỗi đếm follow:', err.message); }
+
+    const posts = await Post.find({ author: userId }).sort({ createdAt: -1 });
+    const reviews = await Review.find({ seller: userId }).populate('buyer', 'name avatar');
+    const avgRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : 5.0;
+
+    const conversationsReceived = await Message.distinct('sender', { receiver: userId });
+    let repliedCount = 0;
+    for (const senderId of conversationsReceived) {
+      const hasReplied = await Message.exists({ sender: userId, receiver: senderId });
+      if (hasReplied) repliedCount++;
+    }
+    const responseRate = conversationsReceived.length > 0 ? Math.round((repliedCount / conversationsReceived.length) * 100) : 100;
+
+    return res.status(200).json({ user: publicUser(user), posts, reviews, followersCount, followingCount, avgRating, responseRate });
+  } catch (error) {
+    console.error('Lỗi sập Profile:', error.message);
+    return res.status(200).json({ user: {}, posts: [], reviews: [], followersCount: 0, followingCount: 0, avgRating: 5 });
+  }
+});
+
+/** Kiểm tra user A có đang theo dõi user B hay không */
+app.get('/api/users/follow-status', async (req, res) => {
+  try {
+    const { followerId, followingId } = req.query;
+
+    if (!followerId || followerId === 'undefined' || !mongoose.Types.ObjectId.isValid(followerId)) {
+      return res.status(200).json({ isFollowing: false });
+    }
+    if (!followingId || followingId === 'undefined' || !mongoose.Types.ObjectId.isValid(followingId)) {
+      return res.status(200).json({ isFollowing: false });
+    }
+
+    const follow = await Follow.findOne({ follower: followerId, following: followingId });
+    return res.status(200).json({ isFollowing: !!follow });
+  } catch (e) {
+    console.error('Lỗi API follow-status:', e.message);
+    return res.status(200).json({ isFollowing: false });
+  }
+});
+
+/** Theo dõi / Bỏ theo dõi người bán (C6: bắt buộc protect, followerId lấy từ token) */
+app.post('/api/users/follow', protect, async (req, res) => {
+  try {
+    const followerId = req.user._id.toString();
+    const { followingId } = req.body || {};
+    if (!followingId || !mongoose.Types.ObjectId.isValid(followingId)) {
+      return res.status(400).json({ message: 'ID người được theo dõi không hợp lệ!' });
+    }
+    if (followerId === String(followingId)) {
+      return res.status(400).json({ message: 'Không thể tự theo dõi chính mình!' });
+    }
+
+    const existingFollow = await Follow.findOne({ follower: followerId, following: followingId });
+
+    if (existingFollow) {
+      await Follow.findByIdAndDelete(existingFollow._id);
+      return res.json({ message: 'Đã bỏ theo dõi', isFollowing: false });
+    } else {
+      await Follow.create({ follower: followerId, following: followingId });
+
+      await sendNotification(
+        followingId,
+        '👤 Có người theo dõi mới!',
+        'Một người dùng vừa bắt đầu theo dõi bạn.',
+        'SYSTEM',
+        `/public-profile/${followerId}`
+      );
+      return res.json({ message: 'Đã theo dõi', isFollowing: true });
+    }
+  } catch (e) { res.status(500).json({ error: 'Lỗi hệ thống' }); }
+});
+
+/** Lấy danh sách người theo dõi / đang theo dõi */
+app.get('/api/users/:userId/follow-list', async (req, res) => {
+  try {
+    const { type } = req.query;
+    const { userId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return res.status(200).json([]);
+    }
+
+    let list = [];
+    if (type === 'followers') {
+      list = await mongoose.models.Follow.find({ following: userId }).populate('follower', 'name avatar');
+    } else {
+      list = await mongoose.models.Follow.find({ follower: userId }).populate('following', 'name avatar');
+    }
+
+    list = list.filter(item => item.follower && item.following);
+
+    res.status(200).json(list);
+  } catch (e) {
+    console.error('Lỗi get follow list:', e.message);
+    res.status(200).json([]);
+  }
+});
+
+/** Thêm / Xóa sản phẩm khỏi danh sách yêu thích (C6: bắt buộc protect, userId lấy từ token) */
+app.post('/api/users/favorites', protect, async (req, res) => {
+  try {
+    const postId = req.body?.postId;
+    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
+      return res.status(400).json({ error: 'ID sản phẩm không hợp lệ' });
+    }
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (!user.favorites) user.favorites = [];
+    const postIdStr = postId.toString();
+    const index = user.favorites.findIndex(id => id.toString() === postIdStr);
+
+    if (index === -1) user.favorites.push(postId);
+    else user.favorites.splice(index, 1);
+
+    await user.save();
+    res.status(200).json({ message: 'Ok', favorites: user.favorites });
+  } catch (error) { res.status(500).json({ error: 'Lỗi' }); }
+});
+
+/** Lấy danh sách sản phẩm yêu thích của chính người dùng hoặc Admin. */
+app.get('/api/users/favorites/:userId', protect, async (req, res) => {
+  if (String(req.user._id) !== req.params.userId && req.user.role !== 'Admin') {
+    return res.status(403).json({ message: 'Không có quyền xem danh sách yêu thích này.' });
+  }
+  try {
+    const user = await User.findById(req.user._id).populate('favorites');
+    res.status(200).json(user ? user.favorites : []);
+  } catch (error) { res.status(200).json([]); }
+});
+
+// ============================================================================
+// SECTION 12: SẢN PHẨM (POSTS), DANH MỤC, GIỎ HÀNG, ĐÁNH GIÁ & BÁO CÁO
+// ============================================================================
+
+const DEFAULT_HERO_BANNERS = [
+  {
+    _id: 'default-banner-1',
+    title: 'Săn Đồ Cũ Chất - Giá Tốt Mỗi Ngày',
+    imageUrl: '/banners/default-1.svg',
+    targetUrl: '/products',
+    openInNewTab: false,
+    order: 0,
+    isActive: true,
+    isFallback: true
+  },
+  {
+    _id: 'default-banner-2',
+    title: 'An Tâm Mua Sắm Với HaiPay Escrow',
+    imageUrl: '/banners/default-2.svg',
+    targetUrl: '/register-seller',
+    openInNewTab: false,
+    order: 1,
+    isActive: true,
+    isFallback: true
+  },
+  {
+    _id: 'default-banner-3',
+    title: 'Đăng Bán Nhanh - Giao Hàng Toàn Quốc',
+    imageUrl: '/banners/default-3.svg',
+    targetUrl: '/create-post',
+    openInNewTab: false,
+    order: 2,
+    isActive: true,
+    isFallback: true
+  }
+];
+
+/** Lấy danh sách Banner Hero đang hoạt động cho trang chủ (fallback mặc định nếu DB trống) */
+app.get('/api/banners', async (req, res) => {
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(200).json(DEFAULT_HERO_BANNERS);
+    }
+    const banners = await Banner.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).lean();
+    if (!banners || banners.length === 0) {
+      return res.status(200).json(DEFAULT_HERO_BANNERS);
+    }
+    return res.status(200).json(banners);
+  } catch (error) {
+    console.error('Lỗi lấy banner:', error.message);
+    return res.status(200).json(DEFAULT_HERO_BANNERS);
+  }
+});
+
+/** Lấy danh sách sản phẩm công khai (lọc theo CATALOG_VISIBLE, tìm kiếm, giá, khu vực, sắp xếp, phân trang) */
 app.get('/api/posts', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
@@ -1207,7 +1474,60 @@ app.get('/api/posts', async (req, res) => {
     let query = { status: { $in: CATALOG_VISIBLE } };
 
     if (category && category !== 'Tất cả' && category !== 'Kết quả tìm kiếm') {
-      query.category = String(category).trim();
+      let cleanCat = String(category).trim();
+
+      // Khắc phục triệt để trường hợp URL bị cắt bởi ký tự '&' chưa encode
+      if (req.query[' Phụ kiện'] !== undefined || req.query['Phụ kiện'] !== undefined) {
+        if (cleanCat.includes('Điện thoại')) cleanCat = 'Điện thoại & Phụ kiện';
+        else if (cleanCat.includes('Thời trang')) cleanCat = 'Thời trang & Phụ kiện';
+        else if (cleanCat.includes('Xe cộ')) cleanCat = 'Xe cộ & Phụ tùng';
+      }
+      if (req.query[' Công nghệ'] !== undefined || req.query['Công nghệ'] !== undefined) {
+        cleanCat = 'Điện tử & Công nghệ';
+      }
+      if (req.query[' Nội thất'] !== undefined || req.query['Nội thất'] !== undefined) {
+        cleanCat = 'Đồ gia dụng & Nội thất';
+      }
+      if (req.query[' Bé'] !== undefined || req.query['Bé'] !== undefined) {
+        cleanCat = 'Đồ chơi, Mẹ & Bé';
+      }
+      if (req.query[' Dã ngoại'] !== undefined || req.query['Dã ngoại'] !== undefined) {
+        cleanCat = 'Thể thao & Dã ngoại';
+      }
+      if (req.query[' Đồ dùng'] !== undefined || req.query['Đồ dùng'] !== undefined) {
+        cleanCat = 'Thú cưng & Đồ dùng';
+      }
+
+      const CATEGORY_MAP = {
+        'Đồ điện tử': ['Điện tử & Công nghệ', 'Đồ điện tử'],
+        'Điện tử': ['Điện tử & Công nghệ', 'Đồ điện tử'],
+        'Điện tử & Công nghệ': ['Điện tử & Công nghệ'],
+        'Điện tử - Công nghệ': ['Điện tử & Công nghệ'],
+        'Laptop & Máy tính': ['Điện tử & Công nghệ'],
+        'Điện thoại & Phụ kiện': ['Điện thoại & Phụ kiện'],
+        'Điện thoại & Tablet': ['Điện thoại & Phụ kiện'],
+        'Điện thoại': ['Điện thoại & Phụ kiện', 'Điện thoại'],
+        'Xe cộ': ['Xe cộ & Phụ tùng', 'Xe cộ'],
+        'Xe cộ & Phụ tùng': ['Xe cộ & Phụ tùng'],
+        'Xe máy & Phương tiện': ['Xe cộ & Phụ tùng'],
+        'Thời trang': ['Thời trang & Phụ kiện', 'Thời trang'],
+        'Thời trang & Phụ kiện': ['Thời trang & Phụ kiện'],
+        'Đồ gia dụng': ['Đồ gia dụng & Nội thất', 'Đồ gia dụng'],
+        'Đồ gia dụng & Nội thất': ['Đồ gia dụng & Nội thất'],
+        'Nội thất': ['Đồ gia dụng & Nội thất'],
+        'Bất Động Sản': ['Đồ gia dụng & Nội thất', 'Bất Động Sản'],
+        'Thú cưng': ['Thú cưng & Đồ dùng', 'Thú cưng'],
+        'Thú cưng & Đồ dùng': ['Thú cưng & Đồ dùng'],
+        'Đồ chơi': ['Đồ chơi, Mẹ & Bé', 'Đồ chơi'],
+        'Đồ chơi, Mẹ': ['Đồ chơi, Mẹ & Bé', 'Đồ chơi'],
+        'Mẹ & Bé': ['Đồ chơi, Mẹ & Bé'],
+        'Đồ chơi, Mẹ & Bé': ['Đồ chơi, Mẹ & Bé'],
+        'Thể thao': ['Thể thao & Dã ngoại', 'Thể thao'],
+        'Dã ngoại': ['Thể thao & Dã ngoại'],
+        'Thể thao & Dã ngoại': ['Thể thao & Dã ngoại']
+      };
+      const mapped = CATEGORY_MAP[cleanCat] || [cleanCat];
+      query.category = mapped.length === 1 ? mapped[0] : { $in: mapped };
     }
 
     if (search && String(search).trim()) {
@@ -1281,7 +1601,6 @@ app.put('/api/posts/:id', upload.array('images', 5), async (req, res) => {
     }
 
     const updatedPost = await Post.findByIdAndUpdate(req.params.id, updateData, { new: true });
-    if (updatedPost) await refreshProductSearch(updatedPost, Boolean(req.files?.length));
     res.status(200).json(updatedPost);
   } catch (error) { res.status(500).json({ message: "Lỗi Server: " + error.message }); }
 });
@@ -2000,11 +2319,27 @@ app.post('/api/users/favorites', async (req, res) => {
     const postIdStr = req.body.postId.toString();
     const index = user.favorites.findIndex(id => id.toString() === postIdStr);
 
-    if (index === -1) user.favorites.push(req.body.postId);
-    else user.favorites.splice(index, 1);
+    let isAdded = false;
+    if (index === -1) {
+      user.favorites.push(req.body.postId);
+      isAdded = true;
+    } else {
+      user.favorites.splice(index, 1);
+    }
 
     await user.save();
-    res.status(200).json({ message: 'Ok' });
+
+    // Server-side favorite event tracking
+    try {
+      recordServerEvent({
+        userId: user._id,
+        type: isAdded ? 'favorite_add' : 'favorite_remove',
+        productId: req.body.postId,
+        source: 'favorites'
+      });
+    } catch (e) {}
+
+    res.status(200).json({ message: 'Ok', favorited: isAdded });
   } catch (error) { res.status(500).json({ error: 'Lỗi' }); }
 });
 
@@ -2070,7 +2405,11 @@ app.post('/api/posts', protect, isSeller, upload.array('images', 5), async (req,
 
     await newPost.save();
 
-    await refreshProductSearch(newPost);
+    try {
+      await indexProductImage(newPost);
+    } catch (error) {
+      console.warn(`Không tạo được image embedding cho ${newPost._id}: ${error.message}`);
+    }
 
     // Trigger 1: When a user creates a new Product/Post (and auto-approve is false), automatically create a notification for Admins
     if (!isAutoApprove && initialStatus === 'pending') {
@@ -2133,6 +2472,18 @@ app.delete('/api/users/cart/:userId/:postId', async (req, res) => {
     if (!user) return res.status(404).json({ message: "Không tìm thấy user" });
     user.cart = user.cart.filter(item => item.product && item.product.toString() !== req.params.postId);
     await user.save();
+
+    // Server-side cart event tracking
+    try {
+      recordServerEvent({
+        userId: user._id,
+        type: 'cart_add',
+        productId: postId,
+        source: 'cart',
+        meta: { quantity }
+      });
+    } catch (e) {}
+
     res.status(200).json(user.cart);
   } catch (error) { res.status(500).json({ message: "Lỗi Server" }); }
 });
@@ -2151,6 +2502,18 @@ app.post('/api/users/cart', async (req, res) => {
       user.cart.push({ product: postId, quantity });
     }
     await user.save();
+
+    // Server-side cart event tracking
+    try {
+      recordServerEvent({
+        userId: user._id,
+        type: 'cart_add',
+        productId: postId,
+        source: 'cart',
+        meta: { quantity }
+      });
+    } catch (e) {}
+
     res.status(200).json(user.cart);
   } catch (error) { res.status(500).json({ message: "Lỗi Server" }); }
 });
@@ -2317,14 +2680,87 @@ io.on('connection', (socket) => {
   });
 });
 
+const STANDARD_CATEGORIES = [
+  {
+    name: 'Thú cưng & Đồ dùng',
+    icon: '🐾',
+    image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=200&auto=format&fit=crop',
+    description: 'Chó, mèo, rùa cảnh, thức ăn hạt, pate, phụ kiện chăm sóc'
+  },
+  {
+    name: 'Điện thoại & Phụ kiện',
+    icon: '📱',
+    image: 'https://images.unsplash.com/photo-1512054502232-10a0a035d672?w=300&auto=format&fit=crop',
+    description: 'Smartphone, máy tính bảng, ốp lưng, tai nghe, sạc cáp'
+  },
+  {
+    name: 'Điện tử & Công nghệ',
+    icon: '💻',
+    image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=200&auto=format&fit=crop',
+    description: 'Laptop, máy tính bàn, máy ảnh, loa, màn hình'
+  },
+  {
+    name: 'Xe cộ & Phụ tùng',
+    icon: '🚲',
+    image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=200&auto=format&fit=crop',
+    description: 'Xe đạp địa hình, xe đạp điện, xe máy, phụ tùng xe'
+  },
+  {
+    name: 'Thời trang & Phụ kiện',
+    icon: '👕',
+    image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=200&auto=format&fit=crop',
+    description: 'Quần áo nam nữ, giày dép, túi xách, đồng hồ'
+  },
+  {
+    name: 'Đồ gia dụng & Nội thất',
+    icon: '🛋️',
+    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=200&auto=format&fit=crop',
+    description: 'Bàn ghế, tủ quần áo, thiết bị nhà bếp, đồ sinh hoạt'
+  },
+  {
+    name: 'Đồ chơi, Mẹ & Bé',
+    icon: '🧸',
+    image: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=200&auto=format&fit=crop',
+    description: 'Labubu, mô hình sưu tầm, xe đẩy, đồ chơi phát triển'
+  },
+  {
+    name: 'Thể thao & Dã ngoại',
+    icon: '⚽',
+    image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=300&auto=format&fit=crop',
+    description: 'Dụng cụ thể hình, cắm trại, nhạc cụ, sách vở'
+  }
+];
+
 app.get('/api/categories', async (req, res) => {
   try {
-    const categories = await Category.find();
-    res.status(200).json(categories);
+    let categories = await Category.find();
+    if (!categories || categories.length === 0) {
+      Category.insertMany(STANDARD_CATEGORIES.map(c => ({
+        name: c.name,
+        image: c.image,
+        description: c.description
+      }))).catch(() => {});
+      return res.status(200).json(STANDARD_CATEGORIES);
+    }
+    // Chỉ trả về các danh mục chuẩn theo đúng thứ tự thiết kế và enrich icon
+    const enriched = STANDARD_CATEGORIES.map(sc => {
+      const match = categories.find(c => c.name === sc.name);
+      if (match) {
+        const obj = match.toObject ? match.toObject() : match;
+        return {
+          ...obj,
+          icon: sc.icon
+        };
+      }
+      return sc;
+    });
+    res.status(200).json(enriched);
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi lấy danh mục' });
+    res.status(200).json(STANDARD_CATEGORIES);
   }
 });
+
+
 
 app.post('/api/haipay/deposit', async (req, res) => {
   try {
@@ -2688,34 +3124,42 @@ app.post('/api/support/messages', supportCustomer, async (req, res) => {
     res.status(201).json(conversation);
   } catch { res.status(500).json({ message: 'Không gửi được yêu cầu hỗ trợ.' }); }
 });
+const { processChatbot } = require('./services/chatbotService');
 
 app.post('/api/chatbot/ask', async (req, res) => {
   try {
-    const { message, history } = req.body;
-    if (!String(message || '').trim()) {
-      return res.status(400).json({ error: 'Vui lòng nhập tin nhắn' });
+    const { message, history, image, userId, anonymousId } = req.body;
+    if (!message && !image) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn hoặc hình ảnh' });
     }
-    const result = await processChatbot(message, history);
+
+    if (image && (!image.startsWith('data:image/') || image.length > 7_000_000)) {
+      return res.status(400).json({ error: 'Hình ảnh không hợp lệ hoặc vượt quá 5 MB' });
+    }
+
+    // Load UserInterestProfile to personalize ambiguous searches
+    let profile = null;
+    try {
+      const UserInterestProfile = require('./models/UserInterestProfile');
+      const orQueries = [];
+      if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+        orQueries.push({ userId: new mongoose.Types.ObjectId(userId) });
+      }
+      if (anonymousId && typeof anonymousId === 'string') {
+        orQueries.push({ anonymousId: anonymousId.trim() });
+      }
+      if (orQueries.length > 0) {
+        profile = await UserInterestProfile.findOne({ $or: orQueries }).lean();
+      }
+    } catch (e) {}
+
+    const result = await processChatbot(message, history, image, profile);
     res.json(result);
   } catch (error) {
     console.error("Lỗi Chatbot:", error);
     res.status(500).json({
       error: 'Không thể xử lý yêu cầu. Hãy kiểm tra Qwen3-VL, BGE-M3 và LM Studio ở cổng 1235.'
     });
-  }
-});
-
-app.post('/api/image-search/search', async (req, res) => {
-  try {
-    const { image, message } = req.body;
-    if (typeof image !== 'string' || !/^data:image\/(?:jpeg|png|webp);base64,/i.test(image) || image.length > 7_000_000) {
-      return res.status(400).json({ error: 'Vui lòng chọn ảnh JPG, PNG hoặc WebP không quá 5 MB' });
-    }
-    const result = await processImageSearch(image, message);
-    res.json(result);
-  } catch (error) {
-    console.error('Lỗi tìm kiếm bằng hình ảnh:', error);
-    res.status(500).json({ error: 'Không thể tìm kiếm bằng hình ảnh. Hãy kiểm tra LM Studio rồi thử lại.' });
   }
 });
 

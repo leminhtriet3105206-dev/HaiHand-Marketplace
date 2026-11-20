@@ -12,6 +12,7 @@ services:
     environment:
       - PORT=4000
       - NODE_ENV=${NODE_ENV:-production}
+      - COOKIE_SECURE=${COOKIE_SECURE:-false}
     volumes:
       - ./backend/uploads:/app/uploads
     networks:
@@ -46,11 +47,15 @@ services:
     ports:
       - "${BIND_HOST:-127.0.0.1}:4001:4001"
     env_file:
-      - ./admin/.env
+      - path: ./backend/.env
+        required: false
+      - path: ./admin/.env
+        required: false
     environment:
       - PORT=4001
       - HOST=0.0.0.0
       - NODE_ENV=${NODE_ENV:-production}
+      - COOKIE_SECURE=${COOKIE_SECURE:-false}
     depends_on:
       - backend
     networks:

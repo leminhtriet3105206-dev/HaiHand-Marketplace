@@ -150,6 +150,8 @@ if (!process.env.SESSION_SECRET && process.env.NODE_ENV !== 'test') {
   console.error('❌ [CRITICAL SECURITY] Thiếu biến môi trường SESSION_SECRET!');
   process.exit(1);
 }
+app.set('trust proxy', 1);
+const isCookieSecure = process.env.COOKIE_SECURE === 'true';
 app.use(session({
   secret: process.env.SESSION_SECRET || 'test_only_session_secret_do_not_use_in_prod',
   resave: false,
@@ -157,7 +159,7 @@ app.use(session({
   cookie: {
     httpOnly: true,
     sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production'
+    secure: isCookieSecure
   }
 }));
 
@@ -1832,53 +1834,17 @@ app.get('/api/users/favorites/:userId', protect, requireOwnerOrAdmin('userId'), 
 // SECTION 12: SẢN PHẨM (POSTS), DANH MỤC, GIỎ HÀNG, ĐÁNH GIÁ & BÁO CÁO
 // ============================================================================
 
-const DEFAULT_HERO_BANNERS = [
-  {
-    _id: 'default-banner-1',
-    title: 'Săn Đồ Cũ Chất - Giá Tốt Mỗi Ngày',
-    imageUrl: '/banners/default-1.svg',
-    targetUrl: '/products',
-    openInNewTab: false,
-    order: 0,
-    isActive: true,
-    isFallback: true
-  },
-  {
-    _id: 'default-banner-2',
-    title: 'An Tâm Mua Sắm Với HaiPay Escrow',
-    imageUrl: '/banners/default-2.svg',
-    targetUrl: '/register-seller',
-    openInNewTab: false,
-    order: 1,
-    isActive: true,
-    isFallback: true
-  },
-  {
-    _id: 'default-banner-3',
-    title: 'Đăng Bán Nhanh - Giao Hàng Toàn Quốc',
-    imageUrl: '/banners/default-3.svg',
-    targetUrl: '/create-post',
-    openInNewTab: false,
-    order: 2,
-    isActive: true,
-    isFallback: true
-  }
-];
-
-/** Lấy danh sách Banner Hero đang hoạt động cho trang chủ (fallback mặc định nếu DB trống) */
+/** Lấy danh sách Banner Hero đang hoạt động cho trang chủ (chỉ trả dữ liệu thật từ DB, không trả banner ảo mặc định) */
 app.get('/api/banners', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {
-      return res.status(200).json(DEFAULT_HERO_BANNERS);
+      return res.status(200).json([]);
     }
     const banners = await Banner.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).lean();
-    if (!banners || banners.length === 0) {
-      return res.status(200).json(DEFAULT_HERO_BANNERS);
-    }
-    return res.status(200).json(banners);
+    return res.status(200).json(banners || []);
   } catch (error) {
     console.error('Lỗi lấy banner:', error.message);
-    return res.status(200).json(DEFAULT_HERO_BANNERS);
+    return res.status(200).json([]);
   }
 });
 

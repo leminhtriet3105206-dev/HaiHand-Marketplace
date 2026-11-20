@@ -10,37 +10,15 @@ import { useAuth } from '../context/AuthContext';
 
 const toSvgDataUri = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`;
 
-const DEFAULT_BANNERS = [
-  {
-    _id: 'default-banner-1',
-    title: 'Săn Đồ Cũ Chất - Giá Tốt Mỗi Ngày',
-    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1E293B"/><stop offset="55%" stop-color="#0F172A"/><stop offset="100%" stop-color="#1E1B4B"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg1)"/><circle cx="670" cy="110" r="170" fill="#FACC15" opacity="0.14"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="44" font-weight="bold">Săn Đồ Cũ Chất</text><text x="64" y="286" fill="#FACC15" font-family="Arial,sans-serif" font-size="44" font-weight="bold">Giá Hời Mỗi Ngày</text><text x="64" y="346" fill="#CBD5E1" font-family="Arial,sans-serif" font-size="20">Hàng ngàn sản phẩm công nghệ, thời trang đã kiểm duyệt.</text></svg>`),
-    targetUrl: '/products',
-    openInNewTab: false,
-    isFallback: true,
-  },
-  {
-    _id: 'default-banner-2',
-    title: 'An Tâm Mua Sắm Với HaiPay Escrow',
-    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#064E3B"/><stop offset="55%" stop-color="#065F46"/><stop offset="100%" stop-color="#0F172A"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg2)"/><circle cx="640" cy="480" r="190" fill="#10B981" opacity="0.16"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Giao Dịch An Toàn</text><text x="64" y="286" fill="#6EE7B7" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Nhận Hàng Mới Trả</text><text x="64" y="346" fill="#D1FAE5" font-family="Arial,sans-serif" font-size="20">Bảo vệ thanh toán trung gian HaiPay minh bạch.</text></svg>`),
-    targetUrl: '/register-seller',
-    openInNewTab: false,
-    isFallback: true,
-  },
-  {
-    _id: 'default-banner-3',
-    title: 'Đăng Bán Nhanh - Giao Hàng Toàn Quốc',
-    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#312E81"/><stop offset="55%" stop-color="#4338CA"/><stop offset="100%" stop-color="#1E1B4B"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg3)"/><circle cx="650" cy="140" r="180" fill="#A855F7" opacity="0.20"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Biến Đồ Không Dùng</text><text x="64" y="286" fill="#FACC15" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Thành Thu Nhập Ngay</text><text x="64" y="346" fill="#E0E7FF" font-family="Arial,sans-serif" font-size="20">Tạo tin đăng nhanh, theo dõi giao vận tự động.</text></svg>`),
-    targetUrl: '/create-post',
-    openInNewTab: false,
-    isFallback: true,
-  },
-];
+// Ảnh placeholder trung tính chỉ dùng khi URL ảnh banner thật từ DB bị lỗi tải (onError)
+const BANNER_ERROR_PLACEHOLDER = toSvgDataUri(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="#1C1917"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="#A8A29E" font-family="Arial,sans-serif" font-size="24">Không tải được hình ảnh banner</text></svg>'
+);
 
 const resolveBannerImageUrl = (rawUrl, adminUrl, apiUrl) => {
-  if (!rawUrl || typeof rawUrl !== 'string') return DEFAULT_BANNERS[0].imageUrl;
+  if (!rawUrl || typeof rawUrl !== 'string') return BANNER_ERROR_PLACEHOLDER;
   const trimmed = rawUrl.trim();
-  if (!trimmed) return DEFAULT_BANNERS[0].imageUrl;
+  if (!trimmed) return BANNER_ERROR_PLACEHOLDER;
   if (/^(https?:\/\/|data:)/i.test(trimmed)) {
     return trimmed;
   }
@@ -83,13 +61,15 @@ export default function HomePage() {
   const [hasMore, setHasMore] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [locationFilter, setLocationFilter] = useState('Tất cả khu vực');
+  const [sortBy, setSortBy] = useState('newest');
+  const [bannerAnnouncement, setBannerAnnouncement] = useState('');
   
   // --- New Loading States ---
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
-  const [banners, setBanners] = useState(DEFAULT_BANNERS);
+  const [banners, setBanners] = useState([]);
   const [currentBanner, setCurrentBanner] = useState(0);
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
@@ -106,15 +86,16 @@ export default function HomePage() {
     }
   }, [user?._id, API_URL]);
 
-  const fetchPosts = useCallback(async (currentPage = 1, currentCategory = 'Tất cả', currentKeyword = '', loc = 'Tất cả khu vực') => {
+  const fetchPosts = useCallback(async (currentPage = 1, currentCategory = 'Tất cả', currentKeyword = '', loc = 'Tất cả khu vực', sortOption = 'newest') => {
     if (currentPage === 1) setIsLoadingPosts(true);
     else setIsLoadingMore(true);
 
     try {
       let url = `${API_URL}/api/posts?page=${currentPage}&limit=10`;
-      if (currentCategory !== 'Tất cả' && currentCategory !== 'Kết quả tìm kiếm') url += `&category=${currentCategory}`;
-      if (currentKeyword.trim()) url += `&search=${currentKeyword}`;
-      if (loc !== 'Tất cả khu vực') url += `&location=${loc}`;
+      if (currentCategory !== 'Tất cả' && currentCategory !== 'Kết quả tìm kiếm') url += `&category=${encodeURIComponent(currentCategory)}`;
+      if (currentKeyword.trim()) url += `&search=${encodeURIComponent(currentKeyword.trim())}`;
+      if (loc !== 'Tất cả khu vực') url += `&location=${encodeURIComponent(loc)}`;
+      if (sortOption && sortOption !== 'newest') url += `&sort=${encodeURIComponent(sortOption)}`;
 
       const { data } = await axios.get(url);
 
@@ -149,28 +130,35 @@ export default function HomePage() {
     if (selectedCategory === category) return;
     setSelectedCategory(category);
     setPage(1);
-    fetchPosts(1, category, keyword, locationFilter);
-  }, [selectedCategory, keyword, locationFilter, fetchPosts]);
+    fetchPosts(1, category, keyword, locationFilter, sortBy);
+  }, [selectedCategory, keyword, locationFilter, sortBy, fetchPosts]);
 
   const handleLocationClick = useCallback((loc) => {
     if (locationFilter === loc) return;
     setLocationFilter(loc);
     setPage(1);
-    fetchPosts(1, selectedCategory, keyword, loc);
-  }, [locationFilter, selectedCategory, keyword, fetchPosts]);
+    fetchPosts(1, selectedCategory, keyword, loc, sortBy);
+  }, [locationFilter, selectedCategory, keyword, sortBy, fetchPosts]);
+
+  const handleSortClick = useCallback((nextSort) => {
+    if (sortBy === nextSort) return;
+    setSortBy(nextSort);
+    setPage(1);
+    fetchPosts(1, selectedCategory, keyword, locationFilter, nextSort);
+  }, [sortBy, selectedCategory, keyword, locationFilter, fetchPosts]);
 
   const handleSearch = useCallback((searchKeyword) => {
     setKeyword(searchKeyword);
     setSelectedCategory('Kết quả tìm kiếm');
     setPage(1);
-    fetchPosts(1, 'Kết quả tìm kiếm', searchKeyword, locationFilter);
-  }, [locationFilter, fetchPosts]);
+    fetchPosts(1, 'Kết quả tìm kiếm', searchKeyword, locationFilter, sortBy);
+  }, [locationFilter, sortBy, fetchPosts]);
 
   const handleLoadMore = useCallback(() => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchPosts(nextPage, selectedCategory, keyword, locationFilter);
-  }, [page, selectedCategory, keyword, locationFilter, fetchPosts]);
+    fetchPosts(nextPage, selectedCategory, keyword, locationFilter, sortBy);
+  }, [page, selectedCategory, keyword, locationFilter, sortBy, fetchPosts]);
 
   const fetchBanners = useCallback(async () => {
     try {
@@ -179,11 +167,20 @@ export default function HomePage() {
         setBanners(data);
         setCurrentBanner(0);
       } else {
-        setBanners(DEFAULT_BANNERS);
+        setBanners([]);
       }
     } catch (error) {
-      setBanners(DEFAULT_BANNERS);
+      setBanners([]);
     }
+  }, [API_URL]);
+
+  const fetchSettings = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/settings`);
+      if (data && typeof data.bannerAnnouncement === 'string') {
+        setBannerAnnouncement(data.bannerAnnouncement.trim());
+      }
+    } catch (error) {}
   }, [API_URL]);
 
   const handleBannerClick = useCallback((banner) => {
@@ -208,10 +205,11 @@ export default function HomePage() {
   }, [navigate]);
 
   useEffect(() => {
-    fetchPosts(1, 'Tất cả', '', 'Tất cả khu vực');
+    fetchPosts(1, 'Tất cả', '', 'Tất cả khu vực', 'newest');
     fetchCategories();
     fetchBanners();
-  }, [fetchPosts, fetchCategories, fetchBanners]);
+    fetchSettings();
+  }, [fetchPosts, fetchCategories, fetchBanners, fetchSettings]);
 
   useEffect(() => {
     if (!banners || banners.length <= 1) return undefined;
@@ -264,16 +262,18 @@ export default function HomePage() {
       <main className="max-w-[1200px] mx-auto px-4 py-8 space-y-10">
         
         {/* Banner Section */}
-        <section className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row items-stretch border border-[#E7E5E4] min-h-[360px] transition-shadow duration-300 hover:shadow-md">
+        <section className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row items-stretch border border-[#E7E5E4] min-h-[280px] transition-shadow duration-300 hover:shadow-md">
            <div className="flex-1 space-y-5 p-8 md:p-12 flex flex-col justify-center">
-             <span className="inline-flex self-start items-center gap-1 text-sm bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-semibold border border-emerald-200">
-               Mùa dọn nhà đón Tết
-             </span>
+             {bannerAnnouncement && (
+               <span className="inline-flex self-start items-center gap-1 text-sm bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-semibold border border-emerald-200">
+                 {bannerAnnouncement}
+               </span>
+             )}
              <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-snug">
-               Dọn nhà đón Tết — Thanh lý đồ cũ giá tốt
+               Chợ đồ cũ HaiHand — Mua bán an toàn, minh bạch
              </h1>
-             <p className="text-stone-500 max-w-md leading-relaxed text-lg">
-               Giải phóng không gian sống, chuyển giao vật dụng thân yêu cho người cần với hơn 50.000+ người mua đang tìm kiếm mỗi ngày.
+             <p className="text-stone-500 max-w-md leading-relaxed text-base">
+               Kết nối trực tiếp người mua và gian hàng B2C với thanh toán ký quỹ HaiPay và giao vận theo dõi tự động.
              </p>
              <div className="pt-2 flex flex-wrap gap-3 items-center">
                <Button variant="primary" className="transition-transform duration-300 hover:-translate-y-0.5" onClick={() => handleCategoryClick('Tất cả')}>Khám phá ngay</Button>
@@ -287,6 +287,7 @@ export default function HomePage() {
                </a>
              </div>
            </div>
+           {banners.length > 0 && (
            <div className="w-full md:w-[45%] lg:w-[50%] relative shrink-0 min-h-[250px] md:min-h-full group">
              <div className="absolute inset-0 w-full h-full bg-stone-900 overflow-hidden">
                {banners.map((banner, idx) => {
@@ -318,10 +319,10 @@ export default function HomePage() {
                        onError={(e) => {
                          if (e.currentTarget.dataset.fallbackApplied) return;
                          e.currentTarget.dataset.fallbackApplied = '1';
-                         e.currentTarget.src = DEFAULT_BANNERS[idx % DEFAULT_BANNERS.length].imageUrl;
+                         e.currentTarget.src = BANNER_ERROR_PLACEHOLDER;
                        }}
                      />
-                     {banner?.title && !banner?.isFallback && (
+                     {banner?.title && (
                        <div className="pointer-events-none absolute top-3 left-3 max-w-[85%] px-3 py-1.5 rounded-full bg-stone-950/65 backdrop-blur-sm text-white text-xs font-semibold shadow-sm truncate">
                          {banner.title}
                        </div>
@@ -380,13 +381,18 @@ export default function HomePage() {
 
              </div>
            </div>
+           )}
         </section>
 
         {/* Categories Section */}
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold tracking-tight">Khám phá danh mục đồ cũ</h2>
-            <button className="text-[#EA580C] text-sm font-semibold hover:underline flex items-center gap-1 transition-colors hover:text-[#C2410C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded">
+            <button
+              type="button"
+              onClick={() => navigate('/products')}
+              className="text-[#EA580C] text-sm font-semibold hover:underline flex items-center gap-1 transition-colors hover:text-[#C2410C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded"
+            >
               Tất cả danh mục
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
@@ -454,9 +460,27 @@ export default function HomePage() {
             </div>
             
             <div className="flex gap-2 text-sm font-semibold">
-               <button className="px-4 py-1.5 border border-[#1C1917] rounded-full bg-[#1C1917] text-white transition-colors">Mới nhất</button>
-               <button className="px-4 py-1.5 border border-[#E7E5E4] rounded-full bg-white text-stone-500 hover:bg-stone-50 transition-colors">Gần bạn nhất</button>
-               <button className="px-4 py-1.5 border border-[#E7E5E4] rounded-full bg-white text-stone-500 hover:bg-stone-50 transition-colors">Giá thấp → cao</button>
+               <button
+                 type="button"
+                 onClick={() => handleSortClick('newest')}
+                 className={`px-4 py-1.5 border rounded-full transition-colors ${sortBy === 'newest' ? 'border-[#1C1917] bg-[#1C1917] text-white' : 'border-[#E7E5E4] bg-white text-stone-500 hover:bg-stone-50'}`}
+               >
+                 Mới nhất
+               </button>
+               <button
+                 type="button"
+                 onClick={() => handleSortClick('price-asc')}
+                 className={`px-4 py-1.5 border rounded-full transition-colors ${sortBy === 'price-asc' ? 'border-[#1C1917] bg-[#1C1917] text-white' : 'border-[#E7E5E4] bg-white text-stone-500 hover:bg-stone-50'}`}
+               >
+                 Giá thấp → cao
+               </button>
+               <button
+                 type="button"
+                 onClick={() => handleSortClick('price-desc')}
+                 className={`px-4 py-1.5 border rounded-full transition-colors ${sortBy === 'price-desc' ? 'border-[#1C1917] bg-[#1C1917] text-white' : 'border-[#E7E5E4] bg-white text-stone-500 hover:bg-stone-50'}`}
+               >
+                 Giá cao → thấp
+               </button>
             </div>
           </div>
           

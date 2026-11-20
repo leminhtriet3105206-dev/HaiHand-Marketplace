@@ -1,0 +1,2548 @@
+This file is a merged representation of a subset of the codebase, containing specifically included files, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of a subset of the repository's contents that is considered the most important context.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Only files matching these patterns are included: backend/models/**, admin/models/**, backend/config/**, backend/scripts/**, backend/services/shipping/vnLocations.js, package.json
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+admin/
+  models/
+    Banner.js
+    Category.js
+    GlobalSetting.js
+    Post.js
+    Product.js
+    User.js
+backend/
+  config/
+    db.js
+    env.js
+  models/
+    schemas/
+      Address.js
+    Banner.js
+    Message.js
+    Notification.js
+    Order.js
+    OtpToken.js
+    PaymentSession.js
+    Product.js
+    Settings.js
+    Transaction.js
+    User.js
+  scripts/
+    calibrate-image-pair-scores.js
+    evaluate-chatbot.js
+    evaluate-image-candidates.js
+    evaluate-image-search.js
+    evaluate-image-text-ranks.js
+    evaluate-reviewed-image-catalog.js
+    export-image-training-data.js
+    index-rag-products.js
+    inspect-image-rank.js
+    migrate-c2c-to-b2c.js
+    migrate-moderation.js
+    migrate-seller-flow.js
+    reconcile.js
+    report-image-improvement.js
+    snapshot-image-catalog.js
+  services/
+    shipping/
+      vnLocations.js
+package.json
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="admin/models/Banner.js">
+const mongoose = require("mongoose");
+
+const bannerSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    imageUrl: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    targetUrl: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    openInNewTab: {
+      type: Boolean,
+      default: false,
+    },
+    order: {
+      type: Number,
+      default: 0,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "banners",
+  }
+);
+
+bannerSchema.index({ isActive: 1, order: 1, createdAt: -1 });
+
+module.exports =
+  mongoose.models.Banner || mongoose.model("Banner", bannerSchema, "banners");
+</file>
+
+<file path="admin/models/Category.js">
+const mongoose = require("mongoose");
+
+const categorySchema = new mongoose.Schema({
+  name: { type: String, required: true, unique: true },
+  description: { type: String },
+  image: { type: String },
+  icon: { type: String },
+  date: { type: Date, default: Date.now },
+}, { timestamps: true, strict: false });
+
+module.exports = mongoose.models.Category || mongoose.model("Category", categorySchema);
+</file>
+
+<file path="admin/models/GlobalSetting.js">
+const mongoose = require("mongoose");
+
+const globalSettingSchema = new mongoose.Schema({
+  platformFeePercentage: { type: Number, default: 5, min: 0, max: 50 },
+  commissionRate: { type: Number, default: 5, min: 0, max: 50 },
+  autoApprovePosts: { type: Boolean, default: false },
+  maintenanceMode: { type: Boolean, default: false },
+  contactEmail: { type: String, default: "cskh@haihand.vn" },
+  supportHotline: { type: String, default: "1900-6868" }
+}, { timestamps: true, strict: false });
+
+globalSettingSchema.statics.getGlobal = async function () {
+  let setting = await this.findOne();
+  if (!setting) {
+    setting = await this.create({});
+  }
+  return setting;
+};
+
+// Shares the 'settings' collection with backend/models/Settings.js (singleton document)
+const GlobalSetting = mongoose.models.GlobalSetting || mongoose.model("GlobalSetting", globalSettingSchema, "settings");
+module.exports = GlobalSetting;
+</file>
+
+<file path="admin/models/Post.js">
+const mongoose = require("mongoose");
+
+const postSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  name: { type: String },
+  price: { type: Number, required: true },
+  originalPrice: { type: Number, default: 0 },
+  sku: { type: String, default: '' },
+  stockQuantity: { type: Number, default: 1 },
+  quantity: { type: Number, default: 1 },
+  soldCount: { type: Number, default: 0 },
+  category: { type: String, required: true }, 
+  location: { type: String, default: "Toàn quốc" }, 
+  image: String,
+  images: [{ type: String }],
+  description: String,
+  condition: { type: String, default: "Mới" },
+  variants: [{
+    name: { type: String, default: '' },
+    price: { type: Number },
+    stock: { type: Number, default: 0 },
+    sku: { type: String, default: '' },
+    options: [String]
+  }],
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'out_of_stock', 'pending', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending', 'Chờ duyệt'],
+    default: 'active'
+  },
+  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  date: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+postSchema.pre('save', function(next) {
+  if (!this.title && this.name) this.title = this.name;
+  if (!this.name && this.title) this.name = this.title;
+  if (!this.author && this.sellerId) this.author = this.sellerId;
+  if (!this.sellerId && this.author) this.sellerId = this.author;
+  next();
+});
+
+module.exports = mongoose.models.Post || mongoose.model("Post", postSchema);
+</file>
+
+<file path="admin/models/Product.js">
+const mongoose = require("mongoose");
+
+const productSchema = new mongoose.Schema({
+  title: { type: String, required: true },
+  name: { type: String },
+  price: { type: Number, required: true },
+  originalPrice: { type: Number, default: 0 },
+  sku: { type: String, default: '' },
+  stockQuantity: { type: Number, default: 1 },
+  quantity: { type: Number, default: 1 },
+  soldCount: { type: Number, default: 0 },
+  category: { type: String, required: true }, 
+  location: { type: String, default: "Toàn quốc" }, 
+  image: String,
+  images: [{ type: String }],
+  description: String,
+  condition: { type: String, default: "Mới" },
+  variants: [{
+    name: { type: String, default: '' },
+    price: { type: Number },
+    stock: { type: Number, default: 0 },
+    sku: { type: String, default: '' },
+    options: [String]
+  }],
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'out_of_stock', 'pending', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending', 'Chờ duyệt'],
+    default: 'active'
+  },
+  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  date: { type: Date, default: Date.now },
+}, { timestamps: true });
+
+productSchema.pre('save', function(next) {
+  if (!this.title && this.name) this.title = this.name;
+  if (!this.name && this.title) this.name = this.title;
+  if (!this.author && this.sellerId) this.author = this.sellerId;
+  if (!this.sellerId && this.author) this.sellerId = this.author;
+  next();
+});
+
+const Product = mongoose.models.Product || mongoose.model("Product", productSchema, "posts");
+module.exports = Product;
+</file>
+
+<file path="admin/models/User.js">
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema({
+  username: { type: String, sparse: true },
+  password: { type: String, required: true },
+  name: String,
+  email: { type: String, required: true, unique: true },
+  phone: String,
+  role: { type: String, default: "Khách hàng" }, 
+  status: { type: String, enum: ['active', 'locked'], default: 'active' },
+  lockReason: { type: String, default: '' },
+  lockedUntil: { type: Date, default: null },
+  isBanned: { type: Boolean, default: false },
+  isDeleted: { type: Boolean, default: false },
+  deletedAt: { type: Date, default: null },
+  tokenVersion: { type: Number, default: 0 },
+  isSeller: { type: Boolean, default: false },
+  sellerStatus: { 
+    type: String, 
+    enum: ['none', 'pending', 'approved', 'rejected'], 
+    default: 'none' 
+  },
+  sellerAppliedAt: { type: Date },
+  sellerApprovedAt: { type: Date },
+  sellerRejectionReason: { type: String, default: '' },
+  walletBalance: { type: Number, default: 0 },
+  pendingBalance: { type: Number, default: 0 },
+  isWalletActive: { type: Boolean, default: false },
+  walletPhone: { type: String, default: '' },
+  bankInfo: {
+    name: { type: String, default: '' },
+    accountNumber: { type: String, default: '' },
+    accountName: { type: String, default: '' }
+  },
+  shopInfo: {
+    shopName: { type: String, default: '' },
+    description: { type: String, default: '' },
+    address: { type: String, default: '' },
+    avatar: { type: String, default: '' },
+    banner: { type: String, default: '' },
+    phone: { type: String, default: '' },
+    taxCode: { type: String, default: '' }
+  },
+  date: { type: Date, default: Date.now },
+}, { timestamps: true, strict: false });
+
+module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+</file>
+
+<file path="backend/config/db.js">
+const mongoose = require('mongoose');
+
+const connectDB = async () => {
+    try {
+        const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+        if (!mongoUri) {
+            throw new Error('MONGO_URI, MONGODB_URI or MONGODB_ATLAS_URI is not defined in environment variables');
+        }
+        const conn = await mongoose.connect(mongoUri);
+        console.log(`Đã kết nối MongoDB: ${conn.connection.host}`);
+    } catch (error) {
+        console.error(`Lỗi: ${error.message}`);
+    }
+};
+
+module.exports = connectDB;
+</file>
+
+<file path="backend/config/env.js">
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * Helper: đọc giá trị biến môi trường từ một danh sách tên (hỗ trợ cả alias legacy)
+ */
+function pickEnv(envObj, names) {
+  const list = Array.isArray(names) ? names : [names];
+  for (const name of list) {
+    const val = envObj[name];
+    if (typeof val === 'string' && val.trim().length > 0) {
+      return val.trim();
+    }
+  }
+  return '';
+}
+
+/**
+ * Gán mặc định an toàn CHO RIÊNG môi trường Jest test (`NODE_ENV === 'test'`)
+ * khi chạy unit/integration test cục bộ mà người chạy test không nạp `.env`.
+ * Tuyệt đối KHÔNG áp dụng cho `development` hoặc `production`.
+ */
+function ensureTestEnvDefaults(envObj = process.env) {
+  if (envObj.NODE_ENV !== 'test') return;
+  if (!pickEnv(envObj, ['MONGO_URI', 'MONGODB_URI'])) {
+    envObj.MONGO_URI = 'mongodb://127.0.0.1:27017/haihand_test';
+  }
+  if (!pickEnv(envObj, ['JWT_SECRET'])) {
+    envObj.JWT_SECRET = 'test_only_jwt_secret_do_not_use_in_prod';
+  }
+  if (!pickEnv(envObj, ['SESSION_SECRET'])) {
+    envObj.SESSION_SECRET = 'test_only_session_secret_do_not_use_in_prod';
+  }
+  if (!pickEnv(envObj, ['CLOUDINARY_CLOUD_NAME'])) {
+    envObj.CLOUDINARY_CLOUD_NAME = 'test_cloud';
+  }
+  if (!pickEnv(envObj, ['CLOUDINARY_API_KEY'])) {
+    envObj.CLOUDINARY_API_KEY = 'test_api_key';
+  }
+  if (!pickEnv(envObj, ['CLOUDINARY_API_SECRET'])) {
+    envObj.CLOUDINARY_API_SECRET = 'test_cloud_secret_value';
+  }
+  if (!pickEnv(envObj, ['VNPAY_TMN_CODE', 'VNP_TMNCODE'])) {
+    envObj.VNPAY_TMN_CODE = 'TESTTMN1';
+  }
+  if (!pickEnv(envObj, ['VNPAY_HASH_SECRET', 'VNP_HASHSECRET'])) {
+    envObj.VNPAY_HASH_SECRET = 'test_only_vnpay_hash_secret_key_0000';
+  }
+  if (!pickEnv(envObj, ['GHN_WEBHOOK_TOKEN', 'GHN_WEBHOOK_SECRET'])) {
+    envObj.GHN_WEBHOOK_TOKEN = 'test_only_ghn_webhook_token';
+  }
+  if (!pickEnv(envObj, ['CORS_ORIGINS'])) {
+    envObj.CORS_ORIGINS = 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:4001,http://127.0.0.1:4001';
+  }
+  if (
+    !pickEnv(envObj, [
+      'FIREBASE_PROJECT_ID',
+      'FIREBASE_SERVICE_ACCOUNT_JSON',
+      'FIREBASE_SERVICE_ACCOUNT_PATH'
+    ])
+  ) {
+    envObj.FIREBASE_PROJECT_ID = 'haihand-test-project';
+  }
+}
+
+/**
+ * Kiểm tra và trả về cấu hình môi trường đã chuẩn hóa.
+ * Thiếu bất kỳ biến bắt buộc nào -> throw Error ngay lúc khởi động (Fail-Fast).
+ */
+function validateEnv(envObj = process.env, { allowTestDefaults = true } = {}) {
+  if (allowTestDefaults && envObj.NODE_ENV === 'test') {
+    ensureTestEnvDefaults(envObj);
+  }
+
+  const missing = [];
+
+  const mongoUri = pickEnv(envObj, ['MONGO_URI', 'MONGODB_URI']);
+  if (!mongoUri) missing.push('MONGO_URI');
+
+  const jwtSecret = pickEnv(envObj, ['JWT_SECRET']);
+  if (!jwtSecret) missing.push('JWT_SECRET');
+
+  const sessionSecret = pickEnv(envObj, ['SESSION_SECRET']);
+  if (!sessionSecret) missing.push('SESSION_SECRET');
+
+  const cloudinaryCloudName = pickEnv(envObj, ['CLOUDINARY_CLOUD_NAME']);
+  if (!cloudinaryCloudName) missing.push('CLOUDINARY_CLOUD_NAME');
+
+  const cloudinaryApiKey = pickEnv(envObj, ['CLOUDINARY_API_KEY']);
+  if (!cloudinaryApiKey) missing.push('CLOUDINARY_API_KEY');
+
+  const cloudinaryApiSecret = pickEnv(envObj, ['CLOUDINARY_API_SECRET']);
+  if (!cloudinaryApiSecret) missing.push('CLOUDINARY_API_SECRET');
+
+  const vnpayTmnCode = pickEnv(envObj, ['VNPAY_TMN_CODE', 'VNP_TMNCODE']);
+  if (!vnpayTmnCode) missing.push('VNPAY_TMN_CODE');
+
+  const vnpayHashSecret = pickEnv(envObj, ['VNPAY_HASH_SECRET', 'VNP_HASHSECRET']);
+  if (!vnpayHashSecret) missing.push('VNPAY_HASH_SECRET');
+
+  const ghnWebhookToken = pickEnv(envObj, ['GHN_WEBHOOK_TOKEN', 'GHN_WEBHOOK_SECRET']);
+  if (!ghnWebhookToken) missing.push('GHN_WEBHOOK_TOKEN');
+
+  const corsOriginsRaw = pickEnv(envObj, ['CORS_ORIGINS']);
+  if (!corsOriginsRaw) missing.push('CORS_ORIGINS');
+
+  // Firebase config: chấp nhận FIREBASE_SERVICE_ACCOUNT_JSON, FIREBASE_SERVICE_ACCOUNT_PATH, hoặc FIREBASE_PROJECT_ID
+  const firebaseProjectId = pickEnv(envObj, ['FIREBASE_PROJECT_ID']);
+  const firebaseClientEmail = pickEnv(envObj, ['FIREBASE_CLIENT_EMAIL']);
+  const firebasePrivateKey = pickEnv(envObj, ['FIREBASE_PRIVATE_KEY']);
+  const firebaseServiceAccountJson = pickEnv(envObj, ['FIREBASE_SERVICE_ACCOUNT_JSON']);
+  const firebaseServiceAccountPath = pickEnv(envObj, ['FIREBASE_SERVICE_ACCOUNT_PATH']);
+
+  if (!firebaseProjectId && !firebaseServiceAccountJson && !firebaseServiceAccountPath) {
+    missing.push('FIREBASE_PROJECT_ID (hoặc FIREBASE_SERVICE_ACCOUNT_JSON / FIREBASE_SERVICE_ACCOUNT_PATH)');
+  }
+
+  if (missing.length > 0) {
+    throw new Error(
+      `[ENV_CONFIG_ERROR] Thiếu biến môi trường bắt buộc: ${missing.join(', ')}. Vui lòng kiểm tra file .env (xem .env.example).`
+    );
+  }
+
+  const corsOrigins = corsOriginsRaw
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  if (corsOrigins.length === 0) {
+    throw new Error('[ENV_CONFIG_ERROR] Biến môi trường CORS_ORIGINS phải chứa ít nhất 1 origin hợp lệ.');
+  }
+
+  return {
+    NODE_ENV: envObj.NODE_ENV || 'development',
+    PORT: Number(envObj.PORT) || 4000,
+    MONGO_URI: mongoUri,
+    JWT_SECRET: jwtSecret,
+    JWT_EXPIRES_IN: pickEnv(envObj, ['JWT_EXPIRES_IN']) || '2h',
+    JWT_REFRESH_EXPIRES_IN: pickEnv(envObj, ['JWT_REFRESH_EXPIRES_IN']) || '7d',
+    SESSION_SECRET: sessionSecret,
+    CLOUDINARY_CLOUD_NAME: cloudinaryCloudName,
+    CLOUDINARY_API_KEY: cloudinaryApiKey,
+    CLOUDINARY_API_SECRET: cloudinaryApiSecret,
+    VNPAY_TMN_CODE: vnpayTmnCode,
+    VNPAY_HASH_SECRET: vnpayHashSecret,
+    VNPAY_URL: pickEnv(envObj, ['VNPAY_URL', 'VNP_URL']) || 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html',
+    VNPAY_RETURN_URL: pickEnv(envObj, ['VNPAY_RETURN_URL', 'VNP_RETURNURL']) || 'http://localhost:3000/payment-result',
+    GHN_WEBHOOK_TOKEN: ghnWebhookToken,
+    GHN_WEBHOOK_IP_ALLOWLIST: pickEnv(envObj, ['GHN_WEBHOOK_IP_ALLOWLIST'])
+      .split(',')
+      .map((ip) => ip.trim())
+      .filter(Boolean),
+    CORS_ORIGINS: corsOrigins,
+    FIREBASE: {
+      projectId: firebaseProjectId,
+      clientEmail: firebaseClientEmail,
+      privateKey: firebasePrivateKey ? firebasePrivateKey.replace(/\\n/g, '\n') : '',
+      serviceAccountJson: firebaseServiceAccountJson,
+      serviceAccountPath: firebaseServiceAccountPath ? path.resolve(firebaseServiceAccountPath) : ''
+    },
+    AUTO_COMPLETE_DAYS: Math.max(1, Number(envObj.AUTO_COMPLETE_DAYS) || 7),
+    COD_SETTLEMENT_MODE: pickEnv(envObj, ['COD_SETTLEMENT_MODE']) || 'wallet_credit'
+  };
+}
+
+let cachedEnv = null;
+
+function loadEnv(options = {}) {
+  cachedEnv = validateEnv(process.env, options);
+  return cachedEnv;
+}
+
+function getEnv() {
+  if (!cachedEnv) {
+    cachedEnv = validateEnv(process.env, { allowTestDefaults: true });
+  }
+  return cachedEnv;
+}
+
+module.exports = {
+  validateEnv,
+  loadEnv,
+  getEnv,
+  ensureTestEnvDefaults
+};
+</file>
+
+<file path="backend/models/schemas/Address.js">
+const mongoose = require('mongoose');
+
+/**
+ * Structured Vietnamese address.
+ * IDs follow the shipping provider's master data (GHN: ProvinceID / DistrictID / WardCode)
+ * so that fee calculation and shipment creation can be done without geocoding.
+ */
+const addressFields = {
+  fullName: { type: String, default: '', trim: true },
+  phone: { type: String, default: '', trim: true },
+  street: { type: String, default: '', trim: true },
+  provinceId: { type: Number },
+  provinceName: { type: String, default: '' },
+  districtId: { type: Number },
+  districtName: { type: String, default: '' },
+  wardCode: { type: String, default: '' },
+  wardName: { type: String, default: '' }
+};
+
+// For user address books (each entry has its own _id + default flag)
+const AddressBookSchema = new mongoose.Schema(
+  { ...addressFields, isDefault: { type: Boolean, default: false } },
+  { _id: true, timestamps: false }
+);
+
+// For immutable snapshots embedded in orders / shop pickup info
+const AddressSnapshotSchema = new mongoose.Schema(addressFields, { _id: false });
+
+function formatAddress(a) {
+  if (!a) return '';
+  return [a.street, a.wardName, a.districtName, a.provinceName]
+    .map((p) => (p || '').toString().trim())
+    .filter(Boolean)
+    .join(', ');
+}
+
+function isCompleteAddress(a) {
+  return Boolean(
+    a &&
+    a.fullName && a.phone && a.street &&
+    a.provinceId && a.districtId && a.wardCode
+  );
+}
+
+function pickAddressFields(src = {}) {
+  return {
+    fullName: (src.fullName || '').toString().trim(),
+    phone: (src.phone || '').toString().trim(),
+    street: (src.street || '').toString().trim(),
+    provinceId: src.provinceId != null && src.provinceId !== '' ? Number(src.provinceId) : undefined,
+    provinceName: (src.provinceName || '').toString().trim(),
+    districtId: src.districtId != null && src.districtId !== '' ? Number(src.districtId) : undefined,
+    districtName: (src.districtName || '').toString().trim(),
+    wardCode: (src.wardCode || '').toString().trim(),
+    wardName: (src.wardName || '').toString().trim()
+  };
+}
+
+module.exports = {
+  AddressBookSchema,
+  AddressSnapshotSchema,
+  formatAddress,
+  isCompleteAddress,
+  pickAddressFields
+};
+</file>
+
+<file path="backend/models/Banner.js">
+const mongoose = require("mongoose");
+
+const bannerSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    imageUrl: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    targetUrl: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    openInNewTab: {
+      type: Boolean,
+      default: false,
+    },
+    order: {
+      type: Number,
+      default: 0,
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+  },
+  {
+    timestamps: true,
+    collection: "banners",
+  }
+);
+
+bannerSchema.index({ isActive: 1, order: 1, createdAt: -1 });
+
+module.exports =
+  mongoose.models.Banner || mongoose.model("Banner", bannerSchema, "banners");
+</file>
+
+<file path="backend/models/Message.js">
+const mongoose = require("mongoose");
+
+const messageSchema = new mongoose.Schema({
+  sender: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  receiver: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  text: String
+}, { timestamps: true });
+
+module.exports = mongoose.model("Message", messageSchema);
+</file>
+
+<file path="backend/models/Notification.js">
+const mongoose = require('mongoose');
+
+const notificationSchema = new mongoose.Schema({
+  // Target recipient user
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false,
+    index: true
+  },
+  // Backward compatibility alias for userId
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false
+  },
+  // Target seller shop ID (if applicable)
+  shopId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false,
+    index: true
+  },
+  // Target role context
+  targetRole: {
+    type: String,
+    enum: ['buyer', 'seller', 'admin', 'all'],
+    default: 'buyer',
+    index: true
+  },
+  // Recipient role context (backward compatible alias for targetRole)
+  recipientRole: {
+    type: String,
+    enum: ['buyer', 'seller', 'admin', 'all'],
+    default: 'buyer',
+    index: true
+  },
+  orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order'
+  },
+  title: {
+    type: String,
+    required: true
+  },
+  message: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    enum: [
+      'ORDER',          // General order update
+      'NEW_ORDER',      // Incoming new order for seller
+      'ORDER_STATUS',   // Order status transition for buyer
+      'MESSAGE',        // New chat message
+      'SYSTEM',         // Platform announcements / warnings
+      'PAYMENT',        // HaiPay / VNPay wallet notifications
+      'PRODUCT',        // Product approval / stock warnings
+      'SELLER',         // Seller application approval / rejection
+      'RETURN_REFUND',  // Return / refund requests
+      'REVIEW',         // Product reviews
+      'WITHDRAWAL',     // User withdrawal request for admin
+      'REPORT'          // User report on listing for admin
+    ],
+    default: 'SYSTEM',
+    index: true
+  },
+  link: {
+    type: String,
+    default: '/'
+  },
+  targetUrl: {
+    type: String,
+    default: '/'
+  },
+  isRead: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    index: true
+  }
+}, { timestamps: true, strict: false });
+
+// Ensure bidirectional synchronization between user, userId, shopId, link, targetUrl, recipientRole, and targetRole
+notificationSchema.pre('save', function (next) {
+  if (this.user && !this.userId) {
+    this.userId = this.user;
+  }
+  if (this.userId && !this.user) {
+    this.user = this.userId;
+  }
+  if ((this.recipientRole === 'seller' || this.targetRole === 'seller') && this.userId && !this.shopId) {
+    this.shopId = this.userId;
+  }
+  // Synchronize targetRole and recipientRole
+  if (this.targetRole && !this.recipientRole) {
+    this.recipientRole = this.targetRole;
+  } else if (this.recipientRole && !this.targetRole) {
+    this.targetRole = this.recipientRole;
+  } else if (this.targetRole === 'admin' || this.recipientRole === 'admin') {
+    this.targetRole = 'admin';
+    this.recipientRole = 'admin';
+  }
+  if (this.link && (!this.targetUrl || this.targetUrl === '/')) {
+    this.targetUrl = this.link;
+  }
+  if (this.targetUrl && (!this.link || this.link === '/')) {
+    this.link = this.targetUrl;
+  }
+  if (typeof next === 'function') next();
+});
+
+// Compound indexes for high-throughput queries
+notificationSchema.index({ userId: 1, recipientRole: 1, isRead: 1 });
+notificationSchema.index({ targetRole: 1, isRead: 1 });
+notificationSchema.index({ shopId: 1, recipientRole: 1, isRead: 1 });
+notificationSchema.index({ userId: 1, type: 1, isRead: 1 });
+
+module.exports = mongoose.models.Notification || mongoose.model('Notification', notificationSchema);
+</file>
+
+<file path="backend/models/Order.js">
+const mongoose = require('mongoose');
+const { AddressSnapshotSchema } = require('./schemas/Address');
+
+const ORDER_STATUSES = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Completed', 'Cancelled'];
+const PAYMENT_STATUSES = ['unpaid', 'escrow', 'released', 'refunded'];
+
+const orderSchema = new mongoose.Schema({
+  buyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+
+  // Multi-vendor: every sub-order created from one checkout shares this ref.
+  // It is also used as vnp_TxnRef so one VNPAY payment settles all sub-orders.
+  parentOrderId: { type: String, index: true },
+
+  items: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+  orderItems: [{
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    name: String,
+    price: Number,
+    quantity: { type: Number, default: 1 },
+    weight: { type: Number, default: 500 }, // grams per unit
+    image: String
+  }],
+
+  itemsSubtotal: { type: Number, default: 0 },
+  shippingFee: { type: Number, default: 0 },
+  totalPrice: { type: Number, required: true }, // itemsSubtotal + shippingFee
+  commissionRate: { type: Number }, // Platform fee % snapshot at order creation (e.g. 5)
+  sellerReceive: { type: Number }, // Net payout to seller snapshot at order creation
+
+  phone: { type: String, required: true },
+  address: { type: String, required: true }, // formatted snapshot (legacy readers)
+  shippingAddress: { type: AddressSnapshotSchema, default: undefined },
+  shippingService: {
+    provider: { type: String, default: '' },
+    serviceId: { type: Number },
+    serviceTypeId: { type: Number },
+    expectedDeliveryTime: { type: Date }
+  },
+
+  paymentMethod: { type: String, default: 'COD' },
+  paymentStatus: { type: String, enum: PAYMENT_STATUSES, default: 'unpaid' },
+  paidAt: { type: Date },
+  status: { type: String, default: 'Pending' },
+
+  // Carrier shipment (created by seller via "Chuẩn bị hàng")
+  shipment: {
+    provider: { type: String, default: '' },
+    trackingCode: { type: String, default: '' },
+    fee: { type: Number, default: 0 },
+    expectedDeliveryTime: { type: Date },
+    createdAt: { type: Date },
+    raw: { type: mongoose.Schema.Types.Mixed }
+  },
+  trackingCode: { type: String, default: '' },
+  shippingCode: { type: String, default: '' },
+  shippingCarrier: { type: String, default: 'HaiHand Express' },
+
+  // Real-time GHN Shipping Tracking & Webhook Integration
+  shippingStatus: {
+    type: String,
+    default: 'ready_to_pick' // e.g., 'ready_to_pick', 'picking', 'delivering', 'delivered', 'return', 'lost'
+  },
+  trackingLogs: [
+    {
+      status: { type: String, required: true },
+      description: { type: String, default: '' },
+      updated_at: { type: Date, default: Date.now }
+    }
+  ],
+
+  deliveredAt: { type: Date },
+  completedAt: { type: Date },
+  cancelledAt: { type: Date },
+  cancelReason: { type: String, default: '' },
+  isReviewed: { type: Boolean, default: false },
+  stockDeducted: { type: Boolean, default: true },
+  settled: { type: Boolean, default: false },
+  dispute: {
+    isDisputed: { type: Boolean, default: false },
+    reason: { type: String, default: '' },
+    status: { type: String, enum: ['none', 'open', 'resolved_refund', 'resolved_release'], default: 'none' },
+    createdAt: { type: Date },
+    resolvedAt: { type: Date }
+  },
+  statusHistory: [
+    {
+      from: { type: String },
+      to: { type: String, required: true },
+      actor: { type: String, default: 'system' },
+      actorId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      reason: { type: String, default: '' },
+      changedAt: { type: Date, default: Date.now }
+    }
+  ]
+}, { timestamps: true });
+
+orderSchema.pre('save', function (next) {
+  if (!this.buyer && this.buyerId) this.buyer = this.buyerId;
+  if (!this.buyerId && this.buyer) this.buyerId = this.buyer;
+  if (!this.seller && this.sellerId) this.seller = this.sellerId;
+  if (!this.sellerId && this.seller) this.sellerId = this.seller;
+  if (typeof next === 'function') next();
+});
+
+const Order = mongoose.models.Order || mongoose.model('Order', orderSchema);
+
+module.exports = Order;
+module.exports.ORDER_STATUSES = ORDER_STATUSES;
+module.exports.PAYMENT_STATUSES = PAYMENT_STATUSES;
+</file>
+
+<file path="backend/models/OtpToken.js">
+const mongoose = require('mongoose');
+
+const otpTokenSchema = new mongoose.Schema({
+  identifier: {
+    type: String,
+    required: true,
+    index: true,
+    trim: true,
+    lowercase: true
+  },
+  otpHash: {
+    type: String,
+    required: true
+  },
+  purpose: {
+    type: String,
+    enum: ['REGISTER', 'LOGIN', 'TRANSACTION', 'RESET_PASSWORD'],
+    default: 'LOGIN'
+  },
+  attempts: {
+    type: Number,
+    default: 0
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+    expires: 600 // Automatically removed by MongoDB after 10 minutes (600 seconds - C8)
+  }
+});
+
+module.exports = mongoose.models.OtpToken || mongoose.model('OtpToken', otpTokenSchema);
+</file>
+
+<file path="backend/models/PaymentSession.js">
+const mongoose = require('mongoose');
+
+/**
+ * One payment that settles one or more seller sub-orders.
+ * parentOrderId === vnp_TxnRef for VNPAY payments.
+ */
+const paymentSessionSchema = new mongoose.Schema({
+  parentOrderId: { type: String, required: true, unique: true, index: true },
+  buyer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  orderIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Order' }],
+  // productId -> qty purchased, used to deduct stock & clean the cart only after payment
+  purchasedItems: [{
+    productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+    quantity: { type: Number, default: 1 }
+  }],
+  itemsSubtotal: { type: Number, default: 0 },
+  shippingTotal: { type: Number, default: 0 },
+  amount: { type: Number, required: true },
+  method: { type: String, enum: ['VNPAY', 'HAIPAY', 'COD'], required: true },
+  status: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
+  paidAt: { type: Date },
+  gatewayPayload: { type: mongoose.Schema.Types.Mixed }
+}, { timestamps: true });
+
+module.exports = mongoose.models.PaymentSession || mongoose.model('PaymentSession', paymentSessionSchema);
+</file>
+
+<file path="backend/models/Product.js">
+const mongoose = require('mongoose');
+
+const productSchema = new mongoose.Schema({
+  sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  name: { type: String },
+  title: { type: String },
+  sku: { type: String, default: '' },
+  price: {
+    type: Number,
+    required: true,
+    min: [1000, 'Giá sản phẩm phải tối thiểu từ 1.000đ trở lên']
+  },
+  originalPrice: {
+    type: Number,
+    default: 0,
+    min: [0, 'Giá gốc không được là số âm'],
+    validate: {
+      validator: (v) => v == null || (Number.isFinite(v) && Number.isInteger(v) && v >= 0),
+      message: 'Giá gốc phải là số nguyên không âm'
+    }
+  },
+  stockQuantity: {
+    type: Number,
+    default: 1,
+    min: [0, 'Số lượng tồn kho không được âm'],
+    validate: {
+      validator: (v) => v == null || (Number.isFinite(v) && Number.isInteger(v) && v >= 0),
+      message: 'Số lượng tồn kho phải là số nguyên không âm'
+    }
+  },
+  quantity: {
+    type: Number,
+    default: 1,
+    min: [0, 'Số lượng không được âm'],
+    validate: {
+      validator: (v) => v == null || (Number.isFinite(v) && Number.isInteger(v) && v >= 0),
+      message: 'Số lượng phải là số nguyên không âm'
+    }
+  },
+  soldCount: { type: Number, default: 0 },
+  weight: { type: Number, default: 500, min: 1 }, // grams per unit, for shipping fee
+  category: { type: String, required: true },
+  location: { type: String, default: 'Toàn quốc' },
+  description: { type: String, default: '' },
+  images: [{ type: String }],
+  condition: { type: String, default: 'Mới' },
+  variants: [{
+    name: { type: String, default: '' },
+    price: { type: Number },
+    stock: { type: Number, default: 0 },
+    sku: { type: String, default: '' },
+    options: [String]
+  }],
+  details: { type: Map, of: String },
+  ragText: { type: String, default: '' },
+  textEmbedding: { type: [Number], default: undefined, select: false },
+  embeddingModel: { type: String, default: '', select: false },
+  imageEmbedding: { type: [Number], default: undefined, select: false },
+  imageEmbeddings: { type: [[Number]], default: undefined, select: false },
+  imageEmbeddingImages: { type: [String], default: undefined, select: false },
+  imageEmbeddingModel: { type: String, default: '', select: false },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'out_of_stock', 'pending', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending', 'Chờ duyệt'],
+    default: 'active'
+  },
+  moderationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected', 'locked'],
+    default: 'pending'
+  },
+  moderationReason: {
+    type: String,
+    default: ''
+  }
+}, { timestamps: true });
+
+const LEGACY_STATUS = {
+  PENDING: 'pending',
+  Pending: 'pending',
+  'Chờ duyệt': 'pending',
+  APPROVED: 'active',
+  SOLD: 'out_of_stock',
+  DELETED: 'inactive'
+};
+
+productSchema.pre('validate', function (next) {
+  if (!this.title && this.name) this.title = this.name;
+  if (!this.name && this.title) this.name = this.title;
+  if (!this.author && this.sellerId) this.author = this.sellerId;
+  if (!this.sellerId && this.author) this.sellerId = this.author;
+  if (this.stockQuantity !== undefined && (this.quantity === undefined || this.quantity === null)) {
+    this.quantity = this.stockQuantity;
+  }
+  if (this.quantity !== undefined && (this.stockQuantity === undefined || this.stockQuantity === null)) {
+    this.stockQuantity = this.quantity;
+  }
+  if (LEGACY_STATUS[this.status]) this.status = LEGACY_STATUS[this.status];
+  if (this.status === 'active' && !this.isModified('moderationStatus') && this.moderationStatus === 'pending') {
+    this.moderationStatus = 'approved';
+  }
+  if (Number(this.stockQuantity) === 0 && (this.status === 'active' || this.status === 'pending')) {
+    this.status = 'out_of_stock';
+  }
+  if (typeof next === 'function') next();
+});
+
+const Product = mongoose.models.Product || mongoose.model('Product', productSchema, 'posts');
+const Post = mongoose.models.Post || mongoose.model('Post', productSchema, 'posts');
+
+module.exports = { Product, Post, productSchema };
+</file>
+
+<file path="backend/models/Settings.js">
+const mongoose = require('mongoose');
+
+const settingsSchema = new mongoose.Schema({
+  platformFeePercentage: { type: Number, default: 5, min: 0, max: 50 },
+  commissionRate: { type: Number, default: 5, min: 0, max: 50 }, // Platform commission %
+  autoApprovePosts: { type: Boolean, default: false },
+  maintenanceMode: { type: Boolean, default: false },
+  bannerAnnouncement: { type: String, default: '' },
+  allowNewSellerRegistration: { type: Boolean, default: true },
+  codEnabled: { type: Boolean, default: true },
+  vnpayEnabled: { type: Boolean, default: true },
+  haipayEnabled: { type: Boolean, default: true },
+  supportHotline: { type: String, default: '1900-6868' },
+  contactEmail: { type: String, default: 'cskh@haihand.vn' },
+  supportEmail: { type: String, default: 'cskh@haihand.vn' }
+}, { timestamps: true });
+
+settingsSchema.pre('save', function (next) {
+  if (this.platformFeePercentage != null && this.commissionRate == null) {
+    this.commissionRate = this.platformFeePercentage;
+  }
+  if (this.commissionRate != null && this.platformFeePercentage == null) {
+    this.platformFeePercentage = this.commissionRate;
+  }
+  if (this.contactEmail && !this.supportEmail) {
+    this.supportEmail = this.contactEmail;
+  }
+  if (this.supportEmail && !this.contactEmail) {
+    this.contactEmail = this.supportEmail;
+  }
+  if (typeof next === 'function') next();
+});
+
+// Ensure single document pattern
+settingsSchema.statics.getGlobal = async function () {
+  let settings = await this.findOne();
+  if (!settings) {
+    settings = await this.create({});
+  }
+  return settings;
+};
+
+const Settings = mongoose.models.Settings || mongoose.model('Settings', settingsSchema);
+const GlobalSetting = mongoose.models.GlobalSetting || mongoose.model('GlobalSetting', settingsSchema, 'settings');
+
+module.exports = Settings;
+module.exports.GlobalSetting = GlobalSetting;
+module.exports.Settings = Settings;
+</file>
+
+<file path="backend/models/Transaction.js">
+const mongoose = require('mongoose');
+
+const transactionSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  type: { type: String, enum: ['Nạp tiền', 'Rút tiền', 'Giải ngân', 'Hoàn tiền', 'Thanh toán đơn hàng'], required: true },
+  amount: { type: Number, required: true },
+  status: { type: String, enum: ['Thành công', 'Đang xử lý', 'Thất bại'], default: 'Thành công' },
+  txnRef: { type: String, unique: true, sparse: true, index: true },
+  description: String,
+}, { timestamps: true });
+
+module.exports = mongoose.models.Transaction || mongoose.model('Transaction', transactionSchema);
+</file>
+
+<file path="backend/models/User.js">
+const mongoose = require('mongoose');
+const { AddressBookSchema, AddressSnapshotSchema } = require('./schemas/Address');
+
+const userSchema = new mongoose.Schema({
+    name: { type: String, required: true }, 
+    email: { type: String, required: true, unique: true }, 
+    password: { type: String, required: true }, 
+    phone: { type: String, default: '' }, 
+    address: { type: String, default: '' }, // legacy free-text, kept in sync with default address
+    addresses: { type: [AddressBookSchema], default: [] },
+    role: { type: String, default: 'Khách hàng' }, 
+    avatar: { type: String, default: '' },
+    avatarFrame: { type: String, default: 'none' },
+    profileTitle: { type: String, default: 'Người Mới' },
+    bio: { type: String, default: '' },
+    cccd: { type: String, default: '' },
+    taxId: { type: String, default: '' },
+    gender: { type: String, default: '' },
+    dob: { type: String, default: '' },
+    username: { type: String, sparse: true },
+    isVerified: { type: Boolean, default: false },
+
+    // B2C Multi-Vendor Seller Fields
+    isSeller: { type: Boolean, default: false },
+    sellerStatus: { 
+        type: String, 
+        enum: ['none', 'pending', 'approved', 'rejected'], 
+        default: 'none' 
+    },
+    sellerAppliedAt: { type: Date },
+    sellerApprovedAt: { type: Date },
+    sellerRejectionReason: { type: String, default: '' },
+    shopInfo: {
+        shopName: { type: String, default: '' },
+        description: { type: String, default: '' },
+        address: { type: String, default: '' },
+        avatar: { type: String, default: '' },
+        banner: { type: String, default: '' },
+        phone: { type: String, default: '' },
+        taxCode: { type: String, default: '' },
+        pickupAddress: { type: AddressSnapshotSchema, default: undefined } // shipping origin
+    },
+
+    favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+    status: { type: String, enum: ['active', 'locked'], default: 'active' },
+    lockReason: { type: String, default: '' },
+    lockedUntil: { type: Date, default: null },
+    isBanned: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: { type: Date },
+    tokenVersion: { type: Number, default: 0 },
+    pinFailedAttempts: { type: Number, default: 0 },
+    pinLockedUntil: { type: Date, default: null },
+    cart: [{
+        product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+        quantity: { type: Number, default: 1 }
+    }],
+    walletBalance: { type: Number, default: 0 },
+    pendingBalance: { type: Number, default: 0 },
+    isWalletActive: { type: Boolean, default: false },
+    walletPhone: { type: String, default: '' },
+    walletPin: { type: String, default: '' },
+    walletRegisteredAt: { type: Date },
+    firebaseUid: { type: String, default: '', sparse: true },
+    lastActive: { type: Date, default: Date.now },
+    bankInfo: {
+        name: { type: String, default: '' },
+        accountNumber: { type: String, default: '' },
+        accountName: { type: String, default: '' }
+    }
+}, {
+    timestamps: true
+});
+
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+module.exports = User;
+</file>
+
+<file path="backend/scripts/calibrate-image-pair-scores.js">
+require('dotenv').config({ quiet: true });
+
+const fs = require('node:fs');
+const path = require('node:path');
+const mongoose = require('mongoose');
+const { embedImage } = require('../services/imageEmbeddingService');
+
+const directory = path.resolve(process.argv[2] || '../output/image-search-all-products');
+const reviewed = JSON.parse(fs.readFileSync(path.join(directory, 'reviewed-sources.json')))
+  .filter((row) => row.sourceReview === 'object_type_verified');
+const output = path.join(directory, 'pair-scores.json');
+const existing = fs.existsSync(output) ? new Map(JSON.parse(fs.readFileSync(output)).map((row) => [row.id, row])) : new Map();
+
+function similarity(a, b) {
+  if (!Array.isArray(b) || a.length !== b.length) return -1;
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+    normA += a[i] ** 2;
+    normB += b[i] ** 2;
+  }
+  return normA && normB ? (1 + dot / Math.sqrt(normA * normB)) / 2 : -1;
+}
+
+async function main() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) throw new Error('Thiếu MongoDB Atlas URI');
+  await mongoose.connect(uri);
+  try {
+    const products = await mongoose.connection.db.collection('posts').find(
+      { _id: { $in: reviewed.map((row) => new mongoose.Types.ObjectId(row.id)) } },
+      { projection: { imageEmbedding: 1, imageEmbeddings: 1 } }
+    ).toArray();
+    const byId = new Map(products.map((product) => [String(product._id), product]));
+    const results = reviewed.map((row) => existing.get(row.id) || {
+      id: row.id, title: row.title, image: row.image,
+      label: row.catalogPhotoReview === 'appears_match' ? 'match' : 'mismatch', score: null
+    });
+    for (const [index, row] of results.entries()) {
+      if (row.score !== null) continue;
+      try {
+        const file = path.resolve(directory, row.image);
+        const mime = file.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+        const image = `data:${mime};base64,${fs.readFileSync(file).toString('base64')}`;
+        const vector = await embedImage(image);
+        const product = byId.get(row.id);
+        const candidates = product?.imageEmbeddings?.length ? product.imageEmbeddings : [product?.imageEmbedding];
+        row.score = Math.max(...candidates.map((candidate) => similarity(vector, candidate)));
+      } catch (error) { row.error = error.message; }
+      fs.writeFileSync(output, JSON.stringify(results, null, 2));
+      if ((index + 1) % 10 === 0 || index + 1 === results.length) console.log(`Đã đo ${index + 1}/${results.length} cặp ảnh`);
+    }
+    const valid = results.filter((row) => Number.isFinite(row.score));
+    const metrics = (items, threshold) => {
+      const tp = items.filter((row) => row.label === 'match' && row.score >= threshold).length;
+      const fn = items.filter((row) => row.label === 'match' && row.score < threshold).length;
+      const tn = items.filter((row) => row.label === 'mismatch' && row.score < threshold).length;
+      const fp = items.filter((row) => row.label === 'mismatch' && row.score >= threshold).length;
+      return { tp, fn, tn, fp, balancedAccuracy: ((tp / (tp + fn) || 0) + (tn / (tn + fp) || 0)) / 2 };
+    };
+    const train = valid.filter((row) => parseInt(row.id.slice(-1), 16) % 5 !== 0);
+    const holdout = valid.filter((row) => parseInt(row.id.slice(-1), 16) % 5 === 0);
+    const thresholds = Array.from({ length: 41 }, (_, index) => +(0.55 + index * 0.01).toFixed(2));
+    const selected = thresholds.map((threshold) => ({ threshold, ...metrics(train, threshold) }))
+      .sort((a, b) => b.balancedAccuracy - a.balancedAccuracy || b.threshold - a.threshold)[0];
+    const report = {
+      samples: valid.length, positives: valid.filter((row) => row.label === 'match').length,
+      negatives: valid.filter((row) => row.label === 'mismatch').length,
+      currentThreshold: { threshold: 0.72, train: metrics(train, 0.72), holdout: metrics(holdout, 0.72) },
+      candidateThreshold: { threshold: selected.threshold, train: metrics(train, selected.threshold),
+        holdout: metrics(holdout, selected.threshold) }
+    };
+    fs.writeFileSync(path.join(directory, 'threshold-calibration.json'), JSON.stringify(report, null, 2));
+    console.log(JSON.stringify(report));
+  } finally { await mongoose.disconnect(); }
+}
+
+main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+</file>
+
+<file path="backend/scripts/evaluate-chatbot.js">
+require('dotenv').config({ quiet: true });
+
+const fs = require('node:fs');
+const path = require('node:path');
+const mongoose = require('mongoose');
+const { processChatbot } = require('../services/chatbotService');
+
+const cases = [
+  ['Tìm bút bi Thiên Long', '69d86fcaa937bd538ab31df7'],
+  ['Có máy lạnh Daikin không?', '69dcb7d0e8f5f531d474e844'],
+  ['Tìm bộ định tuyến TP-Link Archer C50', '69dccbdd295b6e59ef3b0637'],
+  ['Tìm vợt Yonex Astrox 88D Pro', '6af17dbb2e06332d9bb40e89'],
+  ['Có Samsung Galaxy S23 Ultra 256GB không?', '6af17dbf2e06332d9bb40e9d'],
+  ['Tìm màn hình Dell UltraSharp U2422H', '6af17dc12e06332d9bb40eaa'],
+  ['Tìm máy hút bụi Electrolux màu đỏ', '69dcc997295b6e59ef3b0272'],
+  ['Tôi muốn mua sofa cũ màu xám lông chuột', '69dcb5e5e8f5f531d474e535'],
+  ['HaiHand có hỗ trợ thanh toán COD không?', null],
+  ['Tôi có thể khiếu nại trong bao lâu sau khi nhận hàng?', null]
+];
+
+const output = path.resolve(process.argv[2] || '../output/image-search-all-products/chatbot-results.json');
+const prior = fs.existsSync(output) ? JSON.parse(fs.readFileSync(output)) : [];
+const results = cases.map(([question, expectedId], index) => prior[index]?.question === question
+  ? prior[index] : { question, expectedId, status: 'pending' });
+
+async function main() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) throw new Error('Thiếu MongoDB Atlas URI');
+  await mongoose.connect(uri);
+  try {
+    for (const [index, row] of results.entries()) {
+      if (row.status !== 'pending') continue;
+      const started = Date.now();
+      try {
+        const response = await processChatbot(row.question);
+        row.status = 'done';
+        row.reply = response.reply;
+        row.products = response.products.map((product) => ({ id: String(product._id), title: product.name }));
+        row.targetHit = row.expectedId ? row.products.some((product) => product.id === row.expectedId) : null;
+      } catch (error) {
+        row.status = 'error';
+        row.error = error.message;
+      }
+      row.elapsedSeconds = Math.round((Date.now() - started) / 1000);
+      fs.writeFileSync(output, JSON.stringify(results, null, 2));
+      console.log(`${index + 1}/${results.length} ${row.status} ${row.targetHit === null ? 'policy' : row.targetHit ? 'HIT' : '-'} ${row.elapsedSeconds}s`);
+    }
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+</file>
+
+<file path="backend/scripts/evaluate-image-candidates.js">
+require('dotenv').config({ quiet: true });
+
+const fs = require('node:fs');
+const path = require('node:path');
+const mongoose = require('mongoose');
+const { imageVectorSearch } = require('../services/chatbotService');
+
+const directory = path.resolve(process.argv[2] || '../output/image-search-all-products');
+const output = path.join(directory, process.argv[3] || 'candidate-results.json');
+const cases = JSON.parse(fs.readFileSync(path.join(directory, 'reviewed-sources.json')))
+  .filter((row) => row.evaluationEligible);
+const prior = fs.existsSync(output) ? new Map(JSON.parse(fs.readFileSync(output)).map((row) => [row.id, row])) : new Map();
+const results = cases.map((row) => prior.get(row.id) || { id: row.id, title: row.title, status: 'pending' });
+
+async function main() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) throw new Error('Thiếu MongoDB Atlas URI');
+  await mongoose.connect(uri);
+  try {
+    for (const [index, row] of results.entries()) {
+      if (row.status !== 'pending') continue;
+      const source = cases[index];
+      const filename = path.resolve(directory, source.image);
+      const mime = filename.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+      const image = `data:${mime};base64,${fs.readFileSync(filename).toString('base64')}`;
+      const started = Date.now();
+      try {
+        const products = await imageVectorSearch(image, {}, '');
+        row.status = 'done';
+        row.targetRank = products.findIndex((product) => String(product._id) === row.id) + 1;
+        row.candidateIds = products.map((product) => String(product._id));
+      } catch (error) {
+        row.status = 'error';
+        row.error = error.message;
+      }
+      row.elapsedMs = Date.now() - started;
+      fs.writeFileSync(output, JSON.stringify(results, null, 2));
+      console.log(`${index + 1}/${results.length} ${row.title}: #${row.targetRank || '-'} (${row.elapsedMs}ms)`);
+    }
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+</file>
+
+<file path="backend/scripts/evaluate-image-search.js">
+require('dotenv').config();
+
+const fs = require('node:fs');
+const path = require('node:path');
+const mongoose = require('mongoose');
+
+const { describeImage, imageVectorSearch, processImageSearch } = require('../services/chatbotService');
+
+const mimeTypes = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
+
+async function main() {
+  const labelsPath = process.argv[2];
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!labelsPath) throw new Error('Dùng: npm run image:eval -- labels.json');
+  if (!uri) throw new Error('Thiếu MONGO_URI, MONGODB_URI hoặc MONGODB_ATLAS_URI trong backend/.env');
+  const cases = JSON.parse(fs.readFileSync(labelsPath, 'utf8'));
+  if (!Array.isArray(cases) || !cases.length) throw new Error('labels.json phải là mảng không rỗng');
+
+  await mongoose.connect(uri);
+  try {
+    const results = [];
+    for (const entry of cases) {
+      if (!entry.image || !Array.isArray(entry.expectedIds)) {
+        throw new Error('Mỗi case cần image và expectedIds (mảng rỗng nếu không có sản phẩm đúng)');
+      }
+      const imagePath = path.resolve(path.dirname(labelsPath), entry.image);
+      const mime = mimeTypes[path.extname(imagePath).toLowerCase()];
+      if (!mime) throw new Error(`Định dạng ảnh chưa hỗ trợ: ${imagePath}`);
+      const image = `data:${mime};base64,${fs.readFileSync(imagePath).toString('base64')}`;
+      const description = entry.description || await describeImage(image);
+      const products = await imageVectorSearch(image, {}, [entry.message, description].filter(Boolean).join('. '), 0);
+      const final = await processImageSearch(image, entry.message || '');
+      results.push({
+        image: entry.image,
+        message: entry.message || '',
+        sourceUrl: entry.sourceUrl || '',
+        reviewNote: entry.reviewNote || '',
+        expectedIds: entry.expectedIds.map(String),
+        products: products.map((product) => ({ id: String(product._id), title: product.title || product.name, score: product.score })),
+        finalIds: final.products.map((product) => String(product._id)),
+        finalProducts: final.products.map((product) => ({ id: String(product._id), title: product.name, image: product.image }))
+      });
+      console.log(`${entry.image}: ứng viên ${products.slice(0, 5).map((p) => `${p._id} (${p.score.toFixed(3)})`).join(', ') || 'không có'}; cuối cùng ${final.products.map((p) => p._id).join(', ') || 'không có'}`);
+    }
+
+    const positives = results.filter((item) => item.expectedIds.length);
+    const negatives = results.filter((item) => !item.expectedIds.length);
+    const candidateHit = positives.filter((item) => item.products.some((product) => item.expectedIds.includes(product.id))).length;
+    const finalHit = positives.filter((item) => item.finalIds.some((id) => item.expectedIds.includes(id))).length;
+    const finalFalsePositive = negatives.filter((item) => item.finalIds.length).length;
+    const correctCards = results.reduce((total, item) => total + item.finalIds.filter((id) => item.expectedIds.includes(id)).length, 0);
+    const wrongCards = results.reduce((total, item) => total + item.finalIds.filter((id) => !item.expectedIds.includes(id)).length, 0);
+    const outputPath = path.join(path.dirname(labelsPath), 'image-results.json');
+    fs.writeFileSync(outputPath, JSON.stringify({
+      summary: { queries: results.length, positiveQueries: positives.length, negativeQueries: negatives.length,
+        candidateHit, finalHit, finalFalsePositive, correctCards, wrongCards },
+      results
+    }, null, 2));
+    console.log(`Đã xuất ${outputPath}`);
+    console.log(`\nỨng viên: có hàng đúng ${candidateHit}/${positives.length}`);
+    console.log(`Kết quả cuối: đúng trong top 5 ${finalHit}/${positives.length}; trả sai khi không có hàng ${finalFalsePositive}/${negatives.length}`);
+    console.log(`Thẻ sản phẩm: đúng ${correctCards}, sai ${wrongCards}`);
+    for (const item of results) {
+      const retrieved = item.products.some((product) => item.expectedIds.includes(product.id));
+      const selected = item.finalIds.some((id) => item.expectedIds.includes(id));
+      if (item.expectedIds.length && !retrieved) console.log(`Cần cải thiện lấy ứng viên (SigLIP / chỉ mục): ${item.image}`);
+      else if (item.expectedIds.length && !selected) console.log(`Cần cải thiện lọc ứng viên (Qwen / rerank): ${item.image}`);
+      else if (!item.expectedIds.length && item.finalIds.length) console.log(`Trả sai khi không có hàng: ${item.image}`);
+    }
+    console.log('\nNgưỡng | Đúng trong top 5 | Trả sai khi không có hàng');
+    for (const cutoff of [0.60, 0.65, 0.70, 0.72, 0.75, 0.80, 0.85, 0.90]) {
+      const hit = positives.filter((item) => item.products
+        .filter((p) => p.score >= cutoff).slice(0, 5)
+        .some((p) => item.expectedIds.includes(p.id))).length;
+      const falsePositive = negatives.filter((item) => item.products.some((p) => p.score >= cutoff)).length;
+      console.log(`${cutoff.toFixed(2)}   | ${hit}/${positives.length}                | ${falsePositive}/${negatives.length}`);
+    }
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+main().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});
+</file>
+
+<file path="backend/scripts/evaluate-image-text-ranks.js">
+require('dotenv').config({ quiet: true });
+
+const fs = require('node:fs');
+const path = require('node:path');
+const mongoose = require('mongoose');
+const { describeImage, vectorSearch } = require('../services/chatbotService');
+
+const directory = path.resolve(process.argv[2] || '../output/image-search-all-products');
+const results = JSON.parse(fs.readFileSync(path.join(directory, 'api-results-v3.json')))
+  .filter((row) => row.status === 'done' && row.products.length);
+const output = path.join(directory, 'image-text-ranks.json');
+const prior = fs.existsSync(output) ? new Map(JSON.parse(fs.readFileSync(output)).map((row) => [row.id, row])) : new Map();
+const rows = [];
+
+async function main() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) throw new Error('Thiếu MongoDB Atlas URI');
+  await mongoose.connect(uri);
+  try {
+    for (const row of results) {
+      if (prior.has(row.id)) { rows.push(prior.get(row.id)); continue; }
+      const imagePath = path.join(directory, row.image);
+      const mime = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+      const image = `data:${mime};base64,${fs.readFileSync(imagePath).toString('base64')}`;
+      try {
+        const description = await describeImage(image);
+        const ranked = await vectorSearch(description, {});
+        rows.push({ id: row.id, title: row.title, description,
+          returned: row.products.map((product) => ({ id: product.id, title: product.title,
+            textRank: ranked.findIndex((item) => String(item._id) === product.id) + 1 })),
+          targetTextRank: ranked.findIndex((item) => String(item._id) === row.id) + 1 });
+      } catch (error) {
+        rows.push({ id: row.id, title: row.title, error: error.message });
+      }
+      fs.writeFileSync(output, JSON.stringify(rows, null, 2));
+      console.log(`${rows.length}/${results.length} ${row.title}: ${rows.at(-1).returned?.map((item) => item.textRank).join(',') || 'lỗi'}`);
+    }
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+</file>
+
+<file path="backend/scripts/evaluate-reviewed-image-catalog.js">
+require('dotenv').config({ quiet: true });
+
+const fs = require('node:fs');
+const path = require('node:path');
+const mongoose = require('mongoose');
+const { processImageSearch } = require('../services/chatbotService');
+
+const directory = path.resolve(process.argv[2] || '../output/image-search-all-products');
+const limit = Number(process.argv[3] || 0);
+const selectedIds = new Set((process.argv[5] || '').split(',').filter(Boolean));
+const manifest = JSON.parse(fs.readFileSync(path.join(directory, 'reviewed-sources.json')));
+const output = path.join(directory, process.argv[4] || 'api-results.json');
+const prior = fs.existsSync(output) ? new Map(JSON.parse(fs.readFileSync(output)).map((row) => [row.id, row])) : new Map();
+const results = manifest.map((row) => prior.get(row.id) || {
+  id: row.id, title: row.title, query: row.query, image: row.image, sourceUrl: row.sourceUrl,
+  catalogPhotoReview: row.catalogPhotoReview, catalogReviewNote: row.catalogReviewNote,
+  status: row.evaluationEligible ? 'pending' : 'skipped', products: []
+});
+
+async function main() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) throw new Error('Thiếu MongoDB Atlas URI');
+  await mongoose.connect(uri);
+  try {
+    let attempted = 0;
+    for (const [index, row] of results.entries()) {
+      if (row.status !== 'pending' || (selectedIds.size && !selectedIds.has(row.id))
+        || (limit && attempted >= limit)) continue;
+      attempted++;
+      const started = Date.now();
+      try {
+        const imagePath = path.resolve(directory, row.image);
+        const mime = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+        const image = `data:${mime};base64,${fs.readFileSync(imagePath).toString('base64')}`;
+        const response = await processImageSearch(image);
+        row.status = 'done';
+        row.reply = response.reply;
+        row.products = response.products.map((product) => ({
+          id: String(product._id), title: product.name, category: product.category,
+          image: product.image, similarity: product.similarity
+        }));
+        row.targetHit = row.products.some((product) => product.id === row.id);
+      } catch (error) {
+        row.status = 'error';
+        row.error = error.message;
+      }
+      row.elapsedSeconds = Math.round((Date.now() - started) / 1000);
+      fs.writeFileSync(output, JSON.stringify(results, null, 2));
+      console.log(`${index + 1}/${results.length} ${row.id} ${row.status} ${row.targetHit ? 'HIT' : '-'} ${row.products.length} thẻ ${row.elapsedSeconds}s`);
+    }
+    console.log(JSON.stringify({ done: results.filter((row) => row.status === 'done').length,
+      errors: results.filter((row) => row.status === 'error').length,
+      remaining: results.filter((row) => row.status === 'pending').length,
+      targetHits: results.filter((row) => row.targetHit).length }, null, 2));
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+</file>
+
+<file path="backend/scripts/export-image-training-data.js">
+require('dotenv').config();
+
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const mongoose = require('mongoose');
+const { imageAsDataUrl } = require('../services/imageEmbeddingService');
+
+async function main() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) throw new Error('Thiếu MongoDB URI trong backend/.env');
+
+  const output = path.resolve(process.argv[2] || path.join(__dirname, '..', 'training-data', 'catalog'));
+  const imagesDir = path.join(output, 'images');
+  await fs.mkdir(imagesDir, { recursive: true });
+  await mongoose.connect(uri);
+  try {
+    const products = await mongoose.connection.db.collection('posts')
+      .find({ status: { $in: ['active', 'APPROVED'] }, 'images.0': { $exists: true } },
+        { projection: { _id: 1, title: 1, name: 1, category: 1, images: 1 } })
+      .sort({ _id: 1 }).toArray();
+    const rows = [];
+    let failed = 0;
+    for (const [productIndex, product] of products.entries()) {
+      const productId = String(product._id);
+      for (const [imageIndex, source] of product.images.entries()) {
+        const file = `${productId}-${imageIndex}.jpg`;
+        const destination = path.join(imagesDir, file);
+        try {
+          try {
+            await fs.access(destination);
+          } catch {
+            const dataUrl = await imageAsDataUrl(source);
+            if (!dataUrl) throw new Error('Ảnh không hợp lệ');
+            await fs.writeFile(destination, Buffer.from(dataUrl.split(',')[1], 'base64'));
+          }
+          rows.push({
+            productId,
+            image: `images/${file}`,
+            title: String(product.title || product.name || '').slice(0, 200),
+            category: String(product.category || '').slice(0, 100)
+          });
+        } catch (error) {
+          failed++;
+          console.warn(`Bỏ qua ảnh ${productId}/${imageIndex}: ${error.message}`);
+        }
+      }
+      if ((productIndex + 1) % 20 === 0 || productIndex + 1 === products.length) {
+        console.log(`Đã xuất ${productIndex + 1}/${products.length} tin, ${rows.length} ảnh`);
+      }
+    }
+    await fs.writeFile(path.join(output, 'manifest.jsonl'), rows.map((row) => JSON.stringify(row)).join('\n') + '\n');
+    console.log(`Hoàn tất: ${rows.length} ảnh, ${failed} ảnh lỗi. Thư mục: ${output}`);
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+main().catch((error) => {
+  console.error(error.message);
+  process.exitCode = 1;
+});
+</file>
+
+<file path="backend/scripts/index-rag-products.js">
+require('dotenv').config();
+
+const mongoose = require('mongoose');
+const { Post } = require('../models/Product');
+const { buildProductText, describeImage, embeddings, EMBEDDING_MODEL } = require('../services/chatbotService');
+const { embedProductImages, imageAsDataUrl, IMAGE_EMBEDDING_MODEL } = require('../services/imageEmbeddingService');
+
+async function main() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) throw new Error('Thiếu MONGO_URI, MONGODB_URI hoặc MONGODB_ATLAS_URI trong backend/.env');
+
+  await mongoose.connect(uri);
+  const filter = { status: { $in: ['active', 'APPROVED'] } };
+  if (process.env.RAG_IMAGE_MISSING_ONLY === 'true') {
+    filter.imageEmbedding = { $exists: false };
+  }
+  if (process.argv.includes('--missing-multi') || process.env.RAG_MULTI_IMAGE_MISSING_ONLY === 'true') {
+    filter['imageEmbeddings.0'] = { $exists: false };
+  }
+  const products = await Post.find(filter)
+    .select('+textEmbedding +embeddingModel +imageEmbedding +imageEmbeddings +imageEmbeddingImages +imageEmbeddingModel title name category condition location description details images')
+    .lean();
+
+  const batchSize = 4;
+  for (let start = 0; start < products.length; start += batchSize) {
+    const prepared = [];
+    for (const product of products.slice(start, start + batchSize)) {
+      const needsText = !product.textEmbedding?.length || product.embeddingModel !== EMBEDDING_MODEL;
+      let imageDescription = '';
+      let indexedImages;
+      let image = '';
+      if (needsText) {
+        try {
+          image = process.env.RAG_INDEX_IMAGES === 'false' ? '' : await imageAsDataUrl(product.images?.[0]);
+        } catch (error) {
+          console.warn(`Không tải được ảnh ${product._id}: ${error.message}`);
+        }
+        if (image) {
+          try {
+            imageDescription = await describeImage(image);
+          } catch (error) {
+            console.warn(`Không mô tả được ảnh ${product._id}: ${error.message}`);
+          }
+        }
+      }
+      if (process.env.RAG_INDEX_IMAGES !== 'false') {
+        indexedImages = await embedProductImages(product.images);
+      }
+      prepared.push({ product, text: needsText ? buildProductText(product, imageDescription) : '', needsText, indexedImages });
+      const done = start + prepared.length;
+      if (done % 5 === 0 || done === products.length) {
+        console.log(`Đã chuẩn bị ${done}/${products.length} sản phẩm`);
+      }
+    }
+    const textItems = prepared.filter((item) => item.needsText);
+    let vectors = [];
+    if (textItems.length) {
+      try {
+        vectors = await embeddings.embedDocuments(textItems.map((item) => item.text));
+      } catch (error) {
+        console.warn(`Không lập được vector văn bản cho nhóm ${start + 1}: ${error.message}`);
+      }
+    }
+    const textVectors = new Map(textItems.map((item, index) => [String(item.product._id), vectors[index]]));
+    const updates = prepared.flatMap(({ product, text, needsText, indexedImages }) => {
+      const textVector = textVectors.get(String(product._id));
+      const fields = needsText && textVector?.length
+        ? { ragText: text, textEmbedding: textVector, embeddingModel: EMBEDDING_MODEL }
+        : {};
+      if (indexedImages) {
+        fields.imageEmbedding = indexedImages.centroid;
+        fields.imageEmbeddings = indexedImages.vectors;
+        fields.imageEmbeddingImages = indexedImages.sources;
+        fields.imageEmbeddingModel = IMAGE_EMBEDDING_MODEL;
+      }
+      if (!Object.keys(fields).length) return [];
+      return [{
+        updateOne: {
+          filter: { _id: product._id },
+          update: { $set: fields }
+        }
+      }];
+    });
+    if (updates.length) await Post.bulkWrite(updates);
+    console.log(`Đã lập embedding ${Math.min(start + prepared.length, products.length)}/${products.length} sản phẩm`);
+  }
+
+  console.log(`Hoàn tất text=${EMBEDDING_MODEL}, image=${IMAGE_EMBEDDING_MODEL}.`);
+}
+
+main()
+  .catch((error) => {
+    console.error(error.message);
+    process.exitCode = 1;
+  })
+  .finally(() => mongoose.disconnect());
+</file>
+
+<file path="backend/scripts/inspect-image-rank.js">
+require('dotenv').config({ quiet: true });
+
+const fs = require('node:fs');
+const path = require('node:path');
+const mongoose = require('mongoose');
+const { describeImage, imageVectorSearch, vectorSearch } = require('../services/chatbotService');
+
+const directory = path.resolve(process.argv[2] || '../output/image-search-all-products');
+const cases = JSON.parse(fs.readFileSync(path.join(directory, 'candidate-after.json')))
+  .filter((row) => row.targetRank > 5 && row.targetRank <= 20);
+const sources = JSON.parse(fs.readFileSync(path.join(directory, 'reviewed-sources.json')));
+const output = path.join(directory, 'image-rank-analysis.json');
+
+async function main() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) throw new Error('Thiếu MongoDB Atlas URI');
+  await mongoose.connect(uri);
+  const rows = [];
+  try {
+    for (const row of cases) {
+      const source = sources.find((item) => item.id === row.id);
+      const imagePath = path.join(directory, source.image);
+      const mime = imagePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+      const image = `data:${mime};base64,${fs.readFileSync(imagePath).toString('base64')}`;
+      const description = await describeImage(image);
+      const textCandidates = await vectorSearch(description, {});
+      const imageCandidates = await imageVectorSearch(image, {});
+      rows.push({ id: row.id, title: row.title, description,
+        textRank: textCandidates.findIndex((item) => String(item._id) === row.id) + 1,
+        imageRank: imageCandidates.findIndex((item) => String(item._id) === row.id) + 1,
+        textTop: textCandidates.slice(0, 5).map((item) => ({ id: String(item._id), title: item.title,
+          score: item.score, lexical: item.lexical })) });
+      fs.writeFileSync(output, JSON.stringify(rows, null, 2));
+      console.log(`${rows.length}/${cases.length} ${row.title}: text #${rows.at(-1).textRank}, image #${rows.at(-1).imageRank}`);
+    }
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+</file>
+
+<file path="backend/scripts/migrate-c2c-to-b2c.js">
+require('dotenv').config();
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const Order = require('../models/Order');
+const { Post } = require('../models/Product');
+const { canonicalStatus } = require('../utils/b2c');
+
+async function migrate() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) {
+    console.error('Thiếu MONGO_URI');
+    process.exit(1);
+  }
+  await mongoose.connect(uri);
+
+  const posters = await Post.distinct('author');
+  const sellerIds = await Post.distinct('sellerId');
+  const allSellerIds = [...new Set([...posters, ...sellerIds].filter(Boolean).map((id) => id.toString()))];
+
+  let approved = 0;
+  for (const id of allSellerIds) {
+    const user = await User.findById(id);
+    if (!user) continue;
+    if (user.sellerStatus === 'approved' && user.isSeller) continue;
+    user.isSeller = true;
+    user.sellerStatus = 'approved';
+    user.sellerApprovedAt = user.sellerApprovedAt || new Date();
+    user.shopInfo = {
+      shopName: (user.shopInfo && user.shopInfo.shopName) || user.name,
+      description: (user.shopInfo && user.shopInfo.description) || user.bio || '',
+      address: (user.shopInfo && user.shopInfo.address) || user.address || '',
+      avatar: (user.shopInfo && user.shopInfo.avatar) || user.avatar || '',
+      banner: (user.shopInfo && user.shopInfo.banner) || '',
+      phone: (user.shopInfo && user.shopInfo.phone) || user.phone || '',
+      taxCode: (user.shopInfo && user.shopInfo.taxCode) || user.taxId || ''
+    };
+    await user.save();
+    approved += 1;
+  }
+
+  await User.updateMany(
+    { sellerStatus: { $exists: false } },
+    { $set: { isSeller: false, sellerStatus: 'none' } }
+  );
+
+  const posts = await Post.find({});
+  let postUpdated = 0;
+  for (const post of posts) {
+    let changed = false;
+    if (!post.sellerId && post.author) {
+      post.sellerId = post.author;
+      changed = true;
+    }
+    if (!post.author && post.sellerId) {
+      post.author = post.sellerId;
+      changed = true;
+    }
+    if (!post.name && post.title) {
+      post.name = post.title;
+      changed = true;
+    }
+    if (!post.title && post.name) {
+      post.title = post.name;
+      changed = true;
+    }
+    if (post.stockQuantity == null && post.quantity != null) {
+      post.stockQuantity = post.quantity;
+      changed = true;
+    }
+    if (post.quantity == null && post.stockQuantity != null) {
+      post.quantity = post.stockQuantity;
+      changed = true;
+    }
+    if (post.status === 'APPROVED') {
+      post.status = 'active';
+      changed = true;
+    } else if (post.status === 'PENDING' || post.status === 'Pending') {
+      post.status = 'inactive';
+      changed = true;
+    } else if (post.status === 'SOLD' || Number(post.stockQuantity) === 0) {
+      post.status = 'out_of_stock';
+      changed = true;
+    }
+    if (changed) {
+      await post.save();
+      postUpdated += 1;
+    }
+  }
+
+  const orders = await Order.find({});
+  let orderUpdated = 0;
+  for (const order of orders) {
+    let changed = false;
+    if (!order.buyerId && order.buyer) {
+      order.buyerId = order.buyer;
+      changed = true;
+    }
+    if (!order.buyer && order.buyerId) {
+      order.buyer = order.buyerId;
+      changed = true;
+    }
+    if (!order.sellerId && order.seller) {
+      order.sellerId = order.seller;
+      changed = true;
+    }
+    if (!order.seller && order.sellerId) {
+      order.seller = order.sellerId;
+      changed = true;
+    }
+    if (order.status === 'Đã thanh toán (Admin giữ tiền)') {
+      order.paymentStatus = 'escrow';
+      changed = true;
+    } else if (order.status === 'Đã thanh toán cho người bán') {
+      order.paymentStatus = 'released';
+      changed = true;
+    } else if (order.status === 'Đã hủy (Chờ hoàn tiền)' || order.status === 'Đã hủy') {
+      if (order.status === 'Đã hủy (Chờ hoàn tiền)') order.paymentStatus = 'refunded';
+      changed = true;
+    }
+    const nextStatus = canonicalStatus(order.status);
+    if (nextStatus !== order.status) {
+      order.status = nextStatus;
+      changed = true;
+    }
+    if ((!order.orderItems || order.orderItems.length === 0) && order.items && order.items.length) {
+      const products = await Post.find({ _id: { $in: order.items } });
+      order.orderItems = products.map((p) => ({
+        productId: p._id,
+        name: p.name || p.title,
+        price: p.price,
+        quantity: 1,
+        image: (p.images && p.images[0]) || ''
+      }));
+      changed = true;
+    }
+    if (changed) {
+      await order.save();
+      orderUpdated += 1;
+    }
+  }
+
+  console.log(JSON.stringify({ approvedSellers: approved, postUpdated, orderUpdated }, null, 2));
+  await mongoose.disconnect();
+}
+
+migrate().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+</file>
+
+<file path="backend/scripts/migrate-moderation.js">
+/**
+ * Migration Script (H3): Đồng bộ trường `moderationStatus` (`pending | approved | rejected | locked`)
+ * cho dữ liệu sản phẩm/bài đăng cũ trong collection `posts`.
+ *
+ * Cách chạy thủ công (CON NGƯỜI CHẠY):
+ *   cd backend && node scripts/migrate-moderation.js
+ */
+require('dotenv').config();
+const mongoose = require('mongoose');
+const { Post } = require('../models/Product');
+
+async function runMigration() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+  if (!uri) {
+    console.error('❌ Thiếu biến môi trường MONGO_URI');
+    process.exit(1);
+  }
+
+  await mongoose.connect(uri);
+  console.log('✅ Đã kết nối MongoDB. Bắt đầu đồng bộ moderationStatus...');
+
+  const resApproved = await Post.updateMany(
+    {
+      status: { $in: ['active', 'APPROVED', 'out_of_stock', 'SOLD', 'inactive'] },
+      $or: [{ moderationStatus: { $exists: false } }, { moderationStatus: null }]
+    },
+    { $set: { moderationStatus: 'approved' } }
+  );
+
+  const resPending = await Post.updateMany(
+    {
+      status: { $in: ['pending', 'PENDING', 'Pending', 'Chờ duyệt'] },
+      $or: [{ moderationStatus: { $exists: false } }, { moderationStatus: null }]
+    },
+    { $set: { moderationStatus: 'pending' } }
+  );
+
+  const resLocked = await Post.updateMany(
+    {
+      status: 'DELETED',
+      $or: [{ moderationStatus: { $exists: false } }, { moderationStatus: null }]
+    },
+    { $set: { moderationStatus: 'locked' } }
+  );
+
+  console.log(`🎉 Hoàn tất migration:
+  - Approved: ${resApproved.modifiedCount}
+  - Pending : ${resPending.modifiedCount}
+  - Locked  : ${resLocked.modifiedCount}`);
+
+  await mongoose.disconnect();
+}
+
+if (require.main === module) {
+  runMigration().catch((err) => {
+    console.error('❌ Lỗi migration:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { runMigration };
+</file>
+
+<file path="backend/scripts/migrate-seller-flow.js">
+#!/usr/bin/env node
+/**
+ * Migration Script: Normalize Seller Flow Data (Products/Posts & Variants)
+ *
+ * Usage:
+ *   node backend/scripts/migrate-seller-flow.js --dry-run   (default: preview only, no writes)
+ *   node backend/scripts/migrate-seller-flow.js --apply     (apply changes to MongoDB)
+ *
+ * What this script normalizes:
+ * 1. Product/Post `status` in collection `posts`:
+ *    - 'PENDING', 'Pending', 'Chờ duyệt' -> 'pending'
+ *    - 'APPROVED'                        -> 'active'
+ *    - 'SOLD'                            -> 'out_of_stock'
+ *    - 'DELETED', 'REJECTED', 'Bị từ chối', 'Đã ẩn' -> 'inactive'
+ * 2. Product/Post `variants` array items:
+ *    - Ensures `stock` (Number, default 0), `sku` (String, default ''), and `options` (Array) exist.
+ */
+
+require('dotenv').config();
+const mongoose = require('mongoose');
+const { Post } = require('../models/Product');
+
+const STATUS_MAP = {
+  PENDING: 'pending',
+  Pending: 'pending',
+  'Chờ duyệt': 'pending',
+  APPROVED: 'active',
+  SOLD: 'out_of_stock',
+  DELETED: 'inactive',
+  REJECTED: 'inactive',
+  'Bị từ chối': 'inactive',
+  'Đã ẩn': 'inactive'
+};
+
+async function runMigration({ apply = false } = {}) {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+  if (!uri) {
+    console.error('[migrate-seller-flow] Missing MONGO_URI / MONGODB_URI environment variable.');
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(`[migrate-seller-flow] Mode: ${apply ? 'APPLY (WRITING TO DB)' : 'DRY-RUN (READ ONLY)'}`);
+  await mongoose.connect(uri);
+
+  try {
+    const legacyStatuses = Object.keys(STATUS_MAP);
+    const statusCandidates = await Post.find({
+      $or: [
+        { status: { $in: legacyStatuses } },
+        { 'variants.0': { $exists: true } }
+      ]
+    }).lean();
+
+    let statusCount = 0;
+    let variantCount = 0;
+    const bulkOps = [];
+
+    for (const doc of statusCandidates) {
+      const updateSet = {};
+
+      if (doc.status && STATUS_MAP[doc.status]) {
+        updateSet.status = STATUS_MAP[doc.status];
+        statusCount += 1;
+      }
+
+      if (Array.isArray(doc.variants) && doc.variants.length > 0) {
+        let variantChanged = false;
+        const normalizedVariants = doc.variants.map((v) => {
+          if (!v || typeof v !== 'object') return v;
+          const next = { ...v };
+          if (next.stock === undefined || next.stock === null) {
+            next.stock = 0;
+            variantChanged = true;
+          }
+          if (next.sku === undefined || next.sku === null) {
+            next.sku = '';
+            variantChanged = true;
+          }
+          if (!Array.isArray(next.options)) {
+            next.options = [];
+            variantChanged = true;
+          }
+          return next;
+        });
+
+        if (variantChanged) {
+          updateSet.variants = normalizedVariants;
+          variantCount += 1;
+        }
+      }
+
+      if (Object.keys(updateSet).length > 0) {
+        bulkOps.push({
+          updateOne: {
+            filter: { _id: doc._id },
+            update: { $set: updateSet }
+          }
+        });
+      }
+    }
+
+    console.log(`[migrate-seller-flow] Scanned ${statusCandidates.length} documents.`);
+    console.log(`[migrate-seller-flow] Documents needing status normalization: ${statusCount}`);
+    console.log(`[migrate-seller-flow] Documents needing variants normalization: ${variantCount}`);
+    console.log(`[migrate-seller-flow] Total bulk update operations prepared: ${bulkOps.length}`);
+
+    if (apply && bulkOps.length > 0) {
+      const result = await Post.bulkWrite(bulkOps, { ordered: false });
+      console.log(`[migrate-seller-flow] Applied updates. Modified count: ${result.modifiedCount}`);
+    } else if (!apply) {
+      console.log('[migrate-seller-flow] Dry-run complete. Re-run with --apply to persist changes.');
+    }
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const shouldApply = args.includes('--apply') && !args.includes('--dry-run');
+  runMigration({ apply: shouldApply }).catch((err) => {
+    console.error('[migrate-seller-flow] Error:', err);
+    process.exit(1);
+  });
+}
+
+module.exports = { runMigration, STATUS_MAP };
+</file>
+
+<file path="backend/scripts/reconcile.js">
+/**
+ * Script đối soát tài chính & ví ký quỹ HaiPay (H12 - CHỈ ĐỌC / READ-ONLY):
+ * - KHÔNG tự sửa dữ liệu trong DB.
+ * - Kiểm tra 3 nhóm bất thường:
+ *   1. Đơn hàng đang ở trạng thái `paymentStatus: 'escrow'` nhưng `PaymentSession` tương ứng chưa `status: 'paid'`.
+ *   2. Tài khoản người dùng có `walletBalance < 0` hoặc `pendingBalance < 0`.
+ *   3. Tài khoản người bán có `pendingBalance` lệch so với tổng `sellerReceive` của các đơn hàng đang `paymentStatus: 'escrow'`.
+ *
+ * Cách chạy:
+ *   node backend/scripts/reconcile.js
+ */
+require('dotenv').config();
+const mongoose = require('mongoose');
+const User = require('../models/User');
+const Order = require('../models/Order');
+const PaymentSession = require('../models/PaymentSession');
+const { orderSellerId, calculateOrderSplit, fetchPlatformFeePercent } = require('../utils/b2c');
+
+async function runReconciliation({ closeConnection = false } = {}) {
+  const report = {
+    checkedAt: new Date().toISOString(),
+    escrowOrdersWithoutPaidSession: [],
+    negativeBalanceUsers: [],
+    pendingBalanceMismatches: []
+  };
+
+  if (mongoose.connection.readyState !== 1) {
+    const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+    if (!uri) {
+      throw new Error('Thiếu biến môi trường MONGO_URI để chạy đối soát!');
+    }
+    await mongoose.connect(uri);
+  }
+
+  const feePercent = await fetchPlatformFeePercent();
+
+  // 1. Đơn hàng escrow nhưng PaymentSession chưa paid
+  const escrowOrders = await Order.find({
+    $or: [
+      { paymentStatus: 'escrow' },
+      { status: 'Đã thanh toán (Admin giữ tiền)' }
+    ]
+  }).lean();
+
+  const parentIds = [...new Set(escrowOrders.map((o) => o.parentOrderId).filter(Boolean))];
+  const sessions = parentIds.length > 0
+    ? await PaymentSession.find({ parentOrderId: { $in: parentIds } }).lean()
+    : [];
+  const sessionMap = new Map(sessions.map((s) => [s.parentOrderId, s]));
+
+  const expectedPendingBySeller = {};
+
+  for (const order of escrowOrders) {
+    const pId = order.parentOrderId;
+    const sess = pId ? sessionMap.get(pId) : null;
+    if (order.paymentMethod !== 'COD' && (!sess || sess.status !== 'paid')) {
+      report.escrowOrdersWithoutPaidSession.push({
+        orderId: String(order._id),
+        parentOrderId: pId || null,
+        paymentMethod: order.paymentMethod,
+        orderPaymentStatus: order.paymentStatus,
+        sessionStatus: sess ? sess.status : 'MISSING_SESSION',
+        totalPrice: order.totalPrice || 0
+      });
+    }
+
+    const sId = orderSellerId(order);
+    if (sId) {
+      const { sellerReceive } = calculateOrderSplit(order, feePercent);
+      expectedPendingBySeller[sId] = (expectedPendingBySeller[sId] || 0) + sellerReceive;
+    }
+  }
+
+  // 2. Ví âm (walletBalance < 0 hoặc pendingBalance < 0)
+  const negativeUsers = await User.find({
+    $or: [
+      { walletBalance: { $lt: 0 } },
+      { pendingBalance: { $lt: 0 } }
+    ]
+  })
+    .select('_id name email walletBalance pendingBalance')
+    .lean();
+
+  for (const u of negativeUsers) {
+    report.negativeBalanceUsers.push({
+      userId: String(u._id),
+      email: u.email,
+      walletBalance: u.walletBalance || 0,
+      pendingBalance: u.pendingBalance || 0
+    });
+  }
+
+  // 3. Đối chiếu pendingBalance của Seller với tổng sellerReceive của các đơn đang escrow
+  const sellersWithPending = await User.find({
+    $or: [
+      { pendingBalance: { $gt: 0 } },
+      { _id: { $in: Object.keys(expectedPendingBySeller).filter((id) => mongoose.Types.ObjectId.isValid(id)) } }
+    ]
+  })
+    .select('_id name email pendingBalance')
+    .lean();
+
+  for (const seller of sellersWithPending) {
+    const sId = String(seller._id);
+    const actualPending = Math.round(Number(seller.pendingBalance) || 0);
+    const expectedPending = Math.round(Number(expectedPendingBySeller[sId]) || 0);
+    if (actualPending !== expectedPending) {
+      report.pendingBalanceMismatches.push({
+        sellerId: sId,
+        email: seller.email,
+        actualPendingBalance: actualPending,
+        expectedPendingFromEscrowOrders: expectedPending,
+        diff: actualPending - expectedPending
+      });
+    }
+  }
+
+  if (closeConnection && mongoose.connection.readyState === 1) {
+    await mongoose.disconnect();
+  }
+
+  return report;
+}
+
+if (require.main === module) {
+  runReconciliation({ closeConnection: true })
+    .then((report) => {
+      console.log('=== BÁO CÁO ĐỐI SOÁT VÍ & ESCROW HAIHAND (READ-ONLY) ===');
+      console.log(JSON.stringify(report, null, 2));
+      const totalIssues =
+        report.escrowOrdersWithoutPaidSession.length +
+        report.negativeBalanceUsers.length +
+        report.pendingBalanceMismatches.length;
+      console.log(`Tổng số mục lệch phát hiện: ${totalIssues}`);
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Lỗi khi chạy đối soát:', err.message);
+      process.exit(1);
+    });
+}
+
+module.exports = { runReconciliation };
+</file>
+
+<file path="backend/scripts/report-image-improvement.js">
+const fs = require('node:fs');
+const path = require('node:path');
+
+const directory = path.resolve(process.argv[2] || '../output/image-search-all-products');
+const read = (name) => JSON.parse(fs.readFileSync(path.join(directory, name)));
+const sources = read('reviewed-sources.json');
+const catalog = new Map(read('catalog.json').map((row) => [row.id, row]));
+const baseline = read('api-results-final.json');
+const improved = read(process.argv[3] || 'api-results-v4.json');
+const extra = fs.existsSync(path.join(directory, 'returned-card-grades-v3-extra.json'))
+  ? read('returned-card-grades-v3-extra.json') : [];
+const grades = new Map([...read('returned-card-grades-final.json').grades, ...extra]
+  .map((row) => [`${row.queryId}:${row.returnedId}`, row]));
+const gradeFor = (queryId, product) => {
+  const previous = grades.get(`${queryId}:${product.id}`);
+  return previous?.returnedImage === product.image ? previous.grade : 'unreviewed';
+};
+const byId = new Map(sources.map((row) => [row.id, row]));
+const oldById = new Map(baseline.map((row) => [row.id, row]));
+const done = improved.filter((row) => row.status === 'done');
+const positive = done.filter((row) => byId.get(row.id)?.trainingEligible);
+const cards = done.flatMap((row) => row.products.map((product) => ({
+  queryId: row.id, product, grade: gradeFor(row.id, product)
+})));
+const oldCards = done.flatMap((row) => (oldById.get(row.id)?.products || [])
+  .map((product) => `${row.id}:${product.id}`));
+const newCards = cards.map((row) => `${row.queryId}:${row.product.id}`);
+const newSet = new Set(newCards);
+const oldSet = new Set(oldCards);
+const summary = {
+  evaluated: done.length,
+  remaining: improved.filter((row) => row.status === 'pending').length,
+  errors: improved.filter((row) => row.status === 'error').length,
+  positiveCases: positive.length,
+  baselinePositiveHits: positive.filter((row) => oldById.get(row.id)?.targetHit).length,
+  improvedPositiveHits: positive.filter((row) => row.targetHit).length,
+  baselineCards: oldCards.length,
+  baselineSameType: oldCards.filter((key) => grades.get(key)?.grade === 'same_type').length,
+  baselineRelated: oldCards.filter((key) => grades.get(key)?.grade === 'related').length,
+  baselineWrongType: oldCards.filter((key) => ['wrong_type', 'wrong_catalog_photo'].includes(grades.get(key)?.grade)).length,
+  improvedCards: cards.length,
+  addedCards: newCards.filter((key) => !oldSet.has(key)).length,
+  removedCards: oldCards.filter((key) => !newSet.has(key)).length,
+  gradedSameType: cards.filter((row) => row.grade === 'same_type').length,
+  gradedRelated: cards.filter((row) => row.grade === 'related').length,
+  gradedWrongType: cards.filter((row) => row.grade === 'wrong_type' || row.grade === 'wrong_catalog_photo').length,
+  unreviewedCards: cards.filter((row) => row.grade === 'unreviewed').length
+};
+fs.writeFileSync(path.join(directory, 'improvement-summary.json'), JSON.stringify(summary, null, 2));
+
+const escape = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+})[character]);
+const localPhoto = (product) => {
+  const index = catalog.get(product.id)?.images?.indexOf(product.image) ?? -1;
+  return index >= 0 ? `catalog-images/${product.id}-${index}.jpg` : product.image;
+};
+const cardHtml = (row, queryId) => {
+  const grade = gradeFor(queryId, row);
+  return `<div class="card ${escape(grade)}"><img src="${escape(localPhoto(row))}" alt=""><div><b>${escape(row.title)}</b><small>${escape(row.id)} · ${escape(grade)} · ${Number(row.similarity || 0).toFixed(3)}</small></div></div>`;
+};
+const cases = done.map((row) => {
+  const source = byId.get(row.id);
+  const old = oldById.get(row.id);
+  return `<section><h2>${escape(row.title)} <small>${row.targetHit ? '✓ đúng ID' : '— chưa thấy ID'}</small></h2>
+    <div class="images"><figure><img src="${escape(source.image)}" alt=""><figcaption>Ảnh truy vấn${source.sourceUrl ? ` · <a href="${escape(source.sourceUrl)}">Nguồn</a>` : ''}</figcaption></figure>
+    <figure><img src="catalog-images/${escape(row.id)}-0.jpg" alt=""><figcaption>Ảnh tin trong Atlas</figcaption></figure></div>
+    <div class="results"><div><h3>Trước (${old?.products?.length || 0})</h3>${(old?.products || []).map((product) => cardHtml(product, row.id)).join('') || '<p>Không có thẻ</p>'}</div>
+    <div><h3>Sau (${row.products.length})</h3>${row.products.map((product) => cardHtml(product, row.id)).join('') || '<p>Không có thẻ</p>'}</div></div></section>`;
+}).join('\n');
+const html = `<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HaiHand: so sánh tìm kiếm ảnh</title><style>
+*{box-sizing:border-box}body{margin:0;background:#faf8ef;color:#202020;font:15px/1.45 system-ui,sans-serif}header{background:#ffd21b;padding:22px max(20px,calc((100vw - 1200px)/2))}main{max-width:1200px;margin:auto;padding:20px}h1{margin:0 0 6px}h2{font-size:19px;margin:0 0 14px}h2 small{font-size:13px;color:#555}h3{font-size:14px;margin:0 0 10px}section{background:white;border:1px solid #ddd;border-radius:10px;padding:20px;margin:18px 0}.summary{display:flex;gap:12px;flex-wrap:wrap}.summary div{background:white;border:1px solid #ddd;padding:10px 14px;border-radius:6px}.images{display:flex;gap:14px}.images figure{margin:0;width:160px}.images img{width:160px;height:130px;object-fit:contain;background:#eee}.images figcaption{font-size:12px;color:#666}.results{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.card{display:flex;gap:9px;padding:7px;margin:7px 0;border:1px solid #ddd;border-left:4px solid #aaa;border-radius:5px}.card.same_type{border-left-color:#16a34a}.card.related{border-left-color:#d48b00}.card.wrong_type,.card.wrong_catalog_photo{border-left-color:#dc2626}.card img{width:70px;height:64px;object-fit:cover}.card div{min-width:0}.card small{display:block;color:#666;font-size:11px}p{color:#666}@media(max-width:650px){.results{grid-template-columns:1fr}.images{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.images figure{width:auto;min-width:0}.images img{width:100%}}
+</style></head><body><header><h1>So sánh tìm kiếm ảnh HaiHand</h1><p>Ảnh tham chiếu đã xác minh cùng loại vật thể. Nhãn thẻ giữ từ lần chấm thủ công trước; thẻ mới chưa chấm được ghi “unreviewed”.</p></header><main>
+<div class="summary"><div>Đã chạy: ${summary.evaluated}</div><div>Đúng ID trên cặp dương: ${summary.baselinePositiveHits}/${summary.positiveCases} → ${summary.improvedPositiveHits}/${summary.positiveCases}</div><div>Thẻ cùng loại: ${summary.baselineSameType} → ${summary.gradedSameType}</div><div>Thẻ sai loại/ảnh: ${summary.baselineWrongType} → ${summary.gradedWrongType}</div><div>Thẻ mới chưa chấm: ${summary.unreviewedCards}</div></div>
+${cases}</main></body></html>`;
+fs.writeFileSync(path.join(directory, 'image-results-improved.html'), html);
+console.log(summary);
+</file>
+
+<file path="backend/scripts/snapshot-image-catalog.js">
+require('dotenv').config();
+
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const mongoose = require('mongoose');
+
+async function main() {
+  const uri = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+  if (!uri) throw new Error('Thiếu MongoDB Atlas URI');
+  const destination = path.resolve(process.argv[2] || '../output/image-search-all-products/catalog.json');
+  await mongoose.connect(uri);
+  try {
+    const products = await mongoose.connection.db.collection('posts').find(
+      { status: { $in: ['active', 'APPROVED'] } },
+      { projection: { _id: 1, title: 1, name: 1, category: 1, description: 1, images: 1,
+        imageEmbeddingModel: 1, imageEmbeddings: 1 } }
+    ).sort({ _id: 1 }).toArray();
+    const rows = products.map((product) => ({
+      id: String(product._id),
+      title: product.title || product.name || '',
+      category: product.category || '',
+      description: String(product.description || '').slice(0, 300),
+      images: product.images || [],
+      firstImage: product.images?.[0] || '',
+      imageCount: product.images?.length || 0,
+      embeddedImageCount: product.imageEmbeddings?.length || 0,
+      imageEmbeddingModel: product.imageEmbeddingModel || ''
+    }));
+    await fs.mkdir(path.dirname(destination), { recursive: true });
+    await fs.writeFile(destination, JSON.stringify(rows, null, 2));
+    console.log(`Đã xuất ${rows.length} sản phẩm; ${rows.filter((row) => row.embeddedImageCount).length} sản phẩm có vector ảnh.`);
+  } finally {
+    await mongoose.disconnect();
+  }
+}
+
+main().catch((error) => { console.error(error.message); process.exitCode = 1; });
+</file>
+
+<file path="backend/services/shipping/vnLocations.js">
+/**
+ * Offline Vietnamese location dataset for the MOCK shipping provider.
+ * Shape mirrors GHN master-data (ProvinceID / DistrictID / WardCode) so the
+ * frontend works identically against either provider.
+ *
+ * NOTE: IDs here are local mock IDs. When switching SHIPPING_PROVIDER to `ghn`,
+ * addresses must be re-selected so they carry real GHN IDs.
+ */
+const PROVINCES = [
+  {
+    id: 201, name: 'Hà Nội', region: 'NORTH',
+    districts: [
+      { id: 1484, name: 'Quận Ba Đình', wards: ['Phường Điện Biên', 'Phường Kim Mã', 'Phường Ngọc Hà', 'Phường Liễu Giai'] },
+      { id: 1489, name: 'Quận Hoàn Kiếm', wards: ['Phường Hàng Bạc', 'Phường Hàng Trống', 'Phường Tràng Tiền', 'Phường Lý Thái Tổ'] },
+      { id: 1485, name: 'Quận Cầu Giấy', wards: ['Phường Dịch Vọng', 'Phường Mai Dịch', 'Phường Nghĩa Đô', 'Phường Yên Hòa'] },
+      { id: 1486, name: 'Quận Đống Đa', wards: ['Phường Láng Hạ', 'Phường Ô Chợ Dừa', 'Phường Văn Miếu', 'Phường Trung Liệt'] },
+      { id: 1493, name: 'Quận Hai Bà Trưng', wards: ['Phường Bách Khoa', 'Phường Bạch Mai', 'Phường Lê Đại Hành', 'Phường Minh Khai'] }
+    ]
+  },
+  {
+    id: 202, name: 'Hồ Chí Minh', region: 'SOUTH',
+    districts: [
+      { id: 1442, name: 'Quận 1', wards: ['Phường Bến Nghé', 'Phường Bến Thành', 'Phường Đa Kao', 'Phường Nguyễn Thái Bình'] },
+      { id: 1443, name: 'Quận 3', wards: ['Phường Võ Thị Sáu', 'Phường 9', 'Phường 11', 'Phường 14'] },
+      { id: 1444, name: 'Quận 7', wards: ['Phường Tân Phong', 'Phường Tân Phú', 'Phường Tân Hưng', 'Phường Phú Mỹ'] },
+      { id: 1462, name: 'Quận Bình Thạnh', wards: ['Phường 1', 'Phường 2', 'Phường 25', 'Phường 26'] },
+      { id: 3695, name: 'Thành phố Thủ Đức', wards: ['Phường Linh Trung', 'Phường Thảo Điền', 'Phường An Phú', 'Phường Hiệp Phú'] }
+    ]
+  },
+  {
+    id: 203, name: 'Đà Nẵng', region: 'CENTRAL',
+    districts: [
+      { id: 1526, name: 'Quận Hải Châu', wards: ['Phường Hải Châu I', 'Phường Thạch Thang', 'Phường Bình Hiên', 'Phường Hòa Thuận Đông'] },
+      { id: 1527, name: 'Quận Sơn Trà', wards: ['Phường An Hải Bắc', 'Phường Mân Thái', 'Phường Phước Mỹ', 'Phường Thọ Quang'] },
+      { id: 1528, name: 'Quận Ngũ Hành Sơn', wards: ['Phường Mỹ An', 'Phường Khuê Mỹ', 'Phường Hòa Hải', 'Phường Hòa Quý'] }
+    ]
+  },
+  {
+    id: 224, name: 'Hải Phòng', region: 'NORTH',
+    districts: [
+      { id: 1586, name: 'Quận Hồng Bàng', wards: ['Phường Hoàng Văn Thụ', 'Phường Minh Khai', 'Phường Quán Toan'] },
+      { id: 1587, name: 'Quận Lê Chân', wards: ['Phường An Biên', 'Phường Cát Dài', 'Phường Dư Hàng'] },
+      { id: 1588, name: 'Quận Ngô Quyền', wards: ['Phường Cầu Đất', 'Phường Lạch Tray', 'Phường Máy Tơ'] }
+    ]
+  },
+  {
+    id: 220, name: 'Cần Thơ', region: 'SOUTH',
+    districts: [
+      { id: 1572, name: 'Quận Ninh Kiều', wards: ['Phường An Cư', 'Phường An Hòa', 'Phường Tân An', 'Phường Xuân Khánh'] },
+      { id: 1573, name: 'Quận Cái Răng', wards: ['Phường Lê Bình', 'Phường Hưng Phú', 'Phường Ba Láng'] }
+    ]
+  },
+  {
+    id: 241, name: 'Thừa Thiên Huế', region: 'CENTRAL',
+    districts: [
+      { id: 1690, name: 'Thành phố Huế', wards: ['Phường Phú Hội', 'Phường Vĩnh Ninh', 'Phường Thuận Thành', 'Phường Phú Nhuận'] }
+    ]
+  },
+  {
+    id: 268, name: 'Khánh Hòa', region: 'CENTRAL',
+    districts: [
+      { id: 1810, name: 'Thành phố Nha Trang', wards: ['Phường Lộc Thọ', 'Phường Tân Lập', 'Phường Vĩnh Hải', 'Phường Phước Tiến'] }
+    ]
+  },
+  {
+    id: 206, name: 'Bình Dương', region: 'SOUTH',
+    districts: [
+      { id: 1540, name: 'Thành phố Thủ Dầu Một', wards: ['Phường Phú Cường', 'Phường Hiệp Thành', 'Phường Chánh Nghĩa'] },
+      { id: 1541, name: 'Thành phố Dĩ An', wards: ['Phường Dĩ An', 'Phường Đông Hòa', 'Phường Tân Bình'] }
+    ]
+  }
+];
+
+// Deterministic ward codes: `${districtId}${index+1 padded}`
+const provinces = PROVINCES.map(({ id, name, region }) => ({ id, name, region }));
+
+const districtsByProvince = {};
+const wardsByDistrict = {};
+const provinceOfDistrict = {};
+
+for (const p of PROVINCES) {
+  districtsByProvince[p.id] = p.districts.map((d) => ({ id: d.id, name: d.name, provinceId: p.id }));
+  for (const d of p.districts) {
+    provinceOfDistrict[d.id] = p.id;
+    wardsByDistrict[d.id] = d.wards.map((w, i) => ({
+      code: `${d.id}${String(i + 1).padStart(2, '0')}`,
+      name: w,
+      districtId: d.id
+    }));
+  }
+}
+
+function regionOf(provinceId) {
+  const p = provinces.find((x) => x.id === Number(provinceId));
+  return p ? p.region : 'UNKNOWN';
+}
+
+module.exports = {
+  provinces,
+  districtsByProvince,
+  wardsByDistrict,
+  provinceOfDistrict,
+  regionOf
+};
+</file>
+
+<file path="package.json">
+{
+  "name": "haihand-marketplace",
+  "version": "1.0.0",
+  "description": "HaiHand Marketplace Root",
+  "scripts": {
+    "start": "concurrently \"npm run start-frontend\" \"npm run start-backend\" \"npm run start-admin\"",
+    "start-frontend": "cd frontend && npm start",
+    "start-backend": "cd backend && npm start",
+    "start-admin": "cd admin && npm start"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "bcrypt": "^6.0.0"
+  }
+}
+</file>
+
+</files>

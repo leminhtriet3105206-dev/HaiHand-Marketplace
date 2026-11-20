@@ -11,12 +11,13 @@ const bcrypt = (() => {
   }
 })();
 
-// Load backend env if present (for local execution)
-const envPath = path.join(__dirname, "../backend/.env");
-if (fs.existsSync(envPath) && typeof process.loadEnvFile === "function") {
-  try {
-    process.loadEnvFile(envPath);
-  } catch (e) { }
+// Load local admin/.env and fallback backend/.env if present (for local execution)
+for (const candidateEnv of [path.join(__dirname, ".env"), path.join(__dirname, "../backend/.env")]) {
+  if (fs.existsSync(candidateEnv) && typeof process.loadEnvFile === "function") {
+    try {
+      process.loadEnvFile(candidateEnv);
+    } catch (e) { }
+  }
 }
 
 const mongoose = require("mongoose");
@@ -268,6 +269,9 @@ if (!process.env.SESSION_SECRET && process.env.NODE_ENV !== "test") {
   process.exit(1);
 }
 
+app.set("trust proxy", 1);
+const isCookieSecure = process.env.COOKIE_SECURE === "true";
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "test_only_session_secret_do_not_use_in_prod",
@@ -276,7 +280,7 @@ app.use(
     cookie: {
       httpOnly: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
+      secure: isCookieSecure,
     },
   }),
 );
@@ -309,7 +313,7 @@ app.use((req, res, next) => {
   res.cookie("XSRF_TOKEN", token, {
     httpOnly: false,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: isCookieSecure,
   });
   next();
 });
@@ -553,8 +557,28 @@ app.post("/login", async (req, res) => {
       if (user.status === 'locked' || user.isBanned || user.isDeleted) {
         return res.render("login", { error: "Tài khoản quản trị viên này đã bị khóa!" });
       }
-      req.session.user = sanitizeUser(user);
-      res.redirect("/");
+      const safeUser = sanitizeUser(user);
+      const freshCsrfToken = crypto.randomBytes(24).toString("hex");
+      return req.session.regenerate((regenErr) => {
+        if (regenErr) {
+          console.error("Lỗi tạo lại session Admin:", regenErr);
+          return res.render("login", { error: "Lỗi phiên đăng nhập, vui lòng thử lại" });
+        }
+        req.session.user = safeUser;
+        req.session.csrfToken = freshCsrfToken;
+        res.cookie("XSRF_TOKEN", freshCsrfToken, {
+          httpOnly: false,
+          sameSite: "lax",
+          secure: isCookieSecure,
+        });
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            console.error("Lỗi lưu session Admin:", saveErr);
+            return res.render("login", { error: "Lỗi lưu phiên đăng nhập, vui lòng thử lại" });
+          }
+          return res.redirect("/");
+        });
+      });
     } else {
       res.render("login", { error: "Sai email hoặc mật khẩu" });
     }
@@ -609,8 +633,10 @@ app.post("/register", async (req, res) => {
 });
 
 app.get("/logout", (req, res) => {
-  req.session.destroy();
-  res.redirect("/login");
+  req.session.destroy(() => {
+    res.clearCookie("connect.sid");
+    res.redirect("/login");
+  });
 });
 
 app.get("/dashboard", checkLogin, (req, res) => {

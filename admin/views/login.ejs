@@ -38,16 +38,18 @@
             <% } %>
 
             <!-- Login Form -->
-            <form action="/login" method="POST" class="space-y-4 mb-6">
+            <form action="/login" method="POST" autocomplete="on" class="space-y-4 mb-6">
                 <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Tài khoản</label>
+                    <label for="login-username" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Tài khoản</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                             <i class="fas fa-user text-xs"></i>
                         </span>
                         <input 
+                            id="login-username"
                             type="text" 
                             name="username" 
+                            autocomplete="username"
                             class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-purple-400 focus:bg-white focus:ring-4 focus:ring-purple-500/10 outline-none transition" 
                             placeholder="Nhập tên đăng nhập" 
                             required
@@ -56,14 +58,16 @@
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Mật khẩu</label>
+                    <label for="login-password" class="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5">Mật khẩu</label>
                     <div class="relative">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
                             <i class="fas fa-lock text-xs"></i>
                         </span>
                         <input 
+                            id="login-password"
                             type="password" 
                             name="password" 
+                            autocomplete="current-password"
                             class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:border-purple-400 focus:bg-white focus:ring-4 focus:ring-purple-500/10 outline-none transition" 
                             placeholder="••••••••" 
                             required
@@ -85,11 +89,11 @@
             </div>
 
             <!-- Register Form (Standard user registration) -->
-            <form action="/register" method="POST" class="space-y-3">
-                <input type="text" name="name" placeholder="Họ và tên" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-purple-400" required>
-                <input type="email" name="email" placeholder="Email liên hệ" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-purple-400" required>
-                <input type="text" name="username" placeholder="Tên đăng nhập mới" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-purple-400" required>
-                <input type="password" name="password" placeholder="Mật khẩu mới" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-purple-400" required>
+            <form action="/register" method="POST" autocomplete="off" class="space-y-3">
+                <input type="text" name="name" autocomplete="name" placeholder="Họ và tên" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-purple-400" required>
+                <input type="email" name="email" autocomplete="email" placeholder="Email liên hệ" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-purple-400" required>
+                <input type="text" name="username" autocomplete="off" placeholder="Tên đăng nhập mới" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-purple-400" required>
+                <input type="password" name="password" autocomplete="new-password" placeholder="Mật khẩu mới" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium outline-none focus:bg-white focus:border-purple-400" required>
 
                 <button type="submit" class="w-full bg-slate-100 hover:bg-purple-50 text-slate-600 hover:text-purple-700 font-bold py-2.5 rounded-xl text-xs transition">
                     Đăng Ký Tài Khoản

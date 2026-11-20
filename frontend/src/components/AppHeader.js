@@ -219,9 +219,16 @@ export const AppHeader = ({ onSearch }) => {
         </div>
 
         <div className="flex items-center gap-4 shrink-0">
+          <Link to="/image-search" className="lg:hidden p-2 rounded-lg hover:bg-black/5" aria-label="Tìm kiếm bằng hình ảnh" title="Tìm kiếm bằng hình ảnh">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h2l1.5-2h7L17 5h2a2 2 0 012 2v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+              <circle cx="12" cy="12" r="3.5" />
+            </svg>
+          </Link>
           <nav className="hidden lg:flex items-center gap-5 text-sm font-medium text-[#1C1917]">
             <Link to="/" className="hover:underline">Trang chủ</Link>
             <Link to="/products" className="hover:underline">Khám phá</Link>
+            <Link to="/image-search" className="hover:underline">Tìm kiếm bằng hình ảnh</Link>
             {user && (
               <Link to="/chat" className="relative hover:underline">
                 Tin nhắn

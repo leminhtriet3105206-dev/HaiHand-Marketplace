@@ -2,6 +2,8 @@
 node_modules/
 /.npm-cache/
 /.playwright-cli/
+/.cache/
+/output/
 /.pnp
 .pnp.js
 
@@ -40,6 +42,7 @@ yarn-error.log*
 # Backend uploads
 backend/uploads/
 backend/.cache/
+backend/training-data/
 uploads
 
 # Other

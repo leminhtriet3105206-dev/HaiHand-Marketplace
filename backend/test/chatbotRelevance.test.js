@@ -4,6 +4,19 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
+test('product schema persists vectors and source paths for multiple images', () => {
+  const { Post } = require('../models/Product');
+  const product = new Post({
+    title: 'Áo khoác', price: 100000, category: 'Thời trang',
+    imageEmbedding: [0.5, 0.5],
+    imageEmbeddings: [[1, 0], [0, 1]],
+    imageEmbeddingImages: ['front.jpg', 'back.jpg']
+  });
+  const stored = product.toObject();
+  assert.deepEqual(stored.imageEmbeddings, [[1, 0], [0, 1]]);
+  assert.deepEqual(stored.imageEmbeddingImages, ['front.jpg', 'back.jpg']);
+});
+
 test('chatbot only returns products accepted as relevant', async () => {
   const book = { _id: 'book', title: 'Sách thiếu nhi', category: 'Sách & Văn phòng phẩm', score: 0.91 };
   const pen = { _id: 'pen', title: 'Bút bi', category: 'Sách & Văn phòng phẩm', score: 0.89 };
@@ -340,7 +353,7 @@ test('image-only search uses the visual description without a second intent call
     (name) => dependencies[name], module, { env: {} }, console
   );
 
-  const result = await module.exports.processImageSearch('data:image/png;base64,AAAA');
+  const result = await module.exports.processChatbot('', [], 'data:image/png;base64,AAAA');
   assert.equal(modelCalls, 1);
   assert.equal(result.products.length, 0);
 });

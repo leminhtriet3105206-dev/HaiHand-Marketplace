@@ -32,7 +32,7 @@ const {
 } = require('./utils/b2c');
 const createSellerRouter = require('./routes/seller');
 const haipayRouter = require('./routes/haipay');
-const { indexProductImage } = require('./services/imageEmbeddingService');
+const { refreshProductSearch } = require('./services/chatbotService');
 const shippingRouter = require('./routes/shipping');
 const addressRouter = require('./routes/address');
 const PaymentSession = require('./models/PaymentSession');
@@ -1601,6 +1601,7 @@ app.put('/api/posts/:id', upload.array('images', 5), async (req, res) => {
     }
 
     const updatedPost = await Post.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    if (updatedPost) await refreshProductSearch(updatedPost, Boolean(req.files?.length));
     res.status(200).json(updatedPost);
   } catch (error) { res.status(500).json({ message: "Lỗi Server: " + error.message }); }
 });
@@ -2405,11 +2406,7 @@ app.post('/api/posts', protect, isSeller, upload.array('images', 5), async (req,
 
     await newPost.save();
 
-    try {
-      await indexProductImage(newPost);
-    } catch (error) {
-      console.warn(`Không tạo được image embedding cho ${newPost._id}: ${error.message}`);
-    }
+    await refreshProductSearch(newPost);
 
     // Trigger 1: When a user creates a new Product/Post (and auto-approve is false), automatically create a notification for Admins
     if (!isAutoApprove && initialStatus === 'pending') {
@@ -3124,7 +3121,7 @@ app.post('/api/support/messages', supportCustomer, async (req, res) => {
     res.status(201).json(conversation);
   } catch { res.status(500).json({ message: 'Không gửi được yêu cầu hỗ trợ.' }); }
 });
-const { processChatbot } = require('./services/chatbotService');
+const { processChatbot, processImageSearch } = require('./services/chatbotService');
 
 app.post('/api/chatbot/ask', async (req, res) => {
   try {
@@ -3160,6 +3157,19 @@ app.post('/api/chatbot/ask', async (req, res) => {
     res.status(500).json({
       error: 'Không thể xử lý yêu cầu. Hãy kiểm tra Qwen3-VL, BGE-M3 và LM Studio ở cổng 1235.'
     });
+  }
+});
+
+app.post('/api/image-search/search', async (req, res) => {
+  try {
+    const { image, message } = req.body;
+    if (typeof image !== 'string' || !/^data:image\/(?:jpeg|png|webp);base64,/i.test(image) || image.length > 7_000_000) {
+      return res.status(400).json({ error: 'Vui lòng chọn ảnh JPG, PNG hoặc WebP không quá 5 MB' });
+    }
+    res.json(await processImageSearch(image, message));
+  } catch (error) {
+    console.error('Lỗi tìm kiếm bằng hình ảnh:', error);
+    res.status(500).json({ error: 'Không thể tìm kiếm bằng hình ảnh. Hãy kiểm tra LM Studio rồi thử lại.' });
   }
 });
 

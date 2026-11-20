@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#312E81"/>
+      <stop offset="55%" stop-color="#4338CA"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg3)"/>
+  <circle cx="650" cy="140" r="180" fill="#A855F7" opacity="0.20"/>
+  <circle cx="140" cy="480" r="170" fill="#FACC15" opacity="0.14"/>
+
+  <!-- Delivery Box & Tag Graphic -->
+  <g transform="translate(480, 150)">
+    <rect x="20" y="65" width="210" height="185" rx="24" fill="#1E1B4B" stroke="#818CF8" stroke-width="4"/>
+    <path d="M20 118 H230" stroke="#818CF8" stroke-width="4"/>
+    <rect x="98" y="65" width="54" height="82" rx="6" fill="#FACC15"/>
+    <circle cx="195" cy="58" r="36" fill="#10B981"/>
+    <text x="195" y="65" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="18" font-weight="bold">GHN</text>
+  </g>
+
+  <rect x="64" y="138" width="210" height="34" rx="17" fill="#C084FC" opacity="0.2" stroke="#C084FC"/>
+  <text x="169" y="160" text-anchor="middle" fill="#E9D5FF" font-family="Arial, sans-serif" font-size="14" font-weight="bold">ĐĂNG BÁN SIÊU TỐC</text>
+
+  <text x="64" y="232" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="42" font-weight="bold">Biến Đồ Không Dùng</text>
+  <text x="64" y="286" fill="#FACC15" font-family="Arial, sans-serif" font-size="42" font-weight="bold">Thành Thu Nhập Ngay</text>
+
+  <text x="64" y="340" fill="#E0E7FF" font-family="Arial, sans-serif" font-size="20">Tạo tin đăng chỉ trong 30 giây, tích hợp</text>
+  <text x="64" y="370" fill="#E0E7FF" font-family="Arial, sans-serif" font-size="20">tạo mã vận đơn và theo dõi giao hàng tự động.</text>
+
+  <rect x="64" y="420" width="230" height="52" rx="26" fill="#FFFFFF"/>
+  <text x="179" y="452" text-anchor="middle" fill="#312E81" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Đăng tin bán ngay →</text>
+</svg>
+

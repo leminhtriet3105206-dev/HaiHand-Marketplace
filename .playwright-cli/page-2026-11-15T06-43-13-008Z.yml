@@ -1,0 +1,236 @@
+- generic [active] [ref=f4e1]:
+  - link "Jump to content" [ref=f4e2] [cursor=pointer]:
+    - /url: "#bodyContent"
+  - banner [ref=f4e4]:
+    - generic [ref=f4e5]:
+      - navigation "Site" [ref=f4e6]:
+        - generic "Main menu" [ref=f4e7]:
+          - button "Main menu" [ref=f4e8] [cursor=pointer]
+          - generic [ref=f4e11]: Main menu
+      - link [ref=f4e12] [cursor=pointer]:
+        - /url: /wiki/Main_Page
+        - img "Wikimedia Commons" [ref=f4e15]
+    - generic [ref=f4e16]:
+      - search [ref=f4e17]:
+        - link "Search" [ref=f4e18] [cursor=pointer]:
+          - /url: /wiki/Special:MediaSearch
+      - navigation "Personal tools" [ref=f4e21]:
+        - generic [ref=f4e22]:
+          - list [ref=f4e25]:
+            - listitem [ref=f4e26]:
+              - link "English" [ref=f4e27] [cursor=pointer]:
+                - /url: "#"
+          - navigation "Appearance" [ref=f4e30]:
+            - generic "Change the appearance of the page's font size, width, and color" [ref=f4e31]:
+              - button "Appearance" [ref=f4e32] [cursor=pointer]
+              - generic [ref=f4e35]: Appearance
+          - list [ref=f4e38]:
+            - listitem [ref=f4e39]:
+              - link "Donate" [ref=f4e40] [cursor=pointer]:
+                - /url: https://donate.wikimedia.org/?wmf_source=donate&wmf_medium=sidebar&wmf_campaign=commons.wikimedia.org&uselang=en
+            - listitem [ref=f4e41]:
+              - link "Create account" [ref=f4e42] [cursor=pointer]:
+                - /url: /w/index.php?title=Special:CreateAccount&returnto=Special%3AMediaSearch&returntoquery=search%3Dbadminton%2Bracket%26type%3Dimage
+            - listitem [ref=f4e43]:
+              - link "Log in" [ref=f4e44] [cursor=pointer]:
+                - /url: /w/index.php?title=Special:UserLogin&returnto=Special%3AMediaSearch&returntoquery=search%3Dbadminton%2Bracket%26type%3Dimage
+  - generic [ref=f4e46]:
+    - main [ref=f4e48]:
+      - generic [ref=f4e49]:
+        - heading "Search media" [level=1] [ref=f4e50]
+        - generic [ref=f4e51]:
+          - link "Switch to Special:Search" [ref=f4e53] [cursor=pointer]:
+            - /url: https://commons.wikimedia.org/w/index.php?title=Special%3ASearch&search=badminton+racket
+          - link "Help" [ref=f4e55] [cursor=pointer]:
+            - /url: https://www.mediawiki.org/wiki/Special:MyLanguage/Help:MediaSearch
+      - generic [ref=f4e57]:
+        - generic:
+          - navigation "Namespaces"
+        - generic [ref=f4e58]:
+          - navigation "Views"
+          - navigation "Page tools" [ref=f4e59]:
+            - generic [ref=f4e60]:
+              - button "Tools" [ref=f4e61] [cursor=pointer]
+              - generic [ref=f4e64]: Tools
+      - generic "Search media" [ref=f4e65]:
+        - generic [ref=f4e66]:
+          - generic [ref=f4e68]:
+            - generic [ref=f4e69]:
+              - generic [ref=f4e70]: Search media
+              - textbox "Search media Search media" [ref=f4e72]:
+                - /placeholder: Search for images, audio, video and more
+                - text: badminton racket
+            - button "Search" [ref=f4e74]
+          - generic [ref=f4e76]:
+            - tablist [ref=f4e79]:
+              - tab "Images" [selected] [ref=f4e80]
+              - tab "Audio" [ref=f4e81]
+              - tab "Video" [ref=f4e82]
+              - tab "Other Media" [ref=f4e83]
+              - tab "Categories and Pages" [ref=f4e84]
+            - tabpanel "Images" [ref=f4e86]:
+              - generic [ref=f4e87]: 1,483 results
+              - generic [ref=f4e90]:
+                - generic [ref=f4e91]:
+                  - link "Badminton racket.jpg" [ref=f4e92] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_racket.jpg
+                    - img "Badminton racket.jpg"
+                  - link "Badminton racket Pinhead icon.svg" [ref=f4e93] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_racket_Pinhead_icon.svg
+                    - img "Badminton racket Pinhead icon.svg"
+                  - link "Badminton racket and shuttlecock Pinhead icon.svg" [ref=f4e94] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_racket_and_shuttlecock_Pinhead_icon.svg
+                    - img "Badminton racket and shuttlecock Pinhead icon.svg"
+                  - link "Heads of badminton raquets.jpg" [ref=f4e95] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Heads_of_badminton_raquets.jpg
+                    - img "Heads of badminton raquets.jpg"
+                  - link "Badminton Racket.jpg" [ref=f4e96] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_Racket.jpg
+                    - img "Badminton Racket.jpg"
+                  - link "Yonex Isometric 30 VF.png" [ref=f4e97] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Yonex_Isometric_30_VF.png
+                    - img "Yonex Isometric 30 VF.png"
+                  - link "WorldsLargestBadmintonRacket.jpg" [ref=f4e98] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:WorldsLargestBadmintonRacket.jpg
+                    - img "WorldsLargestBadmintonRacket.jpg"
+                  - link "Badminton racquets victor thruster ryuga.jpg" [ref=f4e99] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_racquets_victor_thruster_ryuga.jpg
+                    - img "Badminton racquets victor thruster ryuga.jpg"
+                  - link "Rachetă de badminton şi fluturaş.jpg" [ref=f4e100] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Rachet%C4%83_de_badminton_%C5%9Fi_flutura%C5%9F.jpg
+                    - img "Rachetă de badminton şi fluturaş.jpg"
+                  - link "Tennis Racket and Balls.jpg" [ref=f4e101] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Tennis_Racket_and_Balls.jpg
+                    - img "Tennis Racket and Balls.jpg"
+                  - link "Nanoldsquash2.JPG" [ref=f4e102] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Nanoldsquash2.JPG
+                    - img "Nanoldsquash2.JPG"
+                  - link "Racket (PSF).png" [ref=f4e103] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_(PSF).png
+                    - img "Racket (PSF).png"
+                  - link "Racket on the beach 2.jpg" [ref=f4e104] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_on_the_beach_2.jpg
+                    - img "Racket on the beach 2.jpg"
+                  - link "Racket on the beach.jpg" [ref=f4e105] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_on_the_beach.jpg
+                    - img "Racket on the beach.jpg"
+                  - link "Racket Pinhead icon.svg" [ref=f4e106] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_Pinhead_icon.svg
+                    - img "Racket Pinhead icon.svg"
+                  - link "Yonex Nanoray 10.jpg" [ref=f4e107] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Yonex_Nanoray_10.jpg
+                    - img "Yonex Nanoray 10.jpg"
+                  - link "Racket on the beach 1.jpg" [ref=f4e108] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Racket_on_the_beach_1.jpg
+                    - img "Racket on the beach 1.jpg"
+                  - link "White-booted racket-tail (Ocreatus underwoodii melanantherus) male in flight Paz de las Aves.jpg" [ref=f4e109] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:White-booted_racket-tail_(Ocreatus_underwoodii_melanantherus)_male_in_flight_Paz_de_las_Aves.jpg
+                    - img "White-booted racket-tail (Ocreatus underwoodii melanantherus) male in flight Paz de las Aves.jpg"
+                  - link "EB1911 Racquets - The Racquet.png" [ref=f4e110] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:EB1911_Racquets_-_The_Racquet.png
+                    - img "EB1911 Racquets - The Racquet.png"
+                  - link "Badmin 3.jpg" [ref=f4e111] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badmin_3.jpg
+                    - img "Badmin 3.jpg"
+                  - link "SAKURAKO plays badminton! (26993043064).jpg" [ref=f4e112] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:SAKURAKO_plays_badminton!_(26993043064).jpg
+                    - img "SAKURAKO plays badminton! (26993043064).jpg"
+                  - link "HK SW 上環 Sheung Wan 皇后大道中 Queen's Road Central July 2022 Px3 23.jpg" [ref=f4e113] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:HK_SW_%E4%B8%8A%E7%92%B0_Sheung_Wan_%E7%9A%87%E5%90%8E%E5%A4%A7%E9%81%93%E4%B8%AD_Queen%27s_Road_Central_July_2022_Px3_23.jpg
+                    - img "HK SW 上環 Sheung Wan 皇后大道中 Queen's Road Central July 2022 Px3 23.jpg"
+                  - link "2011 US Masters International - Miami lakes - must be Colin Taylor on this court (15955651447).jpg" [ref=f4e114] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:2011_US_Masters_International_-_Miami_lakes_-_must_be_Colin_Taylor_on_this_court_(15955651447).jpg
+                    - img "2011 US Masters International - Miami lakes - must be Colin Taylor on this court (15955651447).jpg"
+                  - link "Badminton-gef8652e4a 1920.jpg" [ref=f4e115] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton-gef8652e4a_1920.jpg
+                    - img "Badminton-gef8652e4a 1920.jpg"
+                  - link "HK Sheung Wan Queen's Road Central shop sports tools December 2021 SS2 02.jpg" [ref=f4e116] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:HK_Sheung_Wan_Queen%27s_Road_Central_shop_sports_tools_December_2021_SS2_02.jpg
+                    - img "HK Sheung Wan Queen's Road Central shop sports tools December 2021 SS2 02.jpg"
+                  - link "レイヤード久屋大通公園にあるレクレーション設備 05.jpg" [ref=f4e117] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:%E3%83%AC%E3%82%A4%E3%83%A4%E3%83%BC%E3%83%89%E4%B9%85%E5%B1%8B%E5%A4%A7%E9%80%9A%E5%85%AC%E5%9C%92%E3%81%AB%E3%81%82%E3%82%8B%E3%83%AC%E3%82%AF%E3%83%AC%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E8%A8%AD%E5%82%99_05.jpg
+                    - img "レイヤード久屋大通公園にあるレクレーション設備 05.jpg"
+                  - link "Badminton-1428046.jpg" [ref=f4e118] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton-1428046.jpg
+                    - img "Badminton-1428046.jpg"
+                  - link "スポーツショップ『ハセガワ』店内 (5536402584).jpg" [ref=f4e119] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:%E3%82%B9%E3%83%9D%E3%83%BC%E3%83%84%E3%82%B7%E3%83%A7%E3%83%83%E3%83%97%E3%80%8E%E3%83%8F%E3%82%BB%E3%82%AC%E3%83%AF%E3%80%8F%E5%BA%97%E5%86%85_(5536402584).jpg
+                    - img "スポーツショップ『ハセガワ』店内 (5536402584).jpg"
+                  - link "HK CWB 銅鑼灣 Causeway Bay Great George Street The Park Lane shopping mall Decathlon Sports Store February 2021 SS2 03.jpg" [ref=f4e120] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:HK_CWB_%E9%8A%85%E9%91%BC%E7%81%A3_Causeway_Bay_Great_George_Street_The_Park_Lane_shopping_mall_Decathlon_Sports_Store_February_2021_SS2_03.jpg
+                    - img "HK CWB 銅鑼灣 Causeway Bay Great George Street The Park Lane shopping mall Decathlon Sports Store February 2021 SS2 03.jpg"
+                  - link "Lin Dan Exclusive II Collection.jpg" [ref=f4e121] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Lin_Dan_Exclusive_II_Collection.jpg
+                    - img "Lin Dan Exclusive II Collection.jpg"
+                  - link "SAKURAKO plays badminton! (27326093040).jpg" [ref=f4e122] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:SAKURAKO_plays_badminton!_(27326093040).jpg
+                    - img "SAKURAKO plays badminton! (27326093040).jpg"
+                  - link "HK Sheung Wan Queen's Road Central shop sports tools December 2021 SS2 01.jpg" [ref=f4e123] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:HK_Sheung_Wan_Queen%27s_Road_Central_shop_sports_tools_December_2021_SS2_01.jpg
+                    - img "HK Sheung Wan Queen's Road Central shop sports tools December 2021 SS2 01.jpg"
+                  - link "Rackets - panoramio.jpg" [ref=f4e124] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Rackets_-_panoramio.jpg
+                    - img "Rackets - panoramio.jpg"
+                  - link "Badminton Undergrip Flat.jpg" [ref=f4e125] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_Undergrip_Flat.jpg
+                    - img "Badminton Undergrip Flat.jpg"
+                  - link "Badminton 1.jpg" [ref=f4e126] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Badminton_1.jpg
+                    - img "Badminton 1.jpg"
+                  - link "Silly rackets only. (218853699).jpg" [ref=f4e127] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Silly_rackets_only._(218853699).jpg
+                    - img "Silly rackets only. (218853699).jpg"
+                  - link "Recordage badminton.JPG" [ref=f4e128] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Recordage_badminton.JPG
+                    - img "Recordage badminton.JPG"
+                  - link "Li-Ning 李宁有限公司 Recordage de raquette de badminton men at workF.jpg" [ref=f4e129] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Li-Ning_%E6%9D%8E%E5%AE%81%E6%9C%89%E9%99%90%E5%85%AC%E5%8F%B8_Recordage_de_raquette_de_badminton_men_at_workF.jpg
+                    - img "Li-Ning 李宁有限公司 Recordage de raquette de badminton men at workF.jpg"
+                  - link "Tabletennis.jpg" [ref=f4e130] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Tabletennis.jpg
+                    - img "Tabletennis.jpg"
+                  - link "Village badminton.jpg" [ref=f4e131] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Village_badminton.jpg
+                    - img "Village badminton.jpg"
+                - button "Load more" [ref=f4e133]
+                - button "Load more" [ref=f4e136] [cursor=pointer]
+    - contentinfo [ref=f4e138]:
+      - list:
+        - listitem [ref=f4e139]:
+          - link "Privacy policy" [ref=f4e140] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy
+        - listitem [ref=f4e141]:
+          - link "About Wikimedia Commons" [ref=f4e142] [cursor=pointer]:
+            - /url: /wiki/Commons:Welcome
+        - listitem [ref=f4e143]:
+          - link "Disclaimers" [ref=f4e144] [cursor=pointer]:
+            - /url: /wiki/Commons:General_disclaimer
+        - listitem [ref=f4e145]:
+          - link "Legal & safety contacts" [ref=f4e146] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Legal:Wikimedia_Foundation_Legal_and_Safety_Contact_Information
+        - listitem [ref=f4e147]:
+          - link "Code of Conduct" [ref=f4e148] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Universal_Code_of_Conduct
+        - listitem [ref=f4e149]:
+          - link "Developers" [ref=f4e150] [cursor=pointer]:
+            - /url: https://developer.wikimedia.org
+        - listitem [ref=f4e151]:
+          - link "Statistics" [ref=f4e152] [cursor=pointer]:
+            - /url: https://stats.wikimedia.org/#/commons.wikimedia.org
+        - listitem [ref=f4e153]:
+          - link "Cookie statement" [ref=f4e154] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Cookie_statement
+        - listitem [ref=f4e155]:
+          - link "Mobile view" [ref=f4e156] [cursor=pointer]:
+            - /url: //commons.wikimedia.org/w/index.php?title=Special:MediaSearch&search=badminton+racket&type=image&mobileaction=toggle_view_mobile
+      - list [ref=f4e157]:
+        - listitem [ref=f4e158]:
+          - link [ref=f4e159] [cursor=pointer]:
+            - /url: https://www.wikimedia.org/
+            - img "Wikimedia Foundation" [ref=f4e161]
+        - listitem [ref=f4e162]:
+          - link [ref=f4e163] [cursor=pointer]:
+            - /url: https://www.mediawiki.org/
+            - img "Powered by MediaWiki" [ref=f4e165]
+  - generic [ref=f4e166]:
+    - list

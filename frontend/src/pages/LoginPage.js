@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { useToast } from '../components/Toast';
+
 
 const LoginPage = () => {
+  const toast = useToast();
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   const [isForgotMode, setIsForgotMode] = useState(false);
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -26,10 +29,12 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       const { data } = await axios.post(`${API_URL}/api/users/login`, loginForm);
-      localStorage.setItem('user', JSON.stringify(data));
+      const { walletBalance, pendingBalance, walletPin, ...safeLocalUser } = data || {};
+      localStorage.setItem('user', JSON.stringify(safeLocalUser));
+      window.dispatchEvent(new Event('userUpdated'));
       navigate('/');
     } catch (error) {
-      alert("❌ " + (error.response?.data?.message || "Đăng nhập thất bại!"));
+      toast.error('Lỗi', "❌ " + (error.response?.data?.message || "Đăng nhập thất bại!"));
     }
   };
 
@@ -38,37 +43,21 @@ const LoginPage = () => {
   
   const handleSendOtp = async (e) => {
     e.preventDefault();
-    if (!forgotEmail) return alert('Vui lòng nhập Email!');
+    if (!forgotEmail) return toast.warning('Chú ý', 'Vui lòng nhập Email!');
     setIsLoading(true);
     
     try {
-        const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-        
-        
-        await axios.post(`${API_URL}/api/users/send-otp`, { 
-            email: forgotEmail, 
-            generatedOtp: generatedOtp 
+        // M4: Xóa EmailJS ở frontend, chỉ gọi API backend sinh & gửi OTP bảo mật
+        const { data } = await axios.post(`${API_URL}/api/users/send-otp`, { 
+            email: forgotEmail.trim()
         });
-
         
-        const emailParams = {
-           service_id: 'service_4q86uoa',
-           template_id: 'template_v64f5jg',
-           user_id: 'FxVTIoEF4YTi7S87P', 
-           template_params: {
-                   email: forgotEmail,
-                   otp: generatedOtp
-           }
-        };
-
-        await axios.post('https://api.emailjs.com/api/v1.0/email/send', emailParams);
-        
-        alert("📩 Hệ thống HaiHand đã gửi mã xác nhận. Bác check hòm thư nhé!");
+        toast.info('Thông báo', "📩 " + (data?.message || "Nếu email tồn tại trong hệ thống, mã xác thực OTP đã được gửi đến hộp thư của bạn!"));
         setIsOtpSent(true); 
     } catch (error) {
         console.error("LỖI GỬI OTP:", error);
-        const detail = error.response?.data || error.message;
-        alert("❌ Lỗi hệ thống: " + (typeof detail === 'string' ? detail : "Vui lòng thử lại sau!"));
+        const detail = error.response?.data?.message || error.message;
+        toast.error('Lỗi', "❌ " + (typeof detail === 'string' ? detail : "Vui lòng thử lại sau!"));
     }
     setIsLoading(false);
   };
@@ -78,21 +67,21 @@ const LoginPage = () => {
   
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    if (otpForm.newPassword.length < 6) return alert('❌ Mật khẩu mới phải có ít nhất 6 ký tự!');
+    if (otpForm.newPassword.length < 6) return toast.error('Lỗi', '❌ Mật khẩu mới phải có ít nhất 6 ký tự!');
     try {
       const { data } = await axios.post(`${API_URL}/api/users/reset-password-otp`, {
         email: forgotEmail,
         otp: otpForm.otp,
         newPassword: otpForm.newPassword
       });
-      alert("✅ " + data.message);
+      toast.success('Thành công', "✅ " + data.message);
       
       setIsForgotMode(false);
       setIsOtpSent(false);
       setForgotEmail('');
       setOtpForm({ otp: '', newPassword: '' });
     } catch (error) { 
-        alert("❌ " + (error.response?.data?.message || "Mã xác thực không chính xác!")); 
+        toast.error('Lỗi', "❌ " + (error.response?.data?.message || "Mã xác thực không chính xác!")); 
     }
   };
 
@@ -101,14 +90,15 @@ const LoginPage = () => {
       <div className="card shadow-lg border-0 rounded-4 overflow-hidden" style={{ width: '420px' }}>
         
         <div className="bg-warning p-4 text-center">
-            <h2 className="fw-bold text-white mb-0" 
+            <div 
                 onClick={() => navigate('/')} 
-                style={{cursor: 'pointer', letterSpacing: '2px', transition: '0.3s'}}
-                onMouseOver={(e) => e.target.style.opacity = '0.8'}
-                onMouseOut={(e) => e.target.style.opacity = '1'}
+                style={{cursor: 'pointer', transition: '0.3s'}}
+                onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
+                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                className="d-flex justify-content-center"
             >
-                HAIHAND
-            </h2>
+                <img src="/logo.png" alt="HaiHand" style={{height: '32px', objectFit: 'contain'}} />
+            </div>
             <p className="text-white-50 small m-0 mt-1 fw-bold" style={{letterSpacing: '1px'}}>
                 {isForgotMode ? 'XÁC THỰC BẢO MẬT' : 'TRUY CẬP HỆ THỐNG'}
             </p>

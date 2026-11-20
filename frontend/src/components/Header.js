@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'; 
 import axios from 'axios';
-import { io } from 'socket.io-client';
+import { useSocket } from '../context/SocketContext';
+import { useToast } from './Toast';
 import './Header.css'; 
+import moment from 'moment';
+import 'moment/locale/vi';
+moment.locale('vi');
 
 const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, location: propLocation, setLocation: propSetLocation }) => {
   const navigate = useNavigate();
+  const toast = useToast();
   const [searchParams] = useSearchParams(); 
   
   const urlSearch = searchParams.get('search') || '';
@@ -40,8 +45,8 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
     return stored && stored !== "undefined" ? JSON.parse(stored) : null;
   });
 
-  const socket = useRef();
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const { socket } = useSocket();
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   
   useEffect(() => {
@@ -68,9 +73,9 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
 
           axios.get(`${API_URL}/api/users/cart/${user._id}`).then(({ data }) => setCartCount(data.length));
           axios.get(`${API_URL}/api/messages/unread-count/${user._id}`).then(({ data }) => setUnreadCount(data.count));
-          axios.get(`${API_URL}/api/users/${user._id}/notifications`).then(({ data }) => {
-              setNotifications(data.notifications);
-              setNotifCount(data.unreadCount);
+          axios.get(`${API_URL}/api/notifications`, { headers: { 'userid': user._id } }).then(({ data }) => {
+              setNotifications(data.notifications || []);
+              setNotifCount(data.unreadCount || 0);
           });
         } catch (err) { console.error(err); }
       };
@@ -78,16 +83,29 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
       fetchData();
       const notifInterval = setInterval(fetchData, 10000);
 
-      socket.current = io(API_URL, { transports: ["websocket", "polling"], reconnection: true });
-      socket.current.emit('addUser', user._id);
-      socket.current.on('getMessage', () => setUnreadCount(prev => prev + 1));
+      if (socket) {
+        const handleGetMessage = () => setUnreadCount(prev => prev + 1);
+        const handleNewNotif = (newNotif) => {
+          setNotifications(prev => [newNotif, ...prev]);
+          setNotifCount(prev => prev + 1);
+          toast.info(`🔔 ${newNotif.title}`);
+        };
+
+        socket.on('getMessage', handleGetMessage);
+        socket.on('new_notification', handleNewNotif);
+
+        return () => {
+          clearInterval(notifInterval);
+          socket.off('getMessage', handleGetMessage);
+          socket.off('new_notification', handleNewNotif);
+        };
+      }
 
       return () => {
         clearInterval(notifInterval);
-        socket.current?.disconnect();
       };
     }
-  }, [user?._id]);
+  }, [user?._id, socket]);
 
   useEffect(() => {
     if (tempCity) {
@@ -116,10 +134,22 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
     executeSearch(finalLoc);
   };
 
-  const handleNotificationClick = async (link) => {
+  const handleNotificationClick = async (id, link) => {
       setShowNotifMenu(false);
-      try { await axios.post(`${API_URL}/api/users/${user._id}/notifications/read`); setNotifCount(0); } catch(e){}
+      try { 
+        await axios.put(`${API_URL}/api/notifications/${id}/read`, {}, { headers: { 'userid': user._id } }); 
+        setNotifCount(prev => Math.max(0, prev - 1));
+        setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      } catch(e){}
       if(link) navigate(link);
+  };
+
+  const handleReadAll = async () => {
+      try { 
+        await axios.put(`${API_URL}/api/notifications/read-all`, {}, { headers: { 'userid': user._id } }); 
+        setNotifCount(0);
+        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      } catch(e){}
   };
 
   return (
@@ -143,7 +173,9 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
         <div className="d-flex justify-content-between align-items-center">
           
           <div className="d-flex align-items-center gap-4">
-            <h2 className="fw-bold m-0 text-white hover-scale" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>HaiHand</h2>
+            <div style={{ cursor: 'pointer' }} onClick={() => navigate('/')} className="hover-scale">
+                <img src="/logo.png" alt="HaiHand" style={{height: '32px', objectFit: 'contain'}} />
+            </div>
             <div className="position-relative" onMouseEnter={() => setShowCategoryMenu(true)} onMouseLeave={() => setShowCategoryMenu(false)}>
                 <div className="d-flex align-items-center gap-2 text-white px-3 py-2 rounded-3" style={{cursor: 'pointer'}}>
                     <span className="fs-4 fw-bold">≡</span><span className="fw-bold d-none d-md-block">Danh mục</span>
@@ -189,40 +221,49 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
           </div>
 
           <div className="d-flex align-items-center gap-3">
-            
-            <Link to="/create-post" className="btn btn-outline-light fw-bold rounded-pill d-flex align-items-center gap-1 shadow-sm px-3 border-2 hover-text-dark" style={{transition: '0.3s'}}>
-              <span className="fs-5 lh-1">+</span>
-              <span className="d-none d-xl-inline">Đăng tin</span>
-            </Link>
-
             <div className="position-relative d-flex align-items-center justify-content-center bg-white rounded-circle shadow-sm hover-scale" style={{ width: '40px', height: '40px', cursor: 'pointer', fontSize: '18px' }} onClick={() => navigate('/cart')}>
               🛒 {cartCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '10px'}}>{cartCount}</span>}
             </div>
 
             {user ? (
               <div className="d-flex align-items-center gap-3">
+                  <div onClick={() => navigate('/haipay/dashboard')} className="d-none d-sm-flex align-items-center gap-1 bg-white text-dark rounded-pill px-3 py-1 shadow-sm border" style={{cursor: 'pointer'}}>
+                      <span style={{color: '#EA580C', fontSize: '16px'}}>💳</span>
+                      <span className="fw-bold" style={{fontSize: '13px'}}>Ví HaiPay</span>
+                  </div>
+
                   <div className="text-white position-relative hover-scale d-flex align-items-center justify-content-center" style={{cursor: 'pointer', fontSize: '20px', width: '40px', height: '40px'}} onClick={() => navigate('/chat')}>
                       💬 {unreadCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '10px'}}>{unreadCount}</span>}
                   </div>
 
                   <div className="position-relative" onMouseEnter={() => setShowNotifMenu(true)} onMouseLeave={() => setShowNotifMenu(false)}>
                       <div className="text-white position-relative hover-scale d-flex align-items-center justify-content-center" style={{cursor: 'pointer', fontSize: '20px', width: '40px', height: '40px'}}>
-                          🔔 {notifCount > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{fontSize: '10px'}}>{notifCount}</span>}
+                          <i className="far fa-bell text-2xl"></i> {notifCount > 0 && <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white shadow-sm ring-2 ring-orange-500">{notifCount > 99 ? '99+' : notifCount}</span>}
                       </div>
                       {showNotifMenu && (
-                          <div className="position-absolute bg-white shadow-lg rounded-4 overflow-hidden" style={{top: '100%', right: '-50px', width: '350px', zIndex: 1050, border: '1px solid #eaeaea'}}>
-                              <div className="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
-                                  <h6 className="fw-bold mb-0 text-dark">Thông báo</h6>
-                                  <button onClick={() => handleNotificationClick()} className="btn btn-sm btn-link text-decoration-none p-0" style={{fontSize: '12px'}}>Đã đọc</button>
+                          <div className="absolute right-0 mt-2 w-80 bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/50 overflow-hidden z-[1050] animate-fade-in-up">
+                              <div className="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                  <h6 className="font-extrabold text-slate-800 m-0">Thông báo</h6>
+                                  {notifCount > 0 && (
+                                      <button onClick={handleReadAll} className="text-xs font-bold text-orange-500 hover:text-orange-600 transition-colors border-none bg-transparent p-0 m-0 cursor-pointer">Đánh dấu đã đọc tất cả</button>
+                                  )}
                               </div>
-                              <div style={{maxHeight: '400px', overflowY: 'auto'}}>
-                                  {notifications.length === 0 && <div className="p-4 text-center text-muted small">Chưa có thông báo.</div>}
+                              <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                                  {notifications.length === 0 && (
+                                      <div className="p-8 text-center text-slate-400">
+                                          <i className="far fa-bell-slash text-4xl mb-3 opacity-50"></i>
+                                          <p className="text-sm font-medium">Bạn chưa có thông báo nào</p>
+                                      </div>
+                                  )}
                                   {notifications.map((n, i) => (
-                                      <div key={i} onClick={() => handleNotificationClick(n.link)} className={`p-3 border-bottom d-flex gap-3 ${!n.isRead ? 'bg-primary-subtle' : ''}`} style={{cursor: 'pointer'}}>
-                                          <div className="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style={{width: '40px', height: '40px', flexShrink: 0}}>{n.title.includes('đơn')?'📦':'💰'}</div>
-                                          <div>
-                                              <h6 className="fw-bold text-dark mb-1" style={{fontSize: '13px'}}>{n.title}</h6>
-                                              <p className="text-muted mb-1" style={{fontSize: '12px'}}>{n.message}</p>
+                                      <div key={i} onClick={() => handleNotificationClick(n._id, n.link)} className={`p-4 border-b border-slate-50 flex gap-3 hover:bg-slate-50 transition-colors cursor-pointer ${!n.isRead ? 'bg-blue-50/60' : 'bg-transparent'}`}>
+                                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 shadow-sm ${!n.isRead ? 'bg-orange-100 text-orange-600' : 'bg-slate-100 text-slate-500'}`}>
+                                              <i className={`fas ${n.type === 'ORDER' ? 'fa-box' : n.type === 'MESSAGE' ? 'fa-comment' : n.type === 'PAYMENT' ? 'fa-wallet' : 'fa-bell'}`}></i>
+                                          </div>
+                                          <div className="flex-1 min-w-0">
+                                              <p className={`text-sm mb-1 ${!n.isRead ? 'font-bold text-slate-800' : 'font-medium text-slate-600'}`}>{n.title}</p>
+                                              <p className="text-xs text-slate-500 mb-1 line-clamp-2">{n.message}</p>
+                                              <p className="text-[10px] font-medium text-slate-400">{moment(n.createdAt).fromNow()}</p>
                                           </div>
                                       </div>
                                   ))}
@@ -234,7 +275,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
                   <div className="position-relative" onMouseEnter={() => setShowProfileMenu(true)} onMouseLeave={() => setShowProfileMenu(false)}>
                       <div className="d-flex align-items-center gap-2 bg-warning-subtle p-1 pe-3 rounded-pill" style={{cursor:'pointer'}}>
                           <div className="bg-white text-warning rounded-circle fw-bold d-flex justify-content-center align-items-center shadow-sm" style={{width:'35px', height:'35px', overflow: 'hidden'}}>
-                              {user.avatar ? <img src={user.avatar} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="avt" /> : user.name.charAt(0).toUpperCase()}
+                              {user.avatar ? <img src={user.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="avt" /> : user.name.charAt(0).toUpperCase()}
                           </div>
                           <span className="fw-bold text-white d-none d-md-block small">{user.name} ▾</span>
                       </div>
@@ -242,11 +283,11 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
                           <div className="position-absolute bg-white shadow-lg rounded-4 p-3" style={{top: '100%', right: '0', width: '280px', border: '1px solid #eaeaea', zIndex: 1050}}>
                               <div className="d-flex align-items-center gap-3 mb-3 border-bottom pb-3 text-dark">
                                  <div className="bg-warning text-white rounded-circle fw-bold d-flex justify-content-center align-items-center" style={{width:'50px', height:'50px', fontSize: '20px', overflow: 'hidden'}}>
-                                    {user.avatar ? <img src={user.avatar} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="avt" /> : user.name.charAt(0).toUpperCase()}
+                                    {user.avatar ? <img src={user.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="avt" /> : user.name.charAt(0).toUpperCase()}
                                  </div>
                                  <div><h6 className="fw-bold mb-0">{user.name}</h6><small className="text-muted">{user.email}</small></div>
                               </div>
-                              <div onClick={() => navigate('/haipay')} className="mb-2 d-flex justify-content-between align-items-center px-3 py-2 rounded-3 shadow-sm" style={{cursor: 'pointer', backgroundColor: '#e7f1ff', border: '1px solid #cfe2ff'}}>
+                              <div onClick={() => navigate('/haipay/dashboard')} className="mb-2 d-flex justify-content-between align-items-center px-3 py-2 rounded-3 shadow-sm" style={{cursor: 'pointer', backgroundColor: '#e7f1ff', border: '1px solid #cfe2ff'}}>
                                   <span className="fw-bold text-primary" style={{fontSize: '14px'}}>💳 Ví HàiPay</span>
                                   <span className="badge bg-primary">{(user.walletBalance || 0).toLocaleString('vi-VN')} đ</span>
                               </div>

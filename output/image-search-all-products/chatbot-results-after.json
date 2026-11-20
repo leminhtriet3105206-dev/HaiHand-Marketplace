@@ -1,0 +1,132 @@
+[
+  {
+    "question": "Tìm bút bi Thiên Long",
+    "expectedId": "69d86fcaa937bd538ab31df7",
+    "status": "done",
+    "reply": "Mình tìm thấy bút bi thiên long, giá 200.000 VNĐ tại Huyện Đồng Hỷ, Tỉnh Thái Nguyên. Bạn xem thẻ sản phẩm bên dưới để kiểm tra chi tiết nhé.",
+    "products": [
+      {
+        "id": "69d86fcaa937bd538ab31df7",
+        "title": "bút bi thiên long"
+      }
+    ],
+    "targetHit": true,
+    "elapsedSeconds": 13
+  },
+  {
+    "question": "Có máy lạnh Daikin không?",
+    "expectedId": "69dcb7d0e8f5f531d474e844",
+    "status": "done",
+    "reply": "Có máy lạnh Daikin đang bán, giá 3.600.000 VNĐ, tình trạng “hàng mới pass lại”.  \nĐịa điểm ở Huyện Cao Phong, Tỉnh Hoà Bình.  \nHãy kiểm tra hàng trước khi nhận và liên hệ CSKH nếu có thắc mắc: 1900-6868 hoặc cskh@haihand.vn.",
+    "products": [
+      {
+        "id": "69dcb7d0e8f5f531d474e844",
+        "title": "máy lạnh daikin"
+      }
+    ],
+    "targetHit": true,
+    "elapsedSeconds": 18
+  },
+  {
+    "question": "Tìm bộ định tuyến TP-Link Archer C50",
+    "expectedId": "69dccbdd295b6e59ef3b0637",
+    "status": "done",
+    "reply": "Sản phẩm bạn tìm là Bộ định tuyến WiFi TP-Link Archer C50, giá 200.000 VNĐ, tình trạng không rõ, tại Quận 6, TP.HCM.  \nChỉ có 1 sản phẩm phù hợp với tiêu chí tìm kiếm.  \nBạn muốn mua hay cần thêm thông tin?",
+    "products": [
+      {
+        "id": "69dccbdd295b6e59ef3b0637",
+        "title": "Bộ định tuyến WiFi TP-Link Archer C50"
+      }
+    ],
+    "targetHit": true,
+    "elapsedSeconds": 20
+  },
+  {
+    "question": "Tìm vợt Yonex Astrox 88D Pro",
+    "expectedId": "6af17dbb2e06332d9bb40e89",
+    "status": "done",
+    "reply": "Sản phẩm bạn tìm là Vợt cầu lông Yonex Astrox 88D Pro chính hãng, đan sẵn cước BG65, mới 99%, giá 1.850.000 VNĐ, tại Hà Nội.  \nThanh toán: COD, HaiPay, VNPAY. Kiểm tra hàng trước khi nhận.  \nKhiếu nại trong 24h sau khi nhận – chatbot không tự cam kết hoàn tiền.  \nCần hỗ trợ thêm? Gọi CSKH: 1900-6868 hoặc email cskh@haihand.vn.",
+    "products": [
+      {
+        "id": "6af17dbb2e06332d9bb40e89",
+        "title": "Vợt cầu lông Yonex Astrox 88D Pro chính hãng đan sẵn cước BG65"
+      }
+    ],
+    "targetHit": true,
+    "elapsedSeconds": 30
+  },
+  {
+    "question": "Có Samsung Galaxy S23 Ultra 256GB không?",
+    "expectedId": "6af17dbf2e06332d9bb40e9d",
+    "status": "done",
+    "reply": "Có sản phẩm Samsung Galaxy S23 Ultra 256GB Đen Phantom chính hãng SSVN fullbox, tình trạng mới 99%, giá 15.900.000 VNĐ tại TP.HCM.  \nMua hàng COD, ví HaiPay, VNPAY. Kiểm tra hàng trước khi nhận.  \nKhiếu nại trong 24h sau khi nhận.  \nCần hỗ trợ thêm? Gọi CSKH: 1900-6868 hoặc email cskh@haihand.vn.",
+    "products": [
+      {
+        "id": "6af17dbf2e06332d9bb40e9d",
+        "title": "Samsung Galaxy S23 Ultra 256GB Đen Phantom chính hãng SSVN fullbox"
+      }
+    ],
+    "targetHit": true,
+    "elapsedSeconds": 25
+  },
+  {
+    "question": "Tìm màn hình Dell UltraSharp U2422H",
+    "expectedId": "6af17dc12e06332d9bb40eaa",
+    "status": "done",
+    "reply": "Sản phẩm bạn tìm là màn hình Dell UltraSharp U2422H 24 inch IPS tràn viền, màu chuẩn đồ họa, giá 4.300.000 VNĐ, tình trạng mới 99%, tại TP.HCM.  \nChỉ có 1 sản phẩm khớp tiêu chí này.  \nBạn muốn mua hoặc cần thêm thông tin?",
+    "products": [
+      {
+        "id": "6af17dc12e06332d9bb40eaa",
+        "title": "Màn hình máy tính Dell UltraSharp U2422H 24 inch IPS tràn viền màu chuẩn đồ họa"
+      }
+    ],
+    "targetHit": true,
+    "elapsedSeconds": 15
+  },
+  {
+    "question": "Tìm máy hút bụi Electrolux màu đỏ",
+    "expectedId": "69dcc997295b6e59ef3b0272",
+    "status": "done",
+    "reply": "Chào bạn, sản phẩm máy hút bụi Electrolux màu đỏ giá 300.000 VNĐ đang có sẵn tại Quận 5, TP.HCM. Tình trạng máy không rõ, chưa được sửa chữa.  \nBạn cần kiểm tra hàng trước khi nhận – hỗ trợ thanh toán COD, HaiPay, VNPAY.  \nNếu có vấn đề trong 24 giờ sau khi nhận, vui lòng liên hệ CSKH: 1900-6868 hoặc cskh@haihand.vn.",
+    "products": [
+      {
+        "id": "69dcc997295b6e59ef3b0272",
+        "title": "Máy hút bụi Electrolux Đỏ"
+      }
+    ],
+    "targetHit": true,
+    "elapsedSeconds": 14
+  },
+  {
+    "question": "Tôi muốn mua sofa cũ màu xám lông chuột",
+    "expectedId": "69dcb5e5e8f5f531d474e535",
+    "status": "done",
+    "reply": "Sofa cũ màu xám lông chuột giá 25.000.000 VNĐ, mới dùng 1 tháng, do không hợp nhu cầu nên đổi.  \nHàng tại Thành phố Cà Mau, độ tương đồng 0.889.  \nThanh toán: COD, HaiPay, VNPAY.  \nKiểm tra hàng trước khi nhận, khiếu nại trong 24h.  \nLiên hệ CSKH: 1900-6868 hoặc cskh@haihand.vn nếu cần hỗ trợ thêm.",
+    "products": [
+      {
+        "id": "69dcb5e5e8f5f531d474e535",
+        "title": "sofa cũ màu xám lông chuột"
+      }
+    ],
+    "targetHit": true,
+    "elapsedSeconds": 14
+  },
+  {
+    "question": "HaiHand có hỗ trợ thanh toán COD không?",
+    "expectedId": null,
+    "status": "done",
+    "reply": "Có, HaiHand hỗ trợ thanh toán COD.  \nBạn vui lòng kiểm tra hàng trước khi nhận và liên hệ CSKH nếu có vấn đề.  \nChúng tôi hỗ trợ 24/7 qua số: 1900-6868 hoặc email: cskh@haihand.vn.",
+    "products": [],
+    "targetHit": null,
+    "elapsedSeconds": 8
+  },
+  {
+    "question": "Tôi có thể khiếu nại trong bao lâu sau khi nhận hàng?",
+    "expectedId": null,
+    "status": "done",
+    "reply": "Bạn có thể khiếu nại trong 24 giờ sau khi nhận hàng.  \nVui lòng liên hệ CSKH qua số 1900-6868 hoặc email cskh@haihand.vn nếu cần hỗ trợ thêm.",
+    "products": [],
+    "targetHit": null,
+    "elapsedSeconds": 7
+  }
+]

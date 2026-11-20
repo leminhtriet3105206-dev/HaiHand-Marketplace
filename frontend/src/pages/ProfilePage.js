@@ -1,141 +1,125 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import Header from '../components/Header';
+import axiosClient, { persistUser } from '../api/axiosClient';
+import { AppHeader } from '../components/AppHeader';
+import { AppFooter } from '../components/AppFooter';
+import { useToast } from '../components/Toast';
+import OrderDetailModal from '../components/OrderDetailModal';
 
-const OrderDetailModal = ({ order, onClose }) => {
-  if (!order) return null;
-  return (
-    <div className="fixed-top w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.6)', zIndex: 2000, backdropFilter: 'blur(4px)' }}>
-      <div className="bg-white rounded-4 shadow-lg w-100 mx-3 overflow-hidden animate__animated animate__zoomIn" style={{ maxWidth: '600px' }}>
-        <div className="p-4 border-bottom bg-light d-flex justify-content-between align-items-center">
-          <div><h5 className="fw-bold mb-0 text-dark">📦 Chi tiết đơn hàng</h5><small className="text-muted">Mã ĐH: #{order._id.slice(-6).toUpperCase()}</small></div>
-          <button onClick={onClose} className="btn-close shadow-none"></button>
-        </div>
-        <div className="p-4" style={{ maxHeight: '60vh', overflowY: 'auto' }}>
-          <p className="fw-bold text-muted small text-uppercase mb-3 tracking-wider">Sản phẩm trong đơn</p>
-          {order.items.map((item, idx) => (
-            <div key={idx} className="d-flex align-items-center p-3 mb-3 rounded-4 border bg-white shadow-sm transition-all hover-scale">
-              <img src={(item?.images && item.images.length > 0) ? item.images[0] : (item?.image || 'https://via.placeholder.com/80')} style={{ width: '70px', height: '70px', objectFit: 'cover', borderRadius: '12px' }} alt="sp" className="border" />
-              <div className="ms-3 flex-grow-1"><h6 className="fw-bold mb-1 text-dark text-truncate" style={{maxWidth: '250px'}}>{item?.title || 'Sản phẩm đã bị xóa'}</h6><p className="text-danger fw-black mb-0">{Number(item?.price || 0).toLocaleString('vi-VN')} đ</p></div>
-            </div>
-          ))}
-          <div className="mt-4 pt-4 border-top">
-            <div className="row">
-              <div className="col-6"><p className="fw-bold text-muted small text-uppercase mb-2 tracking-wider">Khách hàng</p><p className="fw-bold mb-0 text-dark">{order.buyer?.name || 'Khách hàng'}</p><small className="text-muted">📞 {order.phone}</small></div>
-              <div className="col-6 border-start"><p className="fw-bold text-muted small text-uppercase mb-2 tracking-wider">Địa chỉ giao hàng</p><p className="small text-dark mb-0">{order.address}</p></div>
-            </div>
-          </div>
-        </div>
-        <div className="p-4 bg-success-subtle border-top d-flex justify-content-between align-items-center">
-          <span className="fw-bold text-success uppercase small">Tổng thanh toán</span><h4 className="fw-black text-danger mb-0">{Number(order.totalPrice).toLocaleString('vi-VN')} đ</h4>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const ReviewModal = ({ order, onClose, onSuccess }) => {
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState('');
-
-  if (!order) return null;
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (comment.trim() === '') return alert("Vui lòng nhập nhận xét của bạn!");
-    try {
-      await axios.post('https://haihand-marketplace.onrender.com/api/reviews', { seller: order.seller, buyer: order.buyer?._id || order.buyer, rating, comment, orderId: order._id });
-      alert("✅ Gửi đánh giá thành công! Cảm ơn bạn.");
-      onSuccess();
-    } catch (error) { alert("❌ " + (error.response?.data?.message || "Lỗi gửi đánh giá")); }
-  };
-
-  return (
-    <div className="fixed-top w-100 h-100 d-flex align-items-center justify-content-center" style={{ background: 'rgba(0,0,0,0.6)', zIndex: 2000, backdropFilter: 'blur(4px)' }}>
-      <div className="bg-white rounded-4 shadow-lg w-100 mx-3 overflow-hidden animate__animated animate__zoomIn p-4" style={{ maxWidth: '500px' }}>
-        <div className="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-          <h5 className="fw-bold mb-0 text-dark">⭐ Đánh giá người bán</h5>
-          <button onClick={onClose} className="btn-close shadow-none"></button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="text-center mb-4">
-            <p className="fw-bold text-muted small mb-2">Chất lượng sản phẩm và thái độ người bán thế nào?</p>
-            <div className="d-flex justify-content-center gap-2 fs-2" style={{cursor: 'pointer'}}>
-              {[1, 2, 3, 4, 5].map((star) => (<span key={star} onClick={() => setRating(star)} className={star <= rating ? "text-warning" : "text-secondary opacity-25"}>★</span>))}
-            </div>
-            <div className="text-warning fw-bold mt-1">{rating} Sao</div>
-          </div>
-          <div className="mb-4">
-            <label className="fw-bold small text-muted mb-2">Nhận xét chi tiết</label>
-            <textarea className="form-control bg-light border-0" rows="4" placeholder="Hãy chia sẻ trải nghiệm của bạn về người bán và sản phẩm này nhé..." value={comment} onChange={(e) => setComment(e.target.value)} required></textarea>
-          </div>
-          <button type="submit" className="btn btn-warning w-100 fw-bold py-3 rounded-pill shadow-sm">GỬI ĐÁNH GIÁ</button>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-const ProfilePage = () => {
+export default function ProfilePage() {
+  const toast = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const initialTab = queryParams.get('tab') || 'orders_buy';
+
   const [user, setUser] = useState(null);
-  const [myPosts, setMyPosts] = useState([]);
-  const [myOrders, setMyOrders] = useState([]); 
-  const [mySales, setMySales] = useState([]);   
-  const [myReviews, setMyReviews] = useState([]); 
-  const [avgRating, setAvgRating] = useState(0);  
+  const [myOrders, setMyOrders] = useState([]);
+  const [myReviews, setMyReviews] = useState([]);
+  const [avgRating, setAvgRating] = useState(0);
 
-  const [activeTab, setActiveTab] = useState('info'); 
-  const [subTabOrder, setSubTabOrder] = useState('buy'); 
-  
+  const [activeTab, setActiveTab] = useState(initialTab);
+  const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [reviewOrder, setReviewOrder] = useState(null);
 
-  const [editForm, setEditForm] = useState({ name: '', phone: '', address: '', cccd: '' });
+  // Edit profile form
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    phone: '',
+    address: '',
+    cccd: '',
+    bio: '',
+    username: '',
+    taxId: '',
+    gender: '',
+    dob: '',
+    avatarFrame: 'none',
+    profileTitle: 'Người Mới'
+  });
   const [selectedImage, setSelectedImage] = useState(null);
-  const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const fileInputRef = useRef(null);
+
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+
+  useEffect(() => {
+    const tabFromUrl = queryParams.get('tab');
+    if (tabFromUrl) {
+      if (tabFromUrl === 'seller_register') {
+        navigate('/register-seller', { replace: true });
+        return;
+      }
+      if (tabFromUrl === 'posts' || tabFromUrl === 'orders_sell') {
+        setActiveTab('orders_buy');
+      } else {
+        setActiveTab(tabFromUrl);
+      }
+    }
+  }, [location.search, navigate]);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const parsedUser = storedUser && storedUser !== "undefined" ? JSON.parse(storedUser) : null;
-    if (parsedUser) {
-      setUser(parsedUser);
-      setEditForm({ name: parsedUser.name || '', phone: parsedUser.phone || '', address: parsedUser.address || '', cccd: parsedUser.cccd || '' });
-      fetchMyPosts(parsedUser._id);
-      fetchMyOrders(parsedUser._id);
-      fetchMySales(parsedUser._id); 
-      fetchMyReviews(parsedUser._id); 
-    } else { navigate('/login'); }
-  }, [navigate]);
+    
+    if (!parsedUser) {
+        navigate('/login');
+        return;
+    }
+    const currentUser = parsedUser;
 
-  const fetchMyPosts = async (userId) => { try { const { data } = await axios.get(`${API_URL}/api/posts/user/${userId}`); setMyPosts(data); } catch (e) {} };
-  const fetchMyOrders = async (userId) => { try { const { data } = await axios.get(`${API_URL}/api/users/${userId}/orders`); setMyOrders(data); } catch (e) {} };
-  const fetchMySales = async (userId) => { try { const { data } = await axios.get(`${API_URL}/api/orders/seller/${userId}`); setMySales(data); } catch (e) {} };
-  
-  
-  const fetchMyReviews = async (userId) => {
-      try { 
-          const { data } = await axios.get(`${API_URL}/api/users/public-profile/${userId}`); 
-          setMyReviews(data.reviews); 
-          setAvgRating(data.avgRating);
-      } catch (error) {}
-  };
+    setUser(currentUser);
+    setEditForm({ 
+        name: currentUser.name || '', 
+        phone: currentUser.phone || '', 
+        address: currentUser.address || '', 
+        cccd: currentUser.cccd || '',
+        bio: currentUser.bio || '',
+        username: currentUser.username || '',
+        taxId: currentUser.taxId || '',
+        gender: currentUser.gender || '',
+        dob: currentUser.dob || '',
+        avatarFrame: currentUser.avatarFrame || 'none',
+        profileTitle: currentUser.profileTitle || 'Người Mới'
+    });
 
-  const handleConfirmOrder = async (orderId) => {
-      if(!window.confirm("Xác nhận chốt đơn và tiến hành giao hàng cho khách?")) return;
-      try { await axios.put(`${API_URL}/api/orders/${orderId}/confirm`); alert("✅ Đã xác nhận đơn hàng thành công!"); fetchMySales(user._id); } catch (e) { alert("❌ Lỗi!"); }
-  };
+    const fetchData = async () => {
+        setLoading(true);
+        try {
+            // Lấy JWT token từ user đang đăng nhập hoặc localStorage
+            const token = currentUser?.token || localStorage.getItem('token') || '';
+            const authConfig = {
+                headers: {
+                    ...(token ? { Authorization: 'Bearer ' + token } : {}),
+                    userid: currentUser._id
+                },
+                withCredentials: true
+            };
 
-  const handleCancelOrder = async (orderId, isSeller = false) => {
-      if(!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này không?")) return;
-      try { await axios.put(`${API_URL}/api/orders/${orderId}/cancel`); alert("✅ Đã hủy đơn hàng!"); if (isSeller) fetchMySales(user._id); else fetchMyOrders(user._id); } catch (e) { alert("❌ Lỗi!"); }
-  };
+            const [ordersRes, profileRes] = await Promise.all([
+                axios
+                    .get(`${API_URL}/api/users/${currentUser._id}/orders`, authConfig)
+                    .catch(() => ({ data: [] })),
+                axios
+                    .get(`${API_URL}/api/users/public-profile/${currentUser._id}`, authConfig)
+                    .catch(() => ({ data: { reviews: [], avgRating: 5 } }))
+            ]);
 
-  const handleReceiveOrder = async (orderId) => {
-      if(!window.confirm("Xác nhận bạn đã nhận được hàng?")) return;
-      try { await axios.put(`${API_URL}/api/orders/${orderId}/receive`); alert("✅ Đã xác nhận nhận hàng!"); fetchMyOrders(user._id); } catch (e) { alert("❌ Lỗi!"); }
+            setMyOrders(ordersRes.data || []);
+            setMyReviews(profileRes.data.reviews || []);
+            setAvgRating(profileRes.data.avgRating || 0);
+        } catch (error) {
+            console.error("Lỗi tải thông tin Profile", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchData();
+  }, [API_URL, navigate]);
+
+  const getImageUrl = (imgStr) => {
+    if (!imgStr) return 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
+    return imgStr.startsWith('http') ? imgStr : `${API_URL}/${imgStr.replace(/\\/g, '/')}`;
   };
 
   const handleUpdateProfile = async (e) => {
@@ -144,287 +128,501 @@ const ProfilePage = () => {
         const formData = new FormData();
         Object.keys(editForm).forEach(key => formData.append(key, editForm[key]));
         if (selectedImage) formData.append('avatar', selectedImage);
-        const { data } = await axios.put(`${API_URL}/api/users/profile/${user._id}`, formData);
-        localStorage.setItem('user', JSON.stringify(data)); setUser(data); setSelectedImage(null); window.dispatchEvent(new Event('userUpdated')); alert('✅ Đã lưu thành công!');
-    } catch (e) { alert('❌ Lỗi cập nhật!'); }
+        const { data } = await axiosClient.put(`/api/users/profile/${user._id}`, formData);
+        persistUser(data);
+        setUser(data);
+        setIsEditing(false);
+        toast.success('Thành công', 'Đã lưu thông tin tài khoản!');
+    } catch (e) {
+        toast.error('Lỗi', 'Lỗi khi cập nhật hồ sơ!');
+    }
   };
 
-  const handleChangePassword = async (e) => {
-    e.preventDefault();
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) return alert('❌ Mật khẩu không khớp!');
-    try { await axios.put(`${API_URL}/api/users/change-password/${user._id}`, passwordForm); alert('✅ Thành công! Hãy đăng nhập lại.'); localStorage.removeItem('user'); navigate('/login'); } catch (e) { alert('❌ Lỗi!'); }
+  const handleAvatarChange = async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+          const formData = new FormData();
+          formData.append('avatar', file);
+          const { data } = await axiosClient.put(`/api/users/profile/${user._id}`, formData);
+          persistUser(data);
+          setUser(data);
+          toast.success('Thành công', 'Đã đổi ảnh đại diện!');
+      } catch (err) {
+          toast.error('Lỗi', 'Có lỗi xảy ra khi tải ảnh lên');
+      }
   };
-
-  const handleDeletePost = async (postId) => { if(window.confirm("Xóa bài viết này?")) { try { await axios.delete(`${API_URL}/api/posts/${postId}`); setMyPosts(myPosts.filter(p => p._id !== postId)); alert("✅ Đã xóa!"); } catch (e) {} } };
 
   const getStatusBadge = (status) => {
-    if(status === 'Chờ xác nhận') return 'bg-warning text-dark';
-    if(status === 'Đã thanh toán (Admin giữ tiền)') return 'bg-info text-dark';
-    if(status === 'Người bán đã chuẩn bị hàng') return 'bg-orange text-dark border-orange';
-    if(status === 'Đang giao hàng' || status === 'Đang giao') return 'bg-primary';
-    if(status === 'Hoàn thành') return 'bg-success';
-    return 'bg-secondary'; 
+      switch (status) {
+          case 'Pending':
+          case 'Chờ xác nhận':
+              return 'bg-amber-100 text-amber-800 border-amber-200';
+          case 'Processing':
+          case 'Đang chuẩn bị':
+              return 'bg-blue-100 text-blue-800 border-blue-200';
+          case 'Shipped':
+          case 'Đang giao hàng':
+              return 'bg-indigo-100 text-indigo-800 border-indigo-200';
+          case 'Delivered':
+          case 'Đã giao hàng':
+          case 'Completed':
+          case 'Hoàn thành':
+              return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+          case 'Cancelled':
+          case 'Đã hủy':
+              return 'bg-rose-100 text-rose-800 border-rose-200';
+          default:
+              return 'bg-stone-100 text-stone-800 border-stone-200';
+      }
   };
 
+  const getFrameStyles = (frame) => {
+      switch(frame) {
+          case 'bronze': return 'border-amber-700 shadow-amber-700/30';
+          case 'silver': return 'border-slate-300 shadow-slate-400/40';
+          case 'gold': return 'border-yellow-400 shadow-yellow-500/50';
+          case 'diamond': return 'border-cyan-400 shadow-cyan-500/50';
+          default: return 'border-white';
+      }
+  };
+
+  const points = (user?.totalSpent || 0) + (myOrders.length * 100);
+  let accountLevel = "Hạng Đồng";
+  let nextLevelProgress = 20;
+  let nextLevelName = "Hạng Bạc";
+
+  if (points > 10000) {
+      accountLevel = "Hạng Kim Cương";
+      nextLevelProgress = 100;
+      nextLevelName = "Tối đa";
+  } else if (points > 5000) {
+      accountLevel = "Hạng Vàng";
+      nextLevelProgress = Math.min(100, Math.round(((points - 5000) / 5000) * 100));
+      nextLevelName = "Hạng Kim Cương";
+  } else if (points > 1000) {
+      accountLevel = "Hạng Bạc";
+      nextLevelProgress = Math.min(100, Math.round(((points - 1000) / 4000) * 100));
+      nextLevelName = "Hạng Vàng";
+  } else {
+      accountLevel = "Hạng Đồng";
+      nextLevelProgress = Math.min(100, Math.round((points / 1000) * 100));
+      nextLevelName = "Hạng Bạc";
+  }
+
   if (!user) return null;
-  const isKycVerified = user.cccd && user.cccd.length > 8;
+
+  const isApprovedSeller = user.isSeller === true && user.sellerStatus === 'approved';
+  const isPendingSeller = user.sellerStatus === 'pending';
 
   return (
-    <div style={{ backgroundColor: '#F4F4F4', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Header />
+    <div className="min-h-screen bg-[#FDFBF7] flex flex-col font-sans">
+      <AppHeader />
       
-      {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />}
-      {reviewOrder && <ReviewModal order={reviewOrder} onClose={() => setReviewOrder(null)} onSuccess={() => { setReviewOrder(null); fetchMyOrders(user._id); }} />}
-
-      <div className="container py-5 flex-grow-1">
-        <div className="row">
-          
-          <div className="col-md-3 mb-4">
-            <div className="bg-white rounded-4 shadow-sm p-3 sticky-top" style={{top: '100px'}}>
-              <h6 className="fw-bold mb-3 ms-2 text-muted text-uppercase small">Thiết lập</h6>
-              <ul className="list-unstyled mb-4">
-                <li><button onClick={() => setActiveTab('info')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'info' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>👤 Thông tin cá nhân</button></li>
-                <li><button onClick={() => setActiveTab('security')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'security' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>🔒 Bảo mật</button></li>
-              </ul>
-              <h6 className="fw-bold mb-3 ms-2 text-muted text-uppercase small">Giao dịch</h6>
-              <ul className="list-unstyled">
-                <li><button onClick={() => setActiveTab('orders')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'orders' ? 'bg-success text-white' : 'btn-light text-muted bg-white'}`}>📦 Đơn hàng của tôi</button></li>
-                <li><button onClick={() => setActiveTab('posts')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'posts' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>🏪 Quản lý tin đăng</button></li>
+      <main className="flex-1 max-w-[1200px] w-full mx-auto px-4 py-8">
+        
+        {/* Profile Header Card */}
+        <div className="bg-white rounded-2xl shadow-xs border border-stone-200 p-6 mb-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 
-                
-                <li><button onClick={() => setActiveTab('reviews')} className={`btn w-100 text-start fw-bold py-2 mb-1 rounded-3 ${activeTab === 'reviews' ? 'bg-warning-subtle text-dark' : 'btn-light text-muted bg-white'}`}>⭐ Đánh giá của tôi</button></li>
-                
-                <li className="border-top pt-2 mt-2"><button onClick={() => { localStorage.removeItem('user'); window.location.href='/login'; }} className="btn btn-light bg-white text-danger w-100 text-start fw-bold py-2 rounded-3">🚪 Đăng xuất</button></li>
-              </ul>
-            </div>
-          </div>
-
-          <div className="col-md-9">
-            
-            
-            {activeTab === 'info' && (
-              <form onSubmit={handleUpdateProfile}>
-                <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-warning mb-4">
-                    <h4 className="fw-bold mb-4 text-dark">Hồ sơ cá nhân</h4>
-                    <div className="d-flex align-items-center mb-4 pb-4 border-bottom">
-                        <div className="position-relative d-inline-block me-4">
-                            <div className="rounded-circle bg-warning text-white d-flex align-items-center justify-content-center fw-bold shadow-sm" style={{width: '90px', height: '90px', fontSize: '35px', overflow: 'hidden'}}>
-                                {selectedImage ? <img src={URL.createObjectURL(selectedImage)} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="preview" /> : user?.avatar ? <img src={user.avatar} style={{width:'100%', height:'100%', objectFit:'cover'}} alt="avatar" /> : user?.name?.charAt(0).toUpperCase()}
-                            </div>
-                            <label className="position-absolute bottom-0 end-0 bg-dark text-white rounded-circle d-flex align-items-center justify-content-center shadow" style={{width: '30px', height: '30px', cursor: 'pointer', border: '2px solid white'}}>
-                                📷 <input type="file" hidden onChange={(e) => setSelectedImage(e.target.files[0])} accept="image/*" />
-                            </label>
+                <div className="flex items-center gap-6">
+                    <div className="relative">
+                        <div className={`w-24 h-24 rounded-full overflow-hidden border-4 bg-stone-100 shadow-sm ${getFrameStyles(user.avatarFrame)}`}>
+                            <img src={getImageUrl(user.avatar)} alt="Avatar" className="w-full h-full object-cover" />
                         </div>
-                        <div><h5 className="fw-bold mb-1 text-dark">{user.name}</h5><p className="text-muted mb-0">{user.email}</p></div>
+                        {isEditing && (
+                            <>
+                                <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={handleAvatarChange} />
+                                <button onClick={() => fileInputRef.current.click()} className="absolute bottom-0 right-0 w-8 h-8 bg-[#FACC15] text-[#1C1917] rounded-full flex items-center justify-center border-2 border-white shadow-sm hover:bg-[#EAB308] z-10">
+                                    <i className="fas fa-camera text-xs"></i>
+                                </button>
+                            </>
+                        )}
                     </div>
-                    <div className="row g-3">
-                        <div className="col-md-4"><label className="fw-bold small text-muted mb-1">Họ và tên</label><input type="text" className="form-control bg-light" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required /></div>
-                        <div className="col-md-4"><label className="fw-bold small text-muted mb-1">Số điện thoại</label><input type="text" className="form-control bg-light" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} /></div>
-                        <div className="col-md-4"><label className="fw-bold small text-muted mb-1">Địa chỉ</label><input type="text" className="form-control bg-light" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} /></div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-info mb-4 position-relative overflow-hidden">
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                        <h5 className="fw-bold text-dark mb-0">Xác minh danh tính (KYC)</h5>
-                        {isKycVerified ? (<span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill"><i className="bi bi-shield-check me-1"></i> Đã xác minh an toàn</span>) : (<span className="badge bg-danger-subtle text-danger px-3 py-2 rounded-pill"><i className="bi bi-shield-exclamation me-1"></i> Chưa xác minh</span>)}
-                    </div>
-                    <p className="text-muted small mb-4">Cung cấp số Căn cước công dân (CCCD) để mở khóa tính năng giao dịch qua <b>Ví HaiPay</b> và tăng độ uy tín.</p>
-                    <div className="row">
-                        <div className="col-md-6">
-                            <label className="fw-bold small text-muted mb-1">Số thẻ CCCD/CMND <span className="text-danger">*</span></label>
-                            <div className="input-group">
-                                <span className="input-group-text bg-light border-end-0">💳</span>
-                                <input type="text" className="form-control border-start-0 ps-0 bg-light" placeholder="Nhập 12 số CCCD của bạn..." value={editForm.cccd} onChange={e => setEditForm({...editForm, cccd: e.target.value})} />
-                            </div>
+                    
+                    <div>
+                        <div className="flex flex-wrap items-center gap-3 mb-1">
+                            <h1 className="text-2xl font-black text-[#1C1917]">{user.name}</h1>
+                            <span className="text-stone-400 text-sm">@{user.email?.split('@')[0]}</span>
+                            {(user.profileTitle && user.profileTitle !== 'Người Mới') && (
+                                <span className="bg-gradient-to-r from-amber-200 to-yellow-400 text-yellow-900 px-3 py-0.5 rounded-full text-xs font-black shadow-xs">
+                                    🏆 {user.profileTitle}
+                                </span>
+                            )}
+                            {isApprovedSeller ? (
+                                <span className="bg-orange-100 text-orange-700 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <i className="fas fa-store text-[10px]"></i> Đối tác Seller B2C
+                                </span>
+                            ) : isPendingSeller ? (
+                                <span className="bg-amber-100 text-amber-700 px-2.5 py-0.5 rounded-full text-xs font-bold flex items-center gap-1">
+                                    <i className="fas fa-clock text-[10px]"></i> Chờ duyệt Shop
+                                </span>
+                            ) : (
+                                <span className="bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1">
+                                    <i className="fas fa-user-check text-[10px]"></i> Thành viên mua sắm
+                                </span>
+                            )}
                         </div>
-                    </div>
-                </div>
-
-                <div className="text-end">
-                    <button type="submit" className="btn btn-dark fw-bold px-5 py-3 rounded-pill shadow-sm hover-scale">💾 CẬP NHẬT TẤT CẢ THÔNG TIN</button>
-                </div>
-              </form>
-            )}
-
-            
-            {activeTab === 'security' && (
-              <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-dark">
-                <h4 className="fw-bold mb-4 text-dark">Đổi mật khẩu</h4>
-                <form onSubmit={handleChangePassword}>
-                    <div className="mb-3"><label className="fw-bold small text-muted mb-1">Mật khẩu hiện tại</label><input type="password" className="form-control bg-light" value={passwordForm.oldPassword} onChange={e => setPasswordForm({...passwordForm, oldPassword: e.target.value})} required /></div>
-                    <div className="mb-3"><label className="fw-bold small text-muted mb-1">Mật khẩu mới</label><input type="password" className="form-control bg-light" value={passwordForm.newPassword} onChange={e => setPasswordForm({...passwordForm, newPassword: e.target.value})} required /></div>
-                    <div className="mb-3"><label className="fw-bold small text-muted mb-1">Xác nhận mật khẩu mới</label><input type="password" className="form-control bg-light" value={passwordForm.confirmPassword} onChange={e => setPasswordForm({...passwordForm, confirmPassword: e.target.value})} required /></div>
-                    <button type="submit" className="btn btn-dark fw-bold px-5 py-2 rounded-pill shadow-sm">🔒 Cập nhật</button>
-                </form>
-              </div>
-            )}
-
-            
-            {activeTab === 'posts' && (
-              <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-info">
-                  <h4 className="fw-bold mb-4 text-dark text-center">Tin đăng của tôi ({myPosts.length})</h4>
-                  {myPosts.length === 0 && <p className="text-center text-muted">Bạn chưa có bài đăng nào.</p>}
-                  {myPosts.map(post => (
-                    <div key={post._id} className="d-flex p-3 border align-items-center bg-white rounded-4 mb-3 shadow-sm hover-scale transition-all">
-                        <img src={(post.images && post.images.length > 0) ? post.images[0] : (post.image || 'https://via.placeholder.com/80')} style={{width:'80px', height:'80px', objectFit:'cover', borderRadius:'12px', cursor: 'pointer'}} className="me-3 shadow-sm border" alt="sp" onClick={() => navigate(`/post/${post._id}`)} />
-                        <div className="flex-grow-1" onClick={() => navigate(`/post/${post._id}`)} style={{cursor: 'pointer'}}>
-                            <h6 className="fw-bold mb-1">{post.title}</h6>
-                            <div className="d-flex align-items-center gap-2">
-                                <small className="text-danger fw-bold">{Number(post.price).toLocaleString('vi-VN')} đ</small>
-                                <span className="badge bg-light text-dark border small">Kho: {post.quantity || 0}</span>
-                            </div>
-                        </div>
-                        <div className="ms-2 d-flex flex-column align-items-end gap-2">
-                            <span className={`badge rounded-pill px-3 py-1 ${ (post.quantity === 0 || post.status === 'SOLD') ? 'bg-secondary' : (post.status === 'APPROVED' ? 'bg-success' : 'bg-warning text-dark')}`}>
-                                { (post.quantity === 0 || post.status === 'SOLD') ? '🤝 Đã bán hết' : (post.status === 'APPROVED' ? '✅ Đang bán' : '⏳ Chờ duyệt')}
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-stone-500 font-medium mb-4">
+                            <span className="flex items-center gap-1">
+                                <i className="fas fa-phone text-slate-400"></i> {user.phone || 'Chưa cập nhật SĐT'}
                             </span>
-                            <div className="d-flex gap-2">
-                                <button onClick={() => navigate(`/edit-post/${post._id}`)} className="btn btn-sm btn-outline-primary rounded-pill fw-bold px-3">Sửa</button>
-                                <button onClick={() => handleDeletePost(post._id)} className="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">Xóa</button>
-                            </div>
+                            <span className="flex items-center gap-1">
+                                <i className="fas fa-envelope text-slate-400"></i> {user.email}
+                            </span>
+                            <span className="flex items-center gap-1">
+                                <i className="fas fa-map-marker-alt text-slate-400"></i> {user.address || 'Chưa cập nhật địa chỉ'}
+                            </span>
                         </div>
-                    </div>
-                  ))}
-              </div>
-            )}
-
-            
-            {activeTab === 'orders' && (
-              <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-success">
-                <h4 className="fw-bold mb-4 text-dark text-center">Quản lý Đơn hàng</h4>
-                <div className="d-flex justify-content-center gap-3 mb-4 border-bottom pb-3">
-                    <button onClick={() => setSubTabOrder('buy')} className={`btn fw-bold px-4 rounded-pill transition-all ${subTabOrder === 'buy' ? 'btn-success' : 'btn-outline-success'}`}>🛒 Đơn Mua ({myOrders.length})</button>
-                    <button onClick={() => setSubTabOrder('sell')} className={`btn fw-bold px-4 rounded-pill transition-all ${subTabOrder === 'sell' ? 'btn-warning text-dark' : 'btn-outline-warning text-dark'}`}>🏪 Đơn Bán ({mySales.length})</button>
-                </div>
-
-                
-                {subTabOrder === 'buy' && (
-                    <div>
-                        {myOrders.length === 0 && <p className="text-center text-muted">Bạn chưa đặt mua đơn hàng nào.</p>}
-                        {myOrders.map(order => (
-                        <div key={order._id} className="border rounded-4 mb-4 shadow-sm overflow-hidden bg-white">
-                            <div className="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
-                                <span className="text-muted fw-bold small">Mã: #{order._id.slice(-6).toUpperCase()}</span>
-                                <span className={`badge rounded-pill px-3 py-2 ${getStatusBadge(order.status)}`}>{order.status}</span>
-                            </div>
-                            <div className="p-3">
-                                {order.items.map((item, idx) => (
-                                    <div key={idx} className="d-flex align-items-center mb-3 pb-3 border-bottom border-light">
-                                        <img src={(item?.images && item.images[0]) || item?.image || 'https://via.placeholder.com/60'} style={{width:'60px', height:'60px', objectFit:'cover', borderRadius:'8px'}} alt="sp" className="border shadow-sm" />
-                                        <div className="ms-3 flex-grow-1">
-                                            <h6 className="fw-bold mb-1 text-dark text-truncate" style={{maxWidth: '350px'}}>{item?.title}</h6>
-                                            <small className="text-danger fw-bold">{Number(item?.price || 0).toLocaleString('vi-VN')} đ</small>
-                                        </div>
-                                        <div className="d-flex gap-2">
-                                            <button onClick={() => setSelectedOrder(order)} className="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-4 hover-scale transition-all">Chi tiết</button>
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="d-flex justify-content-between align-items-center pt-2 bg-success-subtle p-3 rounded-4 mt-2">
-                                    <div className="d-flex gap-2">
-                                        {(order.status === 'Chờ xác nhận' || order.status === 'Đã thanh toán (Admin giữ tiền)') && (
-                                            <button onClick={() => handleCancelOrder(order._id, false)} className="btn btn-sm btn-danger rounded-pill fw-bold px-3 shadow-sm">Hủy đơn</button>
-                                        )}
-                                        {(order.status === 'Đang giao hàng' || order.status === 'Đang giao') && (
-                                            <button onClick={() => handleReceiveOrder(order._id)} className="btn btn-sm btn-success rounded-pill fw-bold px-3 shadow-sm">✅ Đã nhận được hàng</button>
-                                        )}
-                                        {order.status === 'Hoàn thành' && !order.isReviewed && (
-                                            <button onClick={() => setReviewOrder(order)} className="btn btn-sm btn-outline-warning text-dark fw-bold rounded-pill px-4 shadow-sm border-2">⭐ Đánh giá ngay</button>
-                                        )}
-                                    </div>
-                                    <div className="text-end d-flex align-items-center gap-3">
-                                        <span className="text-muted small">Tổng tiền:</span>
-                                        <span className="text-danger fw-black fs-5">{Number(order.totalPrice).toLocaleString('vi-VN')} đ</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        ))}
-                    </div>
-                )}
-
-                
-                {subTabOrder === 'sell' && (
-                    <div>
-                        {mySales.length === 0 && <p className="text-center text-muted">Chưa có ai đặt mua hàng của bạn.</p>}
-                        {mySales.map(order => (
-                        <div key={order._id} className="border border-warning rounded-4 mb-4 shadow-sm overflow-hidden bg-white">
-                            <div className="bg-warning-subtle p-3 border-bottom border-warning d-flex justify-content-between align-items-center">
+                        
+                        {!isEditing && (
+                            <div className="flex flex-wrap items-center gap-6 sm:gap-8 bg-stone-50 px-4 py-3 rounded-xl border border-stone-100">
                                 <div>
-                                    <span className="text-dark fw-bold small me-2">Mã: #{order._id.slice(-6).toUpperCase()}</span>
-                                    <span className="text-muted small">| Người mua: <b>{order.buyer?.name}</b></span>
+                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đơn mua hàng</p>
+                                    <p className="text-xl font-black text-[#1C1917]">{myOrders.length} <span className="text-xs font-medium text-stone-400">đơn</span></p>
                                 </div>
-                                <span className={`badge rounded-pill px-3 py-2 ${getStatusBadge(order.status)}`}>{order.status}</span>
-                            </div>
-                            <div className="p-3">
-                                {order.items.map((item, idx) => (
-                                    <div key={idx} className="d-flex align-items-center mb-3 pb-3 border-bottom border-light">
-                                        <img src={(item?.images && item.images[0]) || item?.image || 'https://via.placeholder.com/60'} style={{width:'60px', height:'60px', objectFit:'cover', borderRadius:'8px'}} alt="sp" className="border shadow-sm" />
-                                        <div className="ms-3 flex-grow-1">
-                                            <h6 className="fw-bold mb-1 text-dark text-truncate" style={{maxWidth: '350px'}}>{item?.title}</h6>
-                                            <small className="text-danger fw-bold">{Number(item?.price || 0).toLocaleString('vi-VN')} đ</small>
-                                        </div>
-                                        <div className="d-flex gap-2">
-                                            <button onClick={() => setSelectedOrder(order)} className="btn btn-sm btn-outline-secondary rounded-pill fw-bold px-4 hover-scale transition-all">Chi tiết</button>
-                                        </div>
-                                    </div>
-                                ))}
-                                <div className="d-flex justify-content-between align-items-center pt-2 bg-warning-subtle p-3 rounded-4 mt-2">
-                                    <div className="d-flex gap-2">
-                                        {(order.status === 'Chờ xác nhận' || order.status === 'Đã thanh toán (Admin giữ tiền)') && (
-                                            <>
-                                                <button onClick={() => handleConfirmOrder(order._id)} className="btn btn-sm btn-success rounded-pill fw-bold px-4 shadow-sm">Xác nhận đơn</button>
-                                                <button onClick={() => handleCancelOrder(order._id, true)} className="btn btn-sm btn-outline-danger rounded-pill fw-bold px-3">Từ chối</button>
-                                            </>
-                                        )}
-                                    </div>
-                                    <div className="text-end d-flex align-items-center gap-3">
-                                        <span className="text-muted small">Thu về:</span>
-                                        <span className="text-danger fw-black fs-5">{Number(order.totalPrice).toLocaleString('vi-VN')} đ</span>
-                                    </div>
+                                <div className="w-px h-8 bg-stone-200 hidden md:block"></div>
+                                <div>
+                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Đánh giá</p>
+                                    <p className="text-xl font-black text-emerald-600">{myReviews.length} <span className="text-xs font-medium text-stone-400">lượt</span></p>
+                                </div>
+                                <div className="w-px h-8 bg-stone-200 hidden md:block"></div>
+                                <div>
+                                    <p className="text-[10px] text-stone-500 uppercase font-bold tracking-wider mb-0.5">Ví HaiPay</p>
+                                    <p className="text-xl font-black text-orange-600">{(user.walletBalance || 0).toLocaleString('vi-VN')} <span className="text-xs font-medium text-stone-400">đ</span></p>
                                 </div>
                             </div>
-                        </div>
-                        ))}
+                        )}
+                    </div>
+                </div>
+
+                {!isEditing && (
+                    <div className="flex flex-col gap-2 shrink-0 w-full md:w-auto mt-4 md:mt-0">
+                        {isApprovedSeller ? (
+                            <button 
+                                onClick={() => window.open('/seller-channel', '_blank')} 
+                                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-all shadow-md shadow-orange-500/20 cursor-pointer"
+                            >
+                                <i className="fas fa-store"></i> Vào Kênh Người Bán
+                            </button>
+                        ) : isPendingSeller ? (
+                            <a 
+                                href="/register-seller" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="w-full bg-amber-50 border border-amber-200 text-amber-800 font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 text-decoration-none"
+                            >
+                                <i className="fas fa-clock text-amber-600"></i> Hồ sơ Shop đang duyệt
+                            </a>
+                        ) : (
+                            <a 
+                                href="/register-seller" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="w-full bg-[#FACC15] hover:bg-[#EAB308] text-[#1C1917] font-bold py-2.5 px-6 rounded-xl flex items-center justify-center gap-2 transition-colors shadow-xs text-decoration-none"
+                            >
+                                <i className="fas fa-store-alt"></i> Đăng ký mở Shop B2C
+                            </a>
+                        )}
+                        <button onClick={() => setIsEditing(true)} className="w-full bg-stone-50 text-stone-700 font-bold py-2.5 px-6 rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 transition-colors border border-stone-200">
+                            <i className="fas fa-user-edit text-stone-500"></i> Chỉnh sửa thông tin
+                        </button>
+                        <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} className="w-full bg-red-50 text-red-600 font-bold py-2.5 px-6 rounded-xl hover:bg-red-100 flex items-center justify-center gap-2 transition-colors border border-red-200">
+                            <i className="fas fa-sign-out-alt"></i> Đăng xuất
+                        </button>
                     </div>
                 )}
-              </div>
-            )}
+            </div>
+        </div>
 
+        {/* Main Layout */}
+        <div className="flex flex-col lg:flex-row gap-6">
             
-            {activeTab === 'reviews' && (
-                <div className="bg-white rounded-4 shadow-sm p-4 border-top border-5 border-warning">
-                    <h4 className="fw-bold mb-4 text-dark text-center">Đánh giá từ khách hàng</h4>
-                    
-                    <div className="text-center mb-5 bg-light p-4 rounded-4">
-                        <h1 className="fw-black text-warning display-4 mb-0">{avgRating}/5</h1>
-                        <div className="text-warning fs-3">{"⭐".repeat(Math.round(avgRating))}</div>
-                        <p className="text-muted fw-bold">Dựa trên {myReviews.length} lượt đánh giá</p>
-                    </div>
+            {/* Left Content Area */}
+            <div className={`w-full ${isEditing ? 'lg:w-full' : 'lg:w-[65%]'} flex flex-col gap-4`}>
+                
+                {/* Clean Buyer Tabs */}
+                {!isEditing && (
+                    <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                        <button 
+                            onClick={() => setActiveTab('orders_buy')} 
+                            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl font-bold text-sm transition-colors ${
+                                activeTab === 'orders_buy' 
+                                    ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20' 
+                                    : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
+                            }`}
+                        >
+                            <i className="fas fa-shopping-bag"></i>
+                            Đơn mua của tôi 
+                            <span className={`px-2 py-0.5 rounded-full text-xs ${activeTab === 'orders_buy' ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-600'}`}>
+                                {myOrders.length}
+                            </span>
+                        </button>
 
-                    {myReviews.length === 0 && <p className="text-center text-muted">Bạn chưa nhận được đánh giá nào.</p>}
-                    
-                    {myReviews.map(rev => (
-                        <div key={rev._id} className="d-flex gap-3 border-bottom pb-4 mb-4">
-                            <img src={rev.buyer?.avatar || 'https://via.placeholder.com/50'} className="rounded-circle shadow-sm" style={{width: '50px', height: '50px', objectFit: 'cover'}} alt="avt" />
-                            <div>
-                                <div className="bg-light p-3 rounded-4 position-relative">
-                                    <h6 className="fw-bold text-dark mb-1">{rev.buyer?.name || 'Khách hàng'}</h6>
-                                    <div className="text-warning small mb-2">{"⭐".repeat(rev.rating)}</div>
-                                    <p className="text-secondary mb-0" style={{fontStyle: 'italic'}}>"{rev.comment}"</p>
+                        <button 
+                            onClick={() => setActiveTab('reviews')} 
+                            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl font-bold text-sm transition-colors ${
+                                activeTab === 'reviews' 
+                                    ? 'bg-orange-500 text-white shadow-sm shadow-orange-500/20' 
+                                    : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
+                            }`}
+                        >
+                            <i className="fas fa-star"></i>
+                            Đánh giá ({myReviews.length})
+                        </button>
+                    </div>
+                )}
+
+                {/* Edit Profile Form */}
+                {isEditing && (
+                    <form onSubmit={handleUpdateProfile} className="bg-white p-6 rounded-2xl border border-stone-200 shadow-xs animate-fade-in mb-4 max-w-4xl mx-auto w-full">
+                        <h3 className="font-bold text-lg text-slate-800 mb-4">Chỉnh sửa hồ sơ cá nhân</h3>
+                        
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 mb-1">Họ và tên *</label>
+                                    <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm font-semibold" value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} required />
                                 </div>
-                                <small className="text-muted ms-2 mt-1 d-block" style={{fontSize: '10px'}}>{new Date(rev.createdAt).toLocaleString('vi-VN')}</small>
+                                <div>
+                                    <label className="block text-xs font-bold text-stone-500 mb-1">Số điện thoại *</label>
+                                    <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm font-medium" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} required />
+                                </div>
+                            </div>
+                    
+                            <div>
+                                <label className="block text-xs font-bold text-stone-500 mb-1">Địa chỉ nhận hàng mặc định</label>
+                                <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm font-medium" value={editForm.address} onChange={e => setEditForm({...editForm, address: e.target.value})} />
+                            </div>
+                    
+                            <div>
+                                <label className="block text-xs font-bold text-stone-500 mb-1">Giới thiệu ngắn</label>
+                                <textarea className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 min-h-[80px] text-sm" value={editForm.bio} onChange={e => setEditForm({...editForm, bio: e.target.value})} placeholder="Giới thiệu về bạn..." />
+                            </div>
+                    
+                            <div className="pt-4 mt-4 border-t border-stone-100">
+                                <h4 className="font-bold text-sm text-stone-800 mb-1">Thông tin định danh</h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-600 mb-1">CCCD / CMND</label>
+                                        <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm" value={editForm.cccd} onChange={e => setEditForm({...editForm, cccd: e.target.value})} />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-stone-600 mb-1">Mã số thuế</label>
+                                        <input type="text" className="w-full border border-stone-200 rounded-xl p-2.5 bg-stone-50 focus:outline-none focus:border-orange-500 text-sm font-mono" value={editForm.taxId} onChange={e => setEditForm({...editForm, taxId: e.target.value})} />
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    ))}
+                        
+                        <div className="flex gap-3 justify-end mt-6 pt-4 border-t border-stone-100">
+                            <button type="button" onClick={() => setIsEditing(false)} className="px-5 py-2.5 font-bold text-stone-500 hover:text-stone-800 text-sm">Hủy</button>
+                            <button type="submit" className="px-6 py-2.5 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 shadow-sm text-sm">Lưu thay đổi</button>
+                        </div>
+                    </form>
+                )}
+
+                {/* TAB 1: BUYER ORDERS */}
+                {!isEditing && activeTab === 'orders_buy' && (
+                    <div className="flex flex-col gap-4">
+                        {myOrders.length === 0 ? (
+                            <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-12 text-center text-stone-500 animate-fade-in">
+                                <div className="w-16 h-16 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl text-stone-400">
+                                    <i className="fas fa-shopping-bag"></i>
+                                </div>
+                                <h3 className="font-bold text-base text-stone-800">Chưa có đơn mua nào</h3>
+                                <p className="text-xs text-stone-400 mt-1">Khám phá các sản phẩm chất lượng trên sàn HaiHand ngay!</p>
+                                <button onClick={() => navigate('/products')} className="mt-4 px-6 py-2.5 bg-orange-500 text-white text-xs font-bold rounded-xl hover:bg-orange-600 shadow-sm transition-all">
+                                    Khám phá sản phẩm
+                                </button>
+                            </div>
+                        ) : (
+                            myOrders.map(order => {
+                                const st = order.canonicalStatus || order.status;
+                                const items = order.orderItems && order.orderItems.length > 0
+                                    ? order.orderItems
+                                    : (order.items || []);
+
+                                return (
+                                    <div key={order._id} className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5 animate-fade-in hover:border-orange-300 transition-colors">
+                                        <div className="flex justify-between items-center mb-4 pb-3 border-b border-stone-100">
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-mono font-bold text-slate-700">Mã đơn: #{order._id.substring(0, 8).toUpperCase()}</span>
+                                                <span className="text-slate-300">|</span>
+                                                <span className="text-xs text-slate-400">{new Date(order.createdAt).toLocaleDateString('vi-VN')}</span>
+                                            </div>
+                                            <span className={`text-xs font-bold px-3 py-1 rounded-full border ${getStatusBadge(st)}`}>
+                                                {st}
+                                            </span>
+                                        </div>
+
+                                        {/* Items */}
+                                        <div className="space-y-3">
+                                            {items.map((item, idx) => (
+                                                <div key={idx} className="flex gap-4 p-2 hover:bg-stone-50 rounded-xl transition-colors">
+                                                    <div className="w-16 h-16 bg-stone-100 rounded-xl overflow-hidden shrink-0 border border-stone-200">
+                                                        <img src={getImageUrl(item.image || (item.images && item.images[0]))} alt={item.title || item.name} className="w-full h-full object-cover" />
+                                                    </div>
+                                                    <div className="flex-1 flex flex-col justify-center min-w-0">
+                                                        <h4 className="font-bold text-sm text-[#1C1917] truncate">{item.title || item.name || 'Sản phẩm B2C'}</h4>
+                                                        <p className="text-xs text-stone-400 mt-0.5">Số lượng: x{item.quantity || 1}</p>
+                                                        <p className="text-sm font-bold text-orange-600 mt-0.5">{(item.price || 0).toLocaleString('vi-VN')} đ</p>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {order.shippingCode && (
+                                            <div className="mt-3 p-3 bg-indigo-50/60 border border-indigo-100 rounded-xl text-xs text-indigo-900 flex items-center justify-between">
+                                                <span>
+                                                    <i className="fas fa-truck mr-1.5 text-indigo-600"></i>
+                                                    <strong>Vận chuyển ({order.shippingCarrier || 'Bưu cục'}):</strong> {order.shippingCode}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        <div className="flex justify-between items-center mt-4 pt-3 border-t border-stone-100">
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedOrder(order)}
+                                                className="px-3.5 py-1.5 bg-orange-50 hover:bg-orange-100 text-orange-600 border border-orange-200 rounded-xl text-xs font-bold transition-colors"
+                                            >
+                                                <i className="fas fa-route mr-1.5"></i>
+                                                Theo dõi vận đơn & Chi tiết
+                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs font-bold text-stone-500">Tổng thanh toán:</span>
+                                                <span className="text-lg font-black text-orange-600">
+                                                    {(order.totalPrice || order.totalAmount || 0).toLocaleString('vi-VN')} đ
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                )}
+
+                {/* TAB 2: REVIEWS */}
+                {!isEditing && activeTab === 'reviews' && (
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-6">
+                        {myReviews.map((rev, i) => (
+                            <div key={i} className="mb-4 pb-4 border-b border-stone-100 last:border-0 last:mb-0 last:pb-0">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3">
+                                        <img src={rev.buyer?.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-10 h-10 rounded-full object-cover bg-stone-100" alt="avt" />
+                                        <div>
+                                            <p className="font-bold text-sm text-[#1C1917]">{rev.buyer?.name || 'Khách hàng'}</p>
+                                            <p className="text-xs text-stone-400">{new Date(rev.createdAt || Date.now()).toLocaleDateString('vi-VN')}</p>
+                                        </div>
+                                    </div>
+                                    <div className="text-amber-500 text-sm">{"★".repeat(rev.rating || 5)}</div>
+                                </div>
+                                <p className="text-sm text-stone-700 italic">"{rev.comment}"</p>
+                            </div>
+                        ))}
+                        {myReviews.length === 0 && (
+                            <div className="text-center py-10">
+                                <i className="fas fa-star text-3xl text-stone-300 mb-2 block"></i>
+                                <p className="text-sm font-medium text-stone-500">Chưa có đánh giá nào.</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Right Sidebar Area */}
+            {!isEditing && (
+                <div className="w-full lg:w-[35%] flex flex-col gap-4">
+                    
+                    {/* Account Rank Card */}
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs overflow-hidden">
+                        <div className="p-4 border-b border-stone-100 flex justify-between items-center">
+                            <div className="flex items-center gap-2">
+                                <i className="fas fa-medal text-orange-500 text-base"></i>
+                                <h3 className="font-bold text-[#1C1917] text-sm">Hạng thành viên</h3>
+                            </div>
+                            <span className="bg-amber-100 text-amber-800 text-xs font-bold px-2.5 py-0.5 rounded-full">{accountLevel}</span>
+                        </div>
+                        <div className="p-4">
+                            <div className="flex justify-between text-xs font-bold text-stone-600 mb-2">
+                                <span>Tiến trình lên <strong>{nextLevelName}</strong></span>
+                                <span className="text-orange-600">{nextLevelProgress}%</span>
+                            </div>
+                            <div className="w-full bg-stone-100 rounded-full h-1.5 mb-2">
+                                <div className="bg-orange-500 h-1.5 rounded-full" style={{width: `${nextLevelProgress}%`}}></div>
+                            </div>
+                            <p className="text-[10px] text-stone-400">Tích lũy chi tiêu để thăng hạng và hưởng thêm ưu đãi voucher B2C.</p>
+                        </div>
+                    </div>
+
+                    {/* HaiPay Wallet Card */}
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5">
+                        <div className="flex justify-between items-center mb-3">
+                            <div className="flex items-center gap-2">
+                                <i className="fas fa-wallet text-orange-500 text-base"></i>
+                                <h3 className="font-bold text-[#1C1917] text-sm">Ví điện tử HaiPay</h3>
+                            </div>
+                            <button onClick={() => navigate('/haipay/dashboard')} className="text-xs font-bold text-orange-600 hover:underline">
+                                Xem ví →
+                            </button>
+                        </div>
+                        <div className="mb-4">
+                            <p className="text-2xl font-black text-[#1C1917] tracking-tight">
+                                {(user.walletBalance || 0).toLocaleString('vi-VN')} <span className="text-base font-bold">đ</span>
+                            </p>
+                            <p className="text-xs text-stone-500 mt-1 font-medium">Bảo chứng thanh toán và hoàn tiền an toàn 100%</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => navigate('/haipay/dashboard')} className="flex-1 bg-[#FACC15] hover:bg-[#EAB308] text-[#1C1917] font-bold py-2 text-xs rounded-xl transition-colors">
+                                Nạp tiền / Rút tiền
+                            </button>
+                            <button onClick={() => navigate('/haipay/dashboard')} className="flex-1 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold py-2 text-xs rounded-xl transition-colors">
+                                Lịch sử ví
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Support Card */}
+                    <div className="bg-white rounded-2xl border border-stone-200 shadow-xs p-5">
+                        <div className="flex items-center gap-2 mb-2">
+                            <i className="fas fa-headset text-orange-500 text-base"></i>
+                            <h3 className="font-bold text-[#1C1917] text-sm">Trung tâm Hỗ trợ B2C</h3>
+                        </div>
+                        <p className="text-xs text-stone-500 mb-4 leading-relaxed">
+                            Tổng đài hỗ trợ người mua & người bán HaiHand 24/7. Hỗ trợ đối soát thanh toán và xử lý sự cố giao nhận.
+                        </p>
+                        <div className="flex flex-col gap-2">
+                            <button onClick={() => navigate('/dispute-resolution')} className="flex items-center justify-between p-2.5 border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors group">
+                                <span className="text-xs font-bold text-stone-600 group-hover:text-orange-600 flex items-center gap-2">
+                                    <i className="fas fa-shield-alt text-amber-500"></i> Chính sách giải quyết khiếu nại
+                                </span>
+                                <i className="fas fa-chevron-right text-stone-300 text-[10px]"></i>
+                            </button>
+                            <button onClick={() => navigate('/chat')} className="flex items-center justify-between p-2.5 border border-stone-100 rounded-xl hover:bg-stone-50 transition-colors group">
+                                <span className="text-xs font-bold text-stone-600 group-hover:text-orange-600 flex items-center gap-2">
+                                    <i className="fas fa-comments text-blue-500"></i> Hỗ trợ trực tuyến
+                                </span>
+                                <i className="fas fa-chevron-right text-stone-300 text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             )}
-          </div>
+
         </div>
-      </div>
+      </main>
+      
+      {selectedOrder && (
+        <OrderDetailModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
+
+      <AppFooter />
     </div>
   );
-};
-
-export default ProfilePage;
+}

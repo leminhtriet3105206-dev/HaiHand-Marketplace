@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="800" height="600">
+  <defs>
+    <linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="55%" stop-color="#0F172A"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="gold1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FACC15"/>
+      <stop offset="100%" stop-color="#F59E0B"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg1)"/>
+  <circle cx="670" cy="110" r="170" fill="#FACC15" opacity="0.12"/>
+  <circle cx="120" cy="510" r="200" fill="#38BDF8" opacity="0.10"/>
+
+  <!-- Product Showcase Cards -->
+  <g transform="translate(470, 120)">
+    <rect x="0" y="0" width="245" height="330" rx="28" fill="#1E293B" stroke="#334155" stroke-width="2"/>
+    <rect x="20" y="20" width="205" height="175" rx="20" fill="#0F172A"/>
+    <!-- Minimal Camera Icon -->
+    <rect x="75" y="72" width="95" height="68" rx="14" fill="url(#gold1)"/>
+    <rect x="97" y="60" width="50" height="16" rx="6" fill="#FDE047"/>
+    <circle cx="122" cy="106" r="21" fill="#0F172A"/>
+    <circle cx="122" cy="106" r="11" fill="#38BDF8"/>
+    <rect x="24" y="218" width="145" height="14" rx="7" fill="#E2E8F0"/>
+    <rect x="24" y="244" width="100" height="12" rx="6" fill="#94A3B8"/>
+    <rect x="24" y="276" width="130" height="32" rx="16" fill="#10B981" opacity="0.2" stroke="#10B981"/>
+    <text x="89" y="297" text-anchor="middle" fill="#34D399" font-family="Arial, sans-serif" font-size="13" font-weight="bold">DA KIEM DUYET</text>
+  </g>
+
+  <!-- Copy -->
+  <rect x="64" y="138" width="196" height="34" rx="17" fill="#FACC15" opacity="0.16" stroke="#FACC15"/>
+  <text x="162" y="160" text-anchor="middle" fill="#FACC15" font-family="Arial, sans-serif" font-size="14" font-weight="bold">HAIHAND MARKETPLACE</text>
+
+  <text x="64" y="232" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="44" font-weight="bold">Săn Đồ Cũ Chất</text>
+  <text x="64" y="286" fill="#FACC15" font-family="Arial, sans-serif" font-size="44" font-weight="bold">Giá Hời Mỗi Ngày</text>
+
+  <text x="64" y="340" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="20">Hàng ngàn sản phẩm công nghệ, thời trang,</text>
+  <text x="64" y="370" fill="#CBD5E1" font-family="Arial, sans-serif" font-size="20">nội thất được kiểm duyệt rõ ràng.</text>
+
+  <rect x="64" y="420" width="240" height="52" rx="26" fill="url(#gold1)"/>
+  <text x="184" y="452" text-anchor="middle" fill="#0F172A" font-family="Arial, sans-serif" font-size="18" font-weight="bold">Khám phá ngay →</text>
+</svg>
+

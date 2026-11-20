@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { useToast } from '../components/Toast';
+
 
 const RegisterPage = () => {
+  const toast = useToast();
   const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   
@@ -15,10 +18,10 @@ const RegisterPage = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (formData.password.length < 6) {
-        return alert("❌ Mật khẩu phải có ít nhất 6 ký tự!");
+        return toast.error('Lỗi', "❌ Mật khẩu phải có ít nhất 6 ký tự!");
     }
     if (formData.password !== formData.confirmPassword) {
-        return alert("❌ Mật khẩu xác nhận không khớp!");
+        return toast.error('Lỗi', "❌ Mật khẩu xác nhận không khớp!");
     }
 
     try {
@@ -28,10 +31,10 @@ const RegisterPage = () => {
           phone: formData.phone,
           password: formData.password
       });
-      alert("🎉 Đăng ký thành công! Hãy đăng nhập nhé.");
+      toast.success('Thành công', "🎉 Đăng ký thành công! Hãy đăng nhập nhé.");
       navigate('/login');
     } catch (error) {
-      alert("❌ " + (error.response?.data?.message || "Lỗi đăng ký tài khoản!"));
+      toast.error('Lỗi', "❌ " + (error.response?.data?.message || "Lỗi đăng ký tài khoản!"));
     }
   };
 
@@ -40,7 +43,15 @@ const RegisterPage = () => {
       <div className="card shadow-lg border-0 rounded-4 overflow-hidden" style={{ width: '450px' }}>
         
         <div className="bg-warning p-4 text-center">
-            <h2 className="fw-bold text-white mb-0 hover-scale" onClick={() => navigate('/')} style={{cursor: 'pointer'}}>HaiHand</h2>
+            <div 
+                onClick={() => navigate('/')} 
+                style={{cursor: 'pointer', transition: '0.3s'}}
+                onMouseOver={(e) => e.currentTarget.style.opacity = '0.8'}
+                onMouseOut={(e) => e.currentTarget.style.opacity = '1'}
+                className="d-flex justify-content-center hover-scale"
+            >
+                <img src="/logo.png" alt="HaiHand" style={{height: '32px', objectFit: 'contain'}} />
+            </div>
             <p className="text-white-50 small m-0 mt-1">Tạo tài khoản mới</p>
         </div>
 

@@ -8,7 +8,7 @@ const Footer = () => {
         <div className="row g-4">
           
           <div className="col-lg-4 col-md-6">
-            <h3 className="fw-bold text-warning mb-3">HaiHand</h3>
+            <img src="/logo.png" alt="HaiHand" className="mb-3" style={{height: '32px', objectFit: 'contain'}} />
             <p className="text-secondary small" style={{ lineHeight: '1.8' }}>
               Hệ thống Marketplace hàng đầu dành cho cộng đồng mua bán đồ cũ. 
               Chúng tôi kết nối người bán và người mua một cách an toàn, nhanh chóng và tin cậy.
@@ -25,7 +25,8 @@ const Footer = () => {
             <h6 className="fw-bold mb-4 text-uppercase" style={{ letterSpacing: '1px' }}>Khám phá</h6>
             <ul className="list-unstyled">
               <li className="mb-2"><Link to="/" className="text-secondary text-decoration-none hover-text-warning">Trang chủ</Link></li>
-              <li className="mb-2"><Link to="/create-post" className="text-secondary text-decoration-none hover-text-warning">Đăng tin ngay</Link></li>
+              <li className="mb-2"><Link to="/products" className="text-secondary text-decoration-none hover-text-warning">Sản phẩm</Link></li>
+              <li className="mb-2"><a href="/register-seller" target="_blank" rel="noopener noreferrer" className="text-secondary text-decoration-none hover-text-warning">Đăng ký bán hàng</a></li>
             </ul>
           </div>
 

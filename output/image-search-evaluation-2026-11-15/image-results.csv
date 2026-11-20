@@ -1,0 +1,8 @@
+"image","message","expected_ids","before_ids","after_ids","after_correct_cards","after_wrong_cards","review_note"
+"images/rooster.png","tìm gà đá","69de23e17a871f2c9e8f5084","69de23e17a871f2c9e8f5084","69de23e17a871f2c9e8f5084","1","0",""
+"images/bulbul.png","tìm chào mào","69dcb897e8f5f531d474e90e","69dcb897e8f5f531d474e90e","69dcb897e8f5f531d474e90e","1","0",""
+"images/mountain-bike.png","tìm xe đạp địa hình","69de26cc7a871f2c9e8f53b9","69de26cc7a871f2c9e8f53b9|6af17dbc2e06332d9bb40e8a","69de26cc7a871f2c9e8f53b9|6af17dbc2e06332d9bb40e8a","1","1","Tin Twitter Mantis ghi xe đạp địa hình nhưng ảnh catalog là xe đạp đường phố, nên không tính là khớp ảnh."
+"images/bicycle-helmet.png","tìm mũ bảo hiểm xe đạp","6af173a0c91caafe16621f03","","","0","0","Ảnh catalog của tin mũ bảo hiểm xe đạp là người lái xe máy; cần sửa ảnh tin trước khi dùng làm nhãn train."
+"images/badminton-racket.png","tìm vợt cầu lông","6af17dbb2e06332d9bb40e89","","6af17dbb2e06332d9bb40e89","1","0",""
+"images/yoga-mat.png","tìm thảm tập yoga","6af17dbc2e06332d9bb40e8e","6af17dbc2e06332d9bb40e8e","6af17dbc2e06332d9bb40e8e","1","0",""
+"images/airplanes.png","tìm máy bay","","","","0","0",""

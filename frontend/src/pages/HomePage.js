@@ -1,267 +1,528 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import Header from '../components/Header'; 
-import Footer from '../components/Footer';
+import { AppHeader } from '../components/AppHeader';
+import { AppFooter } from '../components/AppFooter';
+import { ProductCard } from '../components/ProductCard';
+import { Button } from '../components/Button';
+import { useToast } from '../components/Toast';
+import { useAuth } from '../context/AuthContext';
 
+const toSvgDataUri = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`;
 
-const formatTimeAgo = (dateString) => {
-  if (!dateString) return 'Mới'; 
-  const date = new Date(dateString);
-  const now = new Date();
-  const seconds = Math.floor((now - date) / 1000);
-  
-  let interval = seconds / 31536000;
-  if (interval > 1) return Math.floor(interval) + " năm trước";
-  interval = seconds / 2592000;
-  if (interval > 1) return Math.floor(interval) + " tháng trước";
-  interval = seconds / 86400;
-  if (interval > 1) return Math.floor(interval) + " ngày trước";
-  interval = seconds / 3600;
-  if (interval > 1) return Math.floor(interval) + " giờ trước";
-  interval = seconds / 60;
-  if (interval > 1) return Math.floor(interval) + " phút trước";
-  return "Vừa xong";
+const DEFAULT_BANNERS = [
+  {
+    _id: 'default-banner-1',
+    title: 'Săn Đồ Cũ Chất - Giá Tốt Mỗi Ngày',
+    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1E293B"/><stop offset="55%" stop-color="#0F172A"/><stop offset="100%" stop-color="#1E1B4B"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg1)"/><circle cx="670" cy="110" r="170" fill="#FACC15" opacity="0.14"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="44" font-weight="bold">Săn Đồ Cũ Chất</text><text x="64" y="286" fill="#FACC15" font-family="Arial,sans-serif" font-size="44" font-weight="bold">Giá Hời Mỗi Ngày</text><text x="64" y="346" fill="#CBD5E1" font-family="Arial,sans-serif" font-size="20">Hàng ngàn sản phẩm công nghệ, thời trang đã kiểm duyệt.</text></svg>`),
+    targetUrl: '/products',
+    openInNewTab: false,
+    isFallback: true,
+  },
+  {
+    _id: 'default-banner-2',
+    title: 'An Tâm Mua Sắm Với HaiPay Escrow',
+    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#064E3B"/><stop offset="55%" stop-color="#065F46"/><stop offset="100%" stop-color="#0F172A"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg2)"/><circle cx="640" cy="480" r="190" fill="#10B981" opacity="0.16"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Giao Dịch An Toàn</text><text x="64" y="286" fill="#6EE7B7" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Nhận Hàng Mới Trả</text><text x="64" y="346" fill="#D1FAE5" font-family="Arial,sans-serif" font-size="20">Bảo vệ thanh toán trung gian HaiPay minh bạch.</text></svg>`),
+    targetUrl: '/register-seller',
+    openInNewTab: false,
+    isFallback: true,
+  },
+  {
+    _id: 'default-banner-3',
+    title: 'Đăng Bán Nhanh - Giao Hàng Toàn Quốc',
+    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#312E81"/><stop offset="55%" stop-color="#4338CA"/><stop offset="100%" stop-color="#1E1B4B"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg3)"/><circle cx="650" cy="140" r="180" fill="#A855F7" opacity="0.20"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Biến Đồ Không Dùng</text><text x="64" y="286" fill="#FACC15" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Thành Thu Nhập Ngay</text><text x="64" y="346" fill="#E0E7FF" font-family="Arial,sans-serif" font-size="20">Tạo tin đăng nhanh, theo dõi giao vận tự động.</text></svg>`),
+    targetUrl: '/create-post',
+    openInNewTab: false,
+    isFallback: true,
+  },
+];
+
+const resolveBannerImageUrl = (rawUrl, adminUrl, apiUrl) => {
+  if (!rawUrl || typeof rawUrl !== 'string') return DEFAULT_BANNERS[0].imageUrl;
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return DEFAULT_BANNERS[0].imageUrl;
+  if (/^(https?:\/\/|data:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  if (trimmed.startsWith('/banners/')) {
+    return `${apiUrl}${trimmed}`;
+  }
+  if (trimmed.startsWith('/uploads/')) {
+    return `${adminUrl}${trimmed}`;
+  }
+  return trimmed;
 };
 
-const HomePage = () => {
-  const [filteredPosts, setFilteredPosts] = useState([]); 
+// --- Skeleton Component ---
+const ProductSkeleton = () => (
+  <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-stone-100 animate-pulse flex flex-col h-full">
+    <div className="w-full aspect-square bg-stone-200"></div>
+    <div className="p-3 space-y-3 flex-1 flex flex-col">
+      <div className="h-4 bg-stone-200 rounded w-3/4"></div>
+      <div className="h-4 bg-stone-200 rounded w-1/2"></div>
+      <div className="mt-auto h-3 bg-stone-200 rounded w-1/3"></div>
+    </div>
+  </div>
+);
+
+const CategorySkeleton = () => (
+  <div className="flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-stone-100 shadow-sm animate-pulse h-28">
+    <div className="w-12 h-12 mb-2 bg-stone-200 rounded-full"></div>
+    <div className="h-3 bg-stone-200 rounded w-16"></div>
+  </div>
+);
+
+export default function HomePage() {
+  const toast = useToast();
+  const navigate = useNavigate();
+  const [posts, setPosts] = useState([]); 
+  const [categories, setCategories] = useState([{name: 'Tất cả', icon: '🏠'}]);
   const [selectedCategory, setSelectedCategory] = useState('Tất cả'); 
   const [keyword, setKeyword] = useState(''); 
-  const [categories, setCategories] = useState([{name: 'Tất cả', icon: '🏠'}]);
-  
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  
   const [favoriteIds, setFavoriteIds] = useState([]);
+  const [locationFilter, setLocationFilter] = useState('Tất cả khu vực');
   
-  const navigate = useNavigate();
-  const API_URL = process.env.REACT_APP_API_URL || 'https://haihand-marketplace.onrender.com'; 
-  const user = JSON.parse(localStorage.getItem('user'));
+  // --- New Loading States ---
+  const [isLoadingPosts, setIsLoadingPosts] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+
+  const [banners, setBanners] = useState(DEFAULT_BANNERS);
+  const [currentBanner, setCurrentBanner] = useState(0);
+
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
+  const ADMIN_URL = process.env.REACT_APP_ADMIN_URL || 'http://localhost:4001';
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (user) {
+    if (user?._id) {
         axios.get(`${API_URL}/api/users/favorites/${user._id}`)
              .then(res => setFavoriteIds(res.data.map(post => post._id)))
              .catch(err => console.log(err));
+    } else {
+        setFavoriteIds([]);
     }
-  }, [user?._id]);
+  }, [user?._id, API_URL]);
 
-  const fetchPosts = async (currentPage = 1, currentCategory = 'Tất cả', currentKeyword = '') => {
+  const fetchPosts = useCallback(async (currentPage = 1, currentCategory = 'Tất cả', currentKeyword = '', loc = 'Tất cả khu vực') => {
+    if (currentPage === 1) setIsLoadingPosts(true);
+    else setIsLoadingMore(true);
+
     try {
-      let url = `${API_URL}/api/posts?page=${currentPage}&limit=8`;
-      
-      if (currentCategory !== 'Tất cả' && currentCategory !== 'Kết quả tìm kiếm') {
-        url += `&category=${currentCategory}`;
-      }
-      if (currentKeyword.trim()) {
-        url += `&search=${currentKeyword}`;
-      }
+      let url = `${API_URL}/api/posts?page=${currentPage}&limit=10`;
+      if (currentCategory !== 'Tất cả' && currentCategory !== 'Kết quả tìm kiếm') url += `&category=${currentCategory}`;
+      if (currentKeyword.trim()) url += `&search=${currentKeyword}`;
+      if (loc !== 'Tất cả khu vực') url += `&location=${loc}`;
 
       const { data } = await axios.get(url);
 
-      if (currentPage === 1) {
-        setFilteredPosts(data);
-      } else {
-        setFilteredPosts(prev => [...prev, ...data]);
-      }
-
-      setHasMore(data.length === 8);
+      if (currentPage === 1) setPosts(data);
+      else setPosts(prev => [...prev, ...data]);
+      
+      setHasMore(data.length === 10);
     } catch (error) {
+      toast.error('Lỗi kết nối', 'Không thể tải tin đăng. Vui lòng thử lại.');
       console.error("Lỗi kết nối Server:", error);
+    } finally {
+      setIsLoadingPosts(false);
+      setIsLoadingMore(false);
     }
-  };
+  }, [API_URL, toast]);
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
+    setIsLoadingCategories(true);
     try {
       const { data } = await axios.get(`${API_URL}/api/categories`);
       const dynamicCats = data.map(c => ({ name: c.name, image: c.image }));
       setCategories([{name: 'Tất cả', icon: '🏠'}, ...dynamicCats]);
-    } catch (error) { console.error("Lỗi lấy danh mục:", error); }
-  };
+    } catch (error) { 
+      toast.error('Lỗi', 'Không tải được danh mục');
+      console.error("Lỗi lấy danh mục:", error); 
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  }, [API_URL, toast]);
 
-  const handleCategoryClick = (category) => {
+  const handleCategoryClick = useCallback((category) => {
+    if (selectedCategory === category) return;
     setSelectedCategory(category);
     setPage(1);
-    setKeyword('');
-    fetchPosts(1, category, '');
-  };
+    fetchPosts(1, category, keyword, locationFilter);
+  }, [selectedCategory, keyword, locationFilter, fetchPosts]);
 
-  const handleSearch = () => {
-    if(!keyword.trim()) {
-      setSelectedCategory('Tất cả');
-      setPage(1);
-      return fetchPosts(1, 'Tất cả', '');
-    }
+  const handleLocationClick = useCallback((loc) => {
+    if (locationFilter === loc) return;
+    setLocationFilter(loc);
+    setPage(1);
+    fetchPosts(1, selectedCategory, keyword, loc);
+  }, [locationFilter, selectedCategory, keyword, fetchPosts]);
+
+  const handleSearch = useCallback((searchKeyword) => {
+    setKeyword(searchKeyword);
     setSelectedCategory('Kết quả tìm kiếm');
     setPage(1);
-    fetchPosts(1, 'Kết quả tìm kiếm', keyword);
-  };
+    fetchPosts(1, 'Kết quả tìm kiếm', searchKeyword, locationFilter);
+  }, [locationFilter, fetchPosts]);
 
-  const handleLoadMore = () => {
+  const handleLoadMore = useCallback(() => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchPosts(nextPage, selectedCategory, keyword);
-  };
+    fetchPosts(nextPage, selectedCategory, keyword, locationFilter);
+  }, [page, selectedCategory, keyword, locationFilter, fetchPosts]);
+
+  const fetchBanners = useCallback(async () => {
+    try {
+      const { data } = await axios.get(`${API_URL}/api/banners`);
+      if (Array.isArray(data) && data.length > 0) {
+        setBanners(data);
+        setCurrentBanner(0);
+      } else {
+        setBanners(DEFAULT_BANNERS);
+      }
+    } catch (error) {
+      setBanners(DEFAULT_BANNERS);
+    }
+  }, [API_URL]);
+
+  const handleBannerClick = useCallback((banner) => {
+    const rawTarget = String(banner?.targetUrl || '').trim();
+    if (!rawTarget) return;
+
+    if (/^https?:\/\//i.test(rawTarget)) {
+      if (banner?.openInNewTab) {
+        window.open(rawTarget, '_blank', 'noopener,noreferrer');
+      } else {
+        window.location.href = rawTarget;
+      }
+      return;
+    }
+
+    const internalPath = rawTarget.startsWith('/') ? rawTarget : `/${rawTarget}`;
+    if (banner?.openInNewTab) {
+      window.open(internalPath, '_blank', 'noopener,noreferrer');
+    } else {
+      navigate(internalPath);
+    }
+  }, [navigate]);
 
   useEffect(() => {
-    fetchPosts(1, 'Tất cả', '');
+    fetchPosts(1, 'Tất cả', '', 'Tất cả khu vực');
     fetchCategories();
-    
+    fetchBanners();
+  }, [fetchPosts, fetchCategories, fetchBanners]);
+
+  useEffect(() => {
+    if (!banners || banners.length <= 1) return undefined;
+    const timer = setInterval(() => {
+      setCurrentBanner((prev) => (prev + 1) % banners.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [banners]);
+
+  const toggleFavorite = useCallback(async (e, postId) => {
+      e.stopPropagation(); 
+      e.preventDefault();
+      if (!user) { toast.warning('Yêu cầu đăng nhập', 'Vui lòng đăng nhập để lưu tin yêu thích!'); navigate('/login'); return; }
+      
+      const isFav = favoriteIds.includes(postId);
+      setFavoriteIds(prev => isFav ? prev.filter(id => id !== postId) : [...prev, postId]);
+      
+      try {
+          await axios.post(`${API_URL}/api/users/favorites`, { userId: user._id, postId: postId });
+          toast.success(isFav ? 'Đã bỏ lưu tin' : 'Đã lưu tin thành công!');
+      } catch (error) { 
+          setFavoriteIds(prev => isFav ? [...prev, postId] : prev.filter(id => id !== postId));
+          toast.error('Lỗi', 'Không thể thao tác lúc này');
+      }
+  }, [user, favoriteIds, API_URL, navigate, toast]);
+
+  const formatTimeAgo = useCallback((dateString) => {
+    if (!dateString) return 'Mới'; 
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now - date) / 1000);
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " năm trước";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " tháng trước";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " ngày trước";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " giờ trước";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " phút trước";
+    return "Vừa xong";
   }, []);
 
-  const getImageUrl = (post) => {
-    if (post.images && post.images.length > 0) {
-        return post.images[0].startsWith('http') ? post.images[0] : `${API_URL}/${post.images[0].replace(/\\/g, '/')}`;
-    }
-    if (post.image) {
-        return post.image.startsWith('http') ? post.image : `${API_URL}/uploads/${post.image}`;
-    }
-    return 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg';
-  };
-
-  const toggleFavorite = async (e, postId) => {
-      e.stopPropagation(); 
-      if (!user) { alert('Vui lòng đăng nhập để lưu tin!'); return; }
-
-      try {
-          if (favoriteIds.includes(postId)) {
-              setFavoriteIds(favoriteIds.filter(id => id !== postId)); 
-          } else {
-              setFavoriteIds([...favoriteIds, postId]); 
-          }
-          await axios.post(`${API_URL}/api/users/favorites`, { userId: user._id, postId: postId });
-      } catch (error) { 
-          console.error(error); 
-      }
-  };
+  const locations = useMemo(() => ['Tất cả khu vực', 'Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng'], []);
 
   return (
-    <div style={{ backgroundColor: '#F4F4F4', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      
-      <style>
-        {`
-          .heart-btn-hover { transition: all 0.2s ease-in-out; }
-          .heart-btn-hover:hover { transform: scale(1.15); }
-          .heart-btn-hover:active { transform: scale(0.9); }
-          .hover-shadow:hover { box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15) !important; transform: translateY(-2px); transition: all 0.2s; }
-        `}
-      </style>
+    <div className="bg-[#FFFBEB] min-h-screen text-[#1C1917] font-sans">
+      <AppHeader onSearch={handleSearch} />
+      <main className="max-w-[1200px] mx-auto px-4 py-8 space-y-10">
+        
+        {/* Banner Section */}
+        <section className="bg-white rounded-2xl shadow-sm overflow-hidden flex flex-col md:flex-row items-stretch border border-[#E7E5E4] min-h-[360px] transition-shadow duration-300 hover:shadow-md">
+           <div className="flex-1 space-y-5 p-8 md:p-12 flex flex-col justify-center">
+             <span className="inline-flex self-start items-center gap-1 text-sm bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-semibold border border-emerald-200">
+               Mùa dọn nhà đón Tết
+             </span>
+             <h1 className="text-3xl md:text-4xl font-bold tracking-tight leading-snug">
+               Dọn nhà đón Tết — Thanh lý đồ cũ giá tốt
+             </h1>
+             <p className="text-stone-500 max-w-md leading-relaxed text-lg">
+               Giải phóng không gian sống, chuyển giao vật dụng thân yêu cho người cần với hơn 50.000+ người mua đang tìm kiếm mỗi ngày.
+             </p>
+             <div className="pt-2 flex flex-wrap gap-3 items-center">
+               <Button variant="primary" className="transition-transform duration-300 hover:-translate-y-0.5" onClick={() => handleCategoryClick('Tất cả')}>Khám phá ngay</Button>
+               <a 
+                 href="/register-seller" 
+                 target="_blank" 
+                 rel="noopener noreferrer" 
+                 className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm bg-stone-900 text-white hover:bg-stone-800 transition-transform duration-300 hover:-translate-y-0.5 shadow-sm text-decoration-none"
+               >
+                 <i className="fas fa-store text-amber-400"></i> Đăng ký bán hàng B2C
+               </a>
+             </div>
+           </div>
+           <div className="w-full md:w-[45%] lg:w-[50%] relative shrink-0 min-h-[250px] md:min-h-full group">
+             <div className="absolute inset-0 w-full h-full bg-stone-900 overflow-hidden">
+               {banners.map((banner, idx) => {
+                 const activeIndex = banners.length > 0 ? currentBanner % banners.length : 0;
+                 const isSlideActive = activeIndex === idx;
+                 const hasTarget = Boolean(banner && banner.targetUrl && String(banner.targetUrl).trim());
+                 const imgSrc = resolveBannerImageUrl(banner?.imageUrl, ADMIN_URL, API_URL);
+                 return (
+                   <div
+                     key={banner?._id || idx}
+                     onClick={() => hasTarget && handleBannerClick(banner)}
+                     role={hasTarget ? 'link' : undefined}
+                     tabIndex={isSlideActive && hasTarget ? 0 : -1}
+                     onKeyDown={(e) => {
+                       if (hasTarget && (e.key === 'Enter' || e.key === ' ')) {
+                         e.preventDefault();
+                         handleBannerClick(banner);
+                       }
+                     }}
+                     title={hasTarget ? `${banner?.title ? banner.title + ' - ' : ''}Nhấn để xem chi tiết` : (banner?.title || `Banner ${idx + 1}`)}
+                     className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
+                       isSlideActive ? 'opacity-100 z-[1] pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
+                     } ${hasTarget ? 'cursor-pointer' : ''}`}
+                   >
+                     <img
+                       src={imgSrc}
+                       alt={banner?.title || `Banner ${idx + 1}`}
+                       className="w-full h-full object-cover"
+                       onError={(e) => {
+                         if (e.currentTarget.dataset.fallbackApplied) return;
+                         e.currentTarget.dataset.fallbackApplied = '1';
+                         e.currentTarget.src = DEFAULT_BANNERS[idx % DEFAULT_BANNERS.length].imageUrl;
+                       }}
+                     />
+                     {banner?.title && !banner?.isFallback && (
+                       <div className="pointer-events-none absolute top-3 left-3 max-w-[85%] px-3 py-1.5 rounded-full bg-stone-950/65 backdrop-blur-sm text-white text-xs font-semibold shadow-sm truncate">
+                         {banner.title}
+                       </div>
+                     )}
+                   </div>
+                 );
+               })}
+               {/* Indicators */}
+               {banners.length > 1 && (
+                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
+                   {banners.map((_, idx) => {
+                     const activeIndex = banners.length > 0 ? currentBanner % banners.length : 0;
+                     return (
+                       <button
+                         key={idx}
+                         type="button"
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           setCurrentBanner(idx);
+                         }}
+                         className={`h-2 rounded-full transition-all duration-300 ${activeIndex === idx ? 'bg-[#FACC15] w-8' : 'bg-white/70 w-2 hover:bg-white'}`}
+                         aria-label={`Go to slide ${idx + 1}`}
+                       />
+                     );
+                   })}
+                 </div>
+               )}
 
-      <Header keyword={keyword} setKeyword={setKeyword} onSearch={handleSearch} />
+               {/* Navigation Arrows */}
+               {banners.length > 1 && (
+                 <>
+                   <button
+                     type="button"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setCurrentBanner(prev => (prev === 0 ? banners.length - 1 : prev - 1));
+                     }}
+                     className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/25 hover:bg-black/55 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 rounded-r-lg"
+                     aria-label="Previous slide"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+                   </button>
+                   <button
+                     type="button"
+                     onClick={(e) => {
+                       e.stopPropagation();
+                       setCurrentBanner(prev => (prev >= banners.length - 1 ? 0 : prev + 1));
+                     }}
+                     className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/25 hover:bg-black/55 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 rounded-l-lg"
+                     aria-label="Next slide"
+                   >
+                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+                   </button>
+                 </>
+               )}
 
-      <div className="bg-white py-4 mb-4 border-bottom shadow-sm">
-          <div className="container">
-              <div className="d-flex justify-content-center gap-4 flex-wrap">
-                  {categories.map((cat, idx) => (
-                      <div key={idx} className="text-center p-2 rounded-3 transition-all" 
-                        style={{ cursor: 'pointer', minWidth: '80px', backgroundColor: selectedCategory === cat.name ? '#FFF3CD' : 'transparent', border: selectedCategory === cat.name ? '1px solid #FFC107' : '1px solid transparent' }}
-                        onClick={() => handleCategoryClick(cat.name)}
-                      >
-                          <div className="bg-light rounded-circle d-flex align-items-center justify-content-center mb-2 mx-auto shadow-sm overflow-hidden" style={{width: '55px', height: '55px', fontSize: '24px'}}>
-                              {cat.name === 'Tất cả' ? cat.icon : (
-                                  <img 
-                                    src={cat.image?.startsWith('http') ? cat.image : `${API_URL}/uploads/${cat.image}`} 
-                                    style={{width: '100%', height: '100%', objectFit: 'cover'}} 
-                                    alt={cat.name} 
-                                    onError={(e) => { e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'; }}
-                                  />
-                              )}
-                          </div>
-                          <small className={`fw-bold ${selectedCategory === cat.name ? 'text-dark' : 'text-muted'}`}>{cat.name}</small>
-                      </div>
-                  ))}
-              </div>
+             </div>
+           </div>
+        </section>
+
+        {/* Categories Section */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-bold tracking-tight">Khám phá danh mục đồ cũ</h2>
+            <button className="text-[#EA580C] text-sm font-semibold hover:underline flex items-center gap-1 transition-colors hover:text-[#C2410C] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#EA580C] rounded">
+              Tất cả danh mục
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
           </div>
-      </div>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+            {isLoadingCategories ? (
+              Array.from({ length: 8 }).map((_, i) => <CategorySkeleton key={i} />)
+            ) : (
+              categories.map((cat, idx) => (
+                <button 
+                  key={idx} 
+                  onClick={() => handleCategoryClick(cat.name)}
+                  aria-pressed={selectedCategory === cat.name}
+                  className={`flex flex-col items-center justify-center p-3 bg-white rounded-xl border transition-all duration-300 hover:shadow-md hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FACC15] ${selectedCategory === cat.name ? 'border-[#FACC15] ring-2 ring-[#FACC15]/20 shadow-md' : 'border-[#E7E5E4]'} text-center h-28 w-full`}
+                >
+                  <div className="w-12 h-12 mb-2 flex items-center justify-center bg-stone-50 rounded-full overflow-hidden text-2xl">
+                    {cat.name === 'Tất cả' || cat.name === 'Kết quả tìm kiếm' ? cat.icon : (
+                      <img 
+                        src={cat.image?.startsWith('http') ? cat.image : `${API_URL}/uploads/${cat.image}`} 
+                        className="w-full h-full object-cover" 
+                        loading="lazy"
+                        alt={cat.name} 
+                        onError={(e) => { e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'; }}
+                      />
+                    )}
+                  </div>
+                  <span className={`text-xs font-semibold ${selectedCategory === cat.name ? 'text-[#1C1917]' : 'text-stone-600'} line-clamp-2`}>{cat.name}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </section>
 
-      <div style={{ flex: 1 }}>
-        <div className="container">
-          <div className="d-flex justify-content-between align-items-center mb-4">
-              <h5 className="fw-bold m-0 border-start border-4 border-warning ps-3">
-                  {selectedCategory === 'Tất cả' ? 'Tin đăng mới nhất' : `Danh mục: ${selectedCategory}`}
-              </h5>
-              <small className="text-muted">{filteredPosts.length} tin đăng</small>
+        {/* Filters */}
+        <section className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 text-stone-500 font-medium text-sm mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-[#EA580C]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+            Bộ lọc nhanh:
+          </div>
+          {locations.map(loc => (
+            <button 
+              key={loc}
+              onClick={() => handleLocationClick(loc)}
+              aria-pressed={locationFilter === loc}
+              className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FACC15] ${locationFilter === loc ? 'bg-[#FACC15] text-[#1C1917] border-[#EAB308] shadow-sm' : 'bg-white text-stone-600 border-[#E7E5E4] hover:bg-stone-50 hover:border-stone-300'}`}
+            >
+              {loc}
+            </button>
+          ))}
+        </section>
+
+        {/* Product Grid */}
+        <section>
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold tracking-tight">
+                {selectedCategory === 'Tất cả' ? 'Tin mới đăng' : selectedCategory}
+              </h2>
+              {!isLoadingPosts && (
+                <div className="flex items-center gap-2 bg-white border border-[#E7E5E4] px-3 py-1.5 rounded-full text-stone-500 text-sm shadow-sm">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="font-medium">Vừa cập nhật</span>
+                </div>
+              )}
+            </div>
+            
+            <div className="flex gap-2 text-sm font-semibold">
+               <button className="px-4 py-1.5 border border-[#1C1917] rounded-full bg-[#1C1917] text-white transition-colors">Mới nhất</button>
+               <button className="px-4 py-1.5 border border-[#E7E5E4] rounded-full bg-white text-stone-500 hover:bg-stone-50 transition-colors">Gần bạn nhất</button>
+               <button className="px-4 py-1.5 border border-[#E7E5E4] rounded-full bg-white text-stone-500 hover:bg-stone-50 transition-colors">Giá thấp → cao</button>
+            </div>
           </div>
           
-          {filteredPosts.length === 0 ? (
-              <div className="text-center py-5 text-muted bg-white rounded shadow-sm">
-                  <h3 className="mb-2">📭 Trống trơn...</h3>
-                  <p>Hiện chưa có tin nào thuộc mục <b>{selectedCategory}</b></p>
-                  <button onClick={() => handleCategoryClick('Tất cả')} className="btn btn-sm btn-outline-warning rounded-pill">Xem tất cả tin</button>
-              </div>
-          ) : (
-              <>
-                <div className="row">
-                  {filteredPosts.map((post) => {
-                    const isAuthor = user && (post.author === user._id || post.author?._id === user._id);
-                    const isFavorited = favoriteIds.includes(post._id);
-
-                    return (
-                    <div className="col-6 col-md-3 mb-4" key={post._id}>
-                      <div className="card h-100 border-0 shadow-sm hover-shadow position-relative" style={{cursor: 'pointer', borderRadius: '15px', overflow: 'hidden'}} onClick={() => navigate(`/post/${post._id}`)}>
-                        
-                        <div style={{height: '180px', overflow: 'hidden'}} className="bg-light d-flex align-items-center justify-content-center position-relative">
-                            <img 
-                                src={getImageUrl(post)} 
-                                className="card-img-top" 
-                                alt={post.title} 
-                                style={{width: '100%', height: '100%', objectFit: 'cover'}} 
-                                onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg'}} 
-                            />
-                            
-                            
-                            <span className="position-absolute top-0 start-0 bg-warning text-dark fw-bold px-2 py-1 shadow-sm" style={{fontSize: '10px', borderRadius: '0 0 12px 0'}}>
-                                🕒 {formatTimeAgo(post.createdAt)}
-                            </span>
-                            
-                            {!isAuthor && (
-                                <button 
-                                    onClick={(e) => toggleFavorite(e, post._id)} 
-                                    className="position-absolute m-2 btn btn-light shadow-sm rounded-circle d-flex justify-content-center align-items-center heart-btn-hover" 
-                                    style={{ width: '35px', height: '35px', zIndex: 10, top: 0, right: 0, padding: 0 }}
-                                    title={isFavorited ? "Bỏ lưu tin" : "Lưu tin này"}
-                                >
-                                    {isFavorited ? (
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="#dc3545">
-                                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-                                        </svg>
-                                    ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#6c757d" strokeWidth="2">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                        </svg>
-                                    )}
-                                </button>
-                            )}
-
-                        </div>
-                        <div className="card-body p-3 d-flex flex-column">
-                          <h6 className="card-title text-truncate fw-bold mb-1" style={{fontSize: '14px', color: '#333'}}>{post.title}</h6>
-                          <p className="text-danger fw-bold fs-6 mb-2">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(post.price)}</p>
-                          <div className="mt-auto d-flex justify-content-between align-items-center border-top pt-2">
-                            <small className="text-muted" style={{fontSize: '11px'}}>📍 {post.location || 'Toàn quốc'}</small>
-                            <span className="badge bg-light text-muted fw-normal" style={{fontSize: '10px'}}>{post.category}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )})}
+          {isLoadingPosts ? (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {Array.from({ length: 10 }).map((_, i) => <ProductSkeleton key={i} />)}
+            </div>
+          ) : posts.length === 0 ? (
+             <div className="flex flex-col items-center justify-center py-20 px-4 text-stone-500 bg-white rounded-2xl shadow-sm border border-[#E7E5E4] min-h-[300px]">
+                <div className="w-24 h-24 bg-stone-50 rounded-full flex items-center justify-center mb-4">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                 </div>
-                
-                {hasMore && (
-                  <div className="text-center mt-3 mb-5">
-                    <button onClick={handleLoadMore} className="btn btn-outline-warning rounded-pill px-5 py-2 fw-bold shadow-sm">
-                      ⬇️ Xem thêm tin
-                    </button>
-                  </div>
-                )}
-              </>
+                <h3 className="text-xl font-bold text-[#1C1917] mb-2">Không tìm thấy kết quả</h3>
+                <p className="max-w-md text-center mb-6">Chúng tôi không tìm thấy tin đăng nào phù hợp với yêu cầu của bạn. Hãy thử đổi bộ lọc hoặc từ khóa nhé.</p>
+                <Button variant="secondary" onClick={() => handleCategoryClick('Tất cả')}>Xem tất cả tin</Button>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {posts.map((post) => {
+                  const isAuthor = user && (post.author === user._id || post.author?._id === user._id);
+                  const isFavorited = favoriteIds.includes(post._id);
+                  const imageUrl = (post.images && post.images.length > 0) ? (post.images[0].startsWith('http') ? post.images[0] : `${API_URL}/${post.images[0].replace(/\\/g, '/')}`) : (post.image ? (post.image.startsWith('http') ? post.image : `${API_URL}/uploads/${post.image}`) : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png');
+
+                  return (
+                    <div key={post._id} className="transition-transform duration-300 hover:-translate-y-1">
+                      <ProductCard 
+                        product={{
+                          id: post._id,
+                          title: post.title,
+                          price: post.price,
+                          imageUrl: imageUrl,
+                          condition: post.condition || "Đã qua sử dụng",
+                          location: post.location || 'Toàn quốc',
+                          timeAgo: formatTimeAgo(post.createdAt),
+                          category: post.category
+                        }} 
+                        isFavorited={isFavorited}
+                        isAuthor={isAuthor}
+                        onFavorite={(e) => toggleFavorite(e, post._id)}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {hasMore && (
+                <div className="mt-10 flex justify-center">
+                  <Button variant="secondary" onClick={handleLoadMore} disabled={isLoadingMore} className="px-8 py-3 group relative overflow-hidden transition-all duration-300">
+                    <span className={`flex items-center transition-opacity duration-300 ${isLoadingMore ? 'opacity-0' : 'opacity-100'}`}>
+                      Xem thêm tin đăng khác <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-2 transition-transform duration-300 group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                    </span>
+                    {isLoadingMore && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <svg className="animate-spin h-5 w-5 text-stone-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
-        </div>
-      </div>
-      <Footer />
+        </section>
+
+      </main>
+      <AppFooter />
     </div>
   );
 };
-
-export default HomePage;

@@ -1,13 +1,10 @@
 const express = require('express');
-const { protect, isSeller, isAdmin, requireAdminJWT } = require('../middleware/auth');
+const { protect, isSeller, isAdmin } = require('../middleware/auth');
 const User = require('../models/User');
 const Order = require('../models/Order');
-const Settings = require('../models/Settings');
 const { Post } = require('../models/Product');
+const { indexProductImage } = require('../services/imageEmbeddingService');
 const {
-  PENDING_PRODUCT_STATUSES,
-  fetchPlatformFeePercent,
-  calculateOrderSplit,
   sanitizeUser,
   canonicalStatus,
   productOwnerId,
@@ -15,30 +12,6 @@ const {
   orderBuyerId
 } = require('../utils/b2c');
 const shippingService = require('../services/shipping');
-const { cancelOrderWithRefundAndRestock } = require('../controllers/checkoutController');
-const { transitionOrder } = require('../utils/orderStateMachine');
-const safeRefreshProductSearch = (product, forceImage = false) => {
-  if (process.env.NODE_ENV === 'test') return;
-  setImmediate(() => {
-    try {
-      const { refreshProductSearch } = require('../services/chatbotService');
-      if (typeof refreshProductSearch === 'function') {
-        refreshProductSearch(product, forceImage).catch((err) => {
-          console.warn('[ImageSearch] Bỏ qua lỗi refreshProductSearch (non-blocking):', err.message);
-        });
-        return;
-      }
-    } catch (e) {}
-    try {
-      const { indexProductImage } = require('../services/imageEmbeddingService');
-      if (typeof indexProductImage === 'function') {
-        indexProductImage(product).catch((err) => {
-          console.warn('[ImageEmbedding] Bỏ qua lỗi tạo vector ảnh (non-blocking):', err.message);
-        });
-      }
-    } catch (e) {}
-  });
-};
 const { pickAddressFields, formatAddress, isCompleteAddress } = require('../models/schemas/Address');
 
 module.exports = function createSellerRouter({ upload, sendNotification, sendAdminNotification, io }) {
@@ -46,44 +19,17 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
 
   const parseVariants = (raw) => {
     if (!raw) return [];
-    let list = raw;
-    if (!Array.isArray(list)) {
-      try {
-        const parsed = JSON.parse(raw);
-        list = Array.isArray(parsed) ? parsed : [];
-      } catch (e) {
-        return [];
-      }
+    if (Array.isArray(raw)) return raw;
+    try {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
     }
-    return list
-      .filter((v) => v && typeof v === 'object')
-      .map((v) => ({
-        name: v.name != null ? String(v.name).trim() : '',
-        ...(v.price !== undefined && v.price !== null && v.price !== '' ? { price: Number(v.price) || 0 } : {}),
-        stock: v.stock !== undefined && v.stock !== null && v.stock !== '' ? Math.max(0, Number(v.stock) || 0) : 0,
-        sku: v.sku != null ? String(v.sku).trim() : '',
-        options: Array.isArray(v.options) ? v.options.map((opt) => String(opt)) : []
-      }));
   };
 
   router.post('/api/users/apply-seller', protect, async (req, res) => {
     try {
-      let setting = null;
-      try {
-        const isSettingsConnected = Settings.db && Settings.db.readyState === 1;
-        const isSettingsMocked =
-          typeof Settings.findOne === 'function' && Boolean(Settings.findOne._isMockFunction);
-        if (isSettingsConnected || isSettingsMocked) {
-          setting = await Settings.findOne();
-        }
-      } catch (sErr) {}
-
-      if (setting && setting.allowNewSellerRegistration === false) {
-        return res.status(403).json({
-          message: 'Hiện tại sàn đang tạm ngưng nhận đăng ký mở Shop mới. Vui lòng quay lại sau!'
-        });
-      }
-
       const user = await User.findById(req.user._id);
       if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
       if (user.sellerStatus === 'approved' && user.isSeller) {
@@ -145,7 +91,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
-  router.get('/api/admin/seller-applications', requireAdminJWT, async (req, res) => {
+  router.get('/api/admin/seller-applications', isAdmin, async (req, res) => {
     try {
       const status = req.query.status || 'pending';
       const query = status === 'all'
@@ -160,7 +106,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
-  router.put('/api/admin/approve-seller/:id', requireAdminJWT, async (req, res) => {
+  router.put('/api/admin/approve-seller/:id', isAdmin, async (req, res) => {
     try {
       const user = await User.findById(req.params.id);
       if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
@@ -193,7 +139,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
-  router.put('/api/admin/reject-seller/:id', requireAdminJWT, async (req, res) => {
+  router.put('/api/admin/reject-seller/:id', isAdmin, async (req, res) => {
     try {
       const user = await User.findById(req.params.id);
       if (!user) return res.status(404).json({ message: 'Không tìm thấy người dùng' });
@@ -224,22 +170,10 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       const products = await Post.find({ $or: [{ sellerId }, { author: sellerId }] });
       const orders = await Order.find({ $or: [{ sellerId }, { seller: sellerId }] });
 
-      const feePercent = await fetchPlatformFeePercent();
       const pending = orders.filter((o) => canonicalStatus(o.status) === 'Pending').length;
       const processing = orders.filter((o) => ['Processing', 'Shipped', 'Delivered'].includes(canonicalStatus(o.status))).length;
       const completed = orders.filter((o) => canonicalStatus(o.status) === 'Completed');
-      const settledCodOrCompleted = orders.filter(
-        (o) =>
-          canonicalStatus(o.status) === 'Completed' ||
-          (o.paymentMethod === 'COD' && (o.settled === true || canonicalStatus(o.status) === 'Delivered'))
-      );
-      const revenue = settledCodOrCompleted.reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
-      const releasedRevenue = settledCodOrCompleted
-        .filter((o) => o.paymentStatus === 'released' || o.settled === true || o.paymentMethod === 'COD')
-        .reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
-      const escrowRevenue = orders
-        .filter((o) => o.paymentStatus === 'escrow' && canonicalStatus(o.status) !== 'Cancelled')
-        .reduce((sum, o) => sum + calculateOrderSplit(o, feePercent).sellerReceive, 0);
+      const revenue = completed.reduce((sum, o) => sum + (o.totalPrice || 0) * 0.95, 0);
       const totalSales = completed.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
       res.json({
@@ -247,21 +181,82 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         stats: {
           productCount: products.length,
           activeProducts: products.filter((p) => p.status === 'active' || p.status === 'APPROVED').length,
-          pendingProducts: products.filter((p) => PENDING_PRODUCT_STATUSES.includes(p.status)).length,
           pendingOrders: pending,
           openOrders: processing,
           completedOrders: completed.length,
           totalSales,
           revenue,
-          releasedRevenue,
-          escrowRevenue,
-          platformFeePercentage: feePercent,
           walletBalance: req.user.walletBalance || 0,
           pendingBalance: req.user.pendingBalance || 0
         }
       });
     } catch (error) {
       res.status(500).json({ message: 'Lỗi dashboard Seller' });
+    }
+  });
+
+  router.get('/api/seller/analytics', protect, isSeller, async (req, res) => {
+    try {
+      const sellerId = req.user._id;
+      const products = await Post.find({ $or: [{ sellerId }, { author: sellerId }] })
+        .select('name title price stockQuantity quantity soldCount images category status')
+        .lean();
+
+      const productIds = products.map((p) => p._id);
+      const UserEvent = require('../models/UserEvent');
+
+      const eventStats = await UserEvent.aggregate([
+        {
+          $match: {
+            productId: { $in: productIds },
+            type: { $in: ['product_view', 'cart_add', 'purchase'] }
+          }
+        },
+        {
+          $group: {
+            _id: { productId: '$productId', type: '$type' },
+            count: { $sum: 1 }
+          }
+        }
+      ]);
+
+      const statsMap = new Map();
+      for (const stat of eventStats) {
+        if (!stat._id?.productId) continue;
+        const pid = stat._id.productId.toString();
+        if (!statsMap.has(pid)) {
+          statsMap.set(pid, { views: 0, cartAdds: 0, purchases: 0 });
+        }
+        const record = statsMap.get(pid);
+        if (stat._id.type === 'product_view') record.views = stat.count;
+        else if (stat._id.type === 'cart_add') record.cartAdds = stat.count;
+        else if (stat._id.type === 'purchase') record.purchases = stat.count;
+      }
+
+      const items = products.map((p) => {
+        const s = statsMap.get(p._id.toString()) || { views: 0, cartAdds: 0, purchases: 0 };
+        const views = s.views;
+        const cartAdds = s.cartAdds;
+        const purchases = Math.max(s.purchases, p.soldCount || 0);
+        const conversionRate = views > 0 ? Number(((purchases / views) * 100).toFixed(1)) : 0;
+        return {
+          _id: p._id,
+          name: p.title || p.name || 'Sản phẩm',
+          price: p.price,
+          category: p.category,
+          image: p.images?.[0] || '',
+          stock: p.stockQuantity ?? p.quantity ?? 0,
+          status: p.status,
+          views,
+          cartAdds,
+          purchases,
+          conversionRate
+        };
+      });
+
+      res.json({ success: true, items });
+    } catch (error) {
+      res.status(500).json({ message: 'Lỗi tải phân tích sản phẩm: ' + error.message });
     }
   });
 
@@ -320,40 +315,12 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
-  const parsePositiveIntOrZero = (raw, fieldName, { min = 0 } = {}) => {
-    if (raw === undefined || raw === null || raw === '') return null;
-    if (typeof raw === 'object' || typeof raw === 'boolean' || String(raw).includes('.')) {
-      throw new Error(`${fieldName} phải là số nguyên >= ${min}`);
-    }
-    const num = Number(raw);
-    if (!Number.isFinite(num) || !Number.isInteger(num) || num < min) {
-      throw new Error(`${fieldName} phải là số nguyên >= ${min}`);
-    }
-    return num;
-  };
-
   router.post('/api/seller/products', protect, isSeller, upload.array('images', 8), async (req, res) => {
     try {
-      const { name, title, sku, price, originalPrice, stockQuantity, quantity, category, location, description, condition, variants, details } = req.body || {};
-      const displayName = typeof (name || title) === 'string' ? (name || title).trim() : '';
-      if (!displayName || price === undefined || price === null || price === '' || !category || typeof category !== 'string') {
+      const { name, title, sku, price, originalPrice, stockQuantity, quantity, category, location, description, condition, status, variants, details } = req.body;
+      const displayName = (name || title || '').trim();
+      if (!displayName || !price || !category) {
         return res.status(400).json({ message: 'Vui lòng nhập tên, giá và danh mục.' });
-      }
-
-      let numPrice;
-      let numOriginalPrice = 0;
-      let stock = 0;
-      try {
-        numPrice = parsePositiveIntOrZero(price, 'Giá sản phẩm', { min: 1000 });
-        if (originalPrice !== undefined && originalPrice !== null && originalPrice !== '') {
-          numOriginalPrice = parsePositiveIntOrZero(originalPrice, 'Giá gốc', { min: 0 });
-        }
-        const rawStock = stockQuantity !== undefined && stockQuantity !== null && stockQuantity !== ''
-          ? stockQuantity
-          : (quantity !== undefined && quantity !== null && quantity !== '' ? quantity : 0);
-        stock = parsePositiveIntOrZero(rawStock, 'Số lượng tồn kho', { min: 0 });
-      } catch (valErr) {
-        return res.status(400).json({ message: valErr.message });
       }
 
       const imagePaths = (req.files || []).map((file) => file.path || file.secure_url || file.filename);
@@ -361,6 +328,8 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       if (details) {
         try { parsedDetails = typeof details === 'string' ? JSON.parse(details) : details; } catch (e) { parsedDetails = {}; }
       }
+
+      const stock = Number(stockQuantity != null ? stockQuantity : quantity) || 0;
 
       // Check Auto-Approve setting from GlobalSetting
       let isAutoApprove = false;
@@ -370,34 +339,33 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         isAutoApprove = setting && setting.autoApprovePosts === true;
       } catch (e) {}
 
-      const moderationStatus = isAutoApprove ? 'approved' : 'pending';
-      const postStatus = stock <= 0 ? 'out_of_stock' : (isAutoApprove ? 'active' : 'pending');
+      const postStatus = stock <= 0 ? 'out_of_stock' : (status === 'inactive' ? 'inactive' : (isAutoApprove ? 'active' : 'pending'));
 
       const product = new Post({
         name: displayName,
         title: displayName,
-        sku: typeof sku === 'string' ? sku.trim() : '',
-        price: numPrice,
-        originalPrice: numOriginalPrice,
+        sku: sku || '',
+        price: Number(price),
+        originalPrice: Number(originalPrice) || 0,
         stockQuantity: stock,
         quantity: stock,
-        category: category.trim(),
-        location: (typeof location === 'string' && location.trim()) || (req.user.shopInfo && req.user.shopInfo.address) || 'Toàn quốc',
-        description: typeof description === 'string' ? description : '',
-        condition: (typeof condition === 'string' && condition.trim()) || parsedDetails.condition || 'Mới',
+        category,
+        location: location || (req.user.shopInfo && req.user.shopInfo.address) || 'Toàn quốc',
+        description: description || '',
+        condition: condition || parsedDetails.condition || 'Mới',
         images: imagePaths,
         sellerId: req.user._id,
         author: req.user._id,
         variants: parseVariants(variants),
         details: parsedDetails,
-        status: postStatus,
-        moderationStatus
+        status: postStatus
       });
       await product.save();
 
-      // M13 + Image Search: Cập nhật vector tìm kiếm & image embedding bất đồng bộ (non-blocking)
-      if (imagePaths.length > 0) {
-        safeRefreshProductSearch(product, true);
+      try {
+        await indexProductImage(product);
+      } catch (error) {
+        console.warn(`Không tạo được image embedding cho ${product._id}: ${error.message}`);
       }
 
       // Trigger 1: When a user/seller creates a new Product/Post (and auto-approve is false), automatically create a notification for Admins
@@ -443,144 +411,30 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         return res.status(403).json({ message: 'Không phải sản phẩm của Shop bạn' });
       }
 
-      if (product.moderationStatus === 'locked' || product.status === 'DELETED') {
-        return res.status(403).json({
-          message: 'Sản phẩm này đã bị Quản trị viên khóa/ẩn do vi phạm. Bạn không thể chỉnh sửa hoặc bật lại!'
-        });
-      }
-
-      const body = req.body || {};
-      let contentChanged = false;
-
-      if (body.price !== undefined) {
-        try {
-          const nextPrice = parsePositiveIntOrZero(body.price, 'Giá sản phẩm', { min: 1000 });
-          if (nextPrice !== product.price) contentChanged = true;
-          product.price = nextPrice;
-        } catch (e) {
-          return res.status(400).json({ message: e.message });
-        }
-      }
-
-      if (body.originalPrice !== undefined && body.originalPrice !== '') {
-        try {
-          product.originalPrice = parsePositiveIntOrZero(body.originalPrice, 'Giá gốc', { min: 0 });
-        } catch (e) {
-          return res.status(400).json({ message: e.message });
-        }
-      }
-
-      if (body.stockQuantity !== undefined || body.quantity !== undefined) {
-        const rawStock = body.stockQuantity !== undefined ? body.stockQuantity : body.quantity;
-        try {
-          const nextStock = parsePositiveIntOrZero(rawStock, 'Số lượng tồn kho', { min: 0 });
-          product.stockQuantity = nextStock;
-          product.quantity = nextStock;
-        } catch (e) {
-          return res.status(400).json({ message: e.message });
-        }
-      }
-
-      const nextName = body.name !== undefined ? body.name : body.title;
-      if (nextName !== undefined && typeof nextName === 'string' && nextName.trim()) {
-        if (nextName.trim() !== product.name) contentChanged = true;
-        product.name = nextName.trim();
-        product.title = nextName.trim();
-      }
-
-      if (body.description !== undefined && typeof body.description === 'string') {
-        if (body.description !== product.description) contentChanged = true;
-        product.description = body.description;
-      }
-
-      const stringFields = ['sku', 'category', 'location', 'condition'];
-      stringFields.forEach((key) => {
-        if (body[key] !== undefined && typeof body[key] === 'string') {
-          product[key] = body[key].trim();
-        }
+      const fields = ['name', 'title', 'sku', 'price', 'originalPrice', 'stockQuantity', 'quantity', 'category', 'location', 'description', 'condition', 'status'];
+      fields.forEach((key) => {
+        if (req.body[key] !== undefined) product[key] = req.body[key];
       });
-
-      if (body.variants !== undefined) {
-        product.variants = parseVariants(body.variants);
-      }
-      if (body.details !== undefined) {
+      if (req.body.name && !req.body.title) product.title = req.body.name;
+      if (req.body.title && !req.body.name) product.name = req.body.title;
+      if (req.body.stockQuantity != null) product.quantity = Number(req.body.stockQuantity);
+      if (req.body.quantity != null && req.body.stockQuantity == null) product.stockQuantity = Number(req.body.quantity);
+      if (req.body.variants) product.variants = parseVariants(req.body.variants);
+      if (req.body.details) {
         try {
-          product.details = typeof body.details === 'string' ? JSON.parse(body.details) : body.details;
-        } catch (e) {}
+          product.details = typeof req.body.details === 'string' ? JSON.parse(req.body.details) : req.body.details;
+        } catch (e) { }
       }
       if (req.files && req.files.length > 0) {
-        product.images = req.files.map((file) => file.path || file.secure_url || file.filename);
-        contentChanged = true;
+        product.images = req.files.map((file) => file.path || file.filename);
       }
-
-      // H3: Bỏ `status` khỏi danh sách field cho sửa trực tiếp; nếu sửa giá/ảnh/mô tả của sản phẩm đã duyệt và autoApprovePosts !== true -> quay lại pending
-      let isAutoApprove = false;
-      try {
-        const Settings = require('../models/Settings');
-        const settings = await Settings.findOne();
-        isAutoApprove = settings && settings.autoApprovePosts === true;
-      } catch (e) {}
-
-      if (contentChanged && !isAutoApprove) {
-        product.moderationStatus = 'pending';
-        product.status = Number(product.stockQuantity) <= 0 ? 'out_of_stock' : 'pending';
-      } else if (Number(product.stockQuantity) <= 0) {
-        product.status = 'out_of_stock';
-      } else if (product.status === 'out_of_stock' && Number(product.stockQuantity) > 0) {
-        product.status = product.moderationStatus === 'approved' ? 'active' : 'pending';
-      }
-
+      if (Number(product.stockQuantity) <= 0) product.status = 'out_of_stock';
       await product.save();
-
-      // M13 + Image Search: Cập nhật vector tìm kiếm & image embedding bất đồng bộ (non-blocking)
-      safeRefreshProductSearch(product, Boolean(req.files?.length));
-
       res.json({ message: 'Đã cập nhật sản phẩm', product });
     } catch (error) {
       res.status(500).json({ message: 'Lỗi cập nhật sản phẩm' });
     }
   });
-
-  /**
-   * PATCH / PUT /api/seller/products/:id/visibility
-   * Nút ẩn/hiện riêng cho Seller (H3): chỉ cho phép khi sản phẩm đã `approved` và không bị Admin `locked`.
-   */
-  const toggleSellerProductVisibility = async (req, res) => {
-    try {
-      const product = await Post.findById(req.params.id);
-      if (!product) return res.status(404).json({ message: 'Không tìm thấy sản phẩm' });
-      if (productOwnerId(product) !== req.user._id.toString()) {
-        return res.status(403).json({ message: 'Không phải sản phẩm của Shop bạn' });
-      }
-      if (product.moderationStatus === 'locked' || product.status === 'DELETED') {
-        return res.status(403).json({
-          message: 'Sản phẩm đã bị Admin khóa/ẩn. Bạn không thể tự bật lại!'
-        });
-      }
-      if (product.moderationStatus && product.moderationStatus !== 'approved' && product.status !== 'active' && product.status !== 'inactive') {
-        return res.status(400).json({
-          message: 'Chỉ có thể bật/tắt hiển thị cho sản phẩm đã được Admin duyệt (approved)!'
-        });
-      }
-
-      const desiredVisible = req.body?.visible !== undefined
-        ? Boolean(req.body.visible)
-        : product.status === 'inactive';
-
-      if (desiredVisible) {
-        product.status = Number(product.stockQuantity) <= 0 ? 'out_of_stock' : 'active';
-      } else {
-        product.status = 'inactive';
-      }
-      await product.save();
-      res.json({ message: desiredVisible ? 'Đã hiển thị sản phẩm' : 'Đã ẩn sản phẩm', product });
-    } catch (error) {
-      res.status(500).json({ message: 'Lỗi thay đổi trạng thái hiển thị sản phẩm' });
-    }
-  };
-
-  router.patch('/api/seller/products/:id/visibility', protect, isSeller, toggleSellerProductVisibility);
-  router.put('/api/seller/products/:id/visibility', protect, isSeller, toggleSellerProductVisibility);
 
   router.delete('/api/seller/products/:id', protect, isSeller, async (req, res) => {
     try {
@@ -642,78 +496,48 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       const shippingCode = req.body.shippingCode;
       const shippingCarrier = req.body.shippingCarrier;
 
-      // Seller chỉ được phép chuyển từ Pending -> Processing/Cancelled, và Processing -> Shipped/Cancelled.
-      // Trạng thái Delivered chỉ do Webhook GHN hoặc Admin cập nhật.
-      // Trạng thái Completed chỉ do Buyer bấm "Đã nhận được hàng" hoặc Admin giải ngân.
       const allowed = {
         Pending: ['Processing', 'Cancelled'],
-        Processing: ['Shipped', 'Cancelled']
+        Processing: ['Shipped', 'Cancelled'],
+        Shipped: ['Delivered'],
+        Delivered: ['Completed']
       };
 
       if (!allowed[current] || !allowed[current].includes(next)) {
-        return res.status(400).json({
-          message: `Người bán không thể tự chuyển trạng thái đơn hàng từ "${current}" sang "${next}"`
-        });
+        return res.status(400).json({ message: `Không thể chuyển từ ${current} sang ${next}` });
       }
 
       if (next === 'Cancelled' && ['Shipped', 'Delivered', 'Completed'].includes(current)) {
         return res.status(400).json({ message: 'Không thể hủy đơn đang giao / đã hoàn tất' });
       }
 
-      if (next === 'Cancelled') {
-        const cancelResult = await transitionOrder(order, 'Cancelled', 'seller', {
-          actorId: req.user._id,
-          reason: req.body.cancelReason || 'Người bán hủy đơn'
-        });
-        if (!cancelResult.success) {
-          return res.status(cancelResult.statusCode || 400).json({ message: cancelResult.message });
-        }
-
-        const buyerId = orderBuyerId(order);
-        if (sendNotification && buyerId) {
-          await sendNotification(
-            buyerId,
-            'Đơn hàng đã bị hủy',
-            `Đơn #${order._id.toString().slice(-6).toUpperCase()} đã bị hủy bởi người bán.${cancelResult.refundedAmount > 0 ? ' Tiền đã được hoàn vào ví HaiPay của bạn.' : ''}`,
-            'ORDER',
-            '/profile?tab=orders_buy'
-          );
-        }
-
-        return res.json({ message: 'Đã cập nhật đơn hàng', order: cancelResult.order });
-      }
-
       // If transitioning to Shipped or Processing and order does not have a carrier shipment yet,
       // invoke shipping service (GHN or configured carrier) to register shipment with carrier API
-      const extraSet = {};
       if ((next === 'Shipped' || next === 'Processing') && (!order.shippingCode || !order.shipment?.trackingCode)) {
         try {
           const shipmentResult = await shippingService.createShipmentForOrder(order);
           if (shipmentResult) {
-            extraSet.shipment = shipmentResult;
-            extraSet.shippingCode = shipmentResult.trackingCode || shippingCode || order.shippingCode;
-            extraSet.shippingCarrier = shipmentResult.carrier || shippingCarrier || order.shippingCarrier;
+            order.shipment = shipmentResult;
+            order.shippingCode = shipmentResult.trackingCode || shippingCode || order.shippingCode;
+            order.shippingCarrier = shipmentResult.carrier || shippingCarrier || order.shippingCarrier;
           }
         } catch (shipErr) {
           console.warn('⚠️ [Shipping] Error creating carrier shipment during status update:', shipErr.message);
-          if (shippingCode) extraSet.shippingCode = shippingCode;
-          if (shippingCarrier) extraSet.shippingCarrier = shippingCarrier;
+          if (shippingCode) order.shippingCode = shippingCode;
+          if (shippingCarrier) order.shippingCarrier = shippingCarrier;
         }
       }
 
-      if (shippingCode && !order.shippingCode && !extraSet.shippingCode) extraSet.shippingCode = shippingCode;
-      if (shippingCarrier && !order.shippingCarrier && !extraSet.shippingCarrier) extraSet.shippingCarrier = shippingCarrier;
-
-      const transitionResult = await transitionOrder(order, next, 'seller', {
-        actorId: req.user._id,
-        reason: `Người bán cập nhật trạng thái sang ${next}`,
-        extraSet,
-        notify: false
-      });
-
-      if (!transitionResult.success) {
-        return res.status(transitionResult.statusCode || 400).json({ message: transitionResult.message });
+      order.status = next;
+      if (shippingCode && !order.shippingCode) order.shippingCode = shippingCode;
+      if (shippingCarrier && !order.shippingCarrier) order.shippingCarrier = shippingCarrier;
+      if (next === 'Delivered') order.deliveredAt = new Date();
+      if (next === 'Completed') order.completedAt = new Date();
+      if (next === 'Cancelled') {
+        order.cancelledAt = new Date();
+        order.cancelReason = req.body.cancelReason || '';
       }
+      await order.save();
 
       const buyerId = orderBuyerId(order);
       if (sendNotification && buyerId) {
@@ -726,7 +550,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         );
       }
 
-      res.json({ message: 'Đã cập nhật đơn hàng', order: transitionResult.order });
+      res.json({ message: 'Đã cập nhật đơn hàng', order });
     } catch (error) {
       res.status(500).json({ message: 'Lỗi cập nhật đơn hàng: ' + error.message });
     }
@@ -763,63 +587,28 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
         });
       }
 
-      // Chuẩn hóa kiểm tra thanh toán: nếu đơn Online/VNPAY chưa thanh toán xong nhưng Seller vẫn chuẩn bị hàng
-      // thì tự động chuyển sang thu hộ COD thay vì chặn cứng bằng lỗi 400
-      const methodUpper = String(order.paymentMethod || 'COD').trim().toUpperCase();
-      const isCodOrder = methodUpper === 'COD' || methodUpper.includes('COD') || methodUpper.includes('TIỀN MẶT');
-      const isPaidOrder = ['escrow', 'paid', 'released'].includes(String(order.paymentStatus || '').toLowerCase()) ||
-                          String(order.status || '').includes('Đã thanh toán');
-      if (!isCodOrder && !isPaidOrder) {
-        order.paymentMethod = 'COD';
-      }
-
-      // Gọi shippingService trong try/catch, fallback vận đơn nội bộ nếu thiếu pickupAddress/lỗi GHN
-      let shipmentResult;
-      try {
-        shipmentResult = await shippingService.createShipmentForOrder(order);
-      } catch (shipErr) {
-        console.warn('⚠️ [PrepareOrder] Fallback vận đơn nội bộ:', shipErr.message);
-        const fallbackCode = `HH${Date.now().toString().slice(-8)}`;
-        shipmentResult = {
-          provider: 'mock',
-          carrier: 'HaiHand Express',
-          trackingCode: fallbackCode,
-          fee: order.shippingFee || 25000,
-          createdAt: new Date()
-        };
-      }
-
-      const extraSet = {
-        shipment: shipmentResult,
-        trackingCode: shipmentResult.trackingCode || '',
-        shippingCode: shipmentResult.trackingCode || '',
-        shippingCarrier: shipmentResult.carrier || 'Giao Hàng Nhanh',
-        shippingStatus: order.shippingStatus || 'ready_to_pick'
-      };
-      if (order.paymentMethod) {
-        extraSet.paymentMethod = order.paymentMethod;
-      }
-
-      const transitionResult = await transitionOrder(order, 'Processing', 'seller', {
-        actorId: req.user._id,
-        reason: 'Người bán chuẩn bị hàng & tạo vận đơn',
-        extraSet,
-        notify: false,
-        allowUnpaidToCodFallback: true
-      });
-
-      if (!transitionResult.success) {
-        return res.status(transitionResult.statusCode || 400).json({
-          message: transitionResult.message
+      // Check payment status for non-COD orders
+      if (order.paymentMethod !== 'COD' && order.paymentStatus !== 'escrow') {
+        return res.status(400).json({
+          message: 'Đơn hàng chưa được thanh toán thành công, không thể tạo vận đơn giao hàng!'
         });
       }
+
+      // Call shipping service to create shipment (GHN or Mock)
+      const shipmentResult = await shippingService.createShipmentForOrder(order);
+
+      order.shipment = shipmentResult;
+      order.shippingCode = shipmentResult.trackingCode || '';
+      order.shippingCarrier = shipmentResult.carrier || 'Giao Hàng Nhanh';
+      order.status = 'Processing'; // Đang chuẩn bị hàng
+      await order.save();
 
       const buyerId = orderBuyerId(order);
       if (sendNotification && buyerId) {
         await sendNotification(
           buyerId,
           '📦 Shop đang chuẩn bị hàng',
-          `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được Shop chuẩn bị với mã vận đơn ${extraSet.shippingCode} (${extraSet.shippingCarrier}).`,
+          `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được Shop chuẩn bị với mã vận đơn ${order.shippingCode} (${order.shippingCarrier}).`,
           'ORDER',
           '/profile?tab=orders_buy'
         );
@@ -828,9 +617,9 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       return res.status(200).json({
         success: true,
         message: '🎉 Chuẩn bị hàng thành công! Đã tạo mã vận đơn từ hãng vận chuyển.',
-        trackingCode: extraSet.shippingCode,
-        carrier: extraSet.shippingCarrier,
-        order: transitionResult.order
+        trackingCode: order.shippingCode,
+        carrier: order.shippingCarrier,
+        order
       });
     } catch (error) {
       console.error('Prepare order error:', error);

@@ -9,15 +9,37 @@ const axiosClient = axios.create({
 axiosClient.interceptors.request.use((config) => {
   try {
     const stored = localStorage.getItem('user');
-    const user = stored && stored !== 'undefined' ? JSON.parse(stored) : null;
-    const token =
-      user?.token ||
-      localStorage.getItem('token') ||
-      localStorage.getItem('haipay_token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (stored && stored !== 'undefined') {
+      const user = JSON.parse(stored);
+      if (user?.token) {
+        config.headers.Authorization = `Bearer ${user.token}`;
+      }
+      if (user?._id) {
+        config.headers.userid = user._id;
+      }
     }
   } catch (e) { }
+
+  // Attach anonymousId ONLY for recommendation & tracking APIs.
+  // Gửi qua query/body thay vì custom header để không kích hoạt CORS preflight
+  // (header lạ như `x-anonymous-id` sẽ bị chặn nếu server chưa cho phép,
+  // làm hỏng cả các API khác như /api/shipping/provinces).
+  try {
+    const anonId = localStorage.getItem('haihand_anon_id');
+    const url = String(config.url || '');
+    const needsAnon = url.includes('/api/recommendations') || url.includes('/api/track');
+    if (needsAnon && anonId && anonId !== 'undefined') {
+      const method = String(config.method || 'get').toLowerCase();
+      if (method === 'get') {
+        config.params = { ...(config.params || {}), anonymousId: anonId };
+      } else if (config.data && typeof config.data === 'object' && !(config.data instanceof FormData)) {
+        if (!config.data.anonymousId) config.data = { ...config.data, anonymousId: anonId };
+      } else {
+        config.params = { ...(config.params || {}), anonymousId: anonId };
+      }
+    }
+  } catch (e) { }
+
   return config;
 });
 
@@ -36,15 +58,11 @@ export const persistUser = (user) => {
     }
   })();
   const next = { ...prev, ...user };
-  // M11: Không lưu walletBalance / pendingBalance / walletPin nhạy cảm trong localStorage
-  delete next.walletBalance;
-  delete next.pendingBalance;
-  delete next.walletPin;
   if (user.token) next.token = user.token;
   else if (prev.token) next.token = prev.token;
   localStorage.setItem('user', JSON.stringify(next));
   window.dispatchEvent(new Event('userUpdated'));
-  return { ...next, walletBalance: user.walletBalance, pendingBalance: user.pendingBalance };
+  return next;
 };
 
 export const getSellerEntryPath = (user) => {

@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { ProductCard } from '../components/ProductCard';
+import { getProductImageUrl } from '../utils/productMapper';
 
 export default function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
@@ -29,10 +29,14 @@ export default function ProductListPage() {
       .catch((err) => {
         console.warn("API lỗi, dùng danh mục ảo");
         setCategories([
-          { _id: '1', name: 'Điện thoại & Tablet' },
-          { _id: '2', name: 'Laptop & Máy tính' },
-          { _id: '3', name: 'Xe máy & Phương tiện' },
-          { _id: '4', name: 'Đồ gia dụng' }
+          { _id: '1', name: 'Thú cưng & Đồ dùng' },
+          { _id: '2', name: 'Điện thoại & Phụ kiện' },
+          { _id: '3', name: 'Điện tử & Công nghệ' },
+          { _id: '4', name: 'Xe cộ & Phụ tùng' },
+          { _id: '5', name: 'Thời trang & Phụ kiện' },
+          { _id: '6', name: 'Đồ gia dụng & Nội thất' },
+          { _id: '7', name: 'Đồ chơi, Mẹ & Bé' },
+          { _id: '8', name: 'Thể thao & Dã ngoại' }
         ]);
       });
   }, [API_URL]);
@@ -90,15 +94,7 @@ export default function ProductListPage() {
     setSearchParams(searchParams);
   };
 
-  const getImageUrl = (post) => {
-    if (post.images && post.images.length > 0) {
-        return post.images[0].startsWith('http') ? post.images[0] : `${API_URL}/${post.images[0].replace(/\\/g, '/')}`;
-    }
-    if (post.image) {
-        return post.image.startsWith('http') ? post.image : `${API_URL}/uploads/${post.image}`;
-    }
-    return 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png';
-  };
+  const getImageUrl = (post) => getProductImageUrl(post);
 
   const formatTimeAgo = (dateString) => {
     if (!dateString) return 'Mới'; 

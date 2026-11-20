@@ -4,54 +4,12 @@ import { useNavigate } from 'react-router-dom';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { ProductCard } from '../components/ProductCard';
+import { RecommendationSection } from '../components/RecommendationSection';
+import { mapPostToProductCard } from '../utils/productMapper';
+import { trackEvent, getLocalRecentlyViewed } from '../utils/tracker';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
-
-const toSvgDataUri = (svg) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.trim())}`;
-
-const DEFAULT_BANNERS = [
-  {
-    _id: 'default-banner-1',
-    title: 'Săn Đồ Cũ Chất - Giá Tốt Mỗi Ngày',
-    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#1E293B"/><stop offset="55%" stop-color="#0F172A"/><stop offset="100%" stop-color="#1E1B4B"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg1)"/><circle cx="670" cy="110" r="170" fill="#FACC15" opacity="0.14"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="44" font-weight="bold">Săn Đồ Cũ Chất</text><text x="64" y="286" fill="#FACC15" font-family="Arial,sans-serif" font-size="44" font-weight="bold">Giá Hời Mỗi Ngày</text><text x="64" y="346" fill="#CBD5E1" font-family="Arial,sans-serif" font-size="20">Hàng ngàn sản phẩm công nghệ, thời trang đã kiểm duyệt.</text></svg>`),
-    targetUrl: '/products',
-    openInNewTab: false,
-    isFallback: true,
-  },
-  {
-    _id: 'default-banner-2',
-    title: 'An Tâm Mua Sắm Với HaiPay Escrow',
-    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#064E3B"/><stop offset="55%" stop-color="#065F46"/><stop offset="100%" stop-color="#0F172A"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg2)"/><circle cx="640" cy="480" r="190" fill="#10B981" opacity="0.16"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Giao Dịch An Toàn</text><text x="64" y="286" fill="#6EE7B7" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Nhận Hàng Mới Trả</text><text x="64" y="346" fill="#D1FAE5" font-family="Arial,sans-serif" font-size="20">Bảo vệ thanh toán trung gian HaiPay minh bạch.</text></svg>`),
-    targetUrl: '/register-seller',
-    openInNewTab: false,
-    isFallback: true,
-  },
-  {
-    _id: 'default-banner-3',
-    title: 'Đăng Bán Nhanh - Giao Hàng Toàn Quốc',
-    imageUrl: toSvgDataUri(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><defs><linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#312E81"/><stop offset="55%" stop-color="#4338CA"/><stop offset="100%" stop-color="#1E1B4B"/></linearGradient></defs><rect width="800" height="600" fill="url(#bg3)"/><circle cx="650" cy="140" r="180" fill="#A855F7" opacity="0.20"/><text x="64" y="232" fill="#FFFFFF" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Biến Đồ Không Dùng</text><text x="64" y="286" fill="#FACC15" font-family="Arial,sans-serif" font-size="42" font-weight="bold">Thành Thu Nhập Ngay</text><text x="64" y="346" fill="#E0E7FF" font-family="Arial,sans-serif" font-size="20">Tạo tin đăng nhanh, theo dõi giao vận tự động.</text></svg>`),
-    targetUrl: '/create-post',
-    openInNewTab: false,
-    isFallback: true,
-  },
-];
-
-const resolveBannerImageUrl = (rawUrl, adminUrl, apiUrl) => {
-  if (!rawUrl || typeof rawUrl !== 'string') return DEFAULT_BANNERS[0].imageUrl;
-  const trimmed = rawUrl.trim();
-  if (!trimmed) return DEFAULT_BANNERS[0].imageUrl;
-  if (/^(https?:\/\/|data:)/i.test(trimmed)) {
-    return trimmed;
-  }
-  if (trimmed.startsWith('/banners/')) {
-    return `${apiUrl}${trimmed}`;
-  }
-  if (trimmed.startsWith('/uploads/')) {
-    return `${adminUrl}${trimmed}`;
-  }
-  return trimmed;
-};
 
 // --- Skeleton Component ---
 const ProductSkeleton = () => (
@@ -72,6 +30,30 @@ const CategorySkeleton = () => (
   </div>
 );
 
+const FALLBACK_CATEGORIES = [
+  { name: 'Thú cưng & Đồ dùng', icon: '🐾', image: 'https://images.unsplash.com/photo-1543466835-00a7907e9de1?w=300&auto=format&fit=crop' },
+  { name: 'Điện thoại & Phụ kiện', icon: '📱', image: 'https://images.unsplash.com/photo-1512054502232-10a0a035d672?w=300&auto=format&fit=crop' },
+  { name: 'Điện tử & Công nghệ', icon: '💻', image: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=300&auto=format&fit=crop' },
+  { name: 'Xe cộ & Phụ tùng', icon: '🚲', image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?w=300&auto=format&fit=crop' },
+  { name: 'Thời trang & Phụ kiện', icon: '👕', image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=300&auto=format&fit=crop' },
+  { name: 'Đồ gia dụng & Nội thất', icon: '🛋️', image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=300&auto=format&fit=crop' },
+  { name: 'Đồ chơi, Mẹ & Bé', icon: '🧸', image: 'https://images.unsplash.com/photo-1558060370-d644479cb6f7?w=300&auto=format&fit=crop' },
+  { name: 'Thể thao & Dã ngoại', icon: '⚽', image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=300&auto=format&fit=crop' }
+];
+
+function getCategoryIcon(catName = '') {
+  const lower = catName.toLowerCase();
+  if (lower.includes('thú cưng') || lower.includes('chó') || lower.includes('mèo') || lower.includes('rùa')) return '🐾';
+  if (lower.includes('điện thoại')) return '📱';
+  if (lower.includes('điện tử') || lower.includes('công nghệ') || lower.includes('laptop')) return '💻';
+  if (lower.includes('xe')) return '🚲';
+  if (lower.includes('thời trang') || lower.includes('quần') || lower.includes('áo')) return '👕';
+  if (lower.includes('gia dụng') || lower.includes('nội thất')) return '🛋️';
+  if (lower.includes('đồ chơi') || lower.includes('bé') || lower.includes('lababu')) return '🧸';
+  if (lower.includes('thể thao')) return '⚽';
+  return '📦';
+}
+
 export default function HomePage() {
   const toast = useToast();
   const navigate = useNavigate();
@@ -84,16 +66,38 @@ export default function HomePage() {
   const [favoriteIds, setFavoriteIds] = useState([]);
   const [locationFilter, setLocationFilter] = useState('Tất cả khu vực');
   
+  // Track most recently viewed item to recommend closely related products
+  const [latestViewed, setLatestViewed] = useState(() => {
+    const list = getLocalRecentlyViewed(1);
+    return list.length > 0 ? list[0] : null;
+  });
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      const list = getLocalRecentlyViewed(1);
+      setLatestViewed(list.length > 0 ? list[0] : null);
+    };
+    window.addEventListener('haihand:recently_viewed_updated', handleUpdate);
+    window.addEventListener('haihand:product_viewed', handleUpdate);
+    return () => {
+      window.removeEventListener('haihand:recently_viewed_updated', handleUpdate);
+      window.removeEventListener('haihand:product_viewed', handleUpdate);
+    };
+  }, []);
+
   // --- New Loading States ---
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
 
-  const [banners, setBanners] = useState(DEFAULT_BANNERS);
+  const bannerImages = useMemo(() => [
+    "https://lh3.googleusercontent.com/aida-public/AB6AXuA-zPGuXVJem8xfroANf5_FLYZr20mL9sBx_w-IJsUgjPb_SjT8R3gsryBj6lQNHlpsRIMMumvRQQ4JYh14ekpQq87raEcLM5M3DIYA1zykxGLscHnqnwf6RtyRG9E-51zYB-ZlqLjUnk5G4PDg34yxHfMrQ18wuS0ZeIHmiNasgJF0jzAPlFhB7SkgVnw968RJwQro7KFvZl36CB2tPbpUhwGQUS8V2FIDBOTQJU8zOhHaVO-6nt7c",
+    "https://images.unsplash.com/photo-1581539250439-c96689b516cb?q=80&w=2072&auto=format&fit=crop",
+    "https://images.unsplash.com/photo-1555529902-5261145633bf?q=80&w=2070&auto=format&fit=crop"
+  ], []);
   const [currentBanner, setCurrentBanner] = useState(0);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
-  const ADMIN_URL = process.env.REACT_APP_ADMIN_URL || 'http://localhost:4001';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000'; 
   const { user } = useAuth();
 
   useEffect(() => {
@@ -111,12 +115,21 @@ export default function HomePage() {
     else setIsLoadingMore(true);
 
     try {
-      let url = `${API_URL}/api/posts?page=${currentPage}&limit=10`;
-      if (currentCategory !== 'Tất cả' && currentCategory !== 'Kết quả tìm kiếm') url += `&category=${currentCategory}`;
-      if (currentKeyword.trim()) url += `&search=${currentKeyword}`;
-      if (loc !== 'Tất cả khu vực') url += `&location=${loc}`;
+      const params = {
+        page: currentPage,
+        limit: 10
+      };
+      if (currentCategory && currentCategory !== 'Tất cả' && currentCategory !== 'Kết quả tìm kiếm') {
+        params.category = currentCategory;
+      }
+      if (currentKeyword && currentKeyword.trim()) {
+        params.search = currentKeyword.trim();
+      }
+      if (loc && loc !== 'Tất cả khu vực' && loc !== 'Toàn quốc') {
+        params.location = loc;
+      }
 
-      const { data } = await axios.get(url);
+      const { data } = await axios.get(`${API_URL}/api/posts`, { params });
 
       if (currentPage === 1) setPosts(data);
       else setPosts(prev => [...prev, ...data]);
@@ -135,21 +148,35 @@ export default function HomePage() {
     setIsLoadingCategories(true);
     try {
       const { data } = await axios.get(`${API_URL}/api/categories`);
-      const dynamicCats = data.map(c => ({ name: c.name, image: c.image }));
-      setCategories([{name: 'Tất cả', icon: '🏠'}, ...dynamicCats]);
+      if (Array.isArray(data) && data.length > 0) {
+        const dynamicCats = data.map(c => {
+          const fallbackMatch = FALLBACK_CATEGORIES.find(fc => fc.name === c.name);
+          const isBrokenLegacyUrl = c.image && (c.image.includes('photo-1511707171634') || c.image.includes('photo-1517649763962'));
+          return {
+            name: c.name,
+            image: (!c.image || isBrokenLegacyUrl) && fallbackMatch ? fallbackMatch.image : c.image,
+            icon: c.icon || (fallbackMatch && fallbackMatch.icon) || getCategoryIcon(c.name)
+          };
+        });
+        setCategories([{ name: 'Tất cả', icon: '🏠' }, ...dynamicCats]);
+      } else {
+        setCategories([{ name: 'Tất cả', icon: '🏠' }, ...FALLBACK_CATEGORIES]);
+      }
     } catch (error) { 
-      toast.error('Lỗi', 'Không tải được danh mục');
-      console.error("Lỗi lấy danh mục:", error); 
+      setCategories([{ name: 'Tất cả', icon: '🏠' }, ...FALLBACK_CATEGORIES]);
     } finally {
       setIsLoadingCategories(false);
     }
-  }, [API_URL, toast]);
+  }, [API_URL]);
 
   const handleCategoryClick = useCallback((category) => {
     if (selectedCategory === category) return;
     setSelectedCategory(category);
     setPage(1);
     fetchPosts(1, category, keyword, locationFilter);
+    if (category && category !== 'Tất cả') {
+      trackEvent({ type: 'category_view', category, source: 'home' });
+    }
   }, [selectedCategory, keyword, locationFilter, fetchPosts]);
 
   const handleLocationClick = useCallback((loc) => {
@@ -164,6 +191,9 @@ export default function HomePage() {
     setSelectedCategory('Kết quả tìm kiếm');
     setPage(1);
     fetchPosts(1, 'Kết quả tìm kiếm', searchKeyword, locationFilter);
+    if (searchKeyword && searchKeyword.trim()) {
+      trackEvent({ type: 'search', query: searchKeyword.trim(), source: 'home' });
+    }
   }, [locationFilter, fetchPosts]);
 
   const handleLoadMore = useCallback(() => {
@@ -172,54 +202,16 @@ export default function HomePage() {
     fetchPosts(nextPage, selectedCategory, keyword, locationFilter);
   }, [page, selectedCategory, keyword, locationFilter, fetchPosts]);
 
-  const fetchBanners = useCallback(async () => {
-    try {
-      const { data } = await axios.get(`${API_URL}/api/banners`);
-      if (Array.isArray(data) && data.length > 0) {
-        setBanners(data);
-        setCurrentBanner(0);
-      } else {
-        setBanners(DEFAULT_BANNERS);
-      }
-    } catch (error) {
-      setBanners(DEFAULT_BANNERS);
-    }
-  }, [API_URL]);
-
-  const handleBannerClick = useCallback((banner) => {
-    const rawTarget = String(banner?.targetUrl || '').trim();
-    if (!rawTarget) return;
-
-    if (/^https?:\/\//i.test(rawTarget)) {
-      if (banner?.openInNewTab) {
-        window.open(rawTarget, '_blank', 'noopener,noreferrer');
-      } else {
-        window.location.href = rawTarget;
-      }
-      return;
-    }
-
-    const internalPath = rawTarget.startsWith('/') ? rawTarget : `/${rawTarget}`;
-    if (banner?.openInNewTab) {
-      window.open(internalPath, '_blank', 'noopener,noreferrer');
-    } else {
-      navigate(internalPath);
-    }
-  }, [navigate]);
-
   useEffect(() => {
     fetchPosts(1, 'Tất cả', '', 'Tất cả khu vực');
     fetchCategories();
-    fetchBanners();
-  }, [fetchPosts, fetchCategories, fetchBanners]);
-
-  useEffect(() => {
-    if (!banners || banners.length <= 1) return undefined;
+    
     const timer = setInterval(() => {
-      setCurrentBanner((prev) => (prev + 1) % banners.length);
-    }, 4000);
+      setCurrentBanner((prev) => (prev + 1) % bannerImages.length);
+    }, 3500);
+    
     return () => clearInterval(timer);
-  }, [banners]);
+  }, [fetchPosts, fetchCategories, bannerImages.length]);
 
   const toggleFavorite = useCallback(async (e, postId) => {
       e.stopPropagation(); 
@@ -237,24 +229,6 @@ export default function HomePage() {
           toast.error('Lỗi', 'Không thể thao tác lúc này');
       }
   }, [user, favoriteIds, API_URL, navigate, toast]);
-
-  const formatTimeAgo = useCallback((dateString) => {
-    if (!dateString) return 'Mới'; 
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now - date) / 1000);
-    let interval = seconds / 31536000;
-    if (interval > 1) return Math.floor(interval) + " năm trước";
-    interval = seconds / 2592000;
-    if (interval > 1) return Math.floor(interval) + " tháng trước";
-    interval = seconds / 86400;
-    if (interval > 1) return Math.floor(interval) + " ngày trước";
-    interval = seconds / 3600;
-    if (interval > 1) return Math.floor(interval) + " giờ trước";
-    interval = seconds / 60;
-    if (interval > 1) return Math.floor(interval) + " phút trước";
-    return "Vừa xong";
-  }, []);
 
   const locations = useMemo(() => ['Tất cả khu vực', 'Hà Nội', 'TP. Hồ Chí Minh', 'Đà Nẵng'], []);
 
@@ -288,96 +262,44 @@ export default function HomePage() {
              </div>
            </div>
            <div className="w-full md:w-[45%] lg:w-[50%] relative shrink-0 min-h-[250px] md:min-h-full group">
-             <div className="absolute inset-0 w-full h-full bg-stone-900 overflow-hidden">
-               {banners.map((banner, idx) => {
-                 const activeIndex = banners.length > 0 ? currentBanner % banners.length : 0;
-                 const isSlideActive = activeIndex === idx;
-                 const hasTarget = Boolean(banner && banner.targetUrl && String(banner.targetUrl).trim());
-                 const imgSrc = resolveBannerImageUrl(banner?.imageUrl, ADMIN_URL, API_URL);
-                 return (
-                   <div
-                     key={banner?._id || idx}
-                     onClick={() => hasTarget && handleBannerClick(banner)}
-                     role={hasTarget ? 'link' : undefined}
-                     tabIndex={isSlideActive && hasTarget ? 0 : -1}
-                     onKeyDown={(e) => {
-                       if (hasTarget && (e.key === 'Enter' || e.key === ' ')) {
-                         e.preventDefault();
-                         handleBannerClick(banner);
-                       }
-                     }}
-                     title={hasTarget ? `${banner?.title ? banner.title + ' - ' : ''}Nhấn để xem chi tiết` : (banner?.title || `Banner ${idx + 1}`)}
-                     className={`absolute inset-0 w-full h-full transition-opacity duration-700 ease-in-out ${
-                       isSlideActive ? 'opacity-100 z-[1] pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
-                     } ${hasTarget ? 'cursor-pointer' : ''}`}
-                   >
-                     <img
-                       src={imgSrc}
-                       alt={banner?.title || `Banner ${idx + 1}`}
-                       className="w-full h-full object-cover"
-                       onError={(e) => {
-                         if (e.currentTarget.dataset.fallbackApplied) return;
-                         e.currentTarget.dataset.fallbackApplied = '1';
-                         e.currentTarget.src = DEFAULT_BANNERS[idx % DEFAULT_BANNERS.length].imageUrl;
-                       }}
-                     />
-                     {banner?.title && !banner?.isFallback && (
-                       <div className="pointer-events-none absolute top-3 left-3 max-w-[85%] px-3 py-1.5 rounded-full bg-stone-950/65 backdrop-blur-sm text-white text-xs font-semibold shadow-sm truncate">
-                         {banner.title}
-                       </div>
-                     )}
-                   </div>
-                 );
-               })}
+             <div className="absolute inset-0 w-full h-full bg-stone-100">
+               {bannerImages.map((img, idx) => (
+                 <img 
+                   key={idx}
+                   src={img} 
+                   alt={`Banner ${idx + 1}`} 
+                   loading="lazy"
+                   className={`absolute top-0 left-0 w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${currentBanner === idx ? 'opacity-100' : 'opacity-0'}`} 
+                 />
+               ))}
                {/* Indicators */}
-               {banners.length > 1 && (
-                 <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-20">
-                   {banners.map((_, idx) => {
-                     const activeIndex = banners.length > 0 ? currentBanner % banners.length : 0;
-                     return (
-                       <button
-                         key={idx}
-                         type="button"
-                         onClick={(e) => {
-                           e.stopPropagation();
-                           setCurrentBanner(idx);
-                         }}
-                         className={`h-2 rounded-full transition-all duration-300 ${activeIndex === idx ? 'bg-[#FACC15] w-8' : 'bg-white/70 w-2 hover:bg-white'}`}
-                         aria-label={`Go to slide ${idx + 1}`}
-                       />
-                     );
-                   })}
-                 </div>
-               )}
-
+               <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2 z-10">
+                 {bannerImages.map((_, idx) => (
+                   <button 
+                     key={idx}
+                     onClick={() => setCurrentBanner(idx)}
+                     className={`h-2 rounded-full transition-all duration-300 ${currentBanner === idx ? 'bg-[#FACC15] w-8' : 'bg-white/70 w-2 hover:bg-white'}`}
+                     aria-label={`Go to slide ${idx + 1}`}
+                   />
+                 ))}
+               </div>
+               
                {/* Navigation Arrows */}
-               {banners.length > 1 && (
-                 <>
-                   <button
-                     type="button"
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       setCurrentBanner(prev => (prev === 0 ? banners.length - 1 : prev - 1));
-                     }}
-                     className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/25 hover:bg-black/55 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 rounded-r-lg"
-                     aria-label="Previous slide"
-                   >
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
-                   </button>
-                   <button
-                     type="button"
-                     onClick={(e) => {
-                       e.stopPropagation();
-                       setCurrentBanner(prev => (prev >= banners.length - 1 ? 0 : prev + 1));
-                     }}
-                     className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/25 hover:bg-black/55 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-20 rounded-l-lg"
-                     aria-label="Next slide"
-                   >
-                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
-                   </button>
-                 </>
-               )}
-
+               <button 
+                 onClick={() => setCurrentBanner(prev => (prev === 0 ? bannerImages.length - 1 : prev - 1))}
+                 className="absolute left-0 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/50 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
+                 aria-label="Previous slide"
+               >
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" /></svg>
+               </button>
+               <button 
+                 onClick={() => setCurrentBanner(prev => (prev === bannerImages.length - 1 ? 0 : prev + 1))}
+                 className="absolute right-0 top-1/2 -translate-y-1/2 bg-black/20 hover:bg-black/50 text-white py-4 px-2 transition-all duration-300 opacity-0 group-hover:opacity-100 z-10"
+                 aria-label="Next slide"
+               >
+                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" /></svg>
+               </button>
+               
              </div>
            </div>
         </section>
@@ -402,16 +324,22 @@ export default function HomePage() {
                   aria-pressed={selectedCategory === cat.name}
                   className={`flex flex-col items-center justify-center p-3 bg-white rounded-xl border transition-all duration-300 hover:shadow-md hover:-translate-y-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#FACC15] ${selectedCategory === cat.name ? 'border-[#FACC15] ring-2 ring-[#FACC15]/20 shadow-md' : 'border-[#E7E5E4]'} text-center h-28 w-full`}
                 >
-                  <div className="w-12 h-12 mb-2 flex items-center justify-center bg-stone-50 rounded-full overflow-hidden text-2xl">
-                    {cat.name === 'Tất cả' || cat.name === 'Kết quả tìm kiếm' ? cat.icon : (
+                  <div className="w-12 h-12 mb-2 flex items-center justify-center bg-stone-50 rounded-full overflow-hidden text-2xl shadow-xs">
+                    {cat.image ? (
                       <img 
                         src={cat.image?.startsWith('http') ? cat.image : `${API_URL}/uploads/${cat.image}`} 
                         className="w-full h-full object-cover" 
                         loading="lazy"
                         alt={cat.name} 
-                        onError={(e) => { e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'; }}
+                        onError={(e) => { 
+                          e.target.style.display = 'none';
+                          if (e.target.nextSibling) {
+                            e.target.nextSibling.style.display = 'block';
+                          }
+                        }}
                       />
-                    )}
+                    ) : null}
+                    <span className={cat.image ? "hidden only:block text-2xl" : "text-2xl"}>{cat.icon || getCategoryIcon(cat.name)}</span>
                   </div>
                   <span className={`text-xs font-semibold ${selectedCategory === cat.name ? 'text-[#1C1917]' : 'text-stone-600'} line-clamp-2`}>{cat.name}</span>
                 </button>
@@ -437,6 +365,46 @@ export default function HomePage() {
             </button>
           ))}
         </section>
+
+        {/* Unified Recommendation: DUY NHẤT 1 KHỐI GỢI Ý THÔNG MINH (Ưu tiên: Danh mục -> Title) */}
+        <RecommendationSection
+          key={
+            selectedCategory !== 'Tất cả' && selectedCategory !== 'Kết quả tìm kiếm'
+              ? `cat-${selectedCategory}`
+              : (latestViewed ? (latestViewed._id || latestViewed.id) : 'unified-recommendations')
+          }
+          title={
+            selectedCategory !== 'Tất cả' && selectedCategory !== 'Kết quả tìm kiếm'
+              ? `Gợi ý theo danh mục: ${selectedCategory}`
+              : (latestViewed ? 'Gợi ý phù hợp cho bạn' : 'Gợi ý dành cho bạn')
+          }
+          subtitle={
+            selectedCategory !== 'Tất cả' && selectedCategory !== 'Kết quả tìm kiếm'
+              ? `Ưu tiên sản phẩm cùng mục "${selectedCategory}" và các gợi ý theo xu hướng phù hợp nhất`
+              : (latestViewed?.category
+                  ? `Ưu tiên sản phẩm cùng danh mục "${latestViewed.category}" và theo "${(latestViewed.title || latestViewed.name || 'đồ bạn vừa xem').slice(0, 32)}${(latestViewed.title || latestViewed.name || '').length > 32 ? '...' : ''}"`
+                  : 'Sản phẩm nổi bật và cá nhân hóa theo xu hướng quan tâm của bạn')
+          }
+          icon="✨"
+          fetchUrl={
+            selectedCategory !== 'Tất cả' && selectedCategory !== 'Kết quả tìm kiếm'
+              ? `/api/recommendations/related-to-recent?category=${encodeURIComponent(selectedCategory)}`
+              : (latestViewed
+                  ? `/api/recommendations/related-to-recent?productId=${latestViewed._id || latestViewed.id}&title=${encodeURIComponent(latestViewed.title || latestViewed.name || '')}&category=${encodeURIComponent(latestViewed.category || '')}`
+                  : '/api/recommendations/for-you')
+          }
+          catalogPool={posts}
+          relatedToProduct={
+            selectedCategory !== 'Tất cả' && selectedCategory !== 'Kết quả tìm kiếm'
+              ? { category: selectedCategory, title: selectedCategory }
+              : latestViewed
+          }
+          sourceName="smart_recommendations"
+          currentUser={user}
+          favoriteIds={favoriteIds}
+          onFavorite={toggleFavorite}
+          limit={15}
+        />
 
         {/* Product Grid */}
         <section>
@@ -465,37 +433,40 @@ export default function HomePage() {
               {Array.from({ length: 10 }).map((_, i) => <ProductSkeleton key={i} />)}
             </div>
           ) : posts.length === 0 ? (
-             <div className="flex flex-col items-center justify-center py-20 px-4 text-stone-500 bg-white rounded-2xl shadow-sm border border-[#E7E5E4] min-h-[300px]">
-                <div className="w-24 h-24 bg-stone-50 rounded-full flex items-center justify-center mb-4">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                </div>
-                <h3 className="text-xl font-bold text-[#1C1917] mb-2">Không tìm thấy kết quả</h3>
-                <p className="max-w-md text-center mb-6">Chúng tôi không tìm thấy tin đăng nào phù hợp với yêu cầu của bạn. Hãy thử đổi bộ lọc hoặc từ khóa nhé.</p>
-                <Button variant="secondary" onClick={() => handleCategoryClick('Tất cả')}>Xem tất cả tin</Button>
-            </div>
+             <div className="space-y-6">
+               <div className="flex flex-col items-center justify-center py-16 px-4 text-stone-500 bg-white rounded-2xl shadow-sm border border-[#E7E5E4] min-h-[260px]">
+                  <div className="w-20 h-20 bg-stone-50 rounded-full flex items-center justify-center mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                  </div>
+                  <h3 className="text-xl font-bold text-[#1C1917] mb-2">Không tìm thấy kết quả</h3>
+                  <p className="max-w-md text-center mb-6 text-sm">Chúng tôi không tìm thấy tin đăng nào phù hợp với yêu cầu của bạn. Hãy thử đổi bộ lọc hoặc xem các gợi ý hấp dẫn bên dưới nhé.</p>
+                  <Button variant="secondary" onClick={() => handleCategoryClick('Tất cả')}>Xem tất cả tin</Button>
+               </div>
+               <RecommendationSection
+                 title="Có thể bạn quan tâm"
+                 subtitle="Sản phẩm nổi bật khác dành riêng cho bạn"
+                 icon="💡"
+                 fetchUrl="/api/recommendations/for-you"
+                 sourceName="search_fallback"
+                 currentUser={user}
+                 favoriteIds={favoriteIds}
+                 onFavorite={toggleFavorite}
+                 limit={5}
+               />
+             </div>
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                 {posts.map((post) => {
-                  const isAuthor = user && (post.author === user._id || post.author?._id === user._id);
-                  const isFavorited = favoriteIds.includes(post._id);
-                  const imageUrl = (post.images && post.images.length > 0) ? (post.images[0].startsWith('http') ? post.images[0] : `${API_URL}/${post.images[0].replace(/\\/g, '/')}`) : (post.image ? (post.image.startsWith('http') ? post.image : `${API_URL}/uploads/${post.image}`) : 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png');
+                  const mapped = mapPostToProductCard(post, user, favoriteIds);
+                  if (!mapped) return null;
 
                   return (
                     <div key={post._id} className="transition-transform duration-300 hover:-translate-y-1">
                       <ProductCard 
-                        product={{
-                          id: post._id,
-                          title: post.title,
-                          price: post.price,
-                          imageUrl: imageUrl,
-                          condition: post.condition || "Đã qua sử dụng",
-                          location: post.location || 'Toàn quốc',
-                          timeAgo: formatTimeAgo(post.createdAt),
-                          category: post.category
-                        }} 
-                        isFavorited={isFavorited}
-                        isAuthor={isAuthor}
+                        product={mapped.product} 
+                        isFavorited={mapped.isFavorited}
+                        isAuthor={mapped.isAuthor}
                         onFavorite={(e) => toggleFavorite(e, post._id)}
                       />
                     </div>

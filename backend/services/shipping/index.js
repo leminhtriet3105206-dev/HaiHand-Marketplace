@@ -151,23 +151,6 @@ async function createShipmentForOrder(order) {
   }
 }
 
-/**
- * M5: Hủy vận đơn best-effort trên hãng vận chuyển (không làm gián đoạn luồng hủy đơn nội bộ nếu GHN lỗi)
- */
-async function cancelShipmentForOrder(trackingCode) {
-  if (!trackingCode) return { cancelled: false, skipped: true };
-  const p = provider();
-  if (typeof p.cancelShipment !== 'function') {
-    return { cancelled: false, skipped: true };
-  }
-  try {
-    return await p.cancelShipment(trackingCode);
-  } catch (err) {
-    console.warn(`[Shipping:${p.NAME}] cancelShipment(${trackingCode}) best-effort warning:`, err.message);
-    return { cancelled: false, error: err.message };
-  }
-}
-
 module.exports = {
   provider,
   ShippingError,
@@ -175,7 +158,6 @@ module.exports = {
   resolvePackage,
   quotePackage,
   createShipmentForOrder,
-  cancelShipmentForOrder,
   formatAddress,
   getProvinces: () => provider().getProvinces(),
   getDistricts: (id) => provider().getDistricts(id),

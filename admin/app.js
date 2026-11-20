@@ -2,14 +2,6 @@ const express = require("express");
 const app = express();
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto");
-const bcrypt = (() => {
-  try {
-    return require("bcryptjs");
-  } catch (e) {
-    return require("../backend/node_modules/bcryptjs");
-  }
-})();
 
 // Load backend env if present (for local execution)
 const envPath = path.join(__dirname, "../backend/.env");
@@ -28,8 +20,6 @@ const Product = require("./models/Product");
 const User = require("./models/User");
 const Category = require("./models/Category");
 const GlobalSetting = require("./models/GlobalSetting");
-const Banner = require("./models/Banner");
-
 // Minimal Order model: required so Revenue.populate('orderId') can resolve the 'Order' ref.
 // strict:false keeps it read-compatible with the full B2C schema owned by the backend.
 const Order = mongoose.models.Order || mongoose.model('Order', new mongoose.Schema({
@@ -37,31 +27,20 @@ const Order = mongoose.models.Order || mongoose.model('Order', new mongoose.Sche
   buyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   seller: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  items: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
-  orderItems: { type: Array, default: [] },
-  itemsSubtotal: { type: Number, default: 0 },
-  shippingFee: { type: Number, default: 0 },
   totalPrice: { type: Number, default: 0 },
-  commissionRate: { type: Number, default: null },
-  sellerReceive: { type: Number, default: null },
-  paymentMethod: { type: String, default: 'COD' },
-  paymentStatus: { type: String, default: 'unpaid' },
   status: String
 }, { timestamps: true, strict: false }), 'orders');
-
 const Revenue = mongoose.models.Revenue || mongoose.model('Revenue', new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   commissionAmount: { type: Number, required: true },
-  description: { type: String, default: 'Chiết khấu phí sàn từ đơn hàng' },
   createdAt: { type: Date, default: Date.now }
 }));
 
 const Transaction = mongoose.models.Transaction || mongoose.model('Transaction', new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  type: { type: String, enum: ['Nạp tiền', 'Rút tiền', 'Giải ngân', 'Hoàn tiền', 'Thanh toán đơn hàng'], required: true },
+  type: { type: String, enum: ['Nạp tiền', 'Rút tiền', 'Giải ngân', 'Hoàn tiền'], required: true },
   amount: { type: Number, required: true },
   status: { type: String, enum: ['Thành công', 'Đang xử lý', 'Thất bại'], default: 'Thành công' },
-  txnRef: String,
   description: String,
   bankName: String,
   accountNumber: String,
@@ -78,8 +57,6 @@ const Report = mongoose.models.Report || mongoose.model('Report', new mongoose.S
 
 const Notification = mongoose.models.Notification || mongoose.model('Notification', new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  shopId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   title: { type: String, required: true },
   message: { type: String, required: true },
@@ -91,66 +68,32 @@ const Notification = mongoose.models.Notification || mongoose.model('Notificatio
   isRead: { type: Boolean, default: false }
 }, { timestamps: true, strict: false }), 'notifications');
 
-/**
- * Helper: Kiểm tra mật khẩu bằng bcrypt.compare trước; nếu mật khẩu cũ trong DB chưa hash (legacy plaintext)
- * thì fallback so sánh chuỗi và tự động hash lại bằng bcrypt trước khi lưu vào DB.
- */
-const { verifyPassword, hashPassword } = require("../backend/utils/password");
-const { sanitizeUser } = require("../backend/utils/b2c");
+const UserEvent = mongoose.models.UserEvent || mongoose.model('UserEvent', new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  anonymousId: String,
+  sessionId: String,
+  type: String,
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+  category: String,
+  price: Number,
+  query: String,
+  source: String,
+  meta: Object,
+  createdAt: { type: Date, default: Date.now }
+}, { timestamps: false, strict: false }), 'user_events');
 
-async function verifyAndUpgradePassword(user, plainPassword) {
-  return verifyPassword(user, plainPassword);
-}
+const UserInterestProfile = mongoose.models.UserInterestProfile || mongoose.model('UserInterestProfile', new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  anonymousId: String,
+  categories: Object,
+  priceRange: Object,
+  segment: String,
+  lastEventAt: Date
+}, { timestamps: true, strict: false }), 'user_interest_profiles');
 
-/**
- * Helper: Tính phí hoa hồng sàn (chỉ tính trên itemsSubtotal, không tính trên shippingFee)
- */
-function computeAdminOrderSplit(order, feePercent = 5) {
-  const shippingFee = Math.max(0, Number(order.shippingFee) || 0);
-  const totalAmount = Math.max(0, Number(order.totalPrice || order.totalAmount || 0));
-  const itemsSubtotal =
-    order.itemsSubtotal !== undefined && order.itemsSubtotal !== null && Number(order.itemsSubtotal) > 0
-      ? Math.max(0, Number(order.itemsSubtotal))
-      : Math.max(0, totalAmount - shippingFee);
-
-  const effectiveRate =
-    typeof order.commissionRate === 'number' && !Number.isNaN(order.commissionRate)
-      ? order.commissionRate
-      : Number(feePercent) || 5;
-
-  const commissionAmount = Math.round(itemsSubtotal * (effectiveRate / 100));
-
-  if (
-    typeof order.sellerReceive === 'number' &&
-    !Number.isNaN(order.sellerReceive) &&
-    order.sellerReceive >= 0 &&
-    order.sellerReceive <= Math.max(totalAmount, itemsSubtotal)
-  ) {
-    const sellerReceive = Math.round(order.sellerReceive);
-    return {
-      totalAmount,
-      itemsSubtotal,
-      shippingFee,
-      feePercent: effectiveRate,
-      commissionAmount: itemsSubtotal > 0 ? commissionAmount : Math.max(0, totalAmount - sellerReceive),
-      sellerReceive
-    };
-  }
-
-  const sellerReceive = Math.max(0, itemsSubtotal - commissionAmount);
-  return {
-    totalAmount,
-    itemsSubtotal,
-    shippingFee,
-    feePercent: effectiveRate,
-    commissionAmount,
-    sellerReceive
-  };
-}
-
-const ADMIN_DB_URI = process.env.MONGO_URI || process.env.MONGODB_URI || process.env.MONGODB_ATLAS_URI;
+const ADMIN_DB_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
 if (!ADMIN_DB_URI) {
-  console.error("❌ Thiếu biến môi trường MONGO_URI, MONGODB_URI hoặc MONGODB_ATLAS_URI trong Admin!");
+  console.error("❌ Thiếu biến môi trường MONGO_URI trong Admin!");
 } else {
   mongoose
     .connect(ADMIN_DB_URI)
@@ -158,23 +101,24 @@ if (!ADMIN_DB_URI) {
     .catch((err) => console.error("Lỗi kết nối MongoDB:", err.message));
 }
 
-const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:4001,http://127.0.0.1:4001')
-  .split(',')
-  .map((o) => o.trim())
-  .filter(Boolean);
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:4001',
+  'http://127.0.0.1:4001',
+  'https://haihand-marketplace.vercel.app'
+];
 
 app.use(cors({
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
+    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
       callback(null, true);
     } else {
-      const err = new Error(`Origin ${origin} không nằm trong danh sách CORS_ORIGINS được phép`);
-      err.statusCode = 403;
-      callback(err, false);
+      callback(null, true);
     }
   },
   credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'X-Requested-With', 'Origin', 'X-CSRF-Token'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'UserId', 'X-Requested-With', 'Origin'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH']
 }));
 app.use(express.urlencoded({ extended: true }));
@@ -187,6 +131,7 @@ app.set("views", path.join(__dirname, "views"));
 app.use((req, res, next) => {
   const originalRender = res.render.bind(res);
   res.render = function (view, options = {}, callback) {
+    // Standalone views that render directly without AdminLayout
     const standaloneViews = ['login', 'home'];
     if (standaloneViews.includes(view) || view.startsWith('layouts/')) {
       return originalRender(view, options, callback);
@@ -194,6 +139,7 @@ app.use((req, res, next) => {
 
     const viewOptions = Object.assign({}, res.locals, options);
 
+    // Render the specific page view content first
     req.app.render(view, viewOptions, (err, bodyHtml) => {
       if (err) {
         console.error(`Error rendering view ${view}:`, err);
@@ -201,7 +147,8 @@ app.use((req, res, next) => {
         return originalRender(view, options, callback);
       }
 
-      const layoutData = Object.assign({}, viewOptions, {
+      // Render master AdminLayout with body injected into <main id="admin-outlet">
+      const layoutData = Object.assign({}, viewOptions, { 
         body: bodyHtml,
         active: viewOptions.active || view
       });
@@ -216,194 +163,20 @@ app.use((req, res, next) => {
   next();
 });
 
-if (!process.env.SESSION_SECRET && process.env.NODE_ENV !== "test") {
-  console.error("❌ [CRITICAL SECURITY] Thiếu biến môi trường SESSION_SECRET trong Admin!");
-  process.exit(1);
-}
-
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "test_only_session_secret_do_not_use_in_prod",
+    secret: "secret-key-vip-pro",
     resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-    },
+    saveUninitialized: true,
   }),
 );
 
-// CSRF Token & Double-Submit Cookie Protection Middleware (H16)
-const parseCookies = (cookieHeader = "") => {
-  const out = {};
-  if (!cookieHeader || typeof cookieHeader !== "string") return out;
-  cookieHeader.split(";").forEach((pair) => {
-    const idx = pair.indexOf("=");
-    if (idx > -1) {
-      const k = pair.slice(0, idx).trim();
-      const v = pair.slice(idx + 1).trim();
-      out[k] = decodeURIComponent(v);
-    }
-  });
-  return out;
-};
-
-app.use((req, res, next) => {
-  const cookies = parseCookies(req.headers.cookie || "");
-  let token = (req.session && req.session.csrfToken) || cookies.XSRF_TOKEN;
-  if (!token) {
-    token = crypto.randomBytes(24).toString("hex");
-  }
-  if (req.session && !req.session.csrfToken && req.session.user) {
-    req.session.csrfToken = token;
-  }
-  res.locals.csrfToken = token;
-  res.cookie("XSRF_TOKEN", token, {
-    httpOnly: false,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  });
-  next();
-});
-
-const verifyCsrfToken = (req, res, next) => {
-  const method = String(req.method || "GET").toUpperCase();
-  if (["GET", "HEAD", "OPTIONS"].includes(method)) {
-    return next();
-  }
-  if (req.path === "/login") {
-    return next();
-  }
-
-  const cookies = parseCookies(req.headers.cookie || "");
-  const expectedToken = (req.session && req.session.csrfToken) || cookies.XSRF_TOKEN;
-  const submittedToken =
-    (req.body && req.body._csrf) ||
-    (req.query && req.query._csrf) ||
-    req.headers["x-csrf-token"] ||
-    req.headers["x-xsrf-token"];
-
-  // Nếu chưa có CSRF cookie hoặc session token khởi tạo trong test/first-flight thì tạo mới;
-  // nếu client gửi kèm _csrf hoặc x-csrf-token thì bắt buộc phải khớp constant-time,
-  // hoặc nếu đã có session.csrfToken và request không có x-csrf-token/_csrf khi enforce bật -> 403.
-  if (submittedToken && expectedToken) {
-    const bufA = Buffer.from(String(submittedToken));
-    const bufB = Buffer.from(String(expectedToken));
-    if (bufA.length !== bufB.length || !crypto.timingSafeEqual(bufA, bufB)) {
-      return res.status(403).json({
-        success: false,
-        message: "CSRF token không hợp lệ hoặc đã hết hạn!"
-      });
-    }
-    return next();
-  }
-
-  if (req.headers["x-enforce-csrf"] === "1" || (req.session && req.session.csrfToken && !submittedToken && process.env.CSRF_STRICT === "true")) {
-    return res.status(403).json({
-      success: false,
-      message: "Thiếu CSRF token (_csrf hoặc X-CSRF-Token)!"
-    });
-  }
-
-  return next();
-};
-
-app.use(verifyCsrfToken);
-
-const adminUploadDir = path.join(__dirname, "public", "uploads");
-if (!fs.existsSync(adminUploadDir)) {
-  fs.mkdirSync(adminUploadDir, { recursive: true });
-}
-
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, adminUploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    cb(null, "img-" + Date.now() + "-" + Math.round(Math.random() * 1e6) + ext);
-  },
+  destination: (req, file, cb) => cb(null, "./public/uploads/"),
+  filename: (req, file, cb) =>
+    cb(null, "img-" + Date.now() + path.extname(file.originalname)),
 });
-
-const allowedBannerExts = new Set([".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".svg"]);
-const allowedBannerMimes = new Set([
-  "image/jpeg",
-  "image/jpg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/avif",
-  "image/svg+xml",
-]);
-
 const upload = multer({ storage: storage });
-const uploadBanner = multer({
-  storage: storage,
-  limits: { fileSize: 20 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const ext = path.extname(file.originalname || "").toLowerCase();
-    const mime = String(file.mimetype || "").toLowerCase();
-    if (allowedBannerExts.has(ext) || allowedBannerMimes.has(mime)) {
-      return cb(null, true);
-    }
-    return cb(new Error("Chỉ hỗ trợ ảnh tĩnh (JPG, PNG, WEBP, AVIF, SVG) và ảnh động GIF!"));
-  },
-});
-
-const handleBannerUpload = (req, res, next) => {
-  uploadBanner.fields([
-    { name: "imageFile", maxCount: 1 },
-    { name: "image", maxCount: 1 },
-  ])(req, res, (err) => {
-    if (err) {
-      const msg = encodeURIComponent(err.message || "Lỗi tải lên tệp ảnh Banner (tối đa 20MB)!");
-      return res.redirect(`/banners?error=${msg}`);
-    }
-    next();
-  });
-};
-
-const getUploadedBannerFile = (req) => {
-  if (req.file) return req.file;
-  if (req.files) {
-    if (req.files.imageFile && req.files.imageFile[0]) return req.files.imageFile[0];
-    if (req.files.image && req.files.image[0]) return req.files.image[0];
-  }
-  return null;
-};
-
-const resolveBannerUploadUrl = (req, file) => {
-  try {
-    const backendUploadsDir = path.join(__dirname, "..", "backend", "uploads");
-    if (fs.existsSync(backendUploadsDir)) {
-      fs.copyFileSync(file.path, path.join(backendUploadsDir, file.filename));
-    }
-  } catch (e) {}
-
-  const configuredBase = process.env.ADMIN_PUBLIC_URL
-    ? process.env.ADMIN_PUBLIC_URL.replace(/\/+$/, "")
-    : null;
-  const host = req.get("host");
-  const baseUrl = configuredBase || (host ? `${req.protocol}://${host}` : "");
-  return `${baseUrl}/uploads/${file.filename}`;
-};
-
-const cleanupOrphanLocalBannerFile = async (imageUrl) => {
-  try {
-    if (!imageUrl || typeof imageUrl !== "string") return;
-    const match = imageUrl.match(/\/uploads\/([^/?#]+)$/);
-    if (!match) return;
-    const filename = path.basename(match[1]);
-    const stillUsed = await Banner.countDocuments({
-      imageUrl: { $regex: `${filename.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$` },
-    });
-    if (stillUsed === 0) {
-      const targetPath = path.join(adminUploadDir, filename);
-      if (fs.existsSync(targetPath)) {
-        fs.unlinkSync(targetPath);
-      }
-    }
-  } catch (e) {}
-};
 
 const checkLogin = (req, res, next) => {
   const isApi = req.originalUrl.startsWith("/api/") || req.path.startsWith("/api/");
@@ -416,6 +189,7 @@ const checkLogin = (req, res, next) => {
     return res.redirect("/login");
   }
 
+  // Strict role verification & account status check
   if (user.role !== "Admin" || user.status === "locked" || user.isBanned === true) {
     if (isApi) {
       return res.status(403).json({ success: false, error: "Quyền truy cập bị từ chối: Yêu cầu quyền quản trị viên hợp lệ." });
@@ -428,6 +202,9 @@ const checkLogin = (req, res, next) => {
   res.locals.user = user;
   return next();
 };
+
+
+
 
 app.get("/api/posts", async (req, res) => {
   try {
@@ -451,15 +228,62 @@ app.get("/api/user-posts/:userId", async (req, res) => {
   }
 });
 
-// Đã xóa POST /api/posts, POST /api/users/register, POST /api/users/login công khai khỏi app Admin (H16 - các API này thuộc về backend B2C)
+app.post("/api/posts", upload.single("image"), async (req, res) => {
+  try {
+    const { title, price, category, location, description, userId } = req.body;
+    const newPost = new Post({
+      title,
+      price,
+      category,
+      location,
+      description,
+      image: req.file ? req.file.filename : "",
+      author: userId,
+      status: "Chờ duyệt",
+    });
+    await newPost.save();
+    res.status(201).json(newPost);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
-app.get("/api/posts/:id", checkLogin, async (req, res) => {
+app.get("/api/posts/:id", async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate(
       "author",
       "name phone",
     );
     res.json(post);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/users/register", async (req, res) => {
+  try {
+    const { name, email, phone, username, password } = req.body;
+    const newUser = new User({
+      name,
+      email,
+      phone,
+      username,
+      password,
+      role: "Khách hàng",
+    });
+    await newUser.save();
+    res.status(201).json(newUser);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post("/api/users/login", async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const user = await User.findOne({ username, password });
+    if (user) res.json(user);
+    else res.status(401).json({ message: "Sai thông tin" });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -474,56 +298,39 @@ app.get("/api/categories", async (req, res) => {
   }
 });
 
-app.get("/api/banners", async (req, res) => {
-  try {
-    const banners = await Banner.find({ isActive: true }).sort({ order: 1, createdAt: -1 });
-    res.json(banners);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+
+
 
 app.get("/login", (req, res) => res.render("login", { error: null }));
 
 app.post("/login", async (req, res) => {
   try {
-    const { username, email, password } = req.body || {};
-    const rawId = typeof username === "string" && username.trim() ? username : (typeof email === "string" ? email : "");
-    if (typeof rawId !== "string" || typeof password !== "string" || !rawId.trim() || !password) {
-      return res.render("login", { error: "Sai email hoặc mật khẩu" });
-    }
-
-    const cleanIdentifier = rawId.trim();
-    const user = await User.findOne({
-      $or: [{ username: cleanIdentifier }, { email: cleanIdentifier.toLowerCase() }]
-    });
-
+    const { username, password } = req.body;
+    const user = await User.findOne({ username, password });
     if (user && user.role === "Admin") {
-      const isPasswordValid = await verifyPassword(user, password);
-      if (!isPasswordValid) {
-        return res.render("login", { error: "Sai email hoặc mật khẩu" });
-      }
-      if (user.status === 'locked' || user.isBanned || user.isDeleted) {
+      if (user.status === 'locked' || user.isBanned) {
         return res.render("login", { error: "Tài khoản quản trị viên này đã bị khóa!" });
       }
-      req.session.user = sanitizeUser(user);
+      req.session.user = user;
       res.redirect("/");
     } else {
-      res.render("login", { error: "Sai email hoặc mật khẩu" });
+      res.render("login", { error: "Sai tài khoản hoặc không phải Admin!" });
     }
   } catch (err) {
-    res.render("login", { error: "Lỗi kết nối máy chủ" });
+    res.render("login", { error: "Lỗi kết nối máy chủ: " + err.message });
   }
 });
 
 app.post("/register", async (req, res) => {
   try {
+    // 1. Strict Input Sanitization: Whitelist ONLY safe fields
     const { name, email, username, password } = req.body;
 
     if (!email || !username || !password) {
       return res.status(400).render("login", { error: "Vui lòng điền đầy đủ Email, Tên đăng nhập và Mật khẩu!" });
     }
 
+    // 2. Privilege Escalation Guard: Reject any payload attempting to self-assign Admin privileges
     const requestedRole = req.body.role || req.body.roles;
     if (requestedRole && /(admin|quản trị|root|superuser)/i.test(String(requestedRole))) {
       return res.status(403).render("login", {
@@ -531,6 +338,7 @@ app.post("/register", async (req, res) => {
       });
     }
 
+    // 3. Prevent duplicate accounts
     const cleanEmail = email.trim().toLowerCase();
     const cleanUsername = username.trim();
     const existing = await User.findOne({
@@ -540,15 +348,14 @@ app.post("/register", async (req, res) => {
       return res.status(400).render("login", { error: "Email hoặc Tên đăng nhập này đã được sử dụng!" });
     }
 
-    const hashedPassword = await bcrypt.hash(String(password), 10);
-
+    // 4. Force default safe role ('Khách hàng'), completely ignoring any user-supplied role
     const newUser = new User({
       name: (name || cleanUsername).trim(),
       email: cleanEmail,
       phone: req.body.phone ? String(req.body.phone).trim() : "",
       username: cleanUsername,
-      password: hashedPassword,
-      role: "Khách hàng",
+      password: password,
+      role: "Khách hàng", // Enforce safe default role
       isSeller: false,
       sellerStatus: "none",
       status: "active"
@@ -570,7 +377,9 @@ app.get("/dashboard", checkLogin, (req, res) => {
   res.redirect("/");
 });
 
-const PENDING_PRODUCT_STATUSES = ['pending', 'PENDING', 'Pending', 'Chờ duyệt'];
+
+// Status sets spanning legacy C2C values and the new B2C lifecycle
+const PENDING_PRODUCT_STATUSES = ['PENDING', 'Pending', 'Chờ duyệt'];
 const COMPLETED_ORDER_STATUSES = ['Completed', 'Delivered', 'Hoàn thành', 'Đã giao thành công'];
 
 const DEFAULT_DASHBOARD = () => ({
@@ -588,6 +397,7 @@ const DEFAULT_DASHBOARD = () => ({
   recentRevenues: []
 });
 
+// Resolves to `fallback` instead of rejecting, so one broken query can't blank the whole dashboard
 const safeQuery = async (label, queryFn, fallback) => {
   try {
     return await queryFn();
@@ -601,6 +411,7 @@ app.get("/", checkLogin, async (req, res) => {
   try {
     const now = new Date();
     const notDeleted = { isDeleted: { $ne: true } };
+    // Locked = legacy isBanned flag, or status 'locked' whose lock has not yet expired
     const lockedFilter = {
       ...notDeleted,
       $or: [
@@ -647,11 +458,13 @@ app.get("/", checkLogin, async (req, res) => {
       ]), [])
     ]);
 
+    // Real demographics calculation for Doughnut Chart
     const [sellerCount, buyerCount] = await Promise.all([
       safeQuery('sellerCount', () => User.countDocuments({ ...notDeleted, isSeller: true }), 0),
       safeQuery('buyerCount', () => User.countDocuments({ ...notDeleted, isSeller: { $ne: true } }), 0)
     ]);
 
+    // Real 7-day Sales & Orders aggregation for Bar Chart
     const daysMap = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'];
     const last7DaysData = [];
     for (let i = 6; i >= 0; i--) {
@@ -676,6 +489,7 @@ app.get("/", checkLogin, async (req, res) => {
       });
     }
 
+    // Prefer recorded ledger; fall back to completed orders × fee
     let revenue = (revenueAgg[0] && revenueAgg[0].total) || 0;
     if (!revenue) {
       const gmvAgg = await safeQuery('orderGmv', () => Order.aggregate([
@@ -685,6 +499,7 @@ app.get("/", checkLogin, async (req, res) => {
       revenue = ((gmvAgg[0] && gmvAgg[0].total) || 0) * (feePercent / 100);
     }
 
+    // Scale 7-day distribution cleanly from revenue if historical daily rows are empty
     const totalDailyRev = last7DaysData.reduce((acc, cur) => acc + cur.revenue, 0);
     const factors = [0.12, 0.15, 0.22, 0.18, 0.28, 0.35, 0.30];
     const finalDailySales = last7DaysData.map((item, idx) => {
@@ -730,7 +545,7 @@ app.get("/", checkLogin, async (req, res) => {
 });
 
 // -------------------------------------------------------------------------
-// ADMIN PORTAL FINANCE & ORDER MANAGEMENT ROUTES
+// NEW & RESTORED ADMIN PORTAL ROUTES (Fixing "Cannot GET" errors)
 // -------------------------------------------------------------------------
 
 // 1. Finance - Doanh thu sàn
@@ -739,7 +554,7 @@ app.get("/admin/revenue", checkLogin, async (req, res) => {
     const revenues = await safeQuery('revenues', () => Revenue.find()
       .populate({ path: 'orderId', populate: { path: 'buyer', select: 'name email' } })
       .sort({ createdAt: -1 }), []);
-
+    
     const totalRevenue = revenues.reduce((sum, item) => sum + (item.commissionAmount || 0), 0);
 
     res.render("revenue", {
@@ -759,7 +574,7 @@ app.get("/admin/withdrawals", checkLogin, async (req, res) => {
     const withdrawals = await safeQuery('withdrawals', () => Transaction.find({ type: 'Rút tiền' })
       .populate('user')
       .sort({ createdAt: -1 }), []);
-
+    
     res.render("withdrawals", {
       withdrawals,
       active: 'withdrawals'
@@ -769,128 +584,28 @@ app.get("/admin/withdrawals", checkLogin, async (req, res) => {
   }
 });
 
-/**
- * POST /admin/withdrawals/approve/:id
- * Duyệt lệnh rút tiền nguyên tử (Idempotent)
- */
 app.post("/admin/withdrawals/approve/:id", checkLogin, async (req, res) => {
   try {
-    const tx = await Transaction.findOneAndUpdate(
-      { _id: req.params.id, type: 'Rút tiền', status: 'Đang xử lý' },
-      { $set: { status: 'Thành công' } },
-      { new: true }
-    );
-
-    if (!tx) {
-      if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.status(409).json({ success: false, message: 'Lệnh rút tiền đã được xử lý trước đó hoặc không tồn tại!' });
-      }
-      return res.redirect("/admin/withdrawals");
-    }
-
-    if (tx.user) {
-      await Notification.create({
-        userId: tx.user,
-        user: tx.user,
-        title: '✅ Lệnh rút tiền đã được duyệt!',
-        message: `Yêu cầu rút ${Math.abs(tx.amount || 0).toLocaleString('vi-VN')} đ của bạn đã được Admin chuyển khoản thành công.`,
-        type: 'WITHDRAWAL',
-        link: '/haipay',
-        targetUrl: '/haipay',
-        recipientRole: 'buyer',
-        targetRole: 'buyer',
-        isRead: false
-      });
-    }
-
-    if (req.headers.accept && req.headers.accept.includes('application/json')) {
-      return res.json({ success: true, message: 'Đã xác nhận chuyển tiền thành công!' });
-    }
-  } catch (e) {
-    console.error('Approve withdrawal error:', e.message);
-  }
+    await Transaction.findByIdAndUpdate(req.params.id, { status: 'Thành công' });
+  } catch (e) { }
   res.redirect("/admin/withdrawals");
 });
 
-/**
- * POST /admin/withdrawals/reject/:id
- * Từ chối lệnh rút tiền & hoàn tiền nguyên tử về Ví HaiPay của User (Idempotent)
- */
 app.post("/admin/withdrawals/reject/:id", checkLogin, async (req, res) => {
   try {
-    const tx = await Transaction.findOneAndUpdate(
-      { _id: req.params.id, type: 'Rút tiền', status: 'Đang xử lý' },
-      { $set: { status: 'Thất bại' } },
-      { new: true }
-    );
-
-    if (!tx) {
-      if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.status(409).json({
-          success: false,
-          message: 'Lệnh rút tiền này đã được xử lý trước đó hoặc không còn ở trạng thái Đang xử lý!'
-        });
-      }
-      return res.redirect("/admin/withdrawals");
-    }
-
-    const refundAmount = Math.abs(Number(tx.amount) || 0);
-    if (tx.user && refundAmount > 0) {
-      await User.findByIdAndUpdate(tx.user, {
-        $inc: { walletBalance: refundAmount }
-      });
-
-      const rejectReason = (req.body && req.body.reason)
-        ? String(req.body.reason).trim()
-        : 'Thông tin tài khoản nhận chưa chính xác hoặc không hợp lệ';
-
-      // M16: Ghi Transaction hoàn tiền rõ ràng cho lệnh rút bị từ chối
-      await Transaction.create({
-        user: tx.user,
-        type: 'Hoàn tiền',
-        amount: refundAmount,
-        status: 'Thành công',
-        txnRef: `WITHDRAW_REFUND_${tx._id}`,
-        description: `Hoàn tiền lệnh rút bị từ chối #${tx._id.toString().slice(-6).toUpperCase()} (${rejectReason})`
-      });
-
-      await Notification.create({
-        userId: tx.user,
-        user: tx.user,
-        title: '↩️ Lệnh rút tiền bị từ chối & Đã hoàn ví',
-        message: `Lệnh rút ${refundAmount.toLocaleString('vi-VN')} đ bị từ chối (${rejectReason}). Số tiền ${refundAmount.toLocaleString('vi-VN')} đ đã được hoàn lại đầy đủ vào Ví HaiPay của bạn.`,
-        type: 'WITHDRAWAL',
-        link: '/haipay',
-        targetUrl: '/haipay',
-        recipientRole: 'buyer',
-        targetRole: 'buyer',
-        isRead: false
-      });
-    }
-
-    if (req.headers.accept && req.headers.accept.includes('application/json')) {
-      return res.json({
-        success: true,
-        message: `Đã từ chối lệnh rút và hoàn lại ${refundAmount.toLocaleString('vi-VN')} đ vào ví người dùng!`
-      });
-    }
-  } catch (e) {
-    console.error('Reject withdrawal error:', e.message);
-    if (req.headers.accept && req.headers.accept.includes('application/json')) {
-      return res.status(500).json({ success: false, message: 'Lỗi máy chủ khi hoàn tiền lệnh rút!' });
-    }
-  }
+    await Transaction.findByIdAndUpdate(req.params.id, { status: 'Thất bại' });
+  } catch (e) { }
   res.redirect("/admin/withdrawals");
 });
 
-// 3. Commerce - Quản lý đơn hàng (M7: lọc bỏ đơn đã soft-delete)
+// 3. Commerce - Quản lý đơn hàng
 app.get("/orders", checkLogin, async (req, res) => {
   try {
-    const orders = await safeQuery('orders', () => Order.find({ isDeleted: { $ne: true } })
+    const orders = await safeQuery('orders', () => Order.find()
       .populate('buyer', 'name phone email')
       .populate('seller', 'name phone email')
       .sort({ createdAt: -1 }), []);
-
+    
     res.render("orders", {
       orders,
       active: 'orders'
@@ -905,7 +620,7 @@ app.get("/order/:id", checkLogin, async (req, res) => {
     const order = await safeQuery('orderDetail', () => Order.findById(req.params.id)
       .populate('buyer')
       .populate('seller'), null);
-
+    
     if (!order) return res.redirect("/orders");
     res.render("order-detail", { order, active: 'orders' });
   } catch (e) {
@@ -913,352 +628,10 @@ app.get("/order/:id", checkLogin, async (req, res) => {
   }
 });
 
-/**
- * POST /orders/update-status/:id
- * Cập nhật trạng thái đơn hàng từ Admin Portal
- */
-app.post("/orders/update-status/:id", checkLogin, async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) {
-      return res.status(404).send("Không tìm thấy đơn hàng");
-    }
-
-    const lockedStatuses = ['Đã thanh toán cho người bán', 'Đã hủy', 'Completed', 'Cancelled'];
-    if (
-      lockedStatuses.includes(order.status) &&
-      (order.paymentStatus === 'released' || order.paymentStatus === 'refunded')
-    ) {
-      return res.status(400).send(`
-        <div style="text-align:center; padding: 50px; font-family: sans-serif;">
-          <h2 style="color: red;">⛔ LỖI BẢO MẬT HỆ THỐNG</h2>
-          <p>Không thể thay đổi trạng thái của đơn hàng đã được GIẢI NGÂN hoặc ĐÃ HOÀN TIỀN!</p>
-          <a href="/orders" style="padding: 10px 20px; background: #333; color: white; text-decoration: none; border-radius: 5px;">Quay lại</a>
-        </div>
-      `);
-    }
-
-    const ALLOWED_ADMIN_ORDER_STATUSES = ['Pending', 'Processing', 'Shipped', 'Delivered', 'Completed', 'Cancelled'];
-    const nextStatus = String(req.body.status || '').trim();
-    if (!ALLOWED_ADMIN_ORDER_STATUSES.includes(nextStatus)) {
-      return res.status(400).send("Trạng thái đơn hàng không hợp lệ!");
-    }
-
-    order.status = nextStatus;
-    if (nextStatus === 'Delivered' || nextStatus === 'Đã giao hàng') {
-      order.deliveredAt = order.deliveredAt || new Date();
-    } else if (nextStatus === 'Completed' || nextStatus === 'Hoàn thành') {
-      order.completedAt = order.completedAt || new Date();
-    }
-    await order.save();
-
-    res.redirect("/orders");
-  } catch (error) {
-    res.status(500).send("Lỗi server khi cập nhật trạng thái: " + error.message);
-  }
-});
-
-const ELIGIBLE_RELEASE_STATUSES = [
-  'Delivered',
-  'Completed',
-  'Hoàn thành',
-  'Đã giao thành công',
-  'Đã giao hàng'
-];
-
-/**
- * POST /api/admin/release-funds/:orderId
- * Giải ngân đơn hàng nguyên tử trên Admin Portal (Idempotent)
- */
-app.post("/api/admin/release-funds/:orderId", checkLogin, async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-    }
-
-    const isOrderEscrow = order.paymentStatus === 'escrow' || order.status === 'Đã thanh toán (Admin giữ tiền)';
-    if (order.paymentMethod === 'COD' || (order.paymentStatus === 'unpaid' && !isOrderEscrow)) {
-      return res.status(400).json({
-        message: "Đơn hàng COD hoặc chưa thanh toán qua ví ký quỹ (escrow) không thể giải ngân từ sàn!"
-      });
-    }
-
-    if (order.paymentStatus === 'released') {
-      return res.status(409).json({
-        message: "Đơn hàng này đã được giải ngân trước đó!"
-      });
-    }
-
-    if (!isOrderEscrow) {
-      return res.status(400).json({
-        message: `Chỉ có thể giải ngân cho đơn hàng đang ở trạng thái ký quỹ (escrow), hiện tại: ${order.paymentStatus}`
-      });
-    }
-
-    if (!ELIGIBLE_RELEASE_STATUSES.includes(order.status)) {
-      return res.status(400).json({
-        message: `Chỉ có thể giải ngân khi đơn hàng đã Giao thành công (Delivered / Completed). Trạng thái hiện tại: ${order.status}`
-      });
-    }
-
-    const sellerRef = order.sellerId?._id || order.seller?._id || order.sellerId || order.seller;
-    if (!sellerRef) {
-      return res.status(400).json({ message: "Đơn hàng thiếu thông tin người bán!" });
-    }
-
-    const setting = await safeQuery('settings', () => GlobalSetting.findOne().lean(), null);
-    const feePercent = Number(setting?.platformFeePercentage ?? setting?.commissionRate ?? 5);
-    const { commissionAmount, sellerReceive } = computeAdminOrderSplit(order, feePercent);
-    const now = new Date();
-
-    // Atomic conditional transition to prevent double payout
-    const releasedOrder = await Order.findOneAndUpdate(
-      {
-        _id: order._id,
-        paymentStatus: 'escrow',
-        status: { $in: ELIGIBLE_RELEASE_STATUSES }
-      },
-      {
-        $set: {
-          paymentStatus: 'released',
-          status: 'Completed',
-          completedAt: order.completedAt || now,
-          commissionRate: feePercent,
-          sellerReceive
-        }
-      },
-      { new: true }
-    );
-
-    if (!releasedOrder) {
-      return res.status(409).json({
-        message: "Đơn hàng đã được giải ngân hoặc không đủ điều kiện giải ngân!"
-      });
-    }
-
-    await User.findByIdAndUpdate(sellerRef, {
-      $inc: {
-        pendingBalance: -sellerReceive,
-        walletBalance: sellerReceive
-      }
-    });
-
-    await Revenue.create({
-      orderId: order._id,
-      commissionAmount,
-      description: `Chiết khấu ${feePercent}% phí sàn từ đơn hàng #${order._id.toString().slice(-6).toUpperCase()}`
-    });
-
-    await Transaction.create({
-      user: sellerRef,
-      type: 'Giải ngân',
-      amount: sellerReceive,
-      status: 'Thành công',
-      txnRef: `RELEASE_${order._id}`,
-      description: `Giải ngân doanh thu đơn hàng #${order._id.toString().slice(-6).toUpperCase()} (đã trừ ${feePercent}% phí sàn)`
-    });
-
-    await Notification.create({
-      userId: sellerRef,
-      user: sellerRef,
-      shopId: sellerRef,
-      orderId: order._id,
-      title: '💰 Đã giải ngân doanh thu đơn hàng!',
-      message: `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được Admin giải ngân. Số tiền +${sellerReceive.toLocaleString('vi-VN')} đ đã cộng vào Số dư khả dụng Ví HaiPay của Shop.`,
-      type: 'PAYMENT',
-      link: '/haipay',
-      targetUrl: '/haipay',
-      recipientRole: 'seller',
-      targetRole: 'seller',
-      isRead: false
-    });
-
-    return res.status(200).json({
-      success: true,
-      message: `Giải ngân thành công +${sellerReceive.toLocaleString('vi-VN')} đ cho người bán!`,
-      order: releasedOrder,
-      sellerReceive,
-      platformFee: commissionAmount
-    });
-  } catch (err) {
-    console.error("Admin release-funds error:", err);
-    return res.status(500).json({ message: "Lỗi hệ thống khi giải ngân: " + err.message });
-  }
-});
-
-/**
- * POST /api/admin/refund-order/:orderId
- * Hoàn tiền cho Buyer đối với đơn hủy đang giữ tiền escrow (Idempotent)
- */
-app.post("/api/admin/refund-order/:orderId", checkLogin, async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.orderId);
-    if (!order) {
-      return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-    }
-
-    if (order.paymentStatus === 'refunded') {
-      return res.status(409).json({ message: "Đơn hàng này đã được hoàn tiền trước đó!" });
-    }
-
-    const isOrderEscrow = order.paymentStatus === 'escrow' || order.status === 'Đã thanh toán (Admin giữ tiền)';
-    if (!isOrderEscrow) {
-      return res.status(400).json({
-        message: `Chỉ có thể hoàn tiền cho đơn hàng đang giữ tiền ký quỹ (escrow). Trạng thái thanh toán hiện tại: ${order.paymentStatus}`
-      });
-    }
-
-    const setting = await safeQuery('settings', () => GlobalSetting.findOne().lean(), null);
-    const feePercent = Number(setting?.platformFeePercentage ?? setting?.commissionRate ?? 5);
-    const { totalAmount, sellerReceive } = computeAdminOrderSplit(order, feePercent);
-    const now = new Date();
-
-    const refundedOrder = await Order.findOneAndUpdate(
-      {
-        _id: order._id,
-        paymentStatus: 'escrow'
-      },
-      {
-        $set: {
-          status: 'Cancelled',
-          paymentStatus: 'refunded',
-          cancelledAt: order.cancelledAt || now,
-          cancelReason: order.cancelReason || 'Admin xác nhận hoàn tiền đơn hàng đã hủy'
-        }
-      },
-      { new: true }
-    );
-
-    if (!refundedOrder) {
-      return res.status(409).json({ message: "Đơn hàng đã được xử lý hoàn tiền hoặc giải ngân trước đó!" });
-    }
-
-    const buyerRef = order.buyerId?._id || order.buyer?._id || order.buyerId || order.buyer;
-    const sellerRef = order.sellerId?._id || order.seller?._id || order.sellerId || order.seller;
-
-    if (buyerRef && totalAmount > 0) {
-      await User.findByIdAndUpdate(buyerRef, {
-        $inc: { walletBalance: totalAmount }
-      });
-
-      await Transaction.create({
-        user: buyerRef,
-        type: 'Hoàn tiền',
-        amount: totalAmount,
-        status: 'Thành công',
-        txnRef: `REFUND_${order._id}_${Date.now()}`,
-        description: `Hoàn tiền đơn hàng #${order._id.toString().slice(-6).toUpperCase()} từ Admin`
-      });
-
-      await Notification.create({
-        userId: buyerRef,
-        user: buyerRef,
-        orderId: order._id,
-        title: '💸 Đã hoàn tiền đơn hàng vào Ví HaiPay!',
-        message: `Đơn hàng #${order._id.toString().slice(-6).toUpperCase()} đã được hoàn trả +${totalAmount.toLocaleString('vi-VN')} đ vào Ví HaiPay của bạn.`,
-        type: 'PAYMENT',
-        link: '/haipay',
-        targetUrl: '/haipay',
-        recipientRole: 'buyer',
-        targetRole: 'buyer',
-        isRead: false
-      });
-    }
-
-    if (sellerRef && sellerReceive > 0) {
-      await User.findByIdAndUpdate(sellerRef, {
-        $inc: { pendingBalance: -sellerReceive }
-      });
-    }
-
-    // Hoàn lại tồn kho nếu đơn chưa được hoàn kho trước đó
-    if (order.status !== 'Cancelled' && order.status !== 'Đã hủy') {
-      const qtyByProduct = {};
-      if (Array.isArray(order.orderItems) && order.orderItems.length > 0) {
-        for (const item of order.orderItems) {
-          const pid = item.productId?._id || item.productId;
-          if (pid) {
-            const key = pid.toString();
-            qtyByProduct[key] = (qtyByProduct[key] || 0) + (Number(item.quantity) || 1);
-          }
-        }
-      } else if (Array.isArray(order.items) && order.items.length > 0) {
-        for (const rawId of order.items) {
-          const pid = rawId?._id || rawId;
-          if (pid) {
-            const key = pid.toString();
-            qtyByProduct[key] = (qtyByProduct[key] || 0) + 1;
-          }
-        }
-      }
-
-      for (const [productId, addQty] of Object.entries(qtyByProduct)) {
-        if (addQty > 0) {
-          const restored = await Post.findByIdAndUpdate(
-            productId,
-            { $inc: { stockQuantity: addQty, quantity: addQty, soldCount: -addQty } },
-            { new: true }
-          );
-          if (restored) {
-            const fixSet = {};
-            if ((restored.soldCount || 0) < 0) fixSet.soldCount = 0;
-            if (
-              (restored.status === 'out_of_stock' || restored.status === 'SOLD') &&
-              (restored.stockQuantity ?? restored.quantity ?? 0) > 0
-            ) {
-              fixSet.status = 'active';
-            }
-            if (Object.keys(fixSet).length > 0) {
-              await Post.findByIdAndUpdate(productId, { $set: fixSet });
-            }
-          }
-        }
-      }
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: `Đã hoàn tiền +${totalAmount.toLocaleString('vi-VN')} đ về Ví HaiPay cho khách hàng!`,
-      order: refundedOrder
-    });
-  } catch (err) {
-    console.error("Admin refund-order error:", err);
-    return res.status(500).json({ message: "Lỗi hệ thống khi hoàn tiền: " + err.message });
-  }
-});
-
-/**
- * POST /admin/orders/delete/:id (M7)
- * Thay xóa cứng bằng soft-delete (`isDeleted: true, deletedAt: now`), cấm xóa nếu đơn đang giữ tiền ký quỹ (`paymentStatus === 'escrow'`).
- */
 app.post("/admin/orders/delete/:id", checkLogin, async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-    if (!order) {
-      if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
-      }
-      return res.redirect("/orders");
-    }
-
-    if (order.paymentStatus === 'escrow' || order.status === 'Đã thanh toán (Admin giữ tiền)') {
-      const msg = "Không thể xóa đơn hàng đang giữ tiền ký quỹ (escrow)! Vui lòng thực hiện Hoàn tiền hoặc Giải ngân trước khi xóa để tránh lệch sổ cái.";
-      if (req.headers.accept && req.headers.accept.includes('application/json')) {
-        return res.status(400).json({ success: false, message: msg });
-      }
-      return res.status(400).send(msg);
-    }
-
-    await Order.findByIdAndUpdate(req.params.id, {
-      $set: { isDeleted: true, deletedAt: new Date() }
-    });
-    if (req.headers.accept && req.headers.accept.includes('application/json')) {
-      return res.json({ success: true, message: "Đã ẩn (soft-delete) đơn hàng thành công" });
-    }
-  } catch (e) {
-    console.error("Delete order error:", e.message);
-  }
+    await Order.findByIdAndDelete(req.params.id);
+  } catch (e) { }
   res.redirect("/orders");
 });
 
@@ -1269,7 +642,7 @@ app.get("/admin/reports", checkLogin, async (req, res) => {
       .populate('reporter', 'name email')
       .populate('post', 'title')
       .sort({ createdAt: -1 }), []);
-
+    
     res.render("reports", {
       reports,
       active: 'reports'
@@ -1284,6 +657,7 @@ app.get("/admin/chat", checkLogin, (req, res) => {
   res.render("admin-chat", { active: 'chat' });
 });
 
+// Helper filter to isolate admin/system-level notifications from personal user notifications
 const getAdminNotifFilter = () => ({
   $or: [
     { targetRole: 'admin' },
@@ -1309,6 +683,7 @@ app.get("/api/admin/notifications", checkLogin, async (req, res) => {
 
 app.get("/api/notifications", checkLogin, async (req, res) => {
   try {
+    // Admin dashboard must ONLY display system-level notifications
     const adminFilter = getAdminNotifFilter();
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
     const notifications = await safeQuery('notifs', () => Notification.find(adminFilter)
@@ -1335,7 +710,24 @@ app.get("/api/admin/unread-chats", checkLogin, async (req, res) => {
   res.json({ count: 0 });
 });
 
-// Đã xóa GET /api/admin/test-notif (C6)
+app.get("/api/admin/test-notif", checkLogin, async (req, res) => {
+  try {
+    const notif = new Notification({
+      title: 'Đăng ký bán hàng B2C mới',
+      message: 'Người dùng vừa nộp hồ sơ mở shop cần duyệt.',
+      type: 'SELLER',
+      link: '/admin/seller-applications',
+      targetUrl: '/admin/seller-applications',
+      targetRole: 'admin',
+      recipientRole: 'admin',
+      isRead: false
+    });
+    await notif.save();
+    res.json({ success: true, notif });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 app.get("/posts", checkLogin, async (req, res) => {
   try {
@@ -1348,13 +740,9 @@ app.get("/posts", checkLogin, async (req, res) => {
 
 app.post("/api/admin/posts/approve/:id", checkLogin, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
+    const post = await Post.findByIdAndUpdate(req.params.id, { status: "active" }, { new: true });
     if (!post) return res.status(404).json({ success: false, message: "Không tìm thấy tin đăng" });
-    const stock = Number(post.stockQuantity ?? post.quantity ?? 1);
-    post.moderationStatus = "approved";
-    post.status = stock <= 0 ? "out_of_stock" : "active";
-    await post.save();
-    res.json({ success: true, status: post.status, moderationStatus: post.moderationStatus });
+    res.json({ success: true, status: post.status });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -1362,37 +750,27 @@ app.post("/api/admin/posts/approve/:id", checkLogin, async (req, res) => {
 
 app.post("/api/admin/posts/hide/:id", checkLogin, async (req, res) => {
   try {
-    const post = await Post.findByIdAndUpdate(
-      req.params.id,
-      { status: "inactive", moderationStatus: "locked" },
-      { new: true }
-    );
+    const post = await Post.findByIdAndUpdate(req.params.id, { status: "inactive" }, { new: true });
     if (!post) return res.status(404).json({ success: false, message: "Không tìm thấy tin đăng" });
-    res.json({ success: true, status: post.status, moderationStatus: post.moderationStatus });
+    res.json({ success: true, status: post.status });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
 });
 
-// H16: Đổi thao tác ghi /post/approve/:id và /post/delete/:id từ GET sang POST
-app.post("/post/approve/:id", checkLogin, async (req, res) => {
+app.get("/post/approve/:id", checkLogin, async (req, res) => {
   try {
-    const post = await Post.findById(req.params.id);
-    if (post) {
-      const stock = Number(post.stockQuantity ?? post.quantity ?? 1);
-      post.moderationStatus = "approved";
-      post.status = stock <= 0 ? "out_of_stock" : "active";
-      await post.save();
-    }
+    await Post.findByIdAndUpdate(req.params.id, { status: "active" });
     res.redirect("/posts");
   } catch (err) {
     res.redirect("/posts");
   }
 });
 
-app.post("/post/delete/:id", checkLogin, async (req, res) => {
+app.get("/post/delete/:id", checkLogin, async (req, res) => {
   try {
-    await Post.findByIdAndUpdate(req.params.id, { status: "inactive", moderationStatus: "locked" });
+    // Soft hide instead of permanent delete
+    await Post.findByIdAndUpdate(req.params.id, { status: "inactive" });
     res.redirect("/posts");
   } catch (err) {
     res.redirect("/posts");
@@ -1426,26 +804,7 @@ app.post("/admin/approve-seller/:id", checkLogin, async (req, res) => {
       user.isSeller = true;
       user.sellerStatus = 'approved';
       user.sellerApprovedAt = new Date();
-      user.sellerRejectionReason = '';
-      if (!user.shopInfo || !user.shopInfo.shopName) {
-        user.shopInfo = {
-          ...(user.shopInfo || {}),
-          shopName: user.name,
-          avatar: (user.shopInfo && user.shopInfo.avatar) || user.avatar || ''
-        };
-      }
       await user.save();
-
-      await Notification.create({
-        userId: user._id,
-        title: '🎉 Shop đã được duyệt!',
-        message: 'Admin đã duyệt đăng ký bán hàng. Bạn có thể vào Kênh Người Bán để đăng sản phẩm.',
-        type: 'SELLER',
-        link: '/seller-channel',
-        targetUrl: '/seller-channel',
-        recipientRole: 'seller',
-        isRead: false
-      });
     }
   } catch (e) { }
   res.redirect("/admin/seller-applications");
@@ -1455,22 +814,9 @@ app.post("/admin/reject-seller/:id", checkLogin, async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (user) {
-      const reason = (req.body && req.body.reason) ? String(req.body.reason).trim() : 'Hồ sơ chưa đủ điều kiện';
       user.isSeller = false;
       user.sellerStatus = 'rejected';
-      user.sellerRejectionReason = reason;
       await user.save();
-
-      await Notification.create({
-        userId: user._id,
-        title: 'Hồ sơ mở Shop bị từ chối',
-        message: reason,
-        type: 'SELLER',
-        link: '/register-seller',
-        targetUrl: '/register-seller',
-        recipientRole: 'buyer',
-        isRead: false
-      });
     }
   } catch (e) { }
   res.redirect("/admin/seller-applications");
@@ -1490,11 +836,11 @@ app.post("/api/admin/users/toggle-lock/:id", checkLogin, async (req, res) => {
   }
 });
 
-// H16: Đổi /users/delete/:id từ GET sang POST
-app.post("/users/delete/:id", checkLogin, async (req, res) => {
+app.get("/users/delete/:id", checkLogin, async (req, res) => {
   try {
+    // Soft lock instead of hard delete
     const user = await User.findById(req.params.id);
-    if (user && user.role !== "Admin") {
+    if (user) {
       const isCurrentlyLocked = user.status === 'locked' || user.isBanned === true;
       user.status = isCurrentlyLocked ? 'active' : 'locked';
       user.isBanned = !isCurrentlyLocked;
@@ -1506,6 +852,7 @@ app.post("/users/delete/:id", checkLogin, async (req, res) => {
   }
 });
 
+// Settings API for Auto-Approve Posts logic (Protected with checkLogin)
 app.get("/api/admin/settings/auto-approve", checkLogin, async (req, res) => {
   try {
     const setting = await GlobalSetting.getGlobal();
@@ -1540,10 +887,10 @@ app.post("/users/edit/:id", checkLogin, async (req, res) => {
   try {
     const { name, email, phone, role, status } = req.body;
     const isLocked = status === 'locked';
-    await User.findByIdAndUpdate(req.params.id, {
-      name,
-      email,
-      phone,
+    await User.findByIdAndUpdate(req.params.id, { 
+      name, 
+      email, 
+      phone, 
       role,
       status: isLocked ? 'locked' : 'active',
       isBanned: isLocked
@@ -1553,6 +900,7 @@ app.post("/users/edit/:id", checkLogin, async (req, res) => {
     res.redirect("/users");
   }
 });
+
 
 app.get("/categories", checkLogin, async (req, res) => {
   try {
@@ -1607,8 +955,7 @@ app.post("/categories/edit/:id", checkLogin, upload.single("image"), async (req,
   }
 });
 
-// H16: Đổi /categories/delete/:id và /banners/delete/:id từ GET sang POST
-app.post("/categories/delete/:id", checkLogin, async (req, res) => {
+app.get("/categories/delete/:id", checkLogin, async (req, res) => {
   try {
     await Category.findByIdAndDelete(req.params.id);
     res.redirect("/categories");
@@ -1617,134 +964,204 @@ app.post("/categories/delete/:id", checkLogin, async (req, res) => {
   }
 });
 
-// ======================== BANNER CAROUSEL MANAGEMENT ========================
-app.get("/banners", checkLogin, async (req, res) => {
+// --- BEHAVIOR ANALYTICS & RECOMMENDATION METRICS ROUTE ---
+app.get("/admin/behavior-analytics", checkLogin, async (req, res) => {
   try {
-    const banners = await Banner.find().sort({ order: 1, createdAt: -1 });
-    res.render("banners", {
-      banners,
-      active: "banners",
-      error: req.query.error || null,
-      success: req.query.success || null,
-    });
-  } catch (err) {
-    res.status(500).send("Lỗi khi tải danh sách Banner: " + err.message);
-  }
-});
+    const days = parseInt(req.query.days, 10) === 30 ? 30 : 7;
+    const sinceDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-app.post("/banners/add", checkLogin, handleBannerUpload, async (req, res) => {
-  try {
-    const uploadedFile = getUploadedBannerFile(req);
-    const manualUrl = String(req.body.imageUrl || "").trim();
-    const imageUrl = uploadedFile ? resolveBannerUploadUrl(req, uploadedFile) : manualUrl;
+    // 1. Phễu chuyển đổi (Views -> Cart Adds -> Purchases)
+    const funnelStats = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: { $in: ['product_view', 'cart_add', 'purchase'] }
+        }
+      },
+      {
+        $group: {
+          _id: '$type',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
 
-    if (!imageUrl) {
-      return res.redirect("/banners?error=" + encodeURIComponent("Vui lòng chọn file ảnh/GIF hoặc nhập URL ảnh!"));
-    }
+    const funnelMap = { product_view: 0, cart_add: 0, purchase: 0 };
+    funnelStats.forEach(item => { funnelMap[item._id] = item.count; });
 
-    const fromForm = req.body.hasFormFlags === "1";
-    const openInNewTab = fromForm
-      ? Boolean(req.body.openInNewTab)
-      : req.body.openInNewTab === true || req.body.openInNewTab === "true" || req.body.openInNewTab === "on";
-    const isActive = fromForm
-      ? Boolean(req.body.isActive)
-      : req.body.isActive === undefined
-        ? true
-        : req.body.isActive === true || req.body.isActive === "true" || req.body.isActive === "on";
+    const views = funnelMap.product_view || 0;
+    const cartAdds = funnelMap.cart_add || 0;
+    const purchases = funnelMap.purchase || 0;
 
-    const newBanner = new Banner({
-      title: String(req.body.title || "").trim(),
-      imageUrl,
-      targetUrl: String(req.body.targetUrl || "").trim(),
-      openInNewTab,
-      order: Number.isFinite(Number(req.body.order)) ? Number(req.body.order) : 0,
-      isActive,
-    });
+    const viewToCartCr = views > 0 ? Number(((cartAdds / views) * 100).toFixed(1)) : 0;
+    const cartToPurchaseCr = cartAdds > 0 ? Number(((purchases / cartAdds) * 100).toFixed(1)) : 0;
+    const overallCr = views > 0 ? Number(((purchases / views) * 100).toFixed(2)) : 0;
 
-    await newBanner.save();
-    res.redirect("/banners?success=" + encodeURIComponent("Đã thêm Banner mới thành công!"));
-  } catch (err) {
-    res.redirect("/banners?error=" + encodeURIComponent("Lỗi thêm Banner: " + err.message));
-  }
-});
+    // 2. CTR từng khối gợi ý
+    const recoStats = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: { $in: ['recommendation_impression', 'recommendation_click', 'chat_product_click'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            source: '$source',
+            type: '$type'
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
 
-app.post("/banners/edit/:id", checkLogin, handleBannerUpload, async (req, res) => {
-  try {
-    const existing = await Banner.findById(req.params.id);
-    if (!existing) {
-      return res.redirect("/banners?error=" + encodeURIComponent("Không tìm thấy Banner cần sửa!"));
-    }
-
-    const uploadedFile = getUploadedBannerFile(req);
-    const manualUrl = String(req.body.imageUrl || "").trim();
-    const previousImageUrl = existing.imageUrl;
-
-    const fromForm = req.body.hasFormFlags === "1";
-    const openInNewTab = fromForm
-      ? Boolean(req.body.openInNewTab)
-      : req.body.openInNewTab === true || req.body.openInNewTab === "true" || req.body.openInNewTab === "on";
-    const isActive = fromForm
-      ? Boolean(req.body.isActive)
-      : req.body.isActive === undefined
-        ? existing.isActive
-        : req.body.isActive === true || req.body.isActive === "true" || req.body.isActive === "on";
-
-    const updateData = {
-      title: String(req.body.title !== undefined ? req.body.title : existing.title).trim(),
-      targetUrl: String(req.body.targetUrl !== undefined ? req.body.targetUrl : existing.targetUrl).trim(),
-      openInNewTab,
-      order: Number.isFinite(Number(req.body.order)) ? Number(req.body.order) : existing.order,
-      isActive,
+    const sourceMap = {
+      recently_viewed: { name: 'Sản phẩm bạn đã xem', icon: '🕒', code: 'recently_viewed', impressions: 0, clicks: 0 },
+      for_you: { name: 'Gợi ý cho bạn', icon: '✨', code: 'for_you', impressions: 0, clicks: 0 },
+      similar: { name: 'Sản phẩm tương tự', icon: '🔍', code: 'similar', impressions: 0, clicks: 0 },
+      also_viewed: { name: 'Người xem cũng xem', icon: '👥', code: 'also_viewed', impressions: 0, clicks: 0 },
+      chatbot: { name: 'Trợ lý AI Chatbot', icon: '🤖', code: 'chatbot', impressions: 0, clicks: 0 },
+      cart: { name: 'Gợi ý trong Giỏ hàng', icon: '🛍️', code: 'cart', impressions: 0, clicks: 0 }
     };
 
-    if (uploadedFile) {
-      updateData.imageUrl = resolveBannerUploadUrl(req, uploadedFile);
-    } else if (manualUrl) {
-      updateData.imageUrl = manualUrl;
-    }
+    recoStats.forEach(item => {
+      const src = item._id.source;
+      const target = sourceMap[src] || (sourceMap[src] = { name: src, icon: '📌', code: src, impressions: 0, clicks: 0 });
+      if (item._id.type === 'recommendation_impression') target.impressions += item.count;
+      else if (item._id.type === 'recommendation_click' || item._id.type === 'chat_product_click') target.clicks += item.count;
+    });
 
-    await Banner.findByIdAndUpdate(req.params.id, updateData);
-    if (updateData.imageUrl && updateData.imageUrl !== previousImageUrl) {
-      await cleanupOrphanLocalBannerFile(previousImageUrl);
-    }
+    const recoBlocks = Object.values(sourceMap).map(b => ({
+      ...b,
+      ctr: b.impressions > 0 ? Number(((b.clicks / b.impressions) * 100).toFixed(1)) : (b.clicks > 0 ? 100 : 0)
+    }));
 
-    res.redirect("/banners?success=" + encodeURIComponent("Đã cập nhật Banner thành công!"));
-  } catch (err) {
-    res.redirect("/banners?error=" + encodeURIComponent("Lỗi cập nhật Banner: " + err.message));
-  }
-});
+    // 3. Top 10 sản phẩm xem nhiều nhất
+    const topViewAgg = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: 'product_view',
+          productId: { $ne: null }
+        }
+      },
+      {
+        $group: {
+          _id: '$productId',
+          viewCount: { $sum: 1 }
+        }
+      },
+      { $sort: { viewCount: -1 } },
+      { $limit: 10 }
+    ]);
 
-app.post("/api/admin/banners/toggle/:id", checkLogin, async (req, res) => {
-  try {
-    const banner = await Banner.findById(req.params.id);
-    if (!banner) {
-      return res.status(404).json({ success: false, message: "Không tìm thấy Banner!" });
-    }
-    banner.isActive = !banner.isActive;
-    await banner.save();
-    res.json({ success: true, banner });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
+    const topProductIds = topViewAgg.map(i => i._id);
+    const topDbProducts = await Product.find({ _id: { $in: topProductIds } }).select('title name price category images').lean();
+    const prodInfoMap = new Map(topDbProducts.map(p => [p._id.toString(), p]));
 
-app.post("/banners/delete/:id", checkLogin, async (req, res) => {
-  try {
-    const deleted = await Banner.findByIdAndDelete(req.params.id);
-    if (deleted && deleted.imageUrl) {
-      await cleanupOrphanLocalBannerFile(deleted.imageUrl);
-    }
-    res.redirect("/banners?success=" + encodeURIComponent("Đã xóa Banner!"));
-  } catch (err) {
-    res.redirect("/banners?error=" + encodeURIComponent("Lỗi xóa Banner: " + err.message));
+    const topProducts = topViewAgg.map(item => {
+      const p = prodInfoMap.get(item._id.toString()) || {};
+      return {
+        _id: item._id,
+        title: p.title || p.name || 'Sản phẩm',
+        price: p.price || 0,
+        category: p.category || 'Khác',
+        viewCount: item.viewCount
+      };
+    });
+
+    // 4. Phân bố sở thích theo danh mục
+    const catAgg = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          category: { $ne: '', $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 8 }
+    ]);
+
+    const totalCatCount = catAgg.reduce((sum, c) => sum + c.count, 0) || 1;
+    const categoryStats = catAgg.map(c => ({
+      category: c._id,
+      count: c.count,
+      percent: Math.round((c.count / totalCatCount) * 100)
+    }));
+
+    // 5. Từ khóa tìm kiếm phổ biến
+    const searchAgg = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: 'search',
+          query: { $ne: '', $exists: true }
+        }
+      },
+      {
+        $group: {
+          _id: '$query',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 15 }
+    ]);
+
+    const topSearches = searchAgg.map(s => ({ query: s._id, count: s.count }));
+
+    // Zero result searches
+    const zeroSearchesAgg = await UserEvent.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: sinceDate },
+          type: 'search',
+          'meta.resultsCount': 0
+        }
+      },
+      {
+        $group: {
+          _id: '$query',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 }
+    ]);
+    const zeroResultSearches = zeroSearchesAgg.map(s => ({ query: s._id, count: s.count }));
+
+    res.render('behaviorAnalytics', {
+      active: 'analytics',
+      days,
+      funnel: {
+        views,
+        cartAdds,
+        purchases,
+        viewToCartCr,
+        cartToPurchaseCr,
+        overallCr
+      },
+      recoBlocks,
+      topProducts,
+      categoryStats,
+      topSearches,
+      zeroResultSearches,
+      currentUser: req.session?.user
+    });
+  } catch (error) {
+    console.error('Error in behavior analytics dashboard:', error);
+    res.status(500).send('Lỗi máy chủ khi tải trang phân tích hành vi: ' + error.message);
   }
 });
 
 const PORT = process.env.PORT || 4001;
-if (require.main === module) {
-  app.listen(PORT, '0.0.0.0', () =>
-    console.log(`🚀 Server Admin chạy tại port ${PORT}`),
-  );
-}
-
-module.exports = app;
+app.listen(PORT, '0.0.0.0', () =>
+  console.log(`🚀 Server Admin chạy tại port ${PORT}`),
+);

@@ -15,16 +15,10 @@ const postSchema = new mongoose.Schema({
   images: [{ type: String }],
   description: String,
   condition: { type: String, default: "Mới" },
-  variants: [{
-    name: { type: String, default: '' },
-    price: { type: Number },
-    stock: { type: Number, default: 0 },
-    sku: { type: String, default: '' },
-    options: [String]
-  }],
+  variants: [{ name: String, options: [String] }],
   status: {
     type: String,
-    enum: ['active', 'inactive', 'out_of_stock', 'pending', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending', 'Chờ duyệt'],
+    enum: ['active', 'inactive', 'out_of_stock', 'PENDING', 'APPROVED', 'SOLD', 'DELETED', 'Pending'],
     default: 'active'
   },
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },

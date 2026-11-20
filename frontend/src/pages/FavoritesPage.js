@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
+import { RecommendationSection } from '../components/RecommendationSection';
 
 const FavoritesPage = () => {
   const [favorites, setFavorites] = useState([]);
@@ -112,6 +113,18 @@ const FavoritesPage = () => {
             ))}
           </div>
         )}
+
+        <div className="mt-5">
+          <RecommendationSection
+            title="Gợi ý dành cho bạn"
+            subtitle="Các món đồ hấp dẫn có thể bạn sẽ muốn lưu lại"
+            icon="❤️"
+            fetchUrl="/api/recommendations/for-you"
+            sourceName="favorites"
+            currentUser={user}
+            limit={8}
+          />
+        </div>
       </div>
 
       <AppFooter /> 

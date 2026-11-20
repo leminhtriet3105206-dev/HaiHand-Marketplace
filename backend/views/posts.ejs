@@ -81,7 +81,7 @@
                                 </td>
                                 <td><span class="badge bg-light text-secondary border px-2"><%= post.category %></span></td>
                                 <td>
-                                    <% if(['pending', 'PENDING', 'Pending', 'Chờ duyệt'].includes(post.status)) { %>
+                                    <% if(post.status === 'PENDING') { %>
                                         <span class="badge bg-warning-subtle text-warning status-badge">⌛ Đang chờ</span>
                                     <% } else { %>
                                         <span class="badge bg-success-subtle text-success status-badge">✅ Đã duyệt</span>
@@ -89,7 +89,7 @@
                                 </td>
                                 <td class="text-center">
                                     <div class="d-flex justify-content-center gap-2">
-                                        <% if(['pending', 'PENDING', 'Pending', 'Chờ duyệt'].includes(post.status)) { %>
+                                        <% if(post.status === 'PENDING') { %>
                                             <button class="btn btn-sm btn-success btn-action" onclick="approvePost('<%= post._id %>')">Duyệt bài</button>
                                         <% } %>
                                         <button class="btn btn-sm btn-outline-danger btn-action" onclick="deletePost('<%= post._id %>')">Gỡ bỏ</button>

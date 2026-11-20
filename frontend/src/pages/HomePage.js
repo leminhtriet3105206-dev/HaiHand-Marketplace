@@ -331,7 +331,7 @@ export default function HomePage() {
                         className="w-full h-full object-cover" 
                         loading="lazy"
                         alt={cat.name} 
-                        onError={(e) => { 
+                        onError={(e) => {
                           e.target.style.display = 'none';
                           if (e.target.nextSibling) {
                             e.target.nextSibling.style.display = 'block';
@@ -464,7 +464,7 @@ export default function HomePage() {
                   return (
                     <div key={post._id} className="transition-transform duration-300 hover:-translate-y-1">
                       <ProductCard 
-                        product={mapped.product} 
+                        product={mapped.product}
                         isFavorited={mapped.isFavorited}
                         isAuthor={mapped.isAuthor}
                         onFavorite={(e) => toggleFavorite(e, post._id)}

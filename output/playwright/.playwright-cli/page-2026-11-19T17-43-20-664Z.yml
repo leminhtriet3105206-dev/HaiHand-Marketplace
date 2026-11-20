@@ -1,0 +1,19 @@
+- generic [ref=e3]:
+  - generic [ref=e1814]:
+    - generic [ref=e1815]:
+      - img "HaiHand" [ref=e1817] [cursor=pointer]
+      - paragraph [ref=e1818]: XÁC THỰC BẢO MẬT
+    - generic [ref=e1849]:
+      - generic [ref=e1850]: Nhập Email để nhận mã xác thực (OTP) gồm 6 chữ số.
+      - generic [ref=e1851]:
+        - generic [ref=e1852]: Email tài khoản
+        - 'textbox "ví dụ: trietle@gmail.com" [ref=e1853]'
+      - button "📩 Gửi mã OTP" [ref=e1854] [cursor=pointer]
+      - button "Quay lại Đăng nhập" [ref=e1855] [cursor=pointer]
+  - generic [ref=e208]:
+    - button "✕" [ref=e209] [cursor=pointer]
+    - generic "Tư vấn chăm sóc khách hàng" [ref=e210] [cursor=pointer]: 🎧
+  - generic "Trợ lý AI HaiHand - Bấm để tư vấn & tìm đồ" [ref=e214] [cursor=pointer]:
+    - generic [ref=e215]:
+      - generic [ref=e216]: 🤖
+      - generic [ref=e217]: AI

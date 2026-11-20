@@ -73,23 +73,23 @@ async function cached(key, fn) {
 
 async function getProvinces() {
   return cached('provinces', async () => {
-    const data = await ghn('/master-data/province', { method: 'GET' });
-    return (data || []).map((p) => ({ id: p.ProvinceID, name: p.ProvinceName }))
+    const data = await ghn('/master-data/province', { method: 'GET', withShop: true });
+    return (data || []).map((p) => ({ id: p.ProvinceID, name: p.ProvinceName, ProvinceID: p.ProvinceID, ProvinceName: p.ProvinceName }))
       .sort((a, b) => a.name.localeCompare(b.name, 'vi'));
   });
 }
 
 async function getDistricts(provinceId) {
   return cached(`d:${provinceId}`, async () => {
-    const data = await ghn('/master-data/district', { body: { province_id: Number(provinceId) } });
-    return (data || []).map((d) => ({ id: d.DistrictID, name: d.DistrictName, provinceId: d.ProvinceID }));
+    const data = await ghn(`/master-data/district?province_id=${Number(provinceId)}`, { method: 'GET', withShop: true });
+    return (data || []).map((d) => ({ id: d.DistrictID, name: d.DistrictName, provinceId: Number(provinceId), DistrictID: d.DistrictID, DistrictName: d.DistrictName }));
   });
 }
 
 async function getWards(districtId) {
   return cached(`w:${districtId}`, async () => {
-    const data = await ghn('/master-data/ward', { body: { district_id: Number(districtId) } });
-    return (data || []).map((w) => ({ code: w.WardCode, name: w.WardName, districtId: w.DistrictID }));
+    const data = await ghn(`/master-data/ward?district_id=${Number(districtId)}`, { method: 'GET', withShop: true });
+    return (data || []).map((w) => ({ code: w.WardCode, name: w.WardName, districtId: Number(districtId), WardCode: w.WardCode, WardName: w.WardName }));
   });
 }
 

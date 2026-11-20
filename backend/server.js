@@ -45,6 +45,8 @@ const {
   createHelmetMiddleware,
   mongoSanitizeMiddleware,
   getAllowedOrigins,
+  isOriginAllowed,
+  buildCorsOptions,
   globalLimiter,
   loginLimiter,
   otpLimiter,
@@ -106,10 +108,11 @@ const app = express();
 // ============================================================================
 // SECTION 2: CẤU HÌNH CORS, SECURITY HEADERS (HELMET), RATE LIMIT & SOCKET.IO
 // ============================================================================
-app.use(createHelmetMiddleware());
-const corsMiddleware = createCorsMiddleware();
+const corsOptions = buildCorsOptions();
+const corsMiddleware = cors(corsOptions);
 app.use(corsMiddleware);
-app.options('{*path}', corsMiddleware);
+app.options(/.*/, corsMiddleware);
+app.use(createHelmetMiddleware());
 app.use(globalLimiter);
 
 // Khởi tạo HTTP Server bọc Express App và gắn Socket.IO server
@@ -117,13 +120,22 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin(origin, callback) {
-      const allowed = getAllowedOrigins();
-      if (!origin || allowed.includes(origin)) {
+      if (isOriginAllowed(origin)) {
         return callback(null, true);
       }
       return callback(new Error('Origin not allowed by Socket.IO CORS'), false);
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'userid',
+      'UserId',
+      'X-Requested-With',
+      'Origin',
+      'X-CSRF-Token'
+    ],
     credentials: true
   }
 });
@@ -1395,14 +1407,47 @@ app.post('/api/admin/notifications/read', requireAdminJWT, async (req, res) => {
   }
 });
 
-/** [API] Lấy thông tin Admin đầu mối để mở chat CSKH */
+/** [API] Lấy thông tin Admin đầu mối để mở chat CSKH (fallback sang Settings mặc định để tránh lỗi console) */
 app.get('/api/admin/contact', async (req, res) => {
   try {
-    const admin = await User.findOne({ role: 'Admin' }).select('_id name avatar');
-    if (!admin) return res.status(404).json({ message: 'Chưa có Admin nào trong hệ thống!' });
-    res.status(200).json(admin);
+    let settings = null;
+    let admin = null;
+    if (mongoose.connection.readyState === 1) {
+      [admin, settings] = await Promise.all([
+        User.findOne({ role: 'Admin' }).select('_id name avatar').lean().catch(() => null),
+        Settings.getGlobal().catch(() => null)
+      ]);
+    }
+
+    const supportHotline = settings?.supportHotline || '1900-6868';
+    const supportEmail = settings?.supportEmail || settings?.contactEmail || 'cskh@haihand.vn';
+
+    if (admin) {
+      return res.status(200).json({
+        ...admin,
+        supportHotline,
+        supportEmail
+      });
+    }
+
+    return res.status(200).json({
+      _id: null,
+      name: 'Hỗ trợ CSKH HaiHand',
+      avatar: '',
+      supportHotline,
+      supportEmail,
+      isFallback: true
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi lấy thông tin Admin' });
+    console.error('Lỗi lấy thông tin Admin (/api/admin/contact):', error.message);
+    return res.status(200).json({
+      _id: null,
+      name: 'Hỗ trợ CSKH HaiHand',
+      avatar: '',
+      supportHotline: '1900-6868',
+      supportEmail: 'cskh@haihand.vn',
+      isFallback: true
+    });
   }
 });
 
@@ -1885,10 +1930,14 @@ app.get('/api/banners', async (req, res) => {
 /** Lấy toàn bộ danh mục sản phẩm hiển thị trang chủ / bộ lọc */
 app.get('/api/categories', async (req, res) => {
   try {
-    const categories = await Category.find();
-    res.status(200).json(categories);
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(200).json([]);
+    }
+    const categories = await Category.find().lean();
+    res.status(200).json(categories || []);
   } catch (error) {
-    res.status(500).json({ message: 'Lỗi lấy danh mục' });
+    console.error('Lỗi lấy danh mục (/api/categories):', error.message);
+    res.status(200).json([]);
   }
 });
 

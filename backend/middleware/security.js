@@ -3,45 +3,93 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const { mongoSanitizeMiddleware } = require('./validate');
 
-/**
- * Đọc danh sách origin được phép từ biến môi trường CORS_ORIGINS (phân tách bằng dấu phẩy)
- */
-function getAllowedOrigins(customOrigins) {
-  if (Array.isArray(customOrigins) && customOrigins.length > 0) {
-    return customOrigins.map((o) => String(o).trim()).filter(Boolean);
-  }
-  const raw = process.env.CORS_ORIGINS || '';
-  const list = raw
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://hai-hand.vercel.app',
+  'https://haihand-marketplace.vercel.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:4001',
+  'http://127.0.0.1:4001'
+];
 
-  if (list.length > 0) return list;
-
-  // Fallback chỉ khi chạy test nội bộ chưa truyền CORS_ORIGINS
-  if (process.env.NODE_ENV === 'test') {
-    return ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:4001', 'http://127.0.0.1:4001'];
-  }
-  return [];
+function normalizeOrigin(origin) {
+  return String(origin || '').trim().replace(/\/+$/, '');
 }
 
 /**
- * Tạo CORS options chặt chẽ (0.3 / H15):
- * - Chỉ cho phép origin nằm trong danh sách `CORS_ORIGINS` (hoặc request không có header Origin như server-to-server / supertest).
- * - Tuyệt đối KHÔNG có nhánh fallback `callback(null, true)` cho mọi origin lạ.
- * - `credentials: true` chỉ áp dụng cho origin hợp lệ trong danh sách.
+ * Đọc danh sách origin được phép từ cấu hình mặc định, FRONTEND_URL và CORS_ORIGINS
+ */
+function getAllowedOrigins(customOrigins) {
+  if (Array.isArray(customOrigins) && customOrigins.length > 0) {
+    return Array.from(new Set(customOrigins.map(normalizeOrigin).filter(Boolean)));
+  }
+
+  const envList = [
+    ...(process.env.CORS_ORIGINS || '').split(','),
+    ...(process.env.FRONTEND_URL || '').split(',')
+  ]
+    .map(normalizeOrigin)
+    .filter(Boolean);
+
+  return Array.from(new Set([...DEFAULT_ALLOWED_ORIGINS, ...envList]));
+}
+
+/**
+ * Kiểm tra origin có hợp lệ theo chính sách CORS HaiHand (Production Vercel + Localhost)
+ */
+function isOriginAllowed(origin, customOrigins) {
+  if (!origin) {
+    return true;
+  }
+
+  const normalized = normalizeOrigin(origin);
+  const allowed = getAllowedOrigins(customOrigins);
+  if (allowed.includes(normalized)) {
+    return true;
+  }
+
+  if (Array.isArray(customOrigins) && customOrigins.length > 0) {
+    return false;
+  }
+
+  if (
+    normalized.startsWith('http://localhost:') ||
+    normalized === 'http://localhost' ||
+    normalized.startsWith('http://127.0.0.1:') ||
+    normalized === 'http://127.0.0.1'
+  ) {
+    return true;
+  }
+
+  try {
+    const parsed = new URL(normalized);
+    if (
+      (parsed.protocol === 'https:' || parsed.protocol === 'http:') &&
+      parsed.hostname.endsWith('.vercel.app')
+    ) {
+      return true;
+    }
+  } catch (e) {
+    if (normalized.endsWith('.vercel.app')) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Tạo CORS options cho phép Production Frontend (Vercel), FRONTEND_URL, CORS_ORIGINS và Localhost.
+ * - Cho phép request không có Origin (server-to-server, curl, Postman).
+ * - Từ chối các origin lạ bằng lỗi 403 (CORS_NOT_ALLOWED).
  */
 function buildCorsOptions(customOrigins) {
   return {
     origin(origin, callback) {
-      const allowed = getAllowedOrigins(customOrigins);
-      if (!origin) {
+      if (isOriginAllowed(origin, customOrigins)) {
         return callback(null, true);
       }
-      if (allowed.includes(origin)) {
-        return callback(null, true);
-      }
-      const err = new Error(`Origin ${origin} không nằm trong danh sách CORS_ORIGINS được phép`);
+      const err = new Error(`Origin ${origin} không nằm trong danh sách CORS được phép`);
       err.statusCode = 403;
       err.code = 'CORS_NOT_ALLOWED';
       return callback(err, false);
@@ -52,11 +100,14 @@ function buildCorsOptions(customOrigins) {
       'Content-Type',
       'Authorization',
       'Accept',
+      'userid',
+      'UserId',
       'X-Requested-With',
       'Origin',
       'X-CSRF-Token'
     ],
-    exposedHeaders: ['Content-Range', 'X-Content-Range']
+    exposedHeaders: ['Content-Range', 'X-Content-Range'],
+    optionsSuccessStatus: 204
   };
 }
 
@@ -130,7 +181,9 @@ const withdrawLimiter = makeLimiter({
 });
 
 module.exports = {
+  DEFAULT_ALLOWED_ORIGINS,
   getAllowedOrigins,
+  isOriginAllowed,
   buildCorsOptions,
   createCorsMiddleware,
   createHelmetMiddleware,

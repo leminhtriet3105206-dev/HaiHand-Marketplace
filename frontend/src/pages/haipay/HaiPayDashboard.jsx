@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import axiosClient, { persistUser } from '../../api/axiosClient';
+import axios from 'axios';
 import { useToast } from '../../components/Toast';
 import { useConfirm } from '../../components/ConfirmModal';
 
@@ -35,20 +35,20 @@ const HaiPayDashboard = () => {
       const token = localStorage.getItem('haipay_token');
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const userRes = await axiosClient.get(`/api/users/${user._id}`, { headers });
+      const userRes = await axios.get(`${API_URL}/api/users/${user._id}`, { headers });
       if (userRes.data) {
-        const merged = persistUser(userRes.data);
-        setUser(merged || userRes.data);
+        setUser(userRes.data);
+        localStorage.setItem('user', JSON.stringify(userRes.data));
       }
 
-      const transRes = await axiosClient.get(`/api/users/${user._id}/transactions`, { headers });
+      const transRes = await axios.get(`${API_URL}/api/users/${user._id}/transactions`, { headers });
       setTransactions(transRes.data || []);
     } catch (err) {
       console.error('Lỗi đồng bộ dữ liệu ví:', err);
     } finally {
       setRefreshing(false);
     }
-  }, [user?._id]);
+  }, [user?._id, API_URL]);
 
   useEffect(() => {
     fetchWalletData();
@@ -63,7 +63,7 @@ const HaiPayDashboard = () => {
 
     setLoading(true);
     try {
-      const { data } = await axiosClient.post('/api/haipay/deposit', {
+      const { data } = await axios.post(`${API_URL}/api/haipay/deposit`, {
         amount,
         userId: user._id
       });
@@ -101,7 +101,7 @@ const HaiPayDashboard = () => {
 
     setLoading(true);
     try {
-      const res = await axiosClient.post(`/api/users/${user._id}/withdraw`, {
+      const res = await axios.post(`${API_URL}/api/users/${user._id}/withdraw`, {
         amount,
         bankName,
         bankAccount: bankAccount.trim()
@@ -109,8 +109,8 @@ const HaiPayDashboard = () => {
 
       toast.success('Thành công', '✅ ' + (res.data.message || 'Yêu cầu rút tiền đã được ghi nhận!'));
       if (res.data.user) {
-        const merged = persistUser(res.data.user);
-        setUser(merged || res.data.user);
+        setUser(res.data.user);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
       }
 
       setWithdrawAmount('');

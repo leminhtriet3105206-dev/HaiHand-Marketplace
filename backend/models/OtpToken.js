@@ -24,7 +24,7 @@ const otpTokenSchema = new mongoose.Schema({
   createdAt: {
     type: Date,
     default: Date.now,
-    expires: 600 // Automatically removed by MongoDB after 10 minutes (600 seconds - C8)
+    expires: 300 // Automatically removed by MongoDB after 5 minutes (300 seconds)
   }
 });
 

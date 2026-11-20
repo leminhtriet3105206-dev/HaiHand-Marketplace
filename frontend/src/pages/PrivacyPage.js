@@ -1,8 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
+import { isTrackingOptedOut, setTrackingOptOut } from '../utils/tracker';
 
 const PrivacyPage = () => {
+  const [optedOut, setOptedOut] = useState(() => isTrackingOptedOut());
+
+  const handleToggleOptOut = (e) => {
+    const isChecked = e.target.checked;
+    setOptedOut(isChecked);
+    setTrackingOptOut(isChecked);
+  };
   return (
     <div className="flex flex-col min-h-screen bg-[#FFFBEB] font-sans text-[#1C1917]">
       <AppHeader />
@@ -71,6 +79,37 @@ const PrivacyPage = () => {
                 Quyền lợi của bạn
               </h2>
               <p>Bạn có quyền truy cập, chỉnh sửa, hoặc yêu cầu xóa dữ liệu cá nhân của mình bất kỳ lúc nào thông qua phần "Chỉnh sửa hồ sơ" trong trang cá nhân, hoặc liên hệ trực tiếp với đội ngũ hỗ trợ của chúng tôi.</p>
+            </section>
+
+            <section className="bg-amber-50/70 border border-amber-200/80 rounded-2xl p-5 md:p-6 mt-6">
+              <h2 className="text-xl font-bold text-[#1C1917] mb-2 flex items-center gap-2">
+                <span className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-200 text-amber-900 text-sm font-bold">5</span>
+                Phân tích hành vi & Cá nhân hóa gợi ý (Privacy & Opt-out)
+              </h2>
+              <p className="text-stone-700 text-sm md:text-base leading-relaxed mb-4">
+                HaiHand sử dụng các tín hiệu tương tác ẩn danh (lượt xem sản phẩm, thời gian xem, tìm kiếm, giỏ hàng) để hiểu gu sở thích và gợi ý các món đồ phù hợp nhất cho bạn. 
+                Chúng tôi <strong>tuyệt đối không lưu trữ thông tin cá nhân nhạy cảm</strong> (email, số điện thoại, mật khẩu, địa chỉ) trong các bản ghi hành vi này. Dữ liệu sự kiện được tự động xóa vĩnh viễn sau 90 ngày (TTL).
+              </p>
+              
+              <div className="bg-white p-4 rounded-xl border border-stone-200 flex items-center justify-between gap-4">
+                <div>
+                  <h4 className="font-bold text-stone-900 text-sm md:text-base">Tùy chọn Quyền riêng tư: Tắt thu thập hành vi</h4>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    {optedOut 
+                      ? '✅ Bạn ĐÃ TẮT tính năng thu thập hành vi. Hệ thống sẽ không ghi nhận hoạt động duyệt web của bạn và chuyển sang gợi ý phổ biến chung.' 
+                      : 'Hệ thống đang bật gợi ý cá nhân hoá. Bạn có thể tắt bất cứ lúc nào nếu muốn.'}
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={optedOut}
+                    onChange={handleToggleOptOut}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#EA580C]"></div>
+                </label>
+              </div>
             </section>
 
             <div className="pt-8 mt-8 border-t border-stone-100 text-sm text-stone-400 italic text-center">

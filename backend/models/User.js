@@ -48,9 +48,6 @@ const userSchema = new mongoose.Schema({
     isBanned: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
     deletedAt: { type: Date },
-    tokenVersion: { type: Number, default: 0 },
-    pinFailedAttempts: { type: Number, default: 0 },
-    pinLockedUntil: { type: Date, default: null },
     cart: [{
         product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
         quantity: { type: Number, default: 1 }

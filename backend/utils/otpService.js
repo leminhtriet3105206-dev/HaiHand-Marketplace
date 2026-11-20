@@ -82,13 +82,11 @@ async function sendOtpEmail({ email, otp, purpose = 'LOGIN' }) {
     </div>
   `;
 
-  // Log to console ONLY in non-production environments (M4)
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('\n==============================================');
-    console.log(`🔑 [HaiPay OTP Service] Code for ${email}: ${otp}`);
-    console.log(`📌 Purpose: ${purpose} | Expires in: 10 minutes`);
-    console.log('==============================================\n');
-  }
+  // Always log to console for instant developer feedback
+  console.log('\n==============================================');
+  console.log(`🔑 [HaiPay OTP Service] Code for ${email}: ${otp}`);
+  console.log(`📌 Purpose: ${purpose} | Expires in: 5 minutes`);
+  console.log('==============================================\n');
 
   if (transporter && email.includes('@')) {
     try {
@@ -169,13 +167,6 @@ async function verifyOtp(identifier, rawOtp, purpose = 'LOGIN') {
       return { valid: false, message: 'Bạn đã nhập sai quá 5 lần quy định. Mã OTP đã bị hủy. Vui lòng lấy mã mới!' };
     }
     return { valid: false, message: 'Mã OTP đã hết hạn hoặc không tồn tại. Vui lòng lấy mã mới!' };
-  }
-
-  // Kiểm tra hết hạn 10 phút (600 giây - C8) ngay trong ứng dụng phòng khi MongoDB TTL index chưa quét
-  const OTP_TTL_MS = 10 * 60 * 1000;
-  if (tokenRecord.createdAt && Date.now() - new Date(tokenRecord.createdAt).getTime() > OTP_TTL_MS) {
-    await OtpToken.deleteOne({ _id: tokenRecord._id });
-    return { valid: false, message: 'Mã OTP đã hết hạn (quá 10 phút). Vui lòng lấy mã mới!' };
   }
 
   const isMatch = await bcrypt.compare(String(rawOtp).trim(), tokenRecord.otpHash);

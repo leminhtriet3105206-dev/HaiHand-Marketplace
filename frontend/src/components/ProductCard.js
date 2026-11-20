@@ -1,8 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ConditionBadge } from './ConditionBadge';
+import { getFallbackProductImage } from '../utils/productMapper';
 
-export const ProductCard = ({ product, isFavorited, isAuthor, onFavorite, hideFavorite = false }) => {
+export const ProductCard = ({ product, isFavorited, isAuthor, onFavorite }) => {
   return (
     <article className="bg-[#FFFFFF] border border-[#E7E5E4] rounded-lg shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 overflow-hidden flex flex-col group">
       <Link to={`/post/${product.id}`} className="relative w-full aspect-square overflow-hidden bg-stone-50 block">
@@ -10,13 +11,16 @@ export const ProductCard = ({ product, isFavorited, isAuthor, onFavorite, hideFa
           src={product.imageUrl} 
           alt={product.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-t-lg" 
-          onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'}}
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.src = getFallbackProductImage(product.title, product.category);
+          }}
         />
         <ConditionBadge 
           condition={product.condition} 
           className="absolute top-2 left-2 shadow-sm" 
         />
-        {!isAuthor && !hideFavorite && (
+        {!isAuthor && (
           <button 
             aria-label={isFavorited ? "Bỏ yêu thích" : "Yêu thích"}
             onClick={(e) => { e.preventDefault(); e.stopPropagation(); onFavorite(e); }}

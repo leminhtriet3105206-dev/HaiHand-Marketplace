@@ -8,19 +8,22 @@ const SellerDashboard = () => {
     const [stats, setStats] = useState(null);
     const [shop, setShop] = useState(null);
     const [recentOrders, setRecentOrders] = useState([]);
+    const [productAnalytics, setProductAnalytics] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             setLoading(true);
             try {
-                const [dashRes, ordersRes] = await Promise.all([
+                const [dashRes, ordersRes, analyticsRes] = await Promise.all([
                     axiosClient.get('/api/seller/dashboard'),
-                    axiosClient.get('/api/seller/orders')
+                    axiosClient.get('/api/seller/orders'),
+                    axiosClient.get('/api/seller/analytics').catch(() => ({ data: { items: [] } }))
                 ]);
                 setStats(dashRes.data.stats || {});
                 setShop(dashRes.data.shop || {});
                 setRecentOrders((ordersRes.data || []).slice(0, 5));
+                setProductAnalytics(analyticsRes.data?.items || []);
             } catch (error) {
                 console.error("Lỗi tải dashboard Seller", error);
                 toast.error('Không thể tải dữ liệu thống kê Kênh Người Bán');
@@ -85,11 +88,10 @@ const SellerDashboard = () => {
                         <i className="fas fa-coins"></i>
                     </div>
                     <div>
-                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Doanh thu đơn hoàn tất</p>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Doanh thu thực nhận</p>
                         <h3 className="text-xl font-black text-slate-800 mt-0.5">{formatCurrency(stats?.revenue)}</h3>
                         <p className="text-[11px] text-emerald-600 font-bold mt-0.5">
-                            <i className="fas fa-check-circle mr-1"></i>
-                            Đã giải ngân: {formatCurrency(stats?.releasedRevenue ?? stats?.revenue)} (đã trừ {stats?.platformFeePercentage ?? 5}% phí sàn)
+                            <i className="fas fa-check-circle mr-1"></i>Đã trừ 5% phí sàn
                         </p>
                     </div>
                 </div>
@@ -236,6 +238,92 @@ const SellerDashboard = () => {
                                         </tr>
                                     );
                                 })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+
+            {/* Product Performance & Conversion Analytics Section */}
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+                <div className="p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-lg font-black text-slate-800 flex items-center gap-2">
+                            <span>📈</span> Hiệu quả & Phân tích chuyển đổi sản phẩm
+                        </h2>
+                        <p className="text-xs text-slate-400 mt-1">
+                            Theo dõi lượt xem, số lần thêm giỏ và tỉ lệ mua hàng tổng hợp của từng sản phẩm.
+                        </p>
+                    </div>
+                    <span className="text-xs font-semibold px-3 py-1 bg-amber-50 text-amber-700 rounded-full border border-amber-200/60 self-start sm:self-auto">
+                        Cập nhật theo thời gian thực
+                    </span>
+                </div>
+
+                {productAnalytics.length === 0 ? (
+                    <div className="p-12 text-center text-slate-400">
+                        <p className="text-sm font-bold text-slate-700">Chưa có dữ liệu hành vi cho các sản phẩm</p>
+                        <p className="text-xs mt-1">Dữ liệu lượt xem và chuyển đổi sẽ xuất hiện khi có khách hàng tương tác.</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                                <tr>
+                                    <th className="py-3 px-6">Sản phẩm</th>
+                                    <th className="py-3 px-6">Giá niêm yết</th>
+                                    <th className="py-3 px-6 text-center">Lượt xem</th>
+                                    <th className="py-3 px-6 text-center">Thêm giỏ</th>
+                                    <th className="py-3 px-6 text-center">Đã mua</th>
+                                    <th className="py-3 px-6 text-center">Tỉ lệ chuyển đổi (CR)</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {productAnalytics.map((item) => (
+                                    <tr key={item._id} className="hover:bg-slate-50/80 transition-colors">
+                                        <td className="py-4 px-6">
+                                            <div className="flex items-center gap-3">
+                                                {item.image ? (
+                                                    <img
+                                                        src={item.image.startsWith('http') ? item.image : `http://localhost:4000/${item.image.replace(/\\/g, '/')}`}
+                                                        alt={item.name}
+                                                        className="w-10 h-10 rounded-lg object-cover bg-stone-100 shrink-0"
+                                                        onError={(e) => { e.target.src = 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'; }}
+                                                    />
+                                                ) : (
+                                                    <div className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center text-stone-400 shrink-0">📦</div>
+                                                )}
+                                                <div className="min-w-0">
+                                                    <p className="font-bold text-slate-800 text-xs truncate max-w-xs">{item.name}</p>
+                                                    <span className="text-[10px] text-slate-400">{item.category} • Kho: {item.stock}</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="py-4 px-6 font-bold text-slate-700 text-xs">
+                                            {formatCurrency(item.price)}
+                                        </td>
+                                        <td className="py-4 px-6 text-center font-bold text-slate-700 text-xs">
+                                            {item.views.toLocaleString()}
+                                        </td>
+                                        <td className="py-4 px-6 text-center font-bold text-slate-700 text-xs">
+                                            {item.cartAdds.toLocaleString()}
+                                        </td>
+                                        <td className="py-4 px-6 text-center font-bold text-emerald-600 text-xs">
+                                            {item.purchases.toLocaleString()}
+                                        </td>
+                                        <td className="py-4 px-6 text-center">
+                                            <span className={`px-2.5 py-1 rounded-full text-xs font-black ${
+                                                item.conversionRate >= 5 
+                                                    ? 'bg-emerald-100 text-emerald-700' 
+                                                    : item.conversionRate > 0 
+                                                        ? 'bg-amber-100 text-amber-700' 
+                                                        : 'bg-slate-100 text-slate-500'
+                                            }`}>
+                                                {item.conversionRate}%
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>

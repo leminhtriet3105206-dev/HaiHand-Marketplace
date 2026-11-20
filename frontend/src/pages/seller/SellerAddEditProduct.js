@@ -3,6 +3,18 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import { useToast } from '../../components/Toast';
 
+const CATEGORIES = [
+    'Đồ điện tử & Công nghệ',
+    'Thời trang & Phụ kiện',
+    'Đồ gia dụng & Đời sống',
+    'Mẹ & Bé',
+    'Sách & Văn phòng phẩm',
+    'Thể thao & Dã ngoại',
+    'Làm đẹp & Sức khỏe',
+    'Xe cộ & Phụ tùng',
+    'Khác'
+];
+
 const CONDITIONS = [
     'Mới 100% (Nguyên hộp)',
     'Như mới 99%',
@@ -16,11 +28,10 @@ const SellerAddEditProduct = () => {
     const isEditMode = Boolean(id);
     const toast = useToast();
 
-    const [categories, setCategories] = useState([]);
     const [form, setForm] = useState({
         name: '',
         sku: '',
-        category: '',
+        category: CATEGORIES[0],
         price: '',
         originalPrice: '',
         stockQuantity: '10',
@@ -40,40 +51,6 @@ const SellerAddEditProduct = () => {
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
     useEffect(() => {
-        let isMounted = true;
-
-        const fetchCategories = async () => {
-            try {
-                const { data } = await axiosClient.get('/api/categories');
-                const list = Array.isArray(data)
-                    ? data
-                    : (Array.isArray(data?.categories) ? data.categories : (Array.isArray(data?.data) ? data.data : []));
-                if (!isMounted) return;
-
-                setCategories(list);
-                if (list.length > 0) {
-                    setForm((prev) => {
-                        if (!prev.category) {
-                            return isEditMode ? prev : { ...prev, category: list[0]._id };
-                        }
-                        const matchedById = list.find((c) => String(c._id) === String(prev.category));
-                        if (matchedById) return prev;
-                        const matchedByName = list.find((c) => c.name === prev.category);
-                        return matchedByName ? { ...prev, category: matchedByName._id } : prev;
-                    });
-                }
-            } catch (error) {
-                console.error('Lỗi tải danh mục ngành hàng:', error);
-            }
-        };
-
-        fetchCategories();
-        return () => {
-            isMounted = false;
-        };
-    }, [isEditMode]);
-
-    useEffect(() => {
         if (!isEditMode) return;
 
         const fetchProduct = async () => {
@@ -82,7 +59,7 @@ const SellerAddEditProduct = () => {
                 setForm({
                     name: data.name || data.title || '',
                     sku: data.sku || '',
-                    category: data.category?._id || data.category || '',
+                    category: data.category || CATEGORIES[0],
                     price: data.price != null ? String(data.price) : '',
                     originalPrice: data.originalPrice != null ? String(data.originalPrice) : '',
                     stockQuantity: String(data.stockQuantity != null ? data.stockQuantity : (data.quantity || 0)),
@@ -104,16 +81,6 @@ const SellerAddEditProduct = () => {
 
         fetchProduct();
     }, [id, isEditMode, navigate, toast]);
-
-    useEffect(() => {
-        if (!isEditMode || categories.length === 0 || !form.category) return;
-        const matchedById = categories.find((c) => String(c._id) === String(form.category));
-        if (matchedById) return;
-        const matchedByName = categories.find((c) => c.name === form.category);
-        if (matchedByName) {
-            setForm((prev) => ({ ...prev, category: matchedByName._id }));
-        }
-    }, [categories, form.category, isEditMode]);
 
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
@@ -154,7 +121,6 @@ const SellerAddEditProduct = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.name.trim()) return toast.warning('Vui lòng nhập tên sản phẩm.');
-        if (!form.category) return toast.warning('Vui lòng chọn danh mục ngành hàng.');
         if (!form.price || Number(form.price) <= 0) return toast.warning('Vui lòng nhập giá bán hợp lệ.');
         if (Number(form.stockQuantity) < 0) return toast.warning('Số lượng tồn kho không được âm.');
         if (selectedFiles.length === 0 && existingImages.length === 0) {
@@ -264,14 +230,12 @@ const SellerAddEditProduct = () => {
                                     Danh mục ngành hàng <span className="text-red-500">*</span>
                                 </label>
                                 <select
-                                    required
                                     value={form.category}
                                     onChange={(e) => setForm({ ...form, category: e.target.value })}
                                     className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:bg-white focus:border-orange-500 text-sm font-medium"
                                 >
-                                    <option value="">-- Chọn danh mục ngành hàng --</option>
-                                    {categories.map((cat) => (
-                                        <option key={cat._id} value={cat._id}>{cat.name}</option>
+                                    {CATEGORIES.map((c) => (
+                                        <option key={c} value={c}>{c}</option>
                                     ))}
                                 </select>
                             </div>

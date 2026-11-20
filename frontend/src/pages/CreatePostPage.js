@@ -7,6 +7,39 @@ import { useToast } from '../components/Toast';
 
 
 const categoryDataMap = {
+    'Thú cưng & Đồ dùng': {
+        subCategories: ['Thức ăn & Dinh dưỡng', 'Chó & Mèo', 'Rùa & Bò sát cảnh', 'Bể cá & Thủy sinh', 'Chuồng & Phụ kiện', 'Khác'],
+        brands: ['Royal Canin', 'Whiskas', 'Me-O', 'Pedigree', 'SmartHeart', 'Khác']
+    },
+    'Điện thoại & Phụ kiện': {
+        subCategories: ['Điện thoại thông minh', 'Máy tính bảng', 'Ốp lưng & Cường lực', 'Sạc & Cáp', 'Tai nghe', 'Khác'],
+        brands: ['Apple', 'Samsung', 'Xiaomi', 'Oppo', 'Vivo', 'Realme', 'Khác']
+    },
+    'Điện tử & Công nghệ': {
+        subCategories: ['Laptop', 'Máy tính để bàn (PC)', 'Máy ảnh & Ống kính', 'Loa & Tai nghe', 'Màn hình & Linh kiện', 'Khác'],
+        brands: ['Apple', 'Dell', 'Asus', 'HP', 'Lenovo', 'Sony', 'Canon', 'Logitech', 'Khác']
+    },
+    'Xe cộ & Phụ tùng': {
+        subCategories: ['Xe đạp địa hình', 'Xe đạp điện', 'Xe máy', 'Ô tô', 'Phụ tùng & Đồ bảo hộ', 'Khác'],
+        brands: ['Honda', 'Yamaha', 'Giant', 'Asama', 'VinFast', 'Toyota', 'Khác']
+    },
+    'Thời trang & Phụ kiện': {
+        subCategories: ['Quần áo nam', 'Quần áo nữ', 'Giày dép', 'Đồng hồ', 'Túi xách & Balo', 'Khác'],
+        brands: ['Nike', 'Adidas', 'Uniqlo', 'Zara', 'Casio', 'Khác']
+    },
+    'Đồ gia dụng & Nội thất': {
+        subCategories: ['Tủ quần áo', 'Bàn ghế làm việc', 'Nồi & Thiết bị bếp', 'Quạt & Máy lạnh', 'Khác'],
+        brands: ['IKEA', 'Hòa Phát', 'Sunhouse', 'Philips', 'Panasonic', 'Khác']
+    },
+    'Đồ chơi, Mẹ & Bé': {
+        subCategories: ['Labubu & Art Toys', 'Đồ chơi mô hình', 'Thú bông', 'Xe đẩy & Đồ dùng cho bé', 'Khác'],
+        brands: ['Pop Mart', 'Lego', 'Bandai', 'Pigeon', 'Khác']
+    },
+    'Thể thao & Dã ngoại': {
+        subCategories: ['Dụng cụ tập gym', 'Đồ cắm trại & Dã ngoại', 'Nhạc cụ', 'Sách báo & Truyện tranh', 'Khác'],
+        brands: ['Decathlon', 'Yamaha', 'Wilson', 'Khác']
+    },
+    // Legacy support
     'Điện tử - Công nghệ': {
         subCategories: ['Điện thoại thông minh', 'Máy tính bảng', 'Laptop', 'Phụ kiện', 'Khác'],
         brands: ['Apple', 'Samsung', 'Xiaomi', 'Sony', 'Asus', 'Dell', 'HP', 'Lenovo', 'Khác']
@@ -59,7 +92,13 @@ export default function CreatePostPage() {
     commit: false
   });
 
-  const user = JSON.parse(localStorage.getItem('user'));
+  const [user] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user'));
+    } catch {
+      return null;
+    }
+  });
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
   useEffect(() => {
@@ -77,8 +116,8 @@ export default function CreatePostPage() {
     // Fetch categories
     axios.get(`${API_URL}/api/categories`)
       .then(res => setCategories(res.data))
-      .catch(err => setCategories([{ name: 'Điện tử - Công nghệ' }]));
-  }, []);
+      .catch(err => setCategories([{ name: 'Điện tử & Công nghệ' }]));
+  }, [API_URL, navigate, user]);
 
   useEffect(() => {
     if (formData.city && provinces.length > 0) {

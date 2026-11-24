@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const mongoose = require('mongoose');
+const { imageVectorFields } = require('../services/imageVectorIndex');
 const { Post } = require('../models/Product');
 const { buildProductText, describeImage, embeddings, EMBEDDING_MODEL } = require('../services/chatbotService');
 const { embedProductImages, imageAsDataUrl, IMAGE_EMBEDDING_MODEL } = require('../services/imageEmbeddingService');
@@ -61,6 +62,7 @@ async function main() {
         fields.imageEmbeddings = indexedImages.vectors;
         fields.imageEmbeddingImages = indexedImages.sources;
         fields.imageEmbeddingModel = IMAGE_EMBEDDING_MODEL;
+        Object.assign(fields, imageVectorFields(indexedImages.vectors));
       }
       if (!Object.keys(fields).length) return [];
       return [{ updateOne: { filter: { _id: product._id }, update: { $set: fields } } }];

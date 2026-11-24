@@ -129,7 +129,8 @@ async function refreshProductSearch(product, imagesChanged = true) {
     catch (error) {
       console.warn(`Không tạo được vector ảnh cho ${product._id}: ${error.message}`);
       await Post.updateOne({ _id: product._id }, { $unset: {
-        imageEmbedding: '', imageEmbeddings: '', imageEmbeddingImages: '', imageEmbeddingModel: ''
+        imageEmbedding: '', imageEmbeddings: '', imageEmbeddingImages: '', imageEmbeddingModel: '',
+        imageVector0: '', imageVector1: '', imageVector2: '', imageVector3: '', imageVector4: ''
       } });
     }
   }
@@ -229,29 +230,14 @@ async function vectorSearch(query, filter) {
 
 async function imageVectorSearch(image, filter, _semanticQuery = '', minScore = IMAGE_SEARCH_MIN_SCORE) {
   const queryVector = await embedImage(image);
-  // ponytail: Exact scan is cheap for the current small catalog; use an image-level index when it grows.
+  const { searchImageVectors } = require('./imageVectorIndex');
+  // Resolve existing regex/business filters before ENN; transfer IDs, not embeddings.
   const candidates = await Post.aggregate([
     { $match: { ...productFilter(filter), imageEmbeddingModel: IMAGE_EMBEDDING_MODEL } },
-    { $project: {
-      title: 1, name: 1, price: 1, category: 1, location: 1, images: 1,
-      description: 1, condition: 1, ragText: 1, imageEmbedding: 1,
-      imageEmbeddings: 1, imageEmbeddingImages: 1
-    } }
+    { $project: { _id: 1, images: 1 } }
   ]);
-  return candidates.filter((product) => excludedPhotos.get(String(product._id)) !== product.images?.[0])
-    .map(({ imageEmbedding, imageEmbeddings, imageEmbeddingImages, ...product }) => {
-    const vectors = imageEmbeddings?.length ? imageEmbeddings : [imageEmbedding];
-    const scores = vectors.map((vector) => vectorSimilarity(queryVector, vector));
-    const score = Math.max(...scores);
-    const matchedIndex = scores.indexOf(score);
-    return {
-      ...product,
-      score,
-      matchedImage: imageEmbeddingImages?.[matchedIndex] || product.images?.[matchedIndex] || product.images?.[0]
-    };
-    }).filter((product) => product.score >= minScore)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 20);
+  return searchImageVectors(Post, queryVector,
+    candidates.filter(product => excludedPhotos.get(String(product._id)) !== product.images?.[0]), minScore);
 }
 
 function vectorSimilarity(a, b) {

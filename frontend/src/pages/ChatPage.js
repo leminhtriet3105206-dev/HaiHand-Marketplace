@@ -33,6 +33,8 @@ export default function ChatPage() {
   const [linkedPost, setLinkedPost] = useState(null);
   const [filter, setFilter] = useState('all'); // all, buy, sell, unread
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [forwardingMessage, setForwardingMessage] = useState(null);
+  const [forwarding, setForwarding] = useState(false);
 
   const { socket } = useSocket();
   const scrollRef = useRef();
@@ -48,7 +50,8 @@ export default function ChatPage() {
             const currentReceiver = selectedReceiverRef.current;
             if (currentReceiver && data.senderId === currentReceiver._id) {
                 setMessages((prev) => [...prev, {
-                    sender: data.senderId, content: data.text, images: data.images, post: data.post, createdAt: Date.now()
+                    _id: data._id, sender: data.senderId, content: data.text, images: data.images,
+                    post: data.post, forwardedFrom: data.forwardedFrom, createdAt: Date.now()
                 }]);
                 axios.put(`${API_URL}/api/messages/mark-read`, { userId: user._id, otherId: data.senderId }).catch(console.error);
                 window.dispatchEvent(new Event('messageUpdated'));
@@ -200,6 +203,36 @@ export default function ChatPage() {
 
   const handleSharePost = () => {
       setNewMessage(prev => prev + " 📦 Hỏi về sản phẩm: ");
+  };
+
+  const handleForwardMessage = async (receiver) => {
+    if (!forwardingMessage?._id || !receiver || forwarding) return;
+    setForwarding(true);
+    try {
+      const { data } = await axios.post(`${API_URL}/api/messages/${forwardingMessage._id}/forward`, {
+        senderId: user._id,
+        receiverId: receiver._id
+      });
+      if (selectedReceiver?._id === receiver._id) setMessages(prev => [...prev, data]);
+      if (socket) {
+        socket.emit('sendMessage', {
+          _id: data._id,
+          senderId: user._id,
+          receiverId: receiver._id,
+          text: data.content || '',
+          post: data.post || null,
+          images: data.images || [],
+          forwardedFrom: data.forwardedFrom
+        });
+      }
+      setForwardingMessage(null);
+      fetchInboxList();
+      toast.success(`Đã chuyển tiếp đến ${receiver.name}`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Không thể chuyển tiếp tin nhắn');
+    } finally {
+      setForwarding(false);
+    }
   };
 
   const emojis = ['😀', '😂', '🥰', '😍', '😎', '😭', '😡', '👍', '🙏', '❤️'];
@@ -444,11 +477,17 @@ export default function ChatPage() {
                                 const isMe = m.sender === user._id;
                                 
                                 return (
-                                    <div key={idx} className={`flex ${isMe ? 'justify-end' : 'justify-start'} gap-2`} ref={idx === messages.length - 1 ? scrollRef : null}>
+                                    <div key={idx} className={`group flex ${isMe ? 'justify-end' : 'justify-start'} items-center gap-2`} ref={idx === messages.length - 1 ? scrollRef : null}>
                                         {!isMe && <img src={selectedReceiver.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} className="w-8 h-8 rounded-full object-cover shrink-0 mt-auto" alt="avt" />}
+                                        {isMe && m._id && (
+                                            <button type="button" title="Chuyển tiếp" aria-label="Chuyển tiếp tin nhắn" onClick={() => setForwardingMessage(m)} className="p-1.5 rounded-full text-stone-400 hover:text-[#EA580C] hover:bg-orange-50 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 12h15" /></svg>
+                                            </button>
+                                        )}
                                         
                                         <div className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} max-w-[70%]`}>
                                             {!isMe && <span className="text-[10px] text-stone-400 mb-1 ml-1">{selectedReceiver.name} • {formatTime(m.timestamp || m.createdAt)}</span>}
+                                            {m.forwardedFrom && <span className="text-[10px] text-stone-400 italic mb-1">↪ Đã chuyển tiếp</span>}
                                             
                                             {m.content && (
                                                 <div className={`px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-[#FEF3C7] text-[#1C1917] rounded-br-sm' : 'bg-white border border-stone-200 text-[#1C1917] rounded-bl-sm'} shadow-sm`}>
@@ -485,6 +524,11 @@ export default function ChatPage() {
                                                 </div>
                                             )}
                                         </div>
+                                        {!isMe && m._id && (
+                                            <button type="button" title="Chuyển tiếp" aria-label="Chuyển tiếp tin nhắn" onClick={() => setForwardingMessage(m)} className="p-1.5 rounded-full text-stone-400 hover:text-[#EA580C] hover:bg-orange-50 opacity-0 group-hover:opacity-100 focus:opacity-100 transition-all">
+                                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 12h15" /></svg>
+                                            </button>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -549,6 +593,32 @@ export default function ChatPage() {
             </div>
             
         </div>
+
+        {forwardingMessage && (
+          <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4" onClick={() => !forwarding && setForwardingMessage(null)}>
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="forward-title" onClick={event => event.stopPropagation()}>
+              <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+                <div>
+                  <h3 id="forward-title" className="font-black text-lg">Chuyển tiếp tin nhắn</h3>
+                  <p className="text-xs text-stone-500 mt-0.5">Chọn cuộc trò chuyện để gửi nội dung này</p>
+                </div>
+                <button type="button" disabled={forwarding} aria-label="Đóng" onClick={() => setForwardingMessage(null)} className="w-8 h-8 rounded-full hover:bg-stone-100 text-stone-500">✕</button>
+              </div>
+              <div className="p-3 bg-stone-50 border-b border-stone-200 text-sm text-stone-600 max-h-24 overflow-hidden">
+                {forwardingMessage.content || (forwardingMessage.images?.length ? 'Hình ảnh đính kèm' : 'Sản phẩm đính kèm')}
+              </div>
+              <div className="max-h-80 overflow-y-auto p-2">
+                {inboxList.length ? inboxList.map(item => (
+                  <button key={item.otherUser._id} type="button" disabled={forwarding} onClick={() => handleForwardMessage(item.otherUser)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[#FFFBEB] disabled:opacity-50 text-left">
+                    <img src={item.otherUser.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} alt="" className="w-10 h-10 rounded-full object-cover border border-stone-200" />
+                    <span className="font-bold text-sm flex-1">{item.otherUser.name}</span>
+                    <span className="text-xs font-bold text-[#EA580C]">{forwarding ? 'Đang gửi...' : 'Gửi'}</span>
+                  </button>
+                )) : <p className="p-6 text-center text-sm text-stone-500">Bạn chưa có cuộc trò chuyện nào để chuyển tiếp.</p>}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

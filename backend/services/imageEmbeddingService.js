@@ -1,5 +1,6 @@
 const path = require('path');
 const sharp = require('sharp');
+const { imageVectorFields } = require('./imageVectorIndex');
 
 const IMAGE_EMBEDDING_MODEL = process.env.IMAGE_EMBEDDING_MODEL || 'Xenova/siglip-base-patch16-224';
 const IMAGE_EMBEDDING_DTYPE = process.env.IMAGE_EMBEDDING_DTYPE || 'q8';
@@ -97,6 +98,7 @@ async function indexProductImage(product) {
   product.imageEmbeddings = images?.vectors;
   product.imageEmbeddingImages = images?.sources;
   product.imageEmbeddingModel = images ? IMAGE_EMBEDDING_MODEL : '';
+  Object.assign(product, imageVectorFields(images?.vectors));
   await product.save();
   return Boolean(images);
 }

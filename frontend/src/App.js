@@ -26,7 +26,6 @@ import PublicProfile from './pages/PublicProfile';
 import FollowPage from './pages/FollowPage';
 import ProductListPage from './pages/ProductListPage';
 import ImageSearchPage from './pages/ImageSearchPage';
-import FloatingAdminChat from './components/FloatingAdminChat';
 import FloatingAIChat from './components/FloatingAIChat';
 
 
@@ -126,7 +125,6 @@ function App() {
               </Routes>
 
           
-          <FloatingAdminChat />
           <FloatingAIChat />
         </div>
         </Router>

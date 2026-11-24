@@ -162,7 +162,7 @@ export default function ExploreScreen() {
     <Text style={s.heading}>Danh mục</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chipRow}>
       <Pressable onPress={() => selectCategory('')} style={[s.chip, !category && s.selected]}><Text style={s.chipText}>Tất cả</Text></Pressable>
-      {categories.map((item) => <Pressable key={item._id} onPress={() => selectCategory(item.name)} style={[s.chip, category === item.name && s.selected]}><Text style={s.chipText}>{item.name}</Text></Pressable>)}
+      {categories.map((item) => <Pressable key={item._id || item.name} onPress={() => selectCategory(item.name)} style={[s.chip, category === item.name && s.selected]}><Text style={s.chipText}>{item.name}</Text></Pressable>)}
     </ScrollView>
     <Text style={s.heading}>Khu vực</Text><TextInput value={location} onChangeText={setLocation} placeholder="Nhập tỉnh, thành phố hoặc quận" placeholderTextColor={colors.muted} style={s.input} />
     <Text style={s.heading}>Khoảng giá</Text><View style={s.priceRow}><TextInput value={minPrice} onChangeText={setMinPrice} keyboardType="numeric" placeholder="Từ" placeholderTextColor={colors.muted} style={[s.input, s.priceInput]} /><Text style={s.separator}>–</Text><TextInput value={maxPrice} onChangeText={setMaxPrice} keyboardType="numeric" placeholder="Đến" placeholderTextColor={colors.muted} style={[s.input, s.priceInput]} /></View>

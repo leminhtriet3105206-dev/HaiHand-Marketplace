@@ -234,7 +234,14 @@ export default function HomePage() {
 
   return (
     <div className="bg-[#FFFBEB] min-h-screen text-[#1C1917] font-sans">
-      <AppHeader onSearch={handleSearch} />
+      <AppHeader onSearch={handleSearch} onHome={() => {
+        setKeyword('');
+        setSelectedCategory('Tất cả');
+        setLocationFilter('Tất cả khu vực');
+        setPage(1);
+        fetchPosts(1, 'Tất cả', '', 'Tất cả khu vực');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }} />
       <main className="max-w-[1200px] mx-auto px-4 py-8 space-y-10">
         
         {/* Banner Section */}
@@ -367,7 +374,7 @@ export default function HomePage() {
         </section>
 
         {/* Unified Recommendation: DUY NHẤT 1 KHỐI GỢI Ý THÔNG MINH (Ưu tiên: Danh mục -> Title) */}
-        <RecommendationSection
+        {selectedCategory === 'Tất cả' && !keyword.trim() && <RecommendationSection
           key={
             selectedCategory !== 'Tất cả' && selectedCategory !== 'Kết quả tìm kiếm'
               ? `cat-${selectedCategory}`
@@ -404,7 +411,7 @@ export default function HomePage() {
           favoriteIds={favoriteIds}
           onFavorite={toggleFavorite}
           limit={15}
-        />
+        />}
 
         {/* Product Grid */}
         <section>
@@ -439,10 +446,10 @@ export default function HomePage() {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 text-stone-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
                   </div>
                   <h3 className="text-xl font-bold text-[#1C1917] mb-2">Không tìm thấy kết quả</h3>
-                  <p className="max-w-md text-center mb-6 text-sm">Chúng tôi không tìm thấy tin đăng nào phù hợp với yêu cầu của bạn. Hãy thử đổi bộ lọc hoặc xem các gợi ý hấp dẫn bên dưới nhé.</p>
+                  <p className="max-w-md text-center mb-6 text-sm">Chúng tôi không tìm thấy tin đăng nào phù hợp với yêu cầu của bạn. Hãy thử đổi bộ lọc hoặc xem tất cả tin đăng nhé.</p>
                   <Button variant="secondary" onClick={() => handleCategoryClick('Tất cả')}>Xem tất cả tin</Button>
                </div>
-               <RecommendationSection
+               {selectedCategory === 'Tất cả' && !keyword.trim() && <RecommendationSection
                  title="Có thể bạn quan tâm"
                  subtitle="Sản phẩm nổi bật khác dành riêng cho bạn"
                  icon="💡"
@@ -452,7 +459,7 @@ export default function HomePage() {
                  favoriteIds={favoriteIds}
                  onFavorite={toggleFavorite}
                  limit={5}
-               />
+               />}
              </div>
           ) : (
             <>

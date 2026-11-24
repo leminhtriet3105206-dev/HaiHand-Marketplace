@@ -5,7 +5,12 @@ import type { Product, User } from '../domain/models';
 export type { CartItem, Product, User } from '../domain/models';
 
 const defaultHost = Platform.OS === 'android' ? 'http://10.0.2.2:4000' : 'http://localhost:4000';
-export const API_URL = (process.env.EXPO_PUBLIC_API_URL || defaultHost).replace(/\/$/, '');
+const configuredHost = process.env.EXPO_PUBLIC_API_URL || defaultHost;
+// 10.0.2.2 is only reachable from the Android Emulator; browsers need localhost.
+const browserHost = Platform.OS === 'web' && configuredHost.includes('10.0.2.2')
+  ? configuredHost.replace('10.0.2.2', 'localhost')
+  : configuredHost;
+export const API_URL = browserHost.replace(/\/$/, '');
 
 export type Category = { _id: string; name: string; image?: string; icon?: string };
 export type Message = {

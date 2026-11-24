@@ -1,0 +1,93 @@
+- generic [active] [ref=f293e1]:
+  - banner [ref=f293e2]:
+    - generic [ref=f293e3]:
+      - link [ref=f293e4] [cursor=pointer]:
+        - /url: /?FORM=Z9FD1
+        - heading "Back to Bing search" [level=1] [ref=f293e5]
+      - search [ref=f293e6]:
+        - button "Search" [ref=f293e9] [cursor=pointer]
+        - searchbox "Enter your search here - Search suggestions will show as you type" [ref=f293e10]: Am Sieu Toc 2 Lop Chong Bong 1.8L Bear
+        - button "Search using an image" [ref=f293e13] [cursor=pointer]
+    - complementary "Account Rewards and Preferences" [ref=f293e14]:
+      - button "Microsoft Rewards" [ref=f293e15] [cursor=pointer]:
+        - generic [ref=f293e16]: Rewards
+      - link [ref=f293e32] [cursor=pointer]:
+        - /url: javascript:void(0)
+        - button "Sign in" [ref=f293e35]
+      - button "Settings and quick links" [ref=f293e36] [cursor=pointer]
+    - navigation "Search Filter" [ref=f293e37]:
+      - list [ref=f293e38]:
+        - listitem [ref=f293e39]:
+          - link "All" [ref=f293e40] [cursor=pointer]:
+            - /url: /search?q=Am+Sieu+Toc+2+Lop+Chong+Bong+1.8L+Bear&FORM=HDRSC1
+        - listitem [ref=f293e41]:
+          - link "AI Mode" [ref=f293e42] [cursor=pointer]:
+            - /url: /copilotsearch?q=Am+Sieu+Toc+2+Lop+Chong+Bong+1.8L+Bear&FORM=CSSCOP
+        - listitem [ref=f293e45]:
+          - link "Web Mode" [ref=f293e46] [cursor=pointer]:
+            - /url: /search?q=Am+Sieu+Toc+2+Lop+Chong+Bong+1.8L+Bear&webscp=1&FORM=HDRWSC
+        - listitem [ref=f293e47]:
+          - link "Images" [ref=f293e48] [cursor=pointer]:
+            - /url: /images?FORM=HDRSC2
+        - listitem [ref=f293e49]:
+          - list [ref=f293e50]:
+            - listitem [ref=f293e51]:
+              - link "Create" [ref=f293e52] [cursor=pointer]:
+                - /url: /images/create/ai-image-generator?FORM=IRPGEN
+            - listitem [ref=f293e57]:
+              - link "Collections" [ref=f293e58] [cursor=pointer]:
+                - /url: /saves?FORM=IRPCOL
+        - listitem [ref=f293e62]:
+          - link "Videos" [ref=f293e63] [cursor=pointer]:
+            - /url: /videos/search?q=Am+Sieu+Toc+2+Lop+Chong+Bong+1.8L+Bear&FORM=HDRSC3
+        - listitem [ref=f293e64]:
+          - link "Maps" [ref=f293e65] [cursor=pointer]:
+            - /url: /maps?q=Am+Sieu+Toc+2+Lop+Chong+Bong+1.8L+Bear&FORM=HDRSC4
+        - listitem [ref=f293e66]:
+          - button "More" [ref=f293e67] [cursor=pointer]
+      - generic [ref=f293e71]:
+        - generic [ref=f293e72]:
+          - list:
+            - listitem [ref=f293e73]:
+              - generic [ref=f293e74]: "SafeSearch:"
+            - listitem [ref=f293e75]:
+              - button "Moderate SafeSearch:" [ref=f293e76] [cursor=pointer]:
+                - generic [ref=f293e77]: Moderate
+        - button "Filter" [ref=f293e80] [cursor=pointer]
+  - main [ref=f293e83]:
+    - navigation [aria-hidden] [ref=f293e84]
+    - list [ref=f293e91]:
+      - listitem [ref=f293e92]:
+        - generic [ref=f293e93]:
+          - link "Image result for Am Sieu Toc 2 Lop Chong Bong 1.8L Bear" [ref=f293e95] [cursor=pointer]:
+            - /url: /images/search?view=detailV2&ccid=2kdOHNoj&id=231759B3DFA803029365A66B0BC85550819D4E90&thid=OIP.2kdOHNojh1wsf8nIeXoVCgAAAA&mediaurl=https%3a%2f%2fi.pinimg.com%2f236x%2f36%2f5a%2f50%2f365a508554b9817827c8fc5d908b2b65.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.da474e1cda23875c2c7fc9c8797a150a%3frik%3dkE6dgVBVyAtrpg%26pid%3dImgRaw%26r%3d0&exph=235&expw=236&q=Am+Sieu+Toc+2+Lop+Chong+Bong+1.8L+Bear&FORM=IRPRST&ck=531F1A5985E7BD99DC6959895A562A87&selectedIndex=0&itb=0
+            - img "Image result for Am Sieu Toc 2 Lop Chong Bong 1.8L Bear" [ref=f293e97]
+          - generic [ref=f293e98]:
+            - link "100 Cute kawaii drawings ideas | cute kawaii drawings, kawaii drawings ..." [ref=f293e99] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=2kdOHNoj&id=231759B3DFA803029365A66B0BC85550819D4E90&thid=OIP.2kdOHNojh1wsf8nIeXoVCgAAAA&mediaurl=https%3a%2f%2fi.pinimg.com%2f236x%2f36%2f5a%2f50%2f365a508554b9817827c8fc5d908b2b65.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.da474e1cda23875c2c7fc9c8797a150a%3frik%3dkE6dgVBVyAtrpg%26pid%3dImgRaw%26r%3d0&exph=235&expw=236&q=Am+Sieu+Toc+2+Lop+Chong+Bong+1.8L+Bear&FORM=IRPRST&ck=531F1A5985E7BD99DC6959895A562A87&selectedIndex=0&itb=0
+            - generic:
+              - generic:
+                - list:
+                  - listitem:
+                    - link "100 Cute kawaii drawings ideas | cut…" [ref=f293e100] [cursor=pointer]:
+                      - /url: /images/search?view=detailV2&ccid=2kdOHNoj&id=231759B3DFA803029365A66B0BC85550819D4E90&thid=OIP.2kdOHNojh1wsf8nIeXoVCgAAAA&mediaurl=https%3a%2f%2fi.pinimg.com%2f236x%2f36%2f5a%2f50%2f365a508554b9817827c8fc5d908b2b65.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.da474e1cda23875c2c7fc9c8797a150a%3frik%3dkE6dgVBVyAtrpg%26pid%3dImgRaw%26r%3d0&exph=235&expw=236&q=Am+Sieu+Toc+2+Lop+Chong+Bong+1.8L+Bear&FORM=IRPRST&ck=531F1A5985E7BD99DC6959895A562A87&selectedIndex=0&itb=0
+  - button "Feedback" [ref=f293e103] [cursor=pointer]
+  - contentinfo [ref=f293e105]:
+    - generic [ref=f293e106]:
+      - generic [ref=f293e107]: © 2026 Microsoft
+      - list:
+        - listitem [ref=f293e108]:
+          - link "Privacy" [ref=f293e109] [cursor=pointer]:
+            - /url: http://go.microsoft.com/fwlink/?LinkId=521839
+        - listitem [ref=f293e110]:
+          - link "Terms" [ref=f293e111] [cursor=pointer]:
+            - /url: http://go.microsoft.com/fwlink/?LinkID=246338
+        - listitem [ref=f293e112]:
+          - link "Advertise" [ref=f293e113] [cursor=pointer]:
+            - /url: https://go.microsoft.com/fwlink/?linkid=868922
+        - listitem [ref=f293e114]:
+          - link "Help" [ref=f293e115] [cursor=pointer]:
+            - /url: https://support.microsoft.com/topic/82d20721-2d6f-4012-a13d-d1910ccf203f
+        - listitem [ref=f293e116]:
+          - button "Feedback" [ref=f293e117] [cursor=pointer]
+  - dialog "Quick Search"

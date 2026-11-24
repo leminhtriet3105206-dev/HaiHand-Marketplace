@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import FloatingAdminChat from './FloatingAdminChat';
 import { trackChatProductClick, getAnonymousId } from '../utils/tracker';
 
 const FloatingAIChat = () => {
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
+    const [human, setHuman] = useState(false);
     const [messages, setMessages] = useState([
         {
             sender: 'bot',
@@ -22,19 +24,10 @@ const FloatingAIChat = () => {
     const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
     const handleHumanHandoff = () => {
-        const transcript = messages
-            .filter(message => message.text)
-            .slice(-6)
-            .map(message => `${message.sender === 'user' ? 'Khách hàng' : 'Trợ lý AI'}: ${message.text}`)
-            .join('\n')
-            .slice(0, 1500);
-
-        window.dispatchEvent(new CustomEvent('haihand:open-support', {
-            detail: {
-                message: `Tôi muốn được tư vấn trực tiếp.${transcript ? `\n\nNội dung trao đổi gần nhất với Trợ lý AI:\n${transcript}` : ''}`
-            }
-        }));
-        setIsOpen(false);
+        let account;
+        try { account = JSON.parse(localStorage.getItem('user')); } catch {}
+        if (!account?.token) { navigate('/login'); return; }
+        setHuman(true);
     };
 
     // Tự động cuộn xuống cuối khi có tin nhắn mới
@@ -147,12 +140,12 @@ const FloatingAIChat = () => {
                     className="shadow-2xl d-flex flex-column"
                     style={{
                         position: 'fixed',
-                        bottom: '105px',
+                        bottom: '100px',
                         right: '30px',
                         width: '390px',
                         maxWidth: 'calc(100vw - 40px)',
                         height: '560px',
-                        maxHeight: 'calc(100vh - 130px)',
+                        maxHeight: 'calc(100dvh - 120px)',
                         backgroundColor: '#ffffff',
                         borderRadius: '20px',
                         overflow: 'hidden',
@@ -161,6 +154,7 @@ const FloatingAIChat = () => {
                         boxShadow: '0 20px 45px rgba(15, 23, 42, 0.25)'
                     }}
                 >
+                    {human ? <FloatingAdminChat inline onBack={() => setHuman(false)} onClose={() => setIsOpen(false)} /> : <>
                     {/* 1. Header (Cố định) */}
                     <div 
                         className="d-flex align-items-center justify-content-between px-3 py-3 text-white flex-shrink-0"
@@ -184,7 +178,7 @@ const FloatingAIChat = () => {
                             </div>
                         </div>
                         <div className="d-flex align-items-center gap-2 flex-shrink-0">
-                            <button type="button" onClick={handleHumanHandoff} className="btn btn-sm btn-warning rounded-pill" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                            <button type="button" disabled={loading} onClick={handleHumanHandoff} className="btn btn-sm btn-warning rounded-pill" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
                                 🎧 Gặp tư vấn viên
                             </button>
                             <button onClick={() => setIsOpen(false)} className="btn btn-sm text-white rounded-circle d-flex align-items-center justify-content-center"
@@ -388,15 +382,16 @@ const FloatingAIChat = () => {
                             ➤
                         </button>
                     </form>
+                    </>}
                 </div>
             )}
 
-            {/* NÚT TRÒN BONG BÓNG AI (CỐ ĐỊNH TRÊN NÚT TAI NGHE) */}
+            {/* Nút AI cố định ở góc phải dưới. */}
             <div 
                 style={{ 
                     position: 'fixed',
                     right: '30px',
-                    bottom: '105px',
+                    bottom: '24px',
                     width: '60px', 
                     height: '60px',
                     zIndex: 99998

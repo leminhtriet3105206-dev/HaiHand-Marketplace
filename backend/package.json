@@ -8,6 +8,9 @@
     "rag:index": "node scripts/index-rag-products.js",
     "image:export-training": "node scripts/export-image-training-data.js",
     "image:eval": "node scripts/evaluate-image-search.js",
+    "image:setup-enn": "node scripts/setup-image-enn.js --apply",
+    "image:verify-enn": "node scripts/setup-image-enn.js",
+    "test:image": "node --test test/imageEnn.test.js test/chatbotRelevance.test.js",
     "image:train-reranker": "node scripts/train-image-reranker.js",
     "test": "jest --runInBand shippingController.test.js webhook.test.js test/behaviorAndRecommendation.test.js test/trackApi.test.js test/ghnLocations.test.js test/shippingQuoteFallback.test.js test/vnpayPaymentUrl.test.js && node --test test/chatbotRelevance.test.js test/password.test.js"
   },

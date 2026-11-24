@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 
 import { request, type Product } from '../api/client';
@@ -18,13 +18,33 @@ export default function ChatbotScreen() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [supportBusy, setSupportBusy] = useState(false);
+  const [human, setHuman] = useState(false);
+  const [supportStatus, setSupportStatus] = useState('pending');
+  const [supportTurns, setSupportTurns] = useState<ChatTurn[]>([]);
+  const version = useRef(0);
+  const updateSupport = (data: { status: string; messages: { sender: string; content: string }[] }) => {
+    setSupportStatus(data.status);
+    setSupportTurns(data.messages.map(m => ({ role: m.sender === 'customer' ? 'user' : 'assistant', content: m.content })));
+  };
+  useEffect(() => {
+    if (!human || !token) return;
+    let cancelled = false;
+    const timer = setInterval(async () => {
+      const current = version.current;
+      try {
+        const data = await request<Parameters<typeof updateSupport>[0]>('/api/support/conversation', { token });
+        if (!cancelled && current === version.current) updateSupport(data);
+      } catch { if (!cancelled) setError('Không tải được hội thoại hỗ trợ.'); }
+    }, 3000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [human, token]);
 
   const openSupport = async () => {
     if (!user) { router.push('/login'); return; }
     setSupportBusy(true); setError('');
     try {
-      const agent = await request<{ _id: string }>('/api/admin/contact', { token: token || undefined });
-      router.push({ pathname: '/chat/[userId]', params: { userId: agent._id, name: 'Chăm sóc khách hàng' } });
+      const data = await request<Parameters<typeof updateSupport>[0]>('/api/support/start', { method: 'POST', token: token || undefined });
+      updateSupport(data); setHuman(true); setDraft('');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Chưa kết nối được nhân viên chăm sóc khách hàng.');
     } finally { setSupportBusy(false); }
@@ -33,6 +53,15 @@ export default function ChatbotScreen() {
   const send = async () => {
     const message = draft.trim();
     if (!message || busy) return;
+    if (human) {
+      setBusy(true); setError(''); version.current += 1;
+      try {
+        const data = await request<Parameters<typeof updateSupport>[0]>('/api/support/messages', { method: 'POST', token: token || undefined, body: { content: message } });
+        version.current += 1; updateSupport(data); setDraft('');
+      } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không gửi được tin nhắn.'); }
+      finally { setBusy(false); }
+      return;
+    }
     const history = turns.map(({ role, content }) => ({ role, content })).slice(-6);
     setTurns((current) => [...current, { role: 'user', content: message }]);
     setDraft(''); setBusy(true); setError('');
@@ -46,19 +75,20 @@ export default function ChatbotScreen() {
     } finally { setBusy(false); }
   };
 
-  return <Screen title="Trợ lý HaiHand AI" scroll={false}>
+  return <Screen title={human ? 'Chăm sóc khách hàng' : 'Trợ lý HaiHand AI'} scroll={false}>
     <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView ref={scroll} style={s.flex} contentContainerStyle={s.messages} keyboardShouldPersistTaps="handled" onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: true })}>
-        {turns.length === 0 && <View style={s.intro}><Ionicons name="sparkles" size={30} color={colors.orange} /><Text style={s.introTitle}>Xin chào! Mình có thể giúp gì?</Text><Text style={s.introText}>Hỏi về sản phẩm hoặc cách mua hàng trên HaiHand.</Text></View>}
-        {turns.map((turn, index) => <View key={index} style={[s.bubble, turn.role === 'user' ? s.mine : s.theirs]}>
+        {human && <Text style={s.introText}>{supportStatus === 'active' ? 'Tư vấn viên đã tiếp nhận' : 'Đang chờ nhân viên tiếp nhận. Bạn có thể để lại lời nhắn.'}</Text>}
+        {!human && turns.length === 0 && <View style={s.intro}><Text style={s.introTitle}>Xin chào! Mình có thể giúp gì?</Text></View>}
+        {(human ? supportTurns : turns).map((turn, index) => <View key={index} style={[s.bubble, turn.role === 'user' ? s.mine : s.theirs]}>
           <Text style={s.message}>{turn.content}</Text>
           {!!turn.products?.length && <View style={s.products}>{turn.products.map((product) => <ProductTile key={product._id} product={product} style={s.product} />)}</View>}
         </View>)}
-        {busy && <View style={s.waiting}><ActivityIndicator color={colors.orange} /><Text style={s.muted}>AI đang trả lời...</Text></View>}
+        {busy && <View style={s.waiting}><ActivityIndicator color={colors.orange} /><Text style={s.muted}>{human ? 'Đang gửi...' : 'AI đang trả lời...'}</Text></View>}
       </ScrollView>
       {!!error && <Text style={s.error}>{error}</Text>}
-      <Button title={supportBusy ? 'Đang kết nối CSKH...' : 'Trò chuyện với nhân viên CSKH'} icon="headset-outline" secondary onPress={() => void openSupport()} disabled={supportBusy} />
-      <View style={s.composer}><TextInput value={draft} onChangeText={setDraft} placeholder="Hỏi trợ lý HaiHand..." placeholderTextColor={colors.muted} multiline maxLength={2000} style={s.input} /><Pressable onPress={() => void send()} disabled={busy || !draft.trim()} accessibilityLabel="Gửi câu hỏi" style={[s.send, (busy || !draft.trim()) && s.disabled]}><Ionicons name="send" size={21} color={colors.text} /></Pressable></View>
+      <Button title={human ? 'Quay lại trợ lý AI' : supportBusy ? 'Đang kết nối CSKH...' : 'Gặp tư vấn viên'} icon="headset-outline" secondary onPress={() => { if (human) { setHuman(false); setDraft(''); } else void openSupport(); }} disabled={supportBusy || busy} />
+      <View style={s.composer}><TextInput value={draft} editable={!busy} onChangeText={setDraft} placeholder={human ? 'Nhắn cho tư vấn viên...' : 'Hỏi trợ lý HaiHand...'} placeholderTextColor={colors.muted} multiline maxLength={2000} style={s.input} /><Pressable onPress={() => void send()} disabled={busy || !draft.trim()} accessibilityLabel="Gửi tin nhắn" style={[s.send, (busy || !draft.trim()) && s.disabled]}><Ionicons name="send" size={21} color={colors.text} /></Pressable></View>
     </KeyboardAvoidingView>
   </Screen>;
 }

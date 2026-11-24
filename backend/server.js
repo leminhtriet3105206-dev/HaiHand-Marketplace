@@ -189,6 +189,7 @@ const Message = mongoose.models.Message || mongoose.model('Message', new mongoos
   content: String,
   images: [String],
   post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
+  forwardedFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
   isRead: { type: Boolean, default: false },
   timestamp: { type: Date, default: Date.now }
 }));
@@ -1515,7 +1516,10 @@ app.get('/api/posts', async (req, res) => {
         'Đồ gia dụng': ['Đồ gia dụng & Nội thất', 'Đồ gia dụng'],
         'Đồ gia dụng & Nội thất': ['Đồ gia dụng & Nội thất'],
         'Nội thất': ['Đồ gia dụng & Nội thất'],
-        'Bất Động Sản': ['Đồ gia dụng & Nội thất', 'Bất Động Sản'],
+        'Nhà cửa & Đời sống': ['Đồ gia dụng & Nội thất'],
+        'Điện tử & Phụ kiện': ['Điện tử & Công nghệ', 'Điện thoại & Phụ kiện'],
+        'Thể thao & Du lịch': ['Thể thao & Dã ngoại'],
+        'Bất Động Sản': ['Bất Động Sản'],
         'Thú cưng': ['Thú cưng & Đồ dùng', 'Thú cưng'],
         'Thú cưng & Đồ dùng': ['Thú cưng & Đồ dùng'],
         'Đồ chơi': ['Đồ chơi, Mẹ & Bé', 'Đồ chơi'],
@@ -2611,6 +2615,50 @@ app.post('/api/messages', upload.single('image'), async (req, res) => {
   }
 });
 
+app.post('/api/messages/:messageId/forward', async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const { senderId, receiverId } = req.body;
+    if (![messageId, senderId, receiverId].every(mongoose.Types.ObjectId.isValid)) {
+      return res.status(400).json({ message: 'Thông tin chuyển tiếp không hợp lệ' });
+    }
+    if (senderId === receiverId) {
+      return res.status(400).json({ message: 'Không thể chuyển tiếp tin nhắn cho chính bạn' });
+    }
+
+    const original = await Message.findById(messageId);
+    if (!original) return res.status(404).json({ message: 'Không tìm thấy tin nhắn gốc' });
+    const participants = [String(original.sender), String(original.receiver)];
+    if (!participants.includes(String(senderId))) {
+      return res.status(403).json({ message: 'Bạn không có quyền chuyển tiếp tin nhắn này' });
+    }
+    if (!original.content && !original.images?.length && !original.post) {
+      return res.status(400).json({ message: 'Tin nhắn gốc không có nội dung để chuyển tiếp' });
+    }
+
+    const forwarded = await Message.create({
+      sender: senderId,
+      receiver: receiverId,
+      content: original.content || '',
+      images: original.images || [],
+      post: original.post || null,
+      forwardedFrom: original._id
+    });
+    await sendNotification(
+      receiverId,
+      '💬 Tin nhắn được chuyển tiếp',
+      original.content ? `"${original.content.substring(0, 30)}..."` : 'Bạn nhận được một nội dung đính kèm.',
+      'MESSAGE',
+      '/chat'
+    );
+    const populated = await Message.findById(forwarded._id).populate('post', 'title price images image author');
+    res.status(201).json(populated);
+  } catch (err) {
+    console.error('Lỗi chuyển tiếp tin nhắn:', err);
+    res.status(500).json({ message: 'Lỗi chuyển tiếp tin nhắn' });
+  }
+});
+
 app.put('/api/messages/mark-read', async (req, res) => {
   try {
     await Message.updateMany(
@@ -2724,9 +2772,14 @@ const STANDARD_CATEGORIES = [
     name: 'Thể thao & Dã ngoại',
     icon: '⚽',
     image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=300&auto=format&fit=crop',
-    description: 'Dụng cụ thể hình, cắm trại, nhạc cụ, sách vở'
-  }
-];
+    description: 'Dụng cụ thể hình, cắm trại, nhạc cụ'
+  },
+  { name: 'Bất Động Sản', icon: '🏠', description: 'Nhà, căn hộ, đất và biệt thự' },
+  { name: 'Sách & Văn phòng phẩm', icon: '📚', description: 'Sách, bút và dụng cụ học tập' },
+  { name: 'Thực phẩm & Đồ uống', icon: '🍬', description: 'Thực phẩm, bánh kẹo và đồ uống' },
+  { name: 'Linh tinh', icon: '📦', description: 'Các mặt hàng khác chưa thuộc danh mục chuyên biệt' },
+  { name: 'Sức khỏe & Làm đẹp', icon: '💆', description: 'Chăm sóc sức khỏe, mỹ phẩm và làm đẹp' }
+].map(category => ({ ...category, _id: `category:${category.name}` }));
 
 app.get('/api/categories', async (req, res) => {
   try {
@@ -3108,6 +3161,17 @@ app.get('/api/support/conversation', supportCustomer, async (req, res) => {
   } catch { res.status(500).json({ message: 'Không tải được hội thoại hỗ trợ.' }); }
 });
 
+app.post('/api/support/start', supportCustomer, async (req, res) => {
+  try {
+    const conversation = await SupportConversation.findOneAndUpdate(
+      { customer: req.supportCustomerId },
+      { $setOnInsert: { customer: req.supportCustomerId, status: 'pending', unreadCount: 1, messages: [] } },
+      { new: true, upsert: true, runValidators: true }
+    );
+    res.json(conversation);
+  } catch { res.status(500).json({ message: 'Không kết nối được tư vấn viên.' }); }
+});
+
 app.post('/api/support/messages', supportCustomer, async (req, res) => {
   const content = typeof req.body.content === 'string' ? req.body.content.trim() : '';
   if (!content || content.length > 2000) return res.status(400).json({ message: 'Tin nhắn phải có từ 1 đến 2000 ký tự.' });
@@ -3218,15 +3282,17 @@ io.on("connection", (socket) => {
     if (room) socket.join(room);
   });
 
-  socket.on("sendMessage", ({ senderId, receiverId, text, post, images }) => {
+  socket.on("sendMessage", ({ _id, senderId, receiverId, text, post, images, forwardedFrom }) => {
     const receiverSockets = getUserSockets(receiverId);
     if (receiverSockets && receiverSockets.length > 0) {
       receiverSockets.forEach(userSocket => {
         io.to(userSocket.socketId).emit("getMessage", {
+          _id,
           senderId,
           text,
           post,
-          images
+          images,
+          forwardedFrom
         });
       });
     }

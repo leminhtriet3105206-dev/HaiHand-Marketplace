@@ -4,6 +4,21 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
+// These tests exercise chatbot relevance independently of Atlas. Atlas query semantics
+// are covered by imageEnn.test.js and setup-image-enn.js's live self-match check.
+const imageSearchStub = { searchImageVectors: async (_Post, query, rows, minScore) => rows.map(row => {
+  const vectors = row.imageEmbeddings?.length ? row.imageEmbeddings : [row.imageEmbedding];
+  const scores = vectors.map(v => {
+    if (!v || v.length !== query.length) return -1;
+    const dot = v.reduce((sum, x, i) => sum + x * query[i], 0);
+    const norm = Math.hypot(...v) * Math.hypot(...query);
+    return norm ? (1 + dot / norm) / 2 : -1;
+  });
+  const score = Math.max(...scores);
+  const slot = scores.indexOf(score);
+  return { ...row, score, matchedImage: row.imageEmbeddingImages?.[slot] || row.images?.[slot] };
+}).filter(row => row.score >= minScore).sort((a, b) => b.score - a.score).slice(0, 20) };
+
 test('product schema persists vectors and source paths for multiple images', () => {
   const { Post } = require('../models/Product');
   const product = new Post({
@@ -49,7 +64,7 @@ test('chatbot only returns products accepted as relevant', async () => {
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   const load = vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`);
-  load((name) => dependencies[name], module, { env: {} }, console);
+  load((name) => name === './imageVectorIndex' ? imageSearchStub : dependencies[name], module, { env: {} }, console);
 
   const result = await module.exports.processChatbot('Tìm sách');
   assert.deepEqual(Array.from(result.products, (product) => product._id), ['book']);
@@ -71,7 +86,7 @@ test('vehicle inventory lists complete vehicles and excludes accessories', async
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({
       '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings: Model },
       '@langchain/core/messages': {}, '../models/Product': { Post },
       './imageEmbeddingService': {}
@@ -99,7 +114,7 @@ test('chatbot answer cannot deny a product already selected from Atlas', async (
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({ '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings },
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({ '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings },
       '@langchain/core/messages': { HumanMessage: Message, SystemMessage: Message, AIMessage: Message },
       '../models/Product': { Post }, './imageEmbeddingService': {} })[name],
     module, { env: {} }, console
@@ -120,7 +135,7 @@ test('policy answers use the published support hours', async () => {
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({ '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings: Model },
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({ '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings: Model },
       '@langchain/core/messages': {}, '../models/Product': { Post: {} },
       './imageEmbeddingService': {} })[name], module, { env: {} }, console
   );
@@ -150,7 +165,7 @@ test('image search reranks every product image and rejects weak matches', async 
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => dependencies[name], module, { env: { IMAGE_SEARCH_MIN_SCORE: '0.72' } }, console
+    (name) => name === './imageVectorIndex' ? imageSearchStub : dependencies[name], module, { env: { IMAGE_SEARCH_MIN_SCORE: '0.72' } }, console
   );
 
   const products = await module.exports.imageVectorSearch('image', {});
@@ -165,7 +180,7 @@ test('product image index keeps successful images and their sources aligned', as
   const source = fs.readFileSync(path.join(__dirname, '../services/imageEmbeddingService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    require, module, { env: {} }, { warn() {} }
+    require('node:module').createRequire(path.join(__dirname, '../services/imageEmbeddingService.js')), module, { env: {} }, { warn() {} }
   );
   const indexed = await module.exports.embedProductImages(['bad', 'a.jpg', 'b.jpg'], async (source) => {
     if (source === 'bad') throw new Error('bad image');
@@ -182,7 +197,7 @@ test('candidate image URLs are converted to base64 for the local vision model', 
   const source = fs.readFileSync(path.join(__dirname, '../services/imageEmbeddingService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console, fetch, AbortSignal, Buffer) { ${source}\n })`)(
-    require, module, { env: {} }, console,
+    require('node:module').createRequire(path.join(__dirname, '../services/imageEmbeddingService.js')), module, { env: {} }, console,
     async () => ({ ok: true, headers: { get: () => null },
       arrayBuffer: async () => webp.buffer.slice(webp.byteOffset, webp.byteOffset + webp.byteLength) }),
     { timeout: () => undefined }, Buffer
@@ -208,7 +223,7 @@ test('image search failure does not return unverified text matches', async () =>
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => dependencies[name], module, { env: {} }, { warn() {} }
+    (name) => name === './imageVectorIndex' ? imageSearchStub : dependencies[name], module, { env: {} }, { warn() {} }
   );
   const result = await module.exports.processImageSearch('data:image/png;base64,AAAA', 'Tìm áo');
   assert.equal(result.products.length, 0);
@@ -238,7 +253,7 @@ test('exact image scan rescues a product with a weak image centroid', async () =
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => dependencies[name], module, { env: { IMAGE_SEARCH_MIN_SCORE: '0.72' } }, console
+    (name) => name === './imageVectorIndex' ? imageSearchStub : dependencies[name], module, { env: { IMAGE_SEARCH_MIN_SCORE: '0.72' } }, console
   );
 
   const products = await module.exports.imageVectorSearch('image', {}, 'gà trống');
@@ -254,7 +269,7 @@ test('reviewed bad catalog photos stay out of image search until replaced', asyn
   const module = { exports: {} };
   let products = [bad];
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({ '@langchain/openai': { ChatOpenAI: Model, OpenAIEmbeddings: Model },
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({ '@langchain/openai': { ChatOpenAI: Model, OpenAIEmbeddings: Model },
       '@langchain/core/messages': {}, '../models/Product': { Post: { aggregate: async () => products } },
       '../data/image-search-bad-photos.json': [{ id: 'bad', firstImage: 'wrong.jpg' }],
       './imageEmbeddingService': { embedImage: async () => [1, 0], IMAGE_EMBEDDING_MODEL: 'siglip-test' }
@@ -286,7 +301,7 @@ test('explicit object in text and image excludes a wrong-category product', asyn
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => dependencies[name], module, { env: {} }, console
+    (name) => name === './imageVectorIndex' ? imageSearchStub : dependencies[name], module, { env: {} }, console
   );
 
   const image = 'data:image/png;base64,AAAA';
@@ -322,7 +337,7 @@ test('image search keeps user wording and shows candidate images to the visual r
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => dependencies[name], module, { env: {} }, console
+    (name) => name === './imageVectorIndex' ? imageSearchStub : dependencies[name], module, { env: {} }, console
   );
 
   const image = 'data:image/png;base64,AAAA';
@@ -350,7 +365,7 @@ test('image-only search uses the visual description without a second intent call
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => dependencies[name], module, { env: {} }, console
+    (name) => name === './imageVectorIndex' ? imageSearchStub : dependencies[name], module, { env: {} }, console
   );
 
   const result = await module.exports.processChatbot('', [], 'data:image/png;base64,AAAA');
@@ -379,7 +394,7 @@ test('image search applies the calibrated return score after visual review', asy
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => dependencies[name], module,
+    (name) => name === './imageVectorIndex' ? imageSearchStub : dependencies[name], module,
     { env: { IMAGE_SEARCH_MIN_SCORE: '0.72', IMAGE_SEARCH_RETURN_MIN_SCORE: '0.78' } }, console
   );
   const result = await module.exports.processImageSearch('data:image/png;base64,AAAA');
@@ -400,7 +415,7 @@ test('chatbot ranks exact product words and filters price before scoring', async
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({
       '@langchain/openai': { ChatOpenAI: Model, OpenAIEmbeddings },
       '@langchain/core/messages': {}, '../models/Product': { Post },
       './imageEmbeddingService': {}
@@ -424,7 +439,7 @@ test('image reviewer cannot select a product whose photo failed to load', async 
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({
       '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings: Model },
       '@langchain/core/messages': { HumanMessage: Message, SystemMessage: Message, AIMessage: Message },
       '../models/Product': { Post: {} },
@@ -456,7 +471,7 @@ test('editing a product refreshes its text vector and preserves the image descri
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({
       '@langchain/openai': { ChatOpenAI: Model, OpenAIEmbeddings },
       '@langchain/core/messages': {}, '../models/Product': { Post: {} },
       './imageEmbeddingService': {}
@@ -479,7 +494,7 @@ test('new product text vector describes its current photo', async () => {
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({
       '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings },
       '@langchain/core/messages': { HumanMessage: class { constructor(content) { this.content = content; } },
         SystemMessage: class { constructor(content) { this.content = content; } } },
@@ -499,7 +514,7 @@ test('failed refresh clears stale search vectors', async () => {
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({
       '@langchain/openai': { ChatOpenAI: Model, OpenAIEmbeddings },
       '@langchain/core/messages': {},
       '../models/Product': { Post: { updateOne: async (_filter, change) => { cleared.push(change.$unset); } } },
@@ -531,7 +546,7 @@ test('image search removes a visual match outside the text top ten', async () =>
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
   vm.runInNewContext(`(function(require, module, process, console) { ${source}\n })`)(
-    (name) => ({
+    (name) => name === './imageVectorIndex' ? imageSearchStub : ({
       '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings },
       '@langchain/core/messages': { HumanMessage: Message, SystemMessage: Message, AIMessage: Message },
       '../models/Product': { Post: { aggregate: async (pipeline) =>

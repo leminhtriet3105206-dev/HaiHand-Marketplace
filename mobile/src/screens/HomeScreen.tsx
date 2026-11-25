@@ -1,14 +1,16 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { imageUrl, queryString, request, type Category, type Product } from '../api/client';
+import { getViewedProductRecommendations } from '../api/recommendations';
 import { useSession } from '../auth/SessionContext';
 import { Footer } from '../components/Footer';
 import { HomeHeader } from '../components/Header';
-import { ProductList, Status } from '../components/ui';
+import { ProductList, ProductTile, Status } from '../components/ui';
+import { useCategories } from '../data/useCategories';
 import { colors } from '../theme';
 
 const icons: Record<string, keyof typeof MaterialCommunityIcons.glyphMap> = {
@@ -39,11 +41,14 @@ function CategoryArtwork({ category }: { category: Category }) {
 }
 
 export default function HomeScreen() {
-  const { user, token } = useSession();
+  const { user, token, ready } = useSession();
+  const [personalized, setPersonalized] = useState<{ userId?: string; items: Product[] }>();
+  const userId = user?._id;
+  const recommendations = personalized?.userId === userId ? personalized?.items ?? [] : [];
   const [query, setQuery] = useState('');
   const [sortMode, setSortMode] = useState<'all' | 'newest' | 'price-asc'>('all');
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const categories = useCategories();
   const [favorites, setFavorites] = useState<string[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -66,16 +71,11 @@ export default function HomeScreen() {
     setMoreError('');
     setHasMore(false);
     try {
-      const [posts, groups] = await Promise.allSettled([
-        request<Product[]>(`/api/posts${queryString({ page: 1, limit: PAGE_SIZE, sort: sortMode === 'all' ? undefined : sortMode })}`, { timeoutMs: 10000 }),
-        request<Category[]>('/api/categories', { timeoutMs: 10000 }),
-      ]);
+      const posts = await request<Product[]>(`/api/posts${queryString({ page: 1, limit: PAGE_SIZE, sort: sortMode === 'all' ? undefined : sortMode })}`, { timeoutMs: 10000 });
       if (currentGeneration !== generation.current) return;
-      if (posts.status === 'rejected') throw posts.reason;
-      setProducts(posts.value);
+      setProducts(posts);
       setPage(1);
-      setHasMore(posts.value.length === PAGE_SIZE);
-      setCategories(groups.status === 'fulfilled' ? groups.value : []);
+      setHasMore(posts.length === PAGE_SIZE);
       setLoading(false);
       if (user && token) {
         const [saved, cart, unread] = await Promise.allSettled([
@@ -100,6 +100,17 @@ export default function HomeScreen() {
   }, [user, token, sortMode]);
 
   useEffect(() => { const timer = setTimeout(() => { void load(); }, 0); return () => clearTimeout(timer); }, [load]);
+
+  useFocusEffect(useCallback(() => {
+    if (!ready) return;
+    const controller = new AbortController();
+    setPersonalized(undefined);
+    const show = (items: Product[]) => {
+      if (!controller.signal.aborted) setPersonalized({ userId, items });
+    };
+    void getViewedProductRecommendations(token, controller.signal).then(show, () => show([]));
+    return () => controller.abort();
+  }, [ready, token, userId]));
 
   const loadMore = async (force = false) => {
     if (loading || loadingMore || !hasMore || (moreError && !force) || moreRequest.current) return;
@@ -145,10 +156,22 @@ export default function HomeScreen() {
         <View style={s.heroCopy}><Text style={s.heroEyebrow}>ĐỒ CŨ GIÁ TỐT</Text><Text style={s.heroTitle}>Dọn nhà đón Tết</Text><Text style={s.heroSubtitle}>Săn đồ cũ giá hời, tiết kiệm thông minh</Text><Text style={s.heroLink}>Khám phá sản phẩm  →</Text></View>
         <Image source={require('../../assets/stitch-home/hero.jpg')} style={s.heroImage} />
       </Pressable>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.categoryScroller} contentContainerStyle={s.categoryRow}>{categories.map((category) => <Pressable key={category._id} style={s.category} onPress={() => router.push(`/explore${queryString({ category: category.name })}`)}>
+      {categories.length > 0 && <View style={s.categoryScroller}>
+        <View style={s.categoryHeading}>
+          <Text style={s.sectionTitle} accessibilityRole="header">Danh mục</Text>
+          <Pressable accessibilityRole="button" hitSlop={10} onPress={() => router.push('/explore')}><Text style={s.more}>Xem tất cả →</Text></Pressable>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.categoryRow}>{categories.map((category) => <Pressable key={category._id} accessibilityRole="button" style={s.category} onPress={() => router.push(`/explore${queryString({ category: category.name })}`)}>
         <CategoryArtwork category={category} />
         <Text style={s.categoryLabel} numberOfLines={2}>{category.name}</Text>
-      </Pressable>)}</ScrollView>
+        </Pressable>)}</ScrollView>
+      </View>}
+      {recommendations.length > 0 && <View>
+        <View style={s.sectionHeading}><Text style={s.sectionTitle} accessibilityRole="header">Gợi ý cho bạn</Text></View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.recommendationRow}>
+          {recommendations.map((product) => <ProductTile key={product._id} product={product} style={s.recommendationTile} />)}
+        </ScrollView>
+      </View>}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.chips}>
         <Pressable style={[s.chip, sortMode === 'all' && s.chipSelected]} onPress={() => setSortMode('all')}><Text style={s.chipText}>Tất cả</Text></Pressable>
         <Pressable style={[s.chip, sortMode === 'newest' && s.chipSelected]} onPress={() => setSortMode('newest')}><Text style={s.chipText}>Mới đăng</Text></Pressable>
@@ -171,4 +194,7 @@ const s = StyleSheet.create({
   chip: { height: 34, borderRadius: 18, paddingHorizontal: 14, backgroundColor: colors.surface, justifyContent: 'center' }, chipSelected: { backgroundColor: colors.yellow }, chipText: { color: colors.text, fontSize: 13, fontWeight: '600' },
   sectionHeading: { marginTop: 24, marginBottom: 14, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '700' }, more: { color: colors.orange, fontSize: 12, fontWeight: '600' },
   listFooter: { paddingVertical: 18, alignItems: 'center' },
+  categoryHeading: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  recommendationRow: { gap: 10 },
+  recommendationTile: { width: 156 },
 });

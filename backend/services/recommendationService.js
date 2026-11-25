@@ -768,6 +768,7 @@ async function getRelatedToRecent({
   baseProductIds = [],
   fallbackTitle = '',
   fallbackCategory = '',
+  sameCategoryOnly = false,
   limit = 10
 }) {
   try {
@@ -831,12 +832,13 @@ async function getRelatedToRecent({
     }
 
     if (baseProds.length === 0) {
-      return getColdStartRecommendations({ currentUserId: userId, limit });
+      return sameCategoryOnly ? [] : getColdStartRecommendations({ currentUserId: userId, limit });
     }
 
     const latestBase = baseProds[0];
     const latestTitle = latestBase.title || latestBase.name || fallbackTitle || '';
     const baseCategories = Array.from(new Set(baseProds.map((p) => p.category || fallbackCategory).filter(Boolean)));
+    if (sameCategoryOnly && baseCategories.length === 0) return [];
     const prices = baseProds.map((p) => p.price).filter((pr) => typeof pr === 'number' && pr > 0);
     const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
     const excludeIds = targetIds.map((id) => id.toString());
@@ -883,7 +885,7 @@ async function getRelatedToRecent({
     const candidateQuery = {
       _id: { $nin: targetIds },
       status: { $in: CATALOG_VISIBLE },
-      ...(orConditions.length > 0 ? { $or: orConditions } : {})
+      ...(sameCategoryOnly ? { category: { $in: baseCategories } } : orConditions.length > 0 ? { $or: orConditions } : {})
     };
 
     let candidates = await Post.find(candidateQuery)
@@ -909,7 +911,7 @@ async function getRelatedToRecent({
     }
 
     // If still too few, supplement with top products in general visible
-    if (candidates.length < limit) {
+    if (!sameCategoryOnly && candidates.length < limit) {
       const more = await Post.find({
         _id: { $nin: [...targetIds, ...candidates.map((c) => c._id)] },
         status: { $in: CATALOG_VISIBLE }
@@ -922,7 +924,7 @@ async function getRelatedToRecent({
     }
 
     if (candidates.length === 0) {
-      return getColdStartRecommendations({ currentUserId: userId, limit });
+      return sameCategoryOnly ? [] : getColdStartRecommendations({ currentUserId: userId, limit });
     }
 
     // 4. SCORE CANDIDATES WITH STRICT TIER PRIORITY:
@@ -1038,7 +1040,7 @@ async function getRelatedToRecent({
     ).slice(0, limit);
 
     // If still less than limit, top up with cold start
-    if (filtered.length < limit) {
+    if (!sameCategoryOnly && filtered.length < limit) {
       const existingIds = new Set(filtered.map((p) => p._id.toString()));
       const coldItems = await getColdStartRecommendations({ currentUserId: userId, limit: limit - filtered.length });
       for (const item of coldItems) {
@@ -1056,7 +1058,7 @@ async function getRelatedToRecent({
     return filtered;
   } catch (error) {
     console.warn('[RecoService] getRelatedToRecent error:', error.message);
-    return getColdStartRecommendations({ currentUserId: userId, limit });
+    return sameCategoryOnly ? [] : getColdStartRecommendations({ currentUserId: userId, limit });
   }
 }
 

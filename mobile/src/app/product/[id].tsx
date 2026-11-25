@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 
 import { formatPrice, imageUrl, productTitle, request, type Product, type User } from '../../api/client';
+import { recordProductView } from '../../api/recommendations';
 import { useSession } from '../../auth/SessionContext';
 import { Button, Notice, Screen, Status } from '../../components/ui';
 import { colors } from '../../theme';
@@ -12,7 +13,8 @@ export default function ProductDetailScreen() {
   const { width } = useWindowDimensions();
   const gallerySize = Math.min(width, 480);
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { user, token } = useSession();
+  const { user, token, ready } = useSession();
+  const lastRecordedView = useRef('');
   const [product, setProduct] = useState<Product | null>(null);
   const [favorite, setFavorite] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -35,6 +37,13 @@ export default function ProductDetailScreen() {
   }, [id, user, token]);
 
   useEffect(() => { const timer = setTimeout(() => { void load(); }, 0); return () => clearTimeout(timer); }, [load]);
+  useEffect(() => {
+    if (!ready || !product || product._id !== id) return;
+    const viewKey = `${user?._id ?? 'guest'}:${product._id}`;
+    if (lastRecordedView.current === viewKey) return;
+    lastRecordedView.current = viewKey;
+    recordProductView(product._id, token);
+  }, [id, product, ready, token, user?._id]);
   const requireLogin = () => { if (!user) { router.push('/login'); return false; } return true; };
   const addToCart = async (buyNow = false) => {
     if (!requireLogin() || !product) return;

@@ -107,6 +107,7 @@ router.get('/recommendations/related-to-recent', resolveUserIdentity, async (req
       baseProductIds,
       fallbackTitle: req.query.title || '',
       fallbackCategory: req.query.category || '',
+      sameCategoryOnly: req.query.sameCategoryOnly === 'true',
       limit
     });
     return res.status(200).json(items);

@@ -3,11 +3,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { request, type Category, type Product } from '../api/client';
+import { request, type Product } from '../api/client';
 import { useSession } from '../auth/SessionContext';
 import { Button, ProductList, Screen, Status } from '../components/ui';
 import { fetchProductPage, readCachedProducts, writeCachedProducts } from '../data/productRepository';
 import { readFilters, writeFilters } from '../data/filterStore';
+import { useCategories } from '../data/useCategories';
 import { colors } from '../theme';
 
 const sorts = [
@@ -27,7 +28,7 @@ export default function ExploreScreen() {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const categories = useCategories();
   const [favorites, setFavorites] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -62,14 +63,6 @@ export default function ExploreScreen() {
     }, 0);
     return () => clearTimeout(timer);
   }, [params.search, params.category, params.sort]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => {
-      void request<Category[]>('/api/categories', { signal: controller.signal }).then(setCategories).catch(() => {});
-    }, 0);
-    return () => { clearTimeout(timer); controller.abort(); };
-  }, []);
 
   useEffect(() => {
     if (!user) return;

@@ -6,16 +6,59 @@ import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library/legacy';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { request, type Product } from '../api/client';
 import { Button, ProductGrid, Screen, Status } from '../components/ui';
 import { colors } from '../theme';
 
+function ImageScan({ uri, loading }: { uri: string; loading: boolean }) {
+  const progress = useRef(new Animated.Value(0)).current;
+  const [reducedMotion, setReducedMotion] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReducedMotion);
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) setReducedMotion(enabled);
+    }).catch(() => {});
+    return () => { active = false; subscription.remove(); };
+  }, []);
+
+  useEffect(() => {
+    if (!loading || reducedMotion) return;
+    const timing = (toValue: number) => Animated.timing(progress, {
+      toValue, duration: 1150, easing: Easing.inOut(Easing.ease), useNativeDriver: true,
+      isInteraction: false,
+    });
+    const scan = Animated.loop(Animated.sequence([timing(1), timing(0)]));
+    scan.start();
+    return () => { scan.stop(); progress.setValue(0); };
+  }, [loading, progress, reducedMotion]);
+
+  return <View style={s.scanWindow}>
+    <Image source={{ uri }} accessibilityLabel="Ảnh dùng để tìm" style={StyleSheet.absoluteFill} resizeMode="contain" />
+    {loading && <View pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={[StyleSheet.absoluteFill, s.scanOverlay]}>
+      <Animated.View style={[s.scanLine, { transform: [{ translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-78, 78] }) }] }]} />
+      <Animated.View style={[s.magnifier, { transform: [
+        { perspective: 500 },
+        { translateX: progress.interpolate({ inputRange: [0, 1], outputRange: [-35, 35] }) },
+        { translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [-40, 28] }) },
+        { rotateY: progress.interpolate({ inputRange: [0, 1], outputRange: ['-15deg', '15deg'] }) },
+      ] }]}>
+        <View style={s.lensHandle} />
+        <View style={s.lensGlass}><View style={s.lensShine} /></View>
+      </Animated.View>
+    </View>}
+  </View>;
+}
+
 export default function ImageSearchScreen() {
   const camera = useRef<CameraView>(null);
   const askedCamera = useRef(false);
+  const searching = useRef(false);
+  const capturing = useRef(false);
   const [permission, requestCameraPermission] = useCameraPermissions();
   const [cameraActive, setCameraActive] = useState(true);
   const [cameraReady, setCameraReady] = useState(false);
@@ -54,6 +97,9 @@ export default function ImageSearchScreen() {
   };
 
   const searchImage = async (uri: string) => {
+    if (searching.current) return;
+    searching.current = true;
+    setCameraReady(false);
     setSelectedUri(uri); setProducts([]); setSearched(true); setLoading(true); setError('');
     try {
       const context = ImageManipulator.manipulate(uri, { maxWidth: 1280, maxHeight: 1280 });
@@ -62,17 +108,16 @@ export default function ImageSearchScreen() {
       if (!prepared.base64) throw new Error('Không đọc được ảnh đã chọn.');
       setSelectedUri(prepared.uri);
       const result = await request<{ products: Product[] }>('/api/image-search/search', {
-        method: 'POST', body: { image: 'data:image/jpeg;base64,' + prepared.base64, message: '' }, timeoutMs: 120000,
+        method: 'POST', body: { image: 'data:image/jpeg;base64,' + prepared.base64 }, timeoutMs: 120000,
       });
       setProducts(result.products || []);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không tìm được sản phẩm từ ảnh.'); }
-    finally { setLoading(false); }
+    finally { searching.current = false; setLoading(false); }
   };
 
   const pickFromGallery = async () => {
+    setGalleryError('');
     try {
-      const access = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!access.granted) { setGalleryError('Chưa được cấp quyền truy cập thư viện ảnh.'); return; }
       const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
       if (!result.canceled) void searchImage(result.assets[0].uri);
     } catch { setGalleryError('Không mở được thư viện ảnh.'); }
@@ -86,19 +131,31 @@ export default function ImageSearchScreen() {
   };
 
   const capture = async () => {
-    if (!cameraReady || loading) return;
+    if (!cameraReady || searching.current || capturing.current) return;
+    capturing.current = true;
     try {
       const photo = await camera.current?.takePictureAsync({ quality: 0.7 });
       if (photo?.uri) void searchImage(photo.uri);
       else setCameraError(true);
     } catch { setCameraError(true); }
+    finally { capturing.current = false; }
   };
 
   if (searched) return <Screen title="Tìm bằng hình ảnh">
-    {!!selectedUri && <Image source={{ uri: selectedUri }} style={s.selectedImage} resizeMode="contain" />}
-    <Button title="Chụp hoặc chọn ảnh khác" secondary icon="camera-outline" disabled={loading} onPress={() => { setSearched(false); setSelectedUri(''); setProducts([]); setError(''); }} />
-    <Status loading={loading} error={error} empty={!loading && !error && !products.length ? 'Không tìm thấy sản phẩm phù hợp.' : undefined} onRetry={error && selectedUri ? () => void searchImage(selectedUri) : undefined} />
-    {!!products.length && <><Text style={s.resultsTitle}>Sản phẩm phù hợp</Text><ProductGrid products={products} /></>}
+    <View style={s.queryCard}>
+      <Text style={s.queryLabel}>Ảnh dùng để tìm</Text>
+      {!!selectedUri && <ImageScan uri={selectedUri} loading={loading} />}
+      {loading ? <View accessibilityLiveRegion="polite" accessibilityState={{ busy: true }}>
+        <Text style={s.scanTitle}>Đang tìm sản phẩm</Text>
+        <Text style={s.scanHint}>HaiHand đang đối chiếu ảnh của bạn.</Text>
+      </View> : <Button title="Chụp hoặc chọn ảnh khác" secondary icon="camera-outline" onPress={() => {
+        setSelectedUri(''); setProducts([]); setError(''); setSearched(false);
+      }} />}
+    </View>
+    {!loading && <View accessibilityLiveRegion="polite">
+      <Status error={error} empty={!error && !products.length ? 'Chưa tìm thấy sản phẩm phù hợp. Hãy thử ảnh rõ nét hoặc cắt bớt phần nền.' : undefined} onRetry={error && selectedUri ? () => void searchImage(selectedUri) : undefined} />
+      {!!products.length && <><Text style={s.resultsTitle}>Sản phẩm phù hợp · {products.length}</Text><ProductGrid products={products} /></>}
+    </View>}
   </Screen>;
 
   const cameraConnected = permission?.granted && !cameraError;
@@ -128,5 +185,16 @@ const s = StyleSheet.create({
   topControls: { position: 'absolute', top: 10, left: 12, right: 12, flexDirection: 'row', justifyContent: 'space-between' }, rightControls: { flexDirection: 'row', gap: 12 }, iconButton: { width: 43, height: 43, alignItems: 'center', justifyContent: 'center', borderRadius: 22, backgroundColor: '#00000055' },
   captureArea: { position: 'absolute', bottom: 26, alignSelf: 'center', alignItems: 'center', gap: 25 }, captureHint: { color: '#FFFFFF', fontSize: 16, backgroundColor: '#00000088', overflow: 'hidden', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 8 }, shutter: { width: 84, height: 84, borderRadius: 42, borderWidth: 6, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', backgroundColor: '#FFFFFF44' }, shutterInner: { width: 62, height: 62, borderRadius: 31, backgroundColor: '#FFFFFF' }, disabled: { opacity: 0.5 },
   library: { minHeight: 195, maxHeight: 245, backgroundColor: colors.surface, borderTopLeftRadius: 20, borderTopRightRadius: 20, marginTop: -20, paddingTop: 18, paddingBottom: 18 }, libraryHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 14 }, libraryTitle: { color: colors.text, fontSize: 20, fontWeight: '700' }, seeAll: { flexDirection: 'row', alignItems: 'center' }, seeAllText: { color: colors.text, fontSize: 14 }, galleryRow: { gap: 3, paddingHorizontal: 14 }, thumbnail: { width: 82, height: 82, backgroundColor: colors.border }, connectGallery: { marginHorizontal: 16, minHeight: 84, borderRadius: 10, backgroundColor: '#FFF8E2', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 }, connectText: { color: colors.orange, fontWeight: '700' }, galleryMessage: { color: colors.muted, marginHorizontal: 16 }, galleryError: { color: colors.red, marginHorizontal: 16, marginTop: 6 },
-  selectedImage: { width: '100%', height: 230, backgroundColor: colors.surface, borderRadius: 12 }, resultsTitle: { color: colors.text, fontWeight: '700', fontSize: 17, marginVertical: 14 },
+  queryCard: { padding: 14, gap: 12, backgroundColor: colors.surface, borderRadius: 22, borderColor: colors.border, borderWidth: 1 },
+  queryLabel: { color: colors.text, fontWeight: '700', fontSize: 15 },
+  scanWindow: { width: '100%', height: 238, backgroundColor: '#FFF4C6', borderRadius: 16, overflow: 'hidden' },
+  scanOverlay: { alignItems: 'center', justifyContent: 'center', backgroundColor: '#1E1B1926' },
+  scanLine: { position: 'absolute', left: 14, right: 14, height: 3, borderRadius: 2, backgroundColor: colors.yellow, boxShadow: '0 0 14px #FACC15' },
+  magnifier: { width: 76, height: 76 },
+  lensGlass: { width: 76, height: 76, borderRadius: 38, borderWidth: 9, borderColor: '#292524', backgroundColor: '#D8F3FF45', boxShadow: '3px 5px 0 #57534E, 6px 9px 14px #1E1B1966' },
+  lensHandle: { position: 'absolute', width: 18, height: 45, borderRadius: 8, top: 53, left: 67, backgroundColor: colors.yellow, transform: [{ rotate: '-42deg' }], boxShadow: '3px 2px 0 #A73A00' },
+  lensShine: { position: 'absolute', top: 5, left: 6, width: 25, height: 12, borderTopWidth: 3, borderColor: '#FFFFFF', borderRadius: 14, transform: [{ rotate: '-24deg' }] },
+  scanTitle: { color: colors.text, fontSize: 22, fontWeight: '700' },
+  scanHint: { color: '#62574D', fontSize: 14, lineHeight: 20, marginTop: 4 },
+  resultsTitle: { color: colors.text, fontWeight: '700', fontSize: 17, marginVertical: 14 },
 });

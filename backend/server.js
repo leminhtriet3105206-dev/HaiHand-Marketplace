@@ -2783,7 +2783,7 @@ const STANDARD_CATEGORIES = [
 
 app.get('/api/categories', async (req, res) => {
   try {
-    let categories = await Category.find();
+    const categories = await Category.find().lean();
     if (!categories || categories.length === 0) {
       Category.insertMany(STANDARD_CATEGORIES.map(c => ({
         name: c.name,
@@ -2792,19 +2792,19 @@ app.get('/api/categories', async (req, res) => {
       }))).catch(() => {});
       return res.status(200).json(STANDARD_CATEGORIES);
     }
-    // Chỉ trả về các danh mục chuẩn theo đúng thứ tự thiết kế và enrich icon
+    // Keep the existing display order and include categories added in Atlas.
+    const standardNames = new Set(STANDARD_CATEGORIES.map(category => category.name));
     const enriched = STANDARD_CATEGORIES.map(sc => {
       const match = categories.find(c => c.name === sc.name);
       if (match) {
-        const obj = match.toObject ? match.toObject() : match;
         return {
-          ...obj,
+          ...match,
           icon: sc.icon
         };
       }
       return sc;
     });
-    res.status(200).json(enriched);
+    res.status(200).json([...enriched, ...categories.filter(category => !standardNames.has(category.name))]);
   } catch (error) {
     res.status(200).json(STANDARD_CATEGORIES);
   }
@@ -3190,12 +3190,11 @@ const { processChatbot, processImageSearch } = require('./services/chatbotServic
 app.post('/api/chatbot/ask', async (req, res) => {
   try {
     const { message, history, image, userId, anonymousId } = req.body;
-    if (!message && !image) {
-      return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn hoặc hình ảnh' });
+    if (image) {
+      return res.status(400).json({ error: 'Vui lòng dùng mục Tìm kiếm bằng hình ảnh trên header.', redirectTo: '/image-search' });
     }
-
-    if (image && (!image.startsWith('data:image/') || image.length > 7_000_000)) {
-      return res.status(400).json({ error: 'Hình ảnh không hợp lệ hoặc vượt quá 5 MB' });
+    if (typeof message !== 'string' || !message.trim()) {
+      return res.status(400).json({ error: 'Vui lòng cung cấp tin nhắn' });
     }
 
     // Load UserInterestProfile to personalize ambiguous searches
@@ -3214,7 +3213,7 @@ app.post('/api/chatbot/ask', async (req, res) => {
       }
     } catch (e) {}
 
-    const result = await processChatbot(message, history, image, profile);
+    const result = await processChatbot(message, history, null, profile);
     res.json(result);
   } catch (error) {
     console.error("Lỗi Chatbot:", error);

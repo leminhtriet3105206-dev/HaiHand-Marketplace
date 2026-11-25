@@ -4,12 +4,6 @@ const { Post } = require('../models/Product');
 const { embedImage, imageAsDataUrl, indexProductImage, IMAGE_EMBEDDING_MODEL } = require('./imageEmbeddingService');
 const excludedPhotos = new Map((require('../data/image-search-bad-photos.json') || [])
   .map((item) => [item.id, item.firstImage]));
-let imageReranker;
-try {
-  imageReranker = require('../data/image-reranker.json');
-} catch (_) {
-  imageReranker = null;
-}
 
 const LM_STUDIO_URL = process.env.LM_STUDIO_URL || 'http://localhost:1235/v1';
 const CHAT_MODEL = process.env.AI_MODEL || 'qwen3-vl-4b-instruct';
@@ -33,22 +27,6 @@ const embeddings = new OpenAIEmbeddings({
   apiKey: 'lm-studio',
   configuration: { baseURL: LM_STUDIO_URL }
 });
-
-function imageRerankerProbability(score, textRank) {
-  if (!imageReranker?.crossValidation?.accepted) return null;
-  const raw = [
-    Number(score),
-    textRank ? 1 / Math.sqrt(textRank) : 0,
-    textRank && textRank <= 10 ? 1 : 0,
-    textRank == null ? 1 : 0
-  ];
-  const features = raw.map((value, index) => (
-    (value - imageReranker.scaler.mean[index]) / imageReranker.scaler.scale[index]
-  ));
-  const value = imageReranker.weights[0]
-    + features.reduce((sum, feature, index) => sum + feature * imageReranker.weights[index + 1], 0);
-  return 1 / (1 + Math.exp(-Math.max(-30, Math.min(30, value))));
-}
 
 const SYSTEM_PROMPT = `Bạn là Trợ lý AI của sàn đồ cũ HaiHand.
 - Chỉ trả lời về sản phẩm, mua bán, giao hàng, thanh toán, đổi trả và chính sách HaiHand.
@@ -488,10 +466,19 @@ async function processImageSearch(image, userMessage = '') {
     return { reply: 'Mình không thể hỗ trợ yêu cầu này. Bạn hãy thử mô tả sản phẩm cần tìm nhé.', products: [] };
   }
 
+  if (!message) {
+    const matches = await imageVectorSearch(image, {}, '', Math.max(IMAGE_SEARCH_MIN_SCORE, IMAGE_SEARCH_RETURN_MIN_SCORE));
+    const products = publicProducts(matches.filter(hasUsableProductName));
+    return {
+      reply: products.length
+        ? `Mình tìm thấy ${products.length} sản phẩm có hình ảnh tương tự. Bạn xem tên và ảnh để đối chiếu nhé.`
+        : 'Mình chưa tìm thấy sản phẩm phù hợp với ảnh bạn gửi.',
+      products
+    };
+  }
+
   const imageDescription = await describeImage(image);
-  const filter = message
-    ? await extractSearch(message, imageDescription)
-    : { minPrice: null, maxPrice: null, location: null, keywords: [] };
+  const filter = await extractSearch(message, imageDescription);
   filter.semanticQuery = [message, imageDescription].filter(Boolean).join('. ');
   let rawProducts;
   try {
@@ -504,24 +491,7 @@ async function processImageSearch(image, userMessage = '') {
   const objectWords = sharedObjectWords(message, imageDescription);
   rawProducts = rawProducts.filter((product) => hasUsableProductName(product) && matchesObjectWords(product, objectWords));
   const relevantProducts = await filterRelevantProducts(rawProducts, filter.semanticQuery, image);
-  let verified = relevantProducts.filter((product) => product.score >= IMAGE_SEARCH_RETURN_MIN_SCORE);
-  if (!message && verified.length && filter.semanticQuery) {
-    try {
-      const textCandidates = await vectorSearch(filter.semanticQuery, filter);
-      const textRanks = new Map(textCandidates.map((product, index) => [String(product._id), index + 1]));
-      if (imageReranker?.crossValidation?.accepted) {
-        verified = verified.filter((product) => {
-          const probability = imageRerankerProbability(product.score, textRanks.get(String(product._id)));
-          return probability != null && probability >= imageReranker.threshold;
-        });
-      } else if (textCandidates.length >= 10) {
-        const textTop = new Set(textCandidates.slice(0, 10).map((product) => String(product._id)));
-        verified = verified.filter((product) => textTop.has(String(product._id)));
-      }
-    } catch (error) {
-      console.warn(`Không kiểm tra được mô tả ảnh với tên tin: ${error.message}`);
-    }
-  }
+  const verified = relevantProducts.filter((product) => product.score >= IMAGE_SEARCH_RETURN_MIN_SCORE);
   const products = publicProducts(verified);
   return {
     reply: products.length
@@ -532,5 +502,4 @@ async function processImageSearch(image, userMessage = '') {
 }
 
 module.exports = { processChatbot, processImageSearch, imageVectorSearch, vectorSearch, filterRelevantProducts,
-  imageRerankerProbability,
   buildProductText, describeImage, refreshProductSearch, embeddings, EMBEDDING_MODEL };

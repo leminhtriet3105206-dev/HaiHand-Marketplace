@@ -348,7 +348,7 @@ test('image search keeps user wording and shows candidate images to the visual r
   assert.deepEqual(Array.from(reviewImages, (part) => part.image_url.url), [image, 'data:image/jpeg;base64,BBBB']);
 });
 
-test('image-only search uses the visual description without a second intent call', async () => {
+test('image-only search skips the description when Atlas has no candidates', async () => {
   let modelCalls = 0;
   class ChatOpenAI {
     async invoke() { modelCalls++; return { content: 'đèn bàn' }; }
@@ -369,11 +369,11 @@ test('image-only search uses the visual description without a second intent call
   );
 
   const result = await module.exports.processChatbot('', [], 'data:image/png;base64,AAAA');
-  assert.equal(modelCalls, 1);
+  assert.equal(modelCalls, 0);
   assert.equal(result.products.length, 0);
 });
 
-test('image search applies the calibrated return score after visual review', async () => {
+test('image-only search applies the configured return score', async () => {
   let calls = 0;
   class ChatOpenAI {
     async invoke() { return { content: ++calls === 1 ? 'chuột máy tính' : '{"indices":[0,1]}' }; }
@@ -527,21 +527,15 @@ test('failed refresh clears stale search vectors', async () => {
   assert.ok('textEmbedding' in cleared[1]);
 });
 
-test('image search removes a visual match outside the text top ten', async () => {
-  let calls = 0;
+test('image-only search returns cosine-ranked matches without calling a text model', async () => {
   class ChatOpenAI { async invoke() {
-    return { content: ++calls === 1 ? 'đèn pin' : '{"indices":[0,1]}' };
+    throw new Error('Visual description service unavailable');
   } }
-  class OpenAIEmbeddings { async embedQuery() { return [1, 0]; } }
+  class OpenAIEmbeddings { async embedQuery() { throw new Error('Text embeddings unavailable'); } }
   class Message { constructor(content) { this.content = content; } }
   const imageCandidates = [
-    { _id: 'flashlight', title: 'Đèn pin', imageEmbedding: [1, 0], images: ['flashlight.jpg'] },
-    { _id: 'pan', title: 'Chảo chống dính', imageEmbedding: [1, 0], images: ['pan.jpg'] }
-  ];
-  const textCandidates = [
-    { _id: 'flashlight', title: 'Đèn pin', textEmbedding: [1, 0], embeddingModel: 'bge-m3' },
-    ...Array.from({ length: 10 }, (_, index) => ({ _id: `other${index}`, title: 'Đèn pin',
-      textEmbedding: [1, 0], embeddingModel: 'bge-m3' }))
+    { _id: 'other', title: 'Giày sneaker Puma', imageEmbedding: [0.64, 0.768], images: ['other.jpg'] },
+    { _id: 'expected', title: 'Giày chạy bộ Saucony', imageEmbedding: [0.62, 0.785], images: ['expected.jpg'] }
   ];
   const source = fs.readFileSync(path.join(__dirname, '../services/chatbotService.js'), 'utf8');
   const module = { exports: {} };
@@ -549,12 +543,11 @@ test('image search removes a visual match outside the text top ten', async () =>
     (name) => name === './imageVectorIndex' ? imageSearchStub : ({
       '@langchain/openai': { ChatOpenAI, OpenAIEmbeddings },
       '@langchain/core/messages': { HumanMessage: Message, SystemMessage: Message, AIMessage: Message },
-      '../models/Product': { Post: { aggregate: async (pipeline) =>
-        pipeline[0].$match.imageEmbeddingModel ? imageCandidates : textCandidates } },
+      '../models/Product': { Post: { aggregate: async () => imageCandidates } },
       './imageEmbeddingService': { embedImage: async () => [1, 0],
         imageAsDataUrl: async (image) => image, IMAGE_EMBEDDING_MODEL: 'siglip-test' }
     })[name], module, { env: {} }, console
   );
   const result = await module.exports.processImageSearch('query.jpg');
-  assert.deepEqual(Array.from(result.products, (product) => product._id), ['flashlight']);
+  assert.deepEqual(Array.from(result.products, (product) => product._id), ['other', 'expected']);
 });

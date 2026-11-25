@@ -36,6 +36,7 @@ const {
   displayProductName
 } = require('./utils/b2c');
 const createSellerRouter = require('./routes/seller');
+const createMessagesRouter = require('./routes/messages');
 const haipayRouter = require('./routes/haipay');
 const { indexProductImage } = require('./services/imageEmbeddingService');
 const shippingRouter = require('./routes/shipping');
@@ -2365,110 +2366,8 @@ app.post('/api/users/cart', async (req, res) => {
 
 
 
-app.get('/api/messages/clear-all', async (req, res) => {
-  try {
-    await Message.deleteMany({});
-    res.status(200).send("<h1 style='color:green; text-align:center; margin-top:50px;'>✅ ĐÃ DỌN SẠCH RÁC TIN NHẮN!</h1>");
-  } catch (e) { res.status(500).send("Lỗi dọn rác!"); }
-});
-
-app.get('/api/messages/conversations/:userId', async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    const messages = await Message.find({ $or: [{ sender: userId }, { receiver: userId }] })
-      .sort({ timestamp: -1 }).populate('sender receiver', 'name avatar verified badge').populate('post', 'title price condition author');
-
-    const conversationsMap = new Map();
-
-    messages.forEach(msg => {
-      try {
-        if (!msg || !msg.sender || !msg.receiver) return;
-        const senderId = msg.sender._id ? msg.sender._id.toString() : msg.sender.toString();
-        const receiverId = msg.receiver._id ? msg.receiver._id.toString() : msg.receiver.toString();
-
-        const isSenderMe = senderId === userId;
-        const otherUser = isSenderMe ? msg.receiver : msg.sender;
-        const otherUserId = isSenderMe ? receiverId : senderId;
-
-        if (!conversationsMap.has(otherUserId)) {
-          conversationsMap.set(otherUserId, { otherUser, lastMessage: msg, timestamp: msg.timestamp, unreadCount: 0 });
-        }
-
-        if (!isSenderMe && !msg.isRead) conversationsMap.get(otherUserId).unreadCount += 1;
-      } catch (e) { }
-    });
-
-    res.status(200).json(Array.from(conversationsMap.values()));
-  } catch (error) { res.status(200).json([]); }
-});
-
-app.get('/api/messages/unread-count/:userId', async (req, res) => {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
-      return res.status(200).json({ count: 0 });
-    }
-    const count = await Message.countDocuments({ receiver: req.params.userId, isRead: false });
-    res.status(200).json({ count });
-  } catch (err) { res.status(200).json({ count: 0 }); }
-});
-
-app.get('/api/messages/:user1/:user2', async (req, res) => {
-  try {
-    const { user1, user2 } = req.params;
-    const messages = await Message.find({
-      $or: [{ sender: user1, receiver: user2 }, { sender: user2, receiver: user1 }]
-    }).populate('post', 'title price image author').sort({ timestamp: 1 });
-    res.status(200).json(messages);
-  } catch (error) { res.status(500).json({ message: 'Lỗi' }); }
-});
-
-app.post('/api/messages', upload.single('image'), async (req, res) => {
-  try {
-    const newMessage = new Message({
-      sender: req.body.senderId,
-      receiver: req.body.receiverId,
-      content: req.body.text || '',
-      post: req.body.postId || null
-    });
-
-
-    if (req.file) {
-      newMessage.images = [req.file.path];
-    }
-    await newMessage.save();
-
-    // Notify receiver
-    await sendNotification(
-      req.body.receiverId,
-      '💬 Tin nhắn mới',
-      req.body.text ? `"${req.body.text.substring(0, 30)}..."` : `Bạn nhận được 1 hình ảnh mới.`,
-      'MESSAGE',
-      '/chat'
-    );
-
-
-    const populatedMsg = await Message.findById(newMessage._id).populate('post', 'title price images image');
-    res.status(200).json(populatedMsg);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Lỗi lưu tin nhắn" });
-  }
-});
-
-app.put('/api/messages/mark-read', async (req, res) => {
-  try {
-    await Message.updateMany(
-      { sender: req.body.otherId, receiver: req.body.userId, isRead: false },
-      { $set: { isRead: true } }
-    );
-    // Đồng thời đánh dấu đã đọc cho thông báo loại MESSAGE
-    await Notification.updateMany(
-      { userId: req.body.userId, type: 'MESSAGE', isRead: false },
-      { $set: { isRead: true } }
-    );
-    res.status(200).json({ message: 'Đã đọc' });
-  } catch (error) { res.status(500).json({ message: 'Lỗi' }); }
-});
+// Mount /api/messages router (A3: bắt buộc JWT protectStrict, xóa clear-all)
+app.use('/api/messages', createMessagesRouter({ io, sendNotification }));
 
 // Socket.IO connection & presence được quản lý tập trung tại backend/socket/index.js (initSocket)
 

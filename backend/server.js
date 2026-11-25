@@ -17,39 +17,11 @@ const { Product, Post } = require('./models/Product');
 const { protect, isSeller } = require('./middleware/auth');
 const Transaction = require('./models/Transaction');
 const Settings = require('./models/Settings');
-<<<<<<< HEAD
-const PaymentSession = require('./models/PaymentSession');
-const OtpToken = require('./models/OtpToken');
-const Banner = require('./models/Banner');
-
-// --- Auth Middlewares & Business Helpers ---
 const {
-  protect,
-  protectStrict,
-  requireOwnerOrAdmin,
-  requireAdminJWT,
-  isSeller,
-  isAdmin
-} = require('./middleware/auth');
-const {
-  createCorsMiddleware,
   createHelmetMiddleware,
-  mongoSanitizeMiddleware,
-  getAllowedOrigins,
   isOriginAllowed,
-  buildCorsOptions,
-  globalLimiter,
-  loginLimiter,
-  otpLimiter,
-  chatbotLimiter,
-  uploadLimiter,
-  withdrawLimiter
+  buildCorsOptions
 } = require('./middleware/security');
-const { createUploadMiddleware } = require('./middleware/upload');
-const { escapeRegex } = require('./middleware/validate');
-const errorHandler = require('./middleware/errorHandler');
-=======
->>>>>>> 7499a57b448c5b1b3d95ed7066cb100cd995362e
 const {
   CATALOG_VISIBLE,
   canonicalStatus,
@@ -78,64 +50,18 @@ const {
 
 const app = express();
 
-<<<<<<< HEAD
 // ============================================================================
-// SECTION 2: CẤU HÌNH CORS, SECURITY HEADERS (HELMET), RATE LIMIT & SOCKET.IO
+// SECTION 2: CẤU HÌNH CORS, SECURITY HEADERS (HELMET) & SOCKET.IO
 // ============================================================================
 const corsOptions = buildCorsOptions();
 const corsMiddleware = cors(corsOptions);
 app.use(corsMiddleware);
 app.options(/.*/, corsMiddleware);
 app.use(createHelmetMiddleware());
-app.use(globalLimiter);
-=======
->>>>>>> 7499a57b448c5b1b3d95ed7066cb100cd995362e
-
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:4001',
-  'http://127.0.0.1:4001',
-  'https://haihand-marketplace.vercel.app'
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Permissive for development/container networking
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'UserId', 'X-Requested-With', 'Origin', 'x-anonymous-id', 'X-Anonymous-Id'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
-};
-
-app.use(cors(corsOptions));
-app.options('{*path}', cors(corsOptions));
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-  }
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, userid, UserId, x-anonymous-id');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-<<<<<<< HEAD
     origin(origin, callback) {
       if (isOriginAllowed(origin)) {
         return callback(null, true);
@@ -151,18 +77,10 @@ const io = new Server(server, {
       'UserId',
       'X-Requested-With',
       'Origin',
-      'X-CSRF-Token'
+      'X-CSRF-Token',
+      'x-anonymous-id',
+      'X-Anonymous-Id'
     ],
-=======
-    origin: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://localhost:4001",
-      "http://127.0.0.1:4001",
-      "https://haihand-marketplace.vercel.app"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
->>>>>>> 7499a57b448c5b1b3d95ed7066cb100cd995362e
     credentials: true
   }
 });
@@ -1062,7 +980,6 @@ app.get('/admin/reports', requireAdmin, async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
 /** [API] Lấy thông tin Admin đầu mối để mở chat CSKH (fallback sang Settings mặc định để tránh lỗi console) */
 app.get('/api/admin/contact', async (req, res) => {
   try {
@@ -1104,16 +1021,6 @@ app.get('/api/admin/contact', async (req, res) => {
       supportEmail: 'cskh@haihand.vn',
       isFallback: true
     });
-=======
-app.get('/api/admin/contact', async (req, res) => {
-  try {
-
-    const admin = await User.findOne({ role: 'Admin' }).select('_id name avatar email');
-    if (!admin) return res.status(404).json({ message: "Chưa có Admin nào trong hệ thống!" });
-    res.status(200).json(admin);
-  } catch (error) {
-    res.status(500).json({ message: "Lỗi lấy thông tin Admin" });
->>>>>>> 7499a57b448c5b1b3d95ed7066cb100cd995362e
   }
 });
 
@@ -1328,157 +1235,6 @@ app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
   } catch (err) { res.status(500).json({ message: 'Lỗi cập nhật' }); }
 });
 
-<<<<<<< HEAD
-/** Lấy trang hồ sơ công khai của một Shop/Seller (sản phẩm, đánh giá, follow, tỷ lệ phản hồi chat) */
-app.get('/api/users/public-profile/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(404).json({ message: 'ID không hợp lệ' });
-    }
-
-    const user = await User.findById(userId).select('-password');
-    if (!user) return res.status(404).json({ message: 'Không tìm thấy user' });
-
-    let followersCount = 0;
-    let followingCount = 0;
-    try {
-      followersCount = await Follow.countDocuments({ following: userId });
-      followingCount = await Follow.countDocuments({ follower: userId });
-    } catch (err) { console.log('Lỗi đếm follow:', err.message); }
-
-    const posts = await Post.find({ author: userId }).sort({ createdAt: -1 });
-    const reviews = await Review.find({ seller: userId }).populate('buyer', 'name avatar');
-    const avgRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : 5.0;
-
-    const conversationsReceived = await Message.distinct('sender', { receiver: userId });
-    let repliedCount = 0;
-    for (const senderId of conversationsReceived) {
-      const hasReplied = await Message.exists({ sender: userId, receiver: senderId });
-      if (hasReplied) repliedCount++;
-    }
-    const responseRate = conversationsReceived.length > 0 ? Math.round((repliedCount / conversationsReceived.length) * 100) : 100;
-
-    return res.status(200).json({ user: publicUser(user), posts, reviews, followersCount, followingCount, avgRating, responseRate });
-  } catch (error) {
-    console.error('Lỗi sập Profile:', error.message);
-    return res.status(200).json({ user: {}, posts: [], reviews: [], followersCount: 0, followingCount: 0, avgRating: 5 });
-  }
-});
-
-/** Kiểm tra user A có đang theo dõi user B hay không */
-app.get('/api/users/follow-status', async (req, res) => {
-  try {
-    const { followerId, followingId } = req.query;
-
-    if (!followerId || followerId === 'undefined' || !mongoose.Types.ObjectId.isValid(followerId)) {
-      return res.status(200).json({ isFollowing: false });
-    }
-    if (!followingId || followingId === 'undefined' || !mongoose.Types.ObjectId.isValid(followingId)) {
-      return res.status(200).json({ isFollowing: false });
-    }
-
-    const follow = await Follow.findOne({ follower: followerId, following: followingId });
-    return res.status(200).json({ isFollowing: !!follow });
-  } catch (e) {
-    console.error('Lỗi API follow-status:', e.message);
-    return res.status(200).json({ isFollowing: false });
-  }
-});
-
-/** Theo dõi / Bỏ theo dõi người bán (C6: bắt buộc protect, followerId lấy từ token) */
-app.post('/api/users/follow', protect, async (req, res) => {
-  try {
-    const followerId = req.user._id.toString();
-    const { followingId } = req.body || {};
-    if (!followingId || !mongoose.Types.ObjectId.isValid(followingId)) {
-      return res.status(400).json({ message: 'ID người được theo dõi không hợp lệ!' });
-    }
-    if (followerId === String(followingId)) {
-      return res.status(400).json({ message: 'Không thể tự theo dõi chính mình!' });
-    }
-
-    const existingFollow = await Follow.findOne({ follower: followerId, following: followingId });
-
-    if (existingFollow) {
-      await Follow.findByIdAndDelete(existingFollow._id);
-      return res.json({ message: 'Đã bỏ theo dõi', isFollowing: false });
-    } else {
-      await Follow.create({ follower: followerId, following: followingId });
-
-      await sendNotification(
-        followingId,
-        '👤 Có người theo dõi mới!',
-        'Một người dùng vừa bắt đầu theo dõi bạn.',
-        'SYSTEM',
-        `/public-profile/${followerId}`
-      );
-      return res.json({ message: 'Đã theo dõi', isFollowing: true });
-    }
-  } catch (e) { res.status(500).json({ error: 'Lỗi hệ thống' }); }
-});
-
-/** Lấy danh sách người theo dõi / đang theo dõi */
-app.get('/api/users/:userId/follow-list', async (req, res) => {
-  try {
-    const { type } = req.query;
-    const { userId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(200).json([]);
-    }
-
-    let list = [];
-    if (type === 'followers') {
-      list = await mongoose.models.Follow.find({ following: userId }).populate('follower', 'name avatar');
-    } else {
-      list = await mongoose.models.Follow.find({ follower: userId }).populate('following', 'name avatar');
-    }
-
-    list = list.filter(item => item.follower && item.following);
-
-    res.status(200).json(list);
-  } catch (e) {
-    console.error('Lỗi get follow list:', e.message);
-    res.status(200).json([]);
-  }
-});
-
-/** Thêm / Xóa sản phẩm khỏi danh sách yêu thích (C6: bắt buộc protect, userId lấy từ token) */
-app.post('/api/users/favorites', protect, async (req, res) => {
-  try {
-    const postId = req.body?.postId;
-    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
-      return res.status(400).json({ error: 'ID sản phẩm không hợp lệ' });
-    }
-    const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    if (!user.favorites) user.favorites = [];
-    const postIdStr = postId.toString();
-    const index = user.favorites.findIndex(id => id.toString() === postIdStr);
-
-    if (index === -1) user.favorites.push(postId);
-    else user.favorites.splice(index, 1);
-
-    await user.save();
-    res.status(200).json({ message: 'Ok', favorites: user.favorites });
-  } catch (error) { res.status(500).json({ error: 'Lỗi' }); }
-});
-
-/** Lấy danh sách sản phẩm yêu thích của User (C6: bắt buộc protect + requireOwnerOrAdmin) */
-app.get('/api/users/favorites/:userId', protect, requireOwnerOrAdmin('userId'), async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).populate('favorites');
-    res.status(200).json(user ? user.favorites : []);
-  } catch (error) { res.status(200).json([]); }
-});
-
-// ============================================================================
-// SECTION 12: SẢN PHẨM (POSTS), DANH MỤC, GIỎ HÀNG, ĐÁNH GIÁ & BÁO CÁO
-// ============================================================================
-
 const DEFAULT_HERO_BANNERS = [
   {
     _id: 'default-banner-1',
@@ -1512,40 +1268,10 @@ const DEFAULT_HERO_BANNERS = [
   }
 ];
 
-/** Lấy danh sách Banner Hero đang hoạt động cho trang chủ (fallback mặc định nếu DB trống) */
+/** Lấy danh sách Banner Hero đang hoạt động cho trang chủ (fallback mặc định) */
 app.get('/api/banners', async (req, res) => {
-  try {
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(200).json(DEFAULT_HERO_BANNERS);
-    }
-    const banners = await Banner.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).lean();
-    if (!banners || banners.length === 0) {
-      return res.status(200).json(DEFAULT_HERO_BANNERS);
-    }
-    return res.status(200).json(banners);
-  } catch (error) {
-    console.error('Lỗi lấy banner:', error.message);
-    return res.status(200).json(DEFAULT_HERO_BANNERS);
-  }
+  return res.status(200).json(DEFAULT_HERO_BANNERS);
 });
-
-/** Lấy toàn bộ danh mục sản phẩm hiển thị trang chủ / bộ lọc */
-app.get('/api/categories', async (req, res) => {
-  try {
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(200).json([]);
-    }
-    const categories = await Category.find().lean();
-    res.status(200).json(categories || []);
-  } catch (error) {
-    console.error('Lỗi lấy danh mục (/api/categories):', error.message);
-    res.status(200).json([]);
-  }
-});
-
-/** Lấy danh sách sản phẩm công khai (lọc theo CATALOG_VISIBLE, tìm kiếm, giá, khu vực, sắp xếp, phân trang) */
-=======
->>>>>>> 7499a57b448c5b1b3d95ed7066cb100cd995362e
 app.get('/api/posts', async (req, res) => {
   try {
     if (mongoose.connection.readyState !== 1) {

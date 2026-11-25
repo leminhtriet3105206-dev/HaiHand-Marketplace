@@ -15,7 +15,8 @@ const Message = require('./models/Message');
 const User = require('./models/User');
 const Order = require('./models/Order');
 const { Product, Post } = require('./models/Product');
-const { protect, isSeller } = require('./middleware/auth');
+const { protect, protectStrict, isSeller } = require('./middleware/auth');
+const { initSocket } = require('./socket');
 const Transaction = require('./models/Transaction');
 const Settings = require('./models/Settings');
 const {
@@ -198,8 +199,10 @@ const Follow = mongoose.models.Follow || mongoose.model('Follow', new mongoose.S
   following: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true }));
 
+const socketHub = initSocket(io);
+
 const notificationService = require('./utils/notificationService');
-notificationService.init(io, (uId) => (typeof getUserSockets === 'function' ? getUserSockets(uId) : []));
+notificationService.init(io);
 const sendNotification = notificationService.sendNotification;
 const sendAdminNotification = notificationService.sendAdminNotification;
 
@@ -2467,56 +2470,7 @@ app.put('/api/messages/mark-read', async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi' }); }
 });
 
-let onlineUsers = [];
-
-io.on('connection', (socket) => {
-
-  socket.on('addUser', (userId) => {
-    if (userId) {
-      socket.join('user_' + userId.toString());
-      socket.userId = userId.toString();
-    }
-    onlineUsers = onlineUsers.filter(u => u.userId !== userId);
-    onlineUsers.push({ userId, socketId: socket.id });
-    io.emit('getUsers', onlineUsers);
-  });
-
-  if (socket.handshake.auth?.role === 'admin' || socket.handshake.query?.role === 'admin') {
-    socket.join('admin_system_room');
-  }
-
-  socket.on('join_admin_room', (data) => {
-    socket.join('admin_system_room');
-    console.log(`🛡️ Socket ${socket.id} joined admin_system_room`);
-  });
-
-  socket.on('join', (room) => {
-    if (room) socket.join(room);
-  });
-
-
-  socket.on('sendMessage', (msgData) => {
-    const receiver = onlineUsers.find(u => u.userId === msgData.receiverId);
-    if (receiver) {
-      io.to(receiver.socketId).emit('getMessage', msgData);
-      io.to(receiver.socketId).emit('updateInbox');
-    }
-  });
-
-
-  socket.on('disconnect', async () => {
-    const disconnectedUser = onlineUsers.find(u => u.socketId === socket.id);
-    if (disconnectedUser) {
-      try {
-        await User.findByIdAndUpdate(disconnectedUser.userId, { lastActive: Date.now() });
-      } catch (e) { }
-    }
-    onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
-
-
-    io.emit('getUsers', onlineUsers);
-  });
-});
+// Socket.IO connection & presence được quản lý tập trung tại backend/socket/index.js (initSocket)
 
 const STANDARD_CATEGORIES = [
   {
@@ -2964,71 +2918,6 @@ app.post('/api/chatbot/ask', async (req, res) => {
       error: 'Không thể xử lý yêu cầu. Hãy kiểm tra Qwen3-VL, BGE-M3 và LM Studio ở cổng 1235.'
     });
   }
-});
-
-// Socket.io logic
-let users = [];
-
-const addUser = (userId, socketId) => {
-  // Bỏ logic xóa/chặn nếu cùng userId, thay vào đó cứ push vào mảng để cho phép 1 user đăng nhập nhiều thiết bị (nhiều tab)
-  users.push({ userId, socketId });
-};
-
-const removeUser = (socketId) => {
-  users = users.filter(user => user.socketId !== socketId);
-};
-
-const getUserSockets = (userId) => {
-  return users.filter(user => user.userId === userId);
-};
-
-io.on("connection", (socket) => {
-  const handshakeUserId = socket.handshake.auth?.userId || socket.handshake.query?.userId;
-  if (handshakeUserId) {
-    socket.join('user_' + handshakeUserId.toString());
-    addUser(handshakeUserId, socket.id);
-  }
-
-  socket.on("addUser", (userId) => {
-    if (userId) {
-      socket.join('user_' + userId.toString());
-      socket.userId = userId.toString();
-    }
-    addUser(userId, socket.id);
-    io.emit("getUsers", users);
-  });
-
-  if (socket.handshake.auth?.role === 'admin' || socket.handshake.query?.role === 'admin') {
-    socket.join('admin_system_room');
-  }
-
-  socket.on("join_admin_room", (data) => {
-    socket.join('admin_system_room');
-    console.log(`🛡️ Socket ${socket.id} joined admin_system_room`);
-  });
-
-  socket.on("join", (room) => {
-    if (room) socket.join(room);
-  });
-
-  socket.on("sendMessage", ({ senderId, receiverId, text, post, images }) => {
-    const receiverSockets = getUserSockets(receiverId);
-    if (receiverSockets && receiverSockets.length > 0) {
-      receiverSockets.forEach(userSocket => {
-        io.to(userSocket.socketId).emit("getMessage", {
-          senderId,
-          text,
-          post,
-          images
-        });
-      });
-    }
-  });
-
-  socket.on("disconnect", () => {
-    removeUser(socket.id);
-    io.emit("getUsers", users);
-  });
 });
 
 const PORT = process.env.PORT || 4000;

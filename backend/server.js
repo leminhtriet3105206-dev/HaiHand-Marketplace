@@ -11,6 +11,7 @@ const crypto = require('crypto');
 const moment = require('moment');
 const querystring = require('qs');
 const Notification = require('./models/Notification');
+const Message = require('./models/Message');
 const User = require('./models/User');
 const Order = require('./models/Order');
 const { Product, Post } = require('./models/Product');
@@ -161,16 +162,6 @@ const Category = mongoose.models.Category || mongoose.model('Category', new mong
   name: { type: String, required: true },
   image: { type: String, required: true },
   description: { type: String, default: '' }
-}));
-
-const Message = mongoose.models.Message || mongoose.model('Message', new mongoose.Schema({
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  content: String,
-  images: [String],
-  post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
-  isRead: { type: Boolean, default: false },
-  timestamp: { type: Date, default: Date.now }
 }));
 
 const Revenue = mongoose.models.Revenue || mongoose.model('Revenue', new mongoose.Schema({

@@ -2,6 +2,8 @@ import React, { useMemo, useState, useEffect, useCallback, useRef } from 'react'
 import { NavLink, Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
+import useUnreadMessages from '../../hooks/useUnreadMessages';
+import axiosClient from '../../api/axiosClient';
 import axios from 'axios';
 
 // Helper to format relative time in Vietnamese
@@ -41,7 +43,11 @@ const SellerLayout = () => {
     const location = useLocation();
     const { user, logout } = useAuth();
     const { socket } = useSocket();
+    const { unreadCount: unreadChatCount } = useUnreadMessages('seller');
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+    const [walletBalance, setWalletBalance] = useState(user?.walletBalance ?? null);
+    const [walletLoading, setWalletLoading] = useState(true);
 
     // Notification state for Seller Hub
     const [notifications, setNotifications] = useState([]);
@@ -58,9 +64,10 @@ const SellerLayout = () => {
 
     const navItems = [
         { path: '/seller-channel', icon: 'fas fa-chart-pie', label: 'Tổng quan Shop', end: true },
-        { path: '/seller-channel/products', icon: 'fas fa-box-open', label: 'Quản lý sản phẩm', typeKey: 'PRODUCT' },
+        { path: '/seller-channel/products', icon: 'fas fa-box-open', label: 'Quản lý sản phẩm', typeKey: 'PRODUCT', end: true },
         { path: '/seller-channel/products/create', icon: 'fas fa-plus-circle', label: 'Đăng sản phẩm' },
         { path: '/seller-channel/orders', icon: 'fas fa-shipping-fast', label: 'Quản lý đơn hàng', typeKey: 'NEW_ORDER' },
+        { path: '/seller-channel/messages', icon: 'fas fa-comments', label: 'Tin nhắn khách hàng', chatBadge: unreadChatCount },
         { path: '/seller-channel/settings', icon: 'fas fa-store-alt', label: 'Hồ sơ & Cài đặt Shop' },
     ];
 
@@ -82,6 +89,42 @@ const SellerLayout = () => {
     useEffect(() => {
         fetchSellerNotifications();
     }, [fetchSellerNotifications]);
+
+    // C2: Lấy số dư ví HaiPay từ API thay vì localStorage cũ
+    const fetchWalletBalance = useCallback(async () => {
+        if (!user?._id) return;
+        setWalletLoading(true);
+        try {
+            const { data } = await axiosClient.get('/api/haipay/me');
+            const bal = data?.wallet?.balance ?? data?.balance ?? data?.walletBalance;
+            if (typeof bal === 'number') {
+                setWalletBalance(bal);
+            } else {
+                const prof = await axiosClient.get('/api/users/profile');
+                setWalletBalance(Number(prof.data?.walletBalance || 0));
+            }
+        } catch {
+            setWalletBalance(Number(user?.walletBalance || 0));
+        } finally {
+            setWalletLoading(false);
+        }
+    }, [user?._id, user?.walletBalance]);
+
+    useEffect(() => {
+        fetchWalletBalance();
+        const onWalletChange = () => fetchWalletBalance();
+        window.addEventListener('haipayUpdated', onWalletChange);
+        window.addEventListener('walletUpdated', onWalletChange);
+        return () => {
+            window.removeEventListener('haipayUpdated', onWalletChange);
+            window.removeEventListener('walletUpdated', onWalletChange);
+        };
+    }, [fetchWalletBalance]);
+
+    // C2: Đóng mobile drawer khi chuyển route
+    useEffect(() => {
+        setIsMobileDrawerOpen(false);
+    }, [location.pathname]);
 
     // Socket.IO real-time listener for incoming seller notifications
     useEffect(() => {
@@ -191,10 +234,33 @@ const SellerLayout = () => {
         navigate('/login');
     };
 
+    const sellerBadge = useMemo(() => {
+        switch (user?.sellerStatus) {
+            case 'approved':
+                return { text: 'Seller Đã Duyệt', cls: 'text-emerald-700 bg-emerald-100/80', dot: 'bg-emerald-500 animate-pulse' };
+            case 'pending':
+                return { text: 'Đang chờ duyệt', cls: 'text-amber-700 bg-amber-100/80', dot: 'bg-amber-500' };
+            case 'rejected':
+                return { text: 'Hồ sơ bị từ chối', cls: 'text-rose-700 bg-rose-100/80', dot: 'bg-rose-500' };
+            default:
+                return { text: 'Chưa kích hoạt', cls: 'text-slate-600 bg-slate-100', dot: 'bg-slate-400' };
+        }
+    }, [user?.sellerStatus]);
+
     return (
-        <div className="flex h-screen bg-[#F8FAFC] font-sans overflow-hidden">
+        <div className="flex h-screen bg-[#F8FAFC] font-sans overflow-hidden relative">
+            {/* Mobile Drawer Backdrop */}
+            {isMobileDrawerOpen && (
+                <div
+                    className="fixed inset-0 bg-black/40 z-30 md:hidden"
+                    onClick={() => setIsMobileDrawerOpen(false)}
+                />
+            )}
+
             {/* Sidebar */}
-            <aside className={`relative flex flex-col bg-white border-r border-slate-200 shadow-sm transition-all duration-300 ease-in-out z-40 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
+            <aside className={`fixed md:relative inset-y-0 left-0 flex flex-col bg-white border-r border-slate-200 shadow-sm transition-all duration-300 ease-in-out z-40 ${
+                isMobileDrawerOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+            } ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
                 {/* Brand / Logo */}
                 <div className="flex items-center justify-between h-20 px-6 border-b border-slate-100">
                     <div className={`flex items-center gap-3 overflow-hidden transition-all duration-300 ${isSidebarOpen ? 'w-full opacity-100' : 'w-0 opacity-0'}`}>
@@ -225,9 +291,9 @@ const SellerLayout = () => {
                         />
                         <div className="min-w-0 flex-1">
                             <p className="text-xs font-bold text-slate-800 truncate">{shop.shopName || user?.name || "Shop của tôi"}</p>
-                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full mt-0.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                Seller Đã Duyệt
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${sellerBadge.cls}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${sellerBadge.dot}`}></span>
+                                {sellerBadge.text}
                             </span>
                         </div>
                     </div>
@@ -236,7 +302,9 @@ const SellerLayout = () => {
                 {/* Navigation items with Badges */}
                 <nav className="flex-1 py-3 px-3 space-y-1.5 overflow-y-auto custom-scrollbar">
                     {navItems.map((item) => {
-                        const badgeCount = item.typeKey ? (unreadByType[item.typeKey] || 0) : 0;
+                        const badgeCount = typeof item.chatBadge === 'number'
+                            ? item.chatBadge
+                            : (item.typeKey ? (unreadByType[item.typeKey] || 0) : 0);
                         return (
                             <NavLink
                                 key={item.path}
@@ -298,8 +366,16 @@ const SellerLayout = () => {
             {/* Main Area */}
             <main className="flex-1 flex flex-col h-screen overflow-hidden">
                 {/* Topbar */}
-                <header className="h-20 bg-white border-b border-slate-200/80 sticky top-0 z-30 flex items-center justify-between px-8 shadow-xs">
+                <header className="h-20 bg-white border-b border-slate-200/80 sticky top-0 z-30 flex items-center justify-between px-4 sm:px-8 shadow-xs">
                     <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsMobileDrawerOpen((v) => !v)}
+                            aria-label="Mở menu Kênh Người Bán"
+                            className="md:hidden p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100"
+                        >
+                            <i className="fas fa-bars"></i>
+                        </button>
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider hidden sm:inline">HaiHand B2C Seller Hub</span>
                         <span className="hidden sm:inline text-slate-300">/</span>
                         <h2 className="text-base font-extrabold text-slate-800">
@@ -314,6 +390,20 @@ const SellerLayout = () => {
                         >
                             <i className="fas fa-plus"></i>
                             Đăng sản phẩm mới
+                        </Link>
+
+                        <Link
+                            to="/seller-channel/messages"
+                            aria-label="Tin nhắn khách hàng"
+                            title="Tin nhắn khách hàng"
+                            className="p-2.5 relative rounded-xl border bg-slate-50 border-slate-200/80 text-slate-600 hover:bg-slate-100 hover:text-orange-600 transition-all duration-150 flex items-center justify-center"
+                        >
+                            <i className="far fa-comment-dots text-base"></i>
+                            {unreadChatCount > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-black shadow-xs ring-2 ring-white">
+                                    {unreadChatCount > 99 ? '99+' : unreadChatCount}
+                                </span>
+                            )}
                         </Link>
 
                         {/* Seller Hub Notification Bell */}
@@ -427,7 +517,7 @@ const SellerLayout = () => {
                             <div className="text-left hidden md:block">
                                 <span className="text-[10px] text-amber-700 block font-bold leading-none">Số dư ví</span>
                                 <span className="text-xs font-black text-amber-900 leading-none">
-                                    {(user?.walletBalance || 0).toLocaleString('vi-VN')}đ
+                                    {walletLoading ? '...' : `${Number(walletBalance || 0).toLocaleString('vi-VN')}đ`}
                                 </span>
                             </div>
                         </Link>

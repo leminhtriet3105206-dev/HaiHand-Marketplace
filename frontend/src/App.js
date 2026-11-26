@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastProvider } from './components/Toast';
 import { ConfirmProvider } from './components/ConfirmModal';
 import RequireAuth from './components/RequireAuth';
@@ -38,6 +38,7 @@ import SellerProducts from './pages/seller/SellerProducts';
 import SellerAddEditProduct from './pages/seller/SellerAddEditProduct';
 import SellerOrders from './pages/seller/SellerOrders';
 import SellerSettings from './pages/seller/SellerSettings';
+import SellerMessages from './pages/seller/SellerMessages';
 
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
@@ -117,6 +118,7 @@ function App() {
                     <Route path="products/create" element={<SellerAddEditProduct />} />
                     <Route path="products/edit/:id" element={<SellerAddEditProduct />} />
                     <Route path="orders" element={<SellerOrders />} />
+                    <Route path="messages" element={<SellerMessages />} />
                     <Route path="settings" element={<SellerSettings />} />
                   </Route>
                 </Route>
@@ -124,14 +126,26 @@ function App() {
               </Routes>
 
           
-          <FloatingAdminChat />
-          <FloatingAIChat />
+          <FloatingWidgets />
         </div>
         </Router>
           </SocketProvider>
         </AuthProvider>
       </ConfirmProvider>
     </ToastProvider>
+  );
+}
+
+function FloatingWidgets() {
+  const { pathname } = useLocation();
+  if (pathname.startsWith('/seller-channel/messages')) {
+    return null;
+  }
+  return (
+    <>
+      <FloatingAdminChat />
+      <FloatingAIChat />
+    </>
   );
 }
 

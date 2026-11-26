@@ -46,12 +46,43 @@
 | A7 | ĐÃ SỬA | `backend/routes/messages.js`, `backend/utils/notificationService.js`, `frontend/src/pages/ChatPage.js` | `chatPhaseA.test.js` (test A3 & A7: gộp thông báo 10 phút, link theo vai trò) |
 
 ### PHẦN B — Trang Tin nhắn trong Kênh Người Bán
-*(Chưa thực hiện — chờ hoàn tất Phase A)*
+| ID | Trạng thái | File đổi | Cách kiểm chứng |
+|----|-----------|----------|----------------|
+| B1 | ĐÃ SỬA | `backend/routes/messages.js`, `backend/scripts/backfill-message-seller.js` | `sellerChatPhaseB.test.js` (test B1: 403 tiếng Việt khi seller nhắn người lạ) |
+| B2 | ĐÃ SỬA | `frontend/src/hooks/useChat.js`, `frontend/src/components/chat/{ConversationList,MessageThread,MessageInput,ProductContextCard,MessageText}.jsx` | `react-scripts build` thành công. *Ghi chú*: `ChatPage.js` giữ JSX Phase A để không làm gián đoạn luồng người mua hiện có; `SellerMessages.js` dùng `useChat` + `components/chat/*`. |
+| B3 | ĐÃ SỬA | `frontend/src/pages/seller/SellerMessages.js`, `frontend/src/App.js`, `backend/routes/seller.js` | `sellerChatPhaseB.test.js` (test B3: `GET /api/seller/buyers/:buyerId/summary`) + `react-scripts build` |
+| B4 | ĐÃ SỬA | `backend/models/User.js`, `backend/routes/seller.js`, `frontend/src/pages/seller/SellerMessages.js` | `sellerChatPhaseB.test.js` (test B4: CRUD quick-replies, giới hạn 20 mẫu, validate độ dài/trùng title) |
+| B5 | ĐÃ SỬA | `frontend/src/hooks/useUnreadMessages.js`, `frontend/src/pages/seller/SellerLayout.js`, `frontend/src/pages/seller/SellerOrders.js`, `frontend/src/pages/seller/SellerDashboard.js`, `frontend/src/App.js`, `backend/routes/seller.js` | `react-scripts build` thành công |
+| B6 | ĐÃ SỬA | `backend/routes/messages.js`, `backend/models/User.js`, `frontend/src/components/chat/MessageText.jsx`, `frontend/src/utils/imageUrl.js` | `sellerChatPhaseB.test.js` (test B6: block user) + `react-scripts build` |
 
 ### PHẦN C — Lỗi vặt ở trang Người bán
-*(Chưa thực hiện — chờ hoàn tất Phase B)*
+| ID | Trạng thái | File đổi | Cách kiểm chứng |
+|----|-----------|----------|----------------|
+| C1 | ĐÃ SỬA | `frontend/src/components/SellerProtectedRoute.js` | Làm mới hồ sơ từ `GET /api/users/profile`, chuyển `toast` vào `useEffect`, có màn hình loading |
+| C2 | ĐÃ SỬA | `frontend/src/pages/seller/SellerLayout.js` | Badge theo `sellerStatus`, lấy số dư ví từ `/api/haipay/me`, drawer mobile `< md`, thêm `end` cho menu Sản phẩm |
+| C3 | ĐÃ SỬA | `frontend/src/pages/seller/SellerDashboard.js`, `backend/routes/seller.js` | Trả `commissionRate` từ `Settings`, dùng `Promise.allSettled` |
+| C4 | ĐÃ SỬA | `frontend/src/pages/seller/SellerOrders.js`, `frontend/src/pages/seller/SellerProducts.js` | Bỏ mã vận đơn giả `'HH'+random`, thêm modal hủy đơn trong app, thay `via.placeholder.com` bằng `imageUrl.js`, `useMemo` tab counts, `confirm` khi giao/hoàn tất, phân trang 10 đơn/trang |
+| C5 | ĐÃ SỬA | `frontend/src/pages/seller/SellerAddEditProduct.js` | Validate biến thể (`name`, `price>=1000` nguyên, `stock>=0` nguyên), `step=1` cho tồn kho, ẩn `status` khi sửa, cleanup `URL.revokeObjectURL`, chặn submit kép |
+| C6 | ĐÃ SỬA | `frontend/src/components/Toast.js` | Đổi `useCallback({...})` sang `useMemo(() => ({...}), [addToast])` (hết cảnh báo eslint ở `Toast.js:189`) |
+| C7 | ĐÃ SỬA | `backend/models/Message.js` | Chỉ còn 1 định nghĩa Message duy nhất |
 
 ---
 
-## Danh sách Route & Sự kiện Socket thay đổi (cập nhật liên tục)
-*(Sẽ cập nhật sau khi hoàn thành Phase A)*
+## Danh sách Route & Sự kiện Socket thay đổi
+
+### Route mới
+- `GET /api/messages/conversations?as=all|seller|buyer&page=&limit=&unread=&q=`
+- `GET /api/messages/unread-count?as=all|seller|buyer`
+- `GET /api/messages/thread/:otherId?before=&limit=`
+- `PUT /api/messages/read/:otherId`
+- `POST /api/messages/block/:userId` & `DELETE /api/messages/block/:userId`
+- `GET /api/seller/buyers/:buyerId/summary`
+- `GET / POST /api/seller/quick-replies` & `PUT / DELETE /api/seller/quick-replies/:replyId`
+
+### Route deprecated / đã xóa
+- **DEPRECATED** (giữ alias tương thích, bỏ qua `userId` trên URL/body, chỉ dùng JWT): `GET /api/messages/conversations/:userId`, `GET /api/messages/unread-count/:userId`, `PUT /api/messages/mark-read`, `GET /api/messages/:user1/:user2`
+- **ĐÃ XÓA**: `GET /api/messages/clear-all`
+
+### Sự kiện Socket.IO
+- **Mới**: `presence:sync`, `presence:update`, `message:new`, `inbox:update`, `messages:read`, `typing:start`, `typing:stop`
+- **Đã bỏ** (chống giả mạo): client→server `addUser`, `sendMessage`

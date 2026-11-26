@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import { useToast } from '../../components/Toast';
 import { useConfirm } from '../../components/ConfirmModal';
 import OrderDetailModal from '../../components/OrderDetailModal';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const ORDER_TABS = [
     { id: 'all', label: 'Tất cả' },
@@ -15,28 +17,41 @@ const ORDER_TABS = [
 ];
 
 const CARRIERS = [
-    'Giao Hàng Tiết Kiệm (GHTK)',
     'Giao Hàng Nhanh (GHN)',
-    'Viettel Post',
-    'VNPost (Bưu điện)',
-    'J&T Express',
-    'Hỏa tốc nội thành (Ahamove / Grab)'
+    'Giao Hàng Tiết Kiệm (giao thủ công)',
+    'Viettel Post (giao thủ công)',
+    'J&T Express (giao thủ công)',
+    'Hỏa tốc nội thành Ahamove / Grab (giao thủ công)'
 ];
 
+const CANCEL_REASONS = ['Hết hàng', 'Sai thông tin', 'Khách yêu cầu', 'Khác'];
+const ORDERS_PER_PAGE = 10;
+
 const SellerOrders = () => {
+    const navigate = useNavigate();
     const toast = useToast();
     const confirm = useConfirm();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('all');
     const [search, setSearch] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
 
     // Shipping modal state
     const [shippingModal, setShippingModal] = useState({
         isOpen: false,
         orderId: null,
         shippingCarrier: CARRIERS[0],
-        shippingCode: ''
+        shippingCode: '',
+        isLockedCode: false
+    });
+
+    // C4: Modal hủy đơn trong app thay cho window.prompt
+    const [cancelModal, setCancelModal] = useState({
+        isOpen: false,
+        orderId: null,
+        reason: CANCEL_REASONS[0],
+        customReason: ''
     });
 
     // Loading state khi gọi API tạo đơn GHN (theo orderId để disable nút tương ứng)
@@ -153,50 +168,85 @@ const SellerOrders = () => {
     };
 
     const handleOpenShippingModal = (order) => {
+        const existingCode = order.shippingCode || order.trackingCode || order.shipment?.trackingCode || '';
         setShippingModal({
             isOpen: true,
             orderId: order._id,
             shippingCarrier: order.shippingCarrier || CARRIERS[0],
-            shippingCode: order.shippingCode || ('HH' + Math.floor(10000000 + Math.random() * 90000000))
+            shippingCode: existingCode,
+            isLockedCode: Boolean(existingCode)
         });
     };
 
     const handleConfirmShip = async (e) => {
         e.preventDefault();
-        if (!shippingModal.shippingCode.trim()) {
-            return toast.warning('Vui lòng nhập mã vận đơn.');
+        const code = shippingModal.shippingCode.trim();
+        if (code.length < 6 || !/^[A-Za-z0-9_-]+$/.test(code)) {
+            return toast.warning('Mã vận đơn không hợp lệ', 'Mã vận đơn phải từ 6 ký tự trở lên và chỉ gồm chữ, số.');
         }
 
         await handleUpdateStatus(shippingModal.orderId, 'Shipped', {
             shippingCarrier: shippingModal.shippingCarrier,
-            shippingCode: shippingModal.shippingCode.trim()
+            shippingCode: code
         });
 
-        setShippingModal({ isOpen: false, orderId: null, shippingCarrier: CARRIERS[0], shippingCode: '' });
+        setShippingModal({ isOpen: false, orderId: null, shippingCarrier: CARRIERS[0], shippingCode: '', isLockedCode: false });
     };
 
-    const handleCancelOrder = async (order) => {
-        const reason = window.prompt('Nhập lý do hủy đơn (ví dụ: Hết hàng, Sai thông tin...):');
-        if (reason === null) return;
-        if (!reason.trim()) return toast.warning('Vui lòng cung cấp lý do hủy.');
-
-        handleUpdateStatus(order._id, 'Cancelled', { cancelReason: reason.trim() });
+    const handleCancelOrder = (order) => {
+        setCancelModal({
+            isOpen: true,
+            orderId: order._id,
+            reason: CANCEL_REASONS[0],
+            customReason: ''
+        });
     };
 
-    const getImageUrl = (img) => {
-        if (!img) return 'https://via.placeholder.com/80';
-        if (img.startsWith('http')) return img;
-        return `${API_URL}/${img.replace(/\\/g, '/')}`;
+    const handleConfirmCancel = async (e) => {
+        e.preventDefault();
+        const finalReason =
+            cancelModal.reason === 'Khác' ? cancelModal.customReason.trim() : cancelModal.reason;
+        if (!finalReason) {
+            return toast.warning('Vui lòng chọn hoặc nhập lý do hủy đơn.');
+        }
+        const targetId = cancelModal.orderId;
+        setCancelModal({ isOpen: false, orderId: null, reason: CANCEL_REASONS[0], customReason: '' });
+        await handleUpdateStatus(targetId, 'Cancelled', { cancelReason: finalReason });
     };
 
-    const filteredOrders = orders.filter((o) => {
-        const st = o.canonicalStatus || o.status;
-        const matchesTab = activeTab === 'all' || st === activeTab;
-        const buyerName = (o.buyer?.name || o.shippingAddress?.fullName || '').toLowerCase();
-        const orderCode = o._id.toLowerCase();
-        const matchesSearch = buyerName.includes(search.toLowerCase()) || orderCode.includes(search.toLowerCase());
-        return matchesTab && matchesSearch;
-    });
+    const tabCounts = useMemo(() => {
+        const counts = { all: orders.length };
+        ORDER_TABS.forEach((t) => {
+            if (t.id !== 'all') counts[t.id] = 0;
+        });
+        orders.forEach((o) => {
+            const st = o.canonicalStatus || o.status;
+            if (counts[st] !== undefined) counts[st] += 1;
+        });
+        return counts;
+    }, [orders]);
+
+    const filteredOrders = useMemo(() => {
+        const q = search.toLowerCase();
+        return orders.filter((o) => {
+            const st = o.canonicalStatus || o.status;
+            const matchesTab = activeTab === 'all' || st === activeTab;
+            const buyerName = (o.buyer?.name || o.shippingAddress?.fullName || '').toLowerCase();
+            const orderCode = o._id.toLowerCase();
+            const matchesSearch = buyerName.includes(q) || orderCode.includes(q);
+            return matchesTab && matchesSearch;
+        });
+    }, [orders, activeTab, search]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [activeTab, search]);
+
+    const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PER_PAGE));
+    const pagedOrders = useMemo(() => {
+        const start = (currentPage - 1) * ORDERS_PER_PAGE;
+        return filteredOrders.slice(start, start + ORDERS_PER_PAGE);
+    }, [filteredOrders, currentPage]);
 
     return (
         <div className="space-y-6 animate-fade-in pb-16">
@@ -212,7 +262,7 @@ const SellerOrders = () => {
             <div className="bg-white rounded-2xl border border-slate-200/80 p-2 shadow-xs">
                 <div className="flex gap-1 overflow-x-auto custom-scrollbar p-1">
                     {ORDER_TABS.map((tab) => {
-                        const count = orders.filter((o) => tab.id === 'all' || (o.canonicalStatus || o.status) === tab.id).length;
+                        const count = tabCounts[tab.id] || 0;
                         return (
                             <button
                                 key={tab.id}
@@ -232,6 +282,31 @@ const SellerOrders = () => {
                             </button>
                         );
                     })}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-2">
+                            <span className="text-xs font-bold text-slate-500">
+                                Trang {currentPage} / {totalPages} ({filteredOrders.length} đơn)
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    disabled={currentPage <= 1}
+                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 disabled:opacity-40"
+                                >
+                                    Trước
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={currentPage >= totalPages}
+                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 disabled:opacity-40"
+                                >
+                                    Sau
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -263,7 +338,7 @@ const SellerOrders = () => {
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {filteredOrders.map((order) => {
+                    {pagedOrders.map((order) => {
                         const st = order.canonicalStatus || order.status;
                         const items = order.orderItems && order.orderItems.length > 0
                             ? order.orderItems
@@ -376,6 +451,32 @@ const SellerOrders = () => {
 
                                 {/* Order Action Buttons */}
                                 <div className="border-t border-slate-100 pt-4 flex flex-wrap items-center justify-end gap-3">
+                                    {(order.buyer?._id || order.buyerId?._id || order.buyerId) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const buyerObj = typeof order.buyer === 'object' && order.buyer?._id
+                                                    ? order.buyer
+                                                    : (typeof order.buyerId === 'object' && order.buyerId?._id
+                                                        ? order.buyerId
+                                                        : { _id: order.buyerId || order.buyer, name: order.shippingAddress?.fullName || 'Khách hàng', avatar: '' });
+                                                navigate('/seller-channel/messages', {
+                                                    state: {
+                                                        receiver: {
+                                                            _id: buyerObj._id,
+                                                            name: buyerObj.name || order.shippingAddress?.fullName || 'Khách hàng',
+                                                            avatar: buyerObj.avatar || ''
+                                                        },
+                                                        order: { _id: order._id, status: order.status }
+                                                    }
+                                                });
+                                            }}
+                                            className="px-4 py-2 border border-orange-200 text-orange-600 hover:bg-orange-50 text-xs font-bold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                                        >
+                                            <i className="fas fa-comments"></i>
+                                            Nhắn người mua
+                                        </button>
+                                    )}
                                     <button
                                         type="button"
                                         onClick={() => setSelectedOrderDetail(order)}
@@ -472,7 +573,10 @@ const SellerOrders = () => {
 
                                     {st === 'Shipped' && (
                                         <button
-                                            onClick={() => handleUpdateStatus(order._id, 'Delivered')}
+                                            onClick={async () => {
+                                                const ok = await confirm(`Xác nhận khách đã nhận đơn #${order._id.slice(-6).toUpperCase()}?`);
+                                                if (ok) handleUpdateStatus(order._id, 'Delivered');
+                                            }}
                                             className="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
                                         >
                                             <i className="fas fa-box-check mr-1.5"></i>
@@ -482,7 +586,10 @@ const SellerOrders = () => {
 
                                     {st === 'Delivered' && (
                                         <button
-                                            onClick={() => handleUpdateStatus(order._id, 'Completed')}
+                                            onClick={async () => {
+                                                const ok = await confirm(`Xác nhận hoàn tất và giải ngân đơn #${order._id.slice(-6).toUpperCase()}?`);
+                                                if (ok) handleUpdateStatus(order._id, 'Completed');
+                                            }}
                                             className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all"
                                         >
                                             <i className="fas fa-check-double mr-1.5"></i>
@@ -505,6 +612,31 @@ const SellerOrders = () => {
                             </div>
                         );
                     })}
+                    {totalPages > 1 && (
+                        <div className="flex items-center justify-between pt-2">
+                            <span className="text-xs font-bold text-slate-500">
+                                Trang {currentPage} / {totalPages} ({filteredOrders.length} đơn)
+                            </span>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    type="button"
+                                    disabled={currentPage <= 1}
+                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 disabled:opacity-40"
+                                >
+                                    Trước
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={currentPage >= totalPages}
+                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                    className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-bold text-slate-600 disabled:opacity-40"
+                                >
+                                    Sau
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -544,11 +676,17 @@ const SellerOrders = () => {
                             <input
                                 type="text"
                                 required
-                                placeholder="VD: GHTK89320141"
+                                readOnly={shippingModal.isLockedCode}
+                                placeholder="Nhập mã vận đơn (>= 6 ký tự)"
                                 value={shippingModal.shippingCode}
                                 onChange={(e) => setShippingModal({ ...shippingModal, shippingCode: e.target.value })}
-                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold uppercase"
+                                className={`w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-mono font-bold uppercase ${
+                                    shippingModal.isLockedCode ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-50'
+                                }`}
                             />
+                            {shippingModal.isLockedCode && (
+                                <p className="text-[11px] text-emerald-600 mt-1">Mã vận đơn đã được tạo qua GHN (chỉ xem).</p>
+                            )}
                         </div>
 
                         <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
@@ -564,6 +702,76 @@ const SellerOrders = () => {
                                 className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl"
                             >
                                 Xác nhận xuất kho
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* Cancel Order Modal (C4) */}
+            {cancelModal.isOpen && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+                    <form onSubmit={handleConfirmCancel} className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                                <i className="fas fa-ban text-rose-500"></i>
+                                Hủy đơn hàng
+                            </h3>
+                            <button
+                                type="button"
+                                onClick={() => setCancelModal({ isOpen: false, orderId: null, reason: CANCEL_REASONS[0], customReason: '' })}
+                                className="text-slate-400 hover:text-slate-600"
+                            >
+                                <i className="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="block text-xs font-bold text-slate-700">Chọn lý do hủy</label>
+                            <div className="flex flex-wrap gap-2">
+                                {CANCEL_REASONS.map((r) => (
+                                    <button
+                                        key={r}
+                                        type="button"
+                                        onClick={() => setCancelModal((p) => ({ ...p, reason: r }))}
+                                        className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors ${
+                                            cancelModal.reason === r
+                                                ? 'bg-rose-50 border-rose-300 text-rose-700'
+                                                : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                                        }`}
+                                    >
+                                        {r}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {cancelModal.reason === 'Khác' && (
+                            <div>
+                                <textarea
+                                    rows={3}
+                                    required
+                                    value={cancelModal.customReason}
+                                    onChange={(e) => setCancelModal((p) => ({ ...p, customReason: e.target.value }))}
+                                    placeholder="Nhập lý do hủy đơn cụ thể..."
+                                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                                />
+                            </div>
+                        )}
+
+                        <div className="flex justify-end gap-3 pt-2 border-t border-slate-100">
+                            <button
+                                type="button"
+                                onClick={() => setCancelModal({ isOpen: false, orderId: null, reason: CANCEL_REASONS[0], customReason: '' })}
+                                className="px-4 py-2 border border-slate-200 text-slate-600 text-xs font-bold rounded-xl"
+                            >
+                                Đóng
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl"
+                            >
+                                Xác nhận hủy đơn
                             </button>
                         </div>
                     </form>

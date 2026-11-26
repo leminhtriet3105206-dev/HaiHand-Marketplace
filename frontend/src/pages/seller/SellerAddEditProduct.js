@@ -94,7 +94,19 @@ const SellerAddEditProduct = () => {
         setPreviewUrls((prev) => [...prev, ...newPreviews]);
     };
 
+    const previewUrlsRef = React.useRef([]);
+    useEffect(() => {
+        previewUrlsRef.current = previewUrls;
+    }, [previewUrls]);
+
+    useEffect(() => {
+        return () => {
+            previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+        };
+    }, []);
+
     const removeNewFile = (idx) => {
+        if (previewUrls[idx]) URL.revokeObjectURL(previewUrls[idx]);
         setSelectedFiles((prev) => prev.filter((_, i) => i !== idx));
         setPreviewUrls((prev) => prev.filter((_, i) => i !== idx));
     };
@@ -120,9 +132,42 @@ const SellerAddEditProduct = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (loading) return;
         if (!form.name.trim()) return toast.warning('Vui lòng nhập tên sản phẩm.');
-        if (!form.price || Number(form.price) <= 0) return toast.warning('Vui lòng nhập giá bán hợp lệ.');
-        if (Number(form.stockQuantity) < 0) return toast.warning('Số lượng tồn kho không được âm.');
+        const basePrice = Number(form.price);
+        if (!Number.isFinite(basePrice) || basePrice <= 0) return toast.warning('Vui lòng nhập giá bán hợp lệ.');
+
+        const parsedStock = Math.floor(Number(form.stockQuantity));
+        if (!Number.isFinite(Number(form.stockQuantity)) || Number(form.stockQuantity) < 0 || !Number.isInteger(Number(form.stockQuantity))) {
+            return toast.warning('Số lượng tồn kho phải là số nguyên không âm.');
+        }
+
+        // C5: Validate biến thể (tên bắt buộc & không trùng, price >= 1000 số nguyên, stock >= 0 số nguyên)
+        const seenVariantNames = new Set();
+        const normalizedVariants = [];
+        for (let i = 0; i < variants.length; i += 1) {
+            const v = variants[i];
+            const vName = String(v.name || '').trim();
+            if (!vName) {
+                return toast.warning(`Biến thể #${i + 1} thiếu tên phân loại.`);
+            }
+            const lowerName = vName.toLowerCase();
+            if (seenVariantNames.has(lowerName)) {
+                return toast.warning(`Biến thể #${i + 1} bị trùng tên "${vName}".`);
+            }
+            seenVariantNames.add(lowerName);
+
+            const vPrice = Number(v.price);
+            if (!Number.isInteger(vPrice) || vPrice < 1000) {
+                return toast.warning(`Biến thể #${i + 1} (${vName}): giá phải là số nguyên tối thiểu 1.000đ.`);
+            }
+            const vStock = Number(v.stock);
+            if (!Number.isInteger(vStock) || vStock < 0) {
+                return toast.warning(`Biến thể #${i + 1} (${vName}): tồn kho phải là số nguyên >= 0.`);
+            }
+            normalizedVariants.push({ ...v, name: vName, price: vPrice, stock: vStock });
+        }
+
         if (selectedFiles.length === 0 && existingImages.length === 0) {
             return toast.warning('Vui lòng tải lên ít nhất 1 ảnh sản phẩm.');
         }
@@ -134,15 +179,17 @@ const SellerAddEditProduct = () => {
             formData.append('title', form.name.trim());
             formData.append('sku', form.sku.trim());
             formData.append('category', form.category);
-            formData.append('price', Number(form.price));
+            formData.append('price', basePrice);
             formData.append('originalPrice', Number(form.originalPrice) || 0);
-            formData.append('stockQuantity', Number(form.stockQuantity));
-            formData.append('quantity', Number(form.stockQuantity));
+            formData.append('stockQuantity', parsedStock);
+            formData.append('quantity', parsedStock);
             formData.append('condition', form.condition);
             formData.append('location', form.location);
             formData.append('description', form.description);
-            formData.append('status', form.status);
-            formData.append('variants', JSON.stringify(variants));
+            if (!isEditMode) {
+                formData.append('status', form.status);
+            }
+            formData.append('variants', JSON.stringify(normalizedVariants));
 
             selectedFiles.forEach((file) => {
                 formData.append('images', file);
@@ -303,6 +350,7 @@ const SellerAddEditProduct = () => {
                                 type="number"
                                 required
                                 min="0"
+                                step="1"
                                 placeholder="VD: 50"
                                 value={form.stockQuantity}
                                 onChange={(e) => setForm({ ...form, stockQuantity: e.target.value })}
@@ -375,18 +423,22 @@ const SellerAddEditProduct = () => {
                                     <div className="w-28">
                                         <input
                                             type="number"
+                                            min="1000"
+                                            step="1"
                                             placeholder="Giá"
                                             value={v.price}
-                                            onChange={(e) => updateVariant(idx, 'price', Number(e.target.value))}
+                                            onChange={(e) => updateVariant(idx, 'price', e.target.value)}
                                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold"
                                         />
                                     </div>
                                     <div className="w-20">
                                         <input
                                             type="number"
+                                            min="0"
+                                            step="1"
                                             placeholder="Kho"
                                             value={v.stock}
-                                            onChange={(e) => updateVariant(idx, 'stock', Number(e.target.value))}
+                                            onChange={(e) => updateVariant(idx, 'stock', e.target.value)}
                                             className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium"
                                         />
                                     </div>
@@ -473,33 +525,35 @@ const SellerAddEditProduct = () => {
                         ></textarea>
                     </div>
 
-                    <div className="flex items-center justify-between pt-2">
-                        <span className="text-xs font-bold text-slate-700">Trạng thái mở bán:</span>
-                        <div className="flex items-center gap-3">
-                            <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="status"
-                                    value="active"
-                                    checked={form.status === 'active'}
-                                    onChange={() => setForm({ ...form, status: 'active' })}
-                                    className="text-orange-500 focus:ring-orange-500"
-                                />
-                                Đang bán
-                            </label>
-                            <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="status"
-                                    value="inactive"
-                                    checked={form.status === 'inactive'}
-                                    onChange={() => setForm({ ...form, status: 'inactive' })}
-                                    className="text-orange-500 focus:ring-orange-500"
-                                />
-                                Tạm ẩn
-                            </label>
+                    {!isEditMode && (
+                        <div className="flex items-center justify-between pt-2">
+                            <span className="text-xs font-bold text-slate-700">Trạng thái mở bán:</span>
+                            <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="status"
+                                        value="active"
+                                        checked={form.status === 'active'}
+                                        onChange={() => setForm({ ...form, status: 'active' })}
+                                        className="text-orange-500 focus:ring-orange-500"
+                                    />
+                                    Đang bán
+                                </label>
+                                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="status"
+                                        value="inactive"
+                                        checked={form.status === 'inactive'}
+                                        onChange={() => setForm({ ...form, status: 'inactive' })}
+                                        className="text-orange-500 focus:ring-orange-500"
+                                    />
+                                    Tạm ẩn
+                                </label>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Submit Actions */}

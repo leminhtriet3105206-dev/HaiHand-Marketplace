@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'; 
 import axios from 'axios';
+import axiosClient from '../api/axiosClient';
 import { useSocket } from '../context/SocketContext';
 import { useToast } from './Toast';
 import './Header.css'; 
@@ -72,7 +73,9 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
           }
 
           axios.get(`${API_URL}/api/users/cart/${user._id}`).then(({ data }) => setCartCount(data.length));
-          axios.get(`${API_URL}/api/messages/unread-count/${user._id}`).then(({ data }) => setUnreadCount(data.count));
+          if (user.token) {
+            axiosClient.get('/api/messages/unread-count').then(({ data }) => setUnreadCount(data.count || 0)).catch(() => {});
+          }
           axios.get(`${API_URL}/api/notifications`, { headers: { 'userid': user._id } }).then(({ data }) => {
               setNotifications(data.notifications || []);
               setNotifCount(data.unreadCount || 0);
@@ -84,19 +87,25 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
       const notifInterval = setInterval(fetchData, 10000);
 
       if (socket) {
-        const handleGetMessage = () => setUnreadCount(prev => prev + 1);
+        const handleMessageUpdate = () => {
+          if (user?.token) {
+            axiosClient.get('/api/messages/unread-count').then(({ data }) => setUnreadCount(data.count || 0)).catch(() => {});
+          }
+        };
         const handleNewNotif = (newNotif) => {
           setNotifications(prev => [newNotif, ...prev]);
           setNotifCount(prev => prev + 1);
           toast.info(`🔔 ${newNotif.title}`);
         };
 
-        socket.on('getMessage', handleGetMessage);
+        socket.on('message:new', handleMessageUpdate);
+        socket.on('inbox:update', handleMessageUpdate);
         socket.on('new_notification', handleNewNotif);
 
         return () => {
           clearInterval(notifInterval);
-          socket.off('getMessage', handleGetMessage);
+          socket.off('message:new', handleMessageUpdate);
+          socket.off('inbox:update', handleMessageUpdate);
           socket.off('new_notification', handleNewNotif);
         };
       }

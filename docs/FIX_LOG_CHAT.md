@@ -36,14 +36,14 @@
 ### PHẦN A — Sửa lỗi hệ thống chat hiện có
 | ID | Trạng thái | File đổi | Cách kiểm chứng |
 |----|-----------|----------|----------------|
-| A0 | ĐANG CHỜ | | |
-| A1 | ĐANG CHỜ | | |
-| A2 | ĐANG CHỜ | | |
-| A3 | ĐANG CHỜ | | |
-| A4 | ĐANG CHỜ | | |
-| A5 | ĐANG CHỜ | | |
-| A6 | ĐANG CHỜ | | |
-| A7 | ĐANG CHỜ | | |
+| A0 | ĐÃ SỬA | `backend/models/Message.js`, `backend/server.js`, `backend/scripts/migrate-messages.js` | `chatPhaseA.test.js` (test A0) + `node -c backend/server.js` |
+| A1 | ĐÃ SỬA | `backend/socket/index.js`, `backend/server.js`, `frontend/src/context/SocketContext.js` | `chatPhaseA.test.js` (test A1 & A2: nhận đúng 1 sự kiện `message:new`) |
+| A2 | ĐÃ SỬA | `backend/socket/index.js`, `backend/middleware/auth.js` | `chatPhaseA.test.js` (test A1 & A2: từ chối không token) |
+| A3 | ĐÃ SỬA | `backend/routes/messages.js`, `backend/middleware/upload.js`, `backend/server.js` | `chatPhaseA.test.js` (test A3: 401, bỏ qua `senderId` giả, chặn tự nhắn, xóa `clear-all`, lọc ẩn email/phone, trả 500 khi lỗi DB) |
+| A4 | ĐÃ SỬA | `frontend/src/pages/InboxPage.js`, `frontend/src/utils/imageUrl.js` | `react-scripts build` thành công |
+| A5 | ĐÃ SỬA | `frontend/src/pages/ChatPage.js`, `frontend/src/components/AppHeader.js`, `frontend/src/components/Header.js` | `chatPhaseA.test.js` (test A3 & A5) + `react-scripts build` |
+| A6 | ĐÃ SỬA | `frontend/src/pages/ChatPage.js`, `frontend/src/pages/ProductDetailPage.js`, `frontend/src/components/FloatingAdminChat.js` | `react-scripts build` thành công |
+| A7 | ĐÃ SỬA | `backend/routes/messages.js`, `backend/utils/notificationService.js`, `frontend/src/pages/ChatPage.js` | `chatPhaseA.test.js` (test A3 & A7: gộp thông báo 10 phút, link theo vai trò) |
 
 ### PHẦN B — Trang Tin nhắn trong Kênh Người Bán
 *(Chưa thực hiện — chờ hoàn tất Phase A)*

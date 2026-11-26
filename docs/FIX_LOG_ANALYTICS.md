@@ -46,3 +46,19 @@
 |----------|-----------|----------|----------------|
 | 4.1–4.3 Core, sessions & 8 jobs (`daily_metrics`, `funnel`, `rfm_segments`, `cohorts`, `product_performance`, `search_insights`, `heatmap`, `related_products`) | XONG | `analytics/analytics/{config,db,event_spec,sessions,run}.py`, `analytics/analytics/jobs/*.py` | `pytest -v` (kiểm bất biến phễu, thiết bị, RFM, idempotency) |
 | 4.4–4.5 `seed_demo.py`, Docker & tài liệu | XONG | `analytics/analytics/seed_demo.py`, `analytics/{Dockerfile,requirements.txt,.env.example,README.md}`, `docker-compose.yml` | `pytest -v` (`generate_synthetic_events` + `purge_synthetic`) |
+
+
+---
+
+## PHASE 5 – Admin EJS Analytics Dashboard
+
+### Findings & Discrepancies
+- `admin/views/dashboard.ejs` chart `trafficDonutChart` already used real `User` demographics data (`Người mua`, `Người bán B2C`, `Chờ duyệt`, `Bị khóa`) labeled `(Thống kê thật)`, not fake numbers. Left intact.
+- `admin/views/partials/sidebar.ejs` previously used `active === 'analytics'` for `/admin/behavior-analytics` (legacy Recommendation Engine). Updated legacy route to `active: 'behavior-analytics'` ("Phân tích Gợi ý AI") and assigned `active: 'analytics'` to `/admin/analytics` ("Phân tích hành vi").
+- `admin/app.js` `checkLogin` middleware now treats `/admin/analytics/api/*` as API requests (returning JSON `401`/`403` instead of redirecting to `/login`).
+
+### Changes
+- Created `admin/routes/analytics.js` (`GET /admin/analytics` and `GET /admin/analytics/api/:section` for `overview|funnel|customers|products|search|retention|traffic`) with ISO date range validation (≤365 days), segment whitelist, email masking (`n***@gmail.com`), and rule-based Vietnamese action suggestions.
+- Created `admin/views/analytics.ejs` with 6 interactive tabs, Chart.js visualizations, Tailwind dark mode support, 7×24 heatmap grid, synthetic data warning banner, global date/device/source filters persisted in query string, and CSV export for at-risk customers.
+- Updated `admin/app.js` and `admin/views/partials/sidebar.ejs`.
+- Created `backend/test/analyticsAdminPhase5.test.js`.

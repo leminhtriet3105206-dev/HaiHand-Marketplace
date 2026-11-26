@@ -75,6 +75,22 @@ services:
     networks:
       - haihand-network
 
+  analytics:
+    build:
+      context: ./analytics
+      dockerfile: Dockerfile
+    container_name: haihand-analytics
+    profiles:
+      - analytics
+    restart: unless-stopped
+    env_file:
+      - path: ./analytics/.env
+        required: false
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+    networks:
+      - haihand-network
+
 networks:
   haihand-network:
     driver: bridge

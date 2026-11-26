@@ -40,3 +40,9 @@
 | Hạng mục | Trạng thái | File đổi | Cách kiểm chứng |
 |----------|-----------|----------|----------------|
 | 3.1 Hooks `order_placed`, `payment_success`, `payment_failed`, `order_cancelled`, `signup`, `seller_applied`, `product_created` | XONG | `checkoutController.js`, `routes/seller.js`, `server.js`, `test/analyticsCheckoutPhase3.test.js` | `analyticsCheckoutPhase3.test.js` (pass) + `npm test` toàn bộ backend |
+
+### PHASE 4 — Python: Tổng hợp & Phân tích (`analytics/`)
+| Hạng mục | Trạng thái | File đổi | Cách kiểm chứng |
+|----------|-----------|----------|----------------|
+| 4.1–4.3 Core, sessions & 8 jobs (`daily_metrics`, `funnel`, `rfm_segments`, `cohorts`, `product_performance`, `search_insights`, `heatmap`, `related_products`) | XONG | `analytics/analytics/{config,db,event_spec,sessions,run}.py`, `analytics/analytics/jobs/*.py` | `pytest -v` (kiểm bất biến phễu, thiết bị, RFM, idempotency) |
+| 4.4–4.5 `seed_demo.py`, Docker & tài liệu | XONG | `analytics/analytics/seed_demo.py`, `analytics/{Dockerfile,requirements.txt,.env.example,README.md}`, `docker-compose.yml` | `pytest -v` (`generate_synthetic_events` + `purge_synthetic`) |

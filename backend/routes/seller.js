@@ -13,6 +13,7 @@ const {
 } = require('../utils/b2c');
 const shippingService = require('../services/shipping');
 const { pickAddressFields, formatAddress, isCompleteAddress } = require('../models/schemas/Address');
+const { trackServerEvent } = require('../analytics/track');
 
 module.exports = function createSellerRouter({ upload, sendNotification, sendAdminNotification, io }) {
   const router = express.Router();
@@ -54,6 +55,12 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       user.sellerRejectionReason = '';
       user.isSeller = false;
       await user.save();
+
+      trackServerEvent('seller_applied', {
+        userId: user._id,
+        sessionId: req.headers['x-hh-sid'],
+        anonymousId: req.headers['x-hh-aid']
+      });
 
       // Trigger 2: When a user applies for Seller status, create a notification for Admins
       try {
@@ -385,6 +392,16 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       });
       await product.save();
 
+      trackServerEvent('product_created', {
+        userId: req.user._id,
+        sessionId: req.headers['x-hh-sid'],
+        anonymousId: req.headers['x-hh-aid'],
+        props: {
+          productId: product._id,
+          sellerId: req.user._id
+        }
+      });
+
       try {
         await indexProductImage(product);
       } catch (error) {
@@ -559,6 +576,10 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       if (next === 'Cancelled') {
         order.cancelledAt = new Date();
         order.cancelReason = req.body.cancelReason || '';
+        trackServerEvent('order_cancelled', {
+          userId: orderBuyerId(order),
+          props: { orderId: order._id, by: 'seller' }
+        });
       }
       await order.save();
 

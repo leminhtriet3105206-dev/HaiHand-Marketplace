@@ -39,6 +39,8 @@ import SellerAddEditProduct from './pages/seller/SellerAddEditProduct';
 import SellerOrders from './pages/seller/SellerOrders';
 import SellerSettings from './pages/seller/SellerSettings';
 import SellerMessages from './pages/seller/SellerMessages';
+import ConsentBanner from './analytics/ConsentBanner';
+import usePageViews from './analytics/usePageViews';
 
 import TermsPage from './pages/TermsPage';
 import PrivacyPage from './pages/PrivacyPage';
@@ -136,15 +138,21 @@ function App() {
   );
 }
 
+function AnalyticsTrackerMount() {
+  usePageViews();
+  return <ConsentBanner />;
+}
+
 function FloatingWidgets() {
   const { pathname } = useLocation();
   if (pathname.startsWith('/seller-channel/messages')) {
-    return null;
+    return <AnalyticsTrackerMount />;
   }
   return (
     <>
       <FloatingAdminChat />
       <FloatingAIChat />
+      <AnalyticsTrackerMount />
     </>
   );
 }

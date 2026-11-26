@@ -44,6 +44,7 @@ const addressRouter = require('./routes/address');
 const PaymentSession = require('./models/PaymentSession');
 const { processCheckout, settlePaymentSession } = require('./controllers/checkoutController');
 const trackRouter = require('./routes/track');
+const { trackServerEvent } = require('./analytics/track');
 const recommendationsRouter = require('./routes/recommendations');
 const {
   recordServerEvent,
@@ -280,6 +281,13 @@ app.post('/register', async (req, res) => {
 
     const newUser = new User({ name, email, username, password, role });
     await newUser.save();
+
+    trackServerEvent('signup', {
+      userId: newUser._id,
+      sessionId: req.headers['x-hh-sid'],
+      anonymousId: req.headers['x-hh-aid'],
+      props: { method: 'email' }
+    });
     res.render('login', { error: 'Tạo tài khoản thành công! Hãy đăng nhập.' });
   } catch (error) {
     res.render('login', { error: 'Lỗi hệ thống khi đăng ký!' });
@@ -876,6 +884,11 @@ app.post('/api/admin/refund-order/:orderId', requireAdmin, async (req, res) => {
     order.cancelledAt = order.cancelledAt || new Date();
     await order.save();
 
+    trackServerEvent('order_cancelled', {
+      userId: order.buyerId || order.buyer,
+      props: { orderId: order._id, by: 'admin' }
+    });
+
     res.json({ message: "✅ Hoàn tiền thành công và đã cộng vào ví HaiPay của người mua!" });
   } catch (error) {
     console.error("Lỗi hoàn tiền:", error);
@@ -1171,6 +1184,13 @@ app.post('/api/users/register', async (req, res) => {
       isSeller: false
     });
     await newUser.save();
+
+    trackServerEvent('signup', {
+      userId: newUser._id,
+      sessionId: req.headers['x-hh-sid'],
+      anonymousId: req.headers['x-hh-aid'],
+      props: { method: 'email' }
+    });
 
     // Merge anonymous browsing events if anonymousId was passed
     if (req.body.anonymousId && typeof req.body.anonymousId === 'string') {
@@ -2581,6 +2601,10 @@ app.post('/api/vnpay/verify', async (req, res) => {
           { _id: { $in: session.orderIds } },
           { $set: { status: 'Cancelled', cancelReason: 'Thanh toán VNPay không thành công hoặc khách hủy' } }
         );
+        for (const oid of session.orderIds || []) {
+          trackServerEvent('payment_failed', { userId: session.buyer, props: { orderId: oid, method: 'VNPAY' } });
+          trackServerEvent('order_cancelled', { userId: session.buyer, props: { orderId: oid, by: 'system' } });
+        }
         return res.status(400).json({ message: 'Giao dịch thất bại hoặc đã bị khách hủy!' });
       }
     }

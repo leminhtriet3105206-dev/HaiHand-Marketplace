@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAnalyticsIds, isTrackingAllowed } from '../analytics/tracker';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000';
 
@@ -37,6 +38,23 @@ axiosClient.interceptors.request.use((config) => {
       } else {
         config.params = { ...(config.params || {}), anonymousId: anonId };
       }
+    }
+  } catch (e) { }
+
+  // Gửi kèm sessionId/anonymousId cho các API chuyển đổi khi người dùng đã đồng ý tracking
+  try {
+    const url = String(config.url || '');
+    const isConversionApi =
+      url.includes('/api/orders') ||
+      url.includes('/api/checkout') ||
+      url.includes('/api/users/register') ||
+      url.includes('/register') ||
+      url.includes('/api/users/apply-seller') ||
+      url.includes('/api/seller/products');
+    if (isConversionApi && isTrackingAllowed()) {
+      const { anonymousId, sessionId } = getAnalyticsIds();
+      if (sessionId) config.headers['x-hh-sid'] = sessionId;
+      if (anonymousId) config.headers['x-hh-aid'] = anonymousId;
     }
   } catch (e) { }
 

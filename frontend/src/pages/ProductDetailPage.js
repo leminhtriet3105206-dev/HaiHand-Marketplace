@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
@@ -10,12 +10,14 @@ import {
   startProductDwellTracker,
   trackEvent
 } from '../utils/tracker';
+import { track as trackAnalytics } from '../analytics/tracker';
 
 
 export default function ProductDetailPage() {
   const toast = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [post, setPost] = useState(null);
   const [mainImage, setMainImage] = useState('');
   
@@ -39,6 +41,14 @@ export default function ProductDetailPage() {
 
         // Track product view (with 30-min deduplication)
         trackProductView(data, 'detail');
+        trackAnalytics('product_view', {
+          productId: data._id,
+          sellerId: data.sellerId?._id || data.sellerId || data.author?._id || data.author,
+          category: data.category,
+          price: data.price,
+          fromList: location.state?.fromList || 'other',
+          position: typeof location.state?.position === 'number' ? location.state.position : undefined
+        });
 
         // Track real product dwell time
         cleanupDwell = startProductDwellTracker(data, 'detail');
@@ -83,6 +93,12 @@ export default function ProductDetailPage() {
           price: post.price,
           source: 'detail'
         });
+        trackAnalytics('add_to_cart', {
+          productId: post._id,
+          sellerId: post.sellerId?._id || post.sellerId || post.author?._id || post.author,
+          quantity: 1,
+          price: post.price
+        });
         window.dispatchEvent(new Event('cartUpdated')); 
         if (isBuyNow) navigate('/cart');
         else toast.success('Thành công', "🛒 Đã thêm sản phẩm vào giỏ hàng thành công!");
@@ -125,6 +141,10 @@ export default function ProductDetailPage() {
       category: post.category,
       price: post.price,
       source: 'detail'
+    });
+    trackAnalytics('chat_start', {
+      sellerId: authorId,
+      productId: post._id
     });
     navigate('/chat', { state: { receiver, post } });
   };

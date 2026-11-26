@@ -12,6 +12,7 @@ const { addAddressToUser } = require('../routes/address');
 const { productOwnerId, displayProductName, orderSellerId } = require('../utils/b2c');
 const { buildVnpayPaymentUrl, normalizeIp } = require('../utils/vnpay');
 const { recordServerEvent } = require('../services/behaviorAnalysisService');
+const { trackServerEvent } = require('../analytics/track');
 
 /**
  * Helper to settle payment for a paymentSession (called by VNPAY verify/IPN or HaiPay)
@@ -45,6 +46,16 @@ async function settlePaymentSession(parentOrderId, { gatewayPayload = {}, paymen
     order.paidAt = new Date();
     order.status = 'Pending'; // Ready for seller to prepare
     await order.save();
+
+    Promise.resolve(
+      trackServerEvent('payment_success', {
+        userId: order.buyerId || order.buyer,
+        props: {
+          orderId: order._id,
+          method: paymentMethod || session.paymentMethod || 'VNPAY'
+        }
+      })
+    ).catch(() => {});
 
     // Increase seller pendingBalance
     const sId = orderSellerId(order);
@@ -462,9 +473,31 @@ async function processCheckout(req, res) {
       });
     } catch (e) {}
 
-    // Server-side purchase tracking for behavioral recommendation engine
+    // Server-side purchase tracking for behavioral recommendation engine & Product Analytics
     try {
+      const hhSid = req.headers['x-hh-sid'];
+      const hhAid = req.headers['x-hh-aid'];
       for (const order of savedOrders) {
+        const lineItems = Array.isArray(order.orderItems) && order.orderItems.length > 0
+          ? order.orderItems
+          : (Array.isArray(order.items) ? order.items : []);
+        const itemCount = lineItems.length > 0
+          ? lineItems.reduce((s, it) => s + Math.max(1, Number(it?.quantity) || 1), 0)
+          : 1;
+        Promise.resolve(
+          trackServerEvent('order_placed', {
+            userId: buyer._id,
+            sessionId: hhSid,
+            anonymousId: hhAid,
+            props: {
+              orderId: order._id,
+              sellerId: orderSellerId(order),
+              value: order.totalPrice,
+              itemCount,
+              paymentMethod
+            }
+          })
+        ).catch(() => {});
         if (Array.isArray(order.items)) {
           for (const item of order.items) {
             recordServerEvent({

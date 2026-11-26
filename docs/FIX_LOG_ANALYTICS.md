@@ -29,3 +29,14 @@
 | 1.1 Từ điển sự kiện | XONG | `analytics/event_spec.json`, `backend/analytics/eventSpec.js` | `analyticsTrackPhase1.test.js` (test 1, 2, 5) |
 | 1.2 Model `AnalyticsEvent` | XONG | `backend/models/AnalyticsEvent.js`, `backend/.env.example` | Index kép + TTL 180 ngày (`ANALYTICS_RETENTION_DAYS`) |
 | 1.3 Route `POST /api/track` & `trackServerEvent` | XONG | `backend/routes/track.js`, `backend/analytics/track.js`, `backend/middleware/auth.js`, `backend/test/analyticsTrackPhase1.test.js` | `analyticsTrackPhase1.test.js` (9/9 pass) + `npm test` toàn bộ backend |
+
+### PHASE 2 — Thu thập: Tracker ở Frontend (`frontend/`)
+| Hạng mục | Trạng thái | File đổi | Cách kiểm chứng |
+|----------|-----------|----------|----------------|
+| 2.1 Thư viện `tracker.js`, `ConsentBanner.jsx`, `usePageViews.js` | XONG | `frontend/src/analytics/{tracker.js,ConsentBanner.jsx,usePageViews.js}`, `frontend/src/App.js` | `tracker.test.js` (4/4 pass) |
+| 2.2 Gắn điểm đo & nút Tắt theo dõi | XONG | `ProductDetailPage.js`, `HomePage.js`, `ProductListPage.js`, `CartPage.js`, `CheckoutPage.jsx`, `ProfilePage.js`, `axiosClient.js`, `backend/middleware/security.js` | `react-scripts build` thành công |
+
+### PHASE 3 — Thu thập: Sự kiện phía Server (`backend/`)
+| Hạng mục | Trạng thái | File đổi | Cách kiểm chứng |
+|----------|-----------|----------|----------------|
+| 3.1 Hooks `order_placed`, `payment_success`, `payment_failed`, `order_cancelled`, `signup`, `seller_applied`, `product_created` | XONG | `checkoutController.js`, `routes/seller.js`, `server.js`, `test/analyticsCheckoutPhase3.test.js` | `analyticsCheckoutPhase3.test.js` (pass) + `npm test` toàn bộ backend |

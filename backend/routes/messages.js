@@ -544,6 +544,18 @@ module.exports = function createMessagesRouter({ io, upload, sendNotification } 
           return res.status(404).json({ message: 'Người nhận không tồn tại hoặc tài khoản đang bị khóa.' });
         }
 
+        const receiverBlockedSender = Array.isArray(receiverUser.blockedUsers)
+          && receiverUser.blockedUsers.some((id) => String(id) === senderIdStr);
+        if (receiverBlockedSender) {
+          return res.status(403).json({ message: 'Bạn không thể gửi tin nhắn cho người dùng này.' });
+        }
+
+        const senderBlockedReceiver = Array.isArray(senderUser.blockedUsers)
+          && senderUser.blockedUsers.some((id) => String(id) === String(receiverId));
+        if (senderBlockedReceiver) {
+          return res.status(403).json({ message: 'Bạn đã chặn người dùng này. Hãy bỏ chặn trước khi nhắn tin.' });
+        }
+
         const uploadedFiles = [
           ...((req.files && req.files.images) || []),
           ...((req.files && req.files.image) || [])
@@ -673,6 +685,36 @@ module.exports = function createMessagesRouter({ io, upload, sendNotification } 
       }
     }
   );
+
+  // B6: Chặn / bỏ chặn người dùng nhắn tin
+  router.post('/block/:userId', protectStrict, async (req, res) => {
+    try {
+      const targetId = req.params.userId;
+      if (!mongoose.Types.ObjectId.isValid(String(targetId))) {
+        return res.status(400).json({ message: 'ID người dùng không hợp lệ.' });
+      }
+      if (String(targetId) === req.user._id.toString()) {
+        return res.status(400).json({ message: 'Không thể tự chặn chính mình.' });
+      }
+      await User.updateOne({ _id: req.user._id }, { $addToSet: { blockedUsers: targetId } });
+      return res.json({ message: 'Đã chặn người dùng này.', blocked: true });
+    } catch (err) {
+      return res.status(500).json({ message: 'Lỗi khi chặn người dùng.' });
+    }
+  });
+
+  router.delete('/block/:userId', protectStrict, async (req, res) => {
+    try {
+      const targetId = req.params.userId;
+      if (!mongoose.Types.ObjectId.isValid(String(targetId))) {
+        return res.status(400).json({ message: 'ID người dùng không hợp lệ.' });
+      }
+      await User.updateOne({ _id: req.user._id }, { $pull: { blockedUsers: targetId } });
+      return res.json({ message: 'Đã bỏ chặn người dùng này.', blocked: false });
+    } catch (err) {
+      return res.status(500).json({ message: 'Lỗi khi bỏ chặn người dùng.' });
+    }
+  });
 
   // --- ALIAS TƯƠNG THÍCH NGƯỢC (DEPRECATED - BỎ QUA USERID TRÊN URL/BODY, CHỈ DÙNG JWT) ---
 

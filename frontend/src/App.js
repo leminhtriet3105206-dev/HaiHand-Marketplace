@@ -38,6 +38,7 @@ import SellerProducts from './pages/seller/SellerProducts';
 import SellerAddEditProduct from './pages/seller/SellerAddEditProduct';
 import SellerOrders from './pages/seller/SellerOrders';
 import SellerSettings from './pages/seller/SellerSettings';
+import SellerAnalytics from './pages/seller/SellerAnalytics';
 import SellerMessages from './pages/seller/SellerMessages';
 import ConsentBanner from './analytics/ConsentBanner';
 import usePageViews from './analytics/usePageViews';
@@ -121,6 +122,7 @@ function App() {
                     <Route path="products/edit/:id" element={<SellerAddEditProduct />} />
                     <Route path="orders" element={<SellerOrders />} />
                     <Route path="messages" element={<SellerMessages />} />
+                    <Route path="analytics" element={<SellerAnalytics />} />
                     <Route path="settings" element={<SellerSettings />} />
                   </Route>
                 </Route>

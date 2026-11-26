@@ -62,3 +62,30 @@
 - Created `admin/views/analytics.ejs` with 6 interactive tabs, Chart.js visualizations, Tailwind dark mode support, 7×24 heatmap grid, synthetic data warning banner, global date/device/source filters persisted in query string, and CSV export for at-risk customers.
 - Updated `admin/app.js` and `admin/views/partials/sidebar.ejs`.
 - Created `backend/test/analyticsAdminPhase5.test.js`.
+
+
+---
+
+## PHASE 6 – Seller Analytics View
+
+- Backend: Added `GET /api/seller/analytics?range=7|30|90` in `backend/routes/seller.js` (`protect` + `isSeller`). Queries `analytics_products`, `analytics_products_summary`, and `analytics_events` scoped strictly to `sellerId === req.user._id` / seller's `Post` IDs. Never exposes buyer PII.
+- Frontend: Created `frontend/src/pages/seller/SellerAnalytics.js`, mounted at `/seller-channel/analytics` in `frontend/src/App.js`, and added "Phân tích shop" menu item in `frontend/src/pages/seller/SellerLayout.js`.
+- Tests: Created `backend/test/analyticsSellerPhase6.test.js` (2/2 passed).
+- **Fix**: Removed duplicate legacy `GET /api/seller/analytics` handler (line 228, using `UserEvent.aggregate`) that conflicted with the new Phase 6 handler (line 878, using `analytics_*` collections). Express was matching the old handler first, which failed because `UserEvent` model doesn't exist in Phase 6 test mocks. Also added `fields()` to the `upload` mock in the test.
+
+---
+
+## PHASE 7 – Documentation, Performance & Security Verification
+
+- Created `docs/ANALYTICS.md` covering architecture, event dictionary, metric definitions, Python job execution, MongoDB read/write user creation, privacy & TTL policy, and 3-step guide to add new events.
+- **Index & Performance Check**:
+  - `analytics_events` defines compound indexes `{name: 1, ts: -1}`, `{userId: 1, ts: -1}`, `{sessionId: 1, ts: 1}`, `{'props.productId': 1, ts: -1}` and TTL index `{receivedAt: 1}` (`180 * 86400` seconds).
+  - `analytics_daily` (`date`, `dimension`, `key`), `analytics_funnel` (`date`, `segment`), `analytics_products_summary` (`periodDays`, `productId`), `analytics_search` (`date`, `query`) all use unique compound upsert indexes created by `upsert_records()`.
+- **Security Check**:
+  - `POST /api/track` enforces 120 req/min/IP rate limit, 64KB body cap, max 20 events/request, client-event whitelist, PII regex masking, and JWT-only `optionalJwtAuth` (ignores `userid` header).
+  - `/admin/analytics` and `/admin/analytics/api/:section` require Admin session (`checkLogin` returns 401/403).
+  - `/api/seller/analytics` requires `protect` + `isSeller` and filters strictly by logged-in seller's products.
+- **E2E Verification Checklist (Manual / Staging)**:
+  1. Open frontend → verify `ConsentBanner` appears; click "Từ chối" → confirm zero `POST /api/track` requests in Network tab.
+  2. Enable tracking in Profile or click "Đồng ý" → browse product, search, add to cart, place COD order → verify `analytics_events` receives client events and server `order_placed` event.
+  3. Run `python -m analytics.run --job all --since 1d` → open `/admin/analytics` → verify updated KPIs and charts.

@@ -64,6 +64,7 @@ const SellerLayout = () => {
 
     const navItems = [
         { path: '/seller-channel', icon: 'fas fa-chart-pie', label: 'Tổng quan Shop', end: true },
+        { path: '/seller-channel/analytics', icon: 'fas fa-chart-line', label: 'Phân tích shop' },
         { path: '/seller-channel/products', icon: 'fas fa-box-open', label: 'Quản lý sản phẩm', typeKey: 'PRODUCT', end: true },
         { path: '/seller-channel/products/create', icon: 'fas fa-plus-circle', label: 'Đăng sản phẩm' },
         { path: '/seller-channel/orders', icon: 'fas fa-shipping-fast', label: 'Quản lý đơn hàng', typeKey: 'NEW_ORDER' },

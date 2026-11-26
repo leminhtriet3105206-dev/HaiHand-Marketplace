@@ -225,70 +225,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
-  router.get('/api/seller/analytics', protect, isSeller, async (req, res) => {
-    try {
-      const sellerId = req.user._id;
-      const products = await Post.find({ $or: [{ sellerId }, { author: sellerId }] })
-        .select('name title price stockQuantity quantity soldCount images category status')
-        .lean();
-
-      const productIds = products.map((p) => p._id);
-      const UserEvent = require('../models/UserEvent');
-
-      const eventStats = await UserEvent.aggregate([
-        {
-          $match: {
-            productId: { $in: productIds },
-            type: { $in: ['product_view', 'cart_add', 'purchase'] }
-          }
-        },
-        {
-          $group: {
-            _id: { productId: '$productId', type: '$type' },
-            count: { $sum: 1 }
-          }
-        }
-      ]);
-
-      const statsMap = new Map();
-      for (const stat of eventStats) {
-        if (!stat._id?.productId) continue;
-        const pid = stat._id.productId.toString();
-        if (!statsMap.has(pid)) {
-          statsMap.set(pid, { views: 0, cartAdds: 0, purchases: 0 });
-        }
-        const record = statsMap.get(pid);
-        if (stat._id.type === 'product_view') record.views = stat.count;
-        else if (stat._id.type === 'cart_add') record.cartAdds = stat.count;
-        else if (stat._id.type === 'purchase') record.purchases = stat.count;
-      }
-
-      const items = products.map((p) => {
-        const s = statsMap.get(p._id.toString()) || { views: 0, cartAdds: 0, purchases: 0 };
-        const views = s.views;
-        const cartAdds = s.cartAdds;
-        const purchases = Math.max(s.purchases, p.soldCount || 0);
-        const conversionRate = views > 0 ? Number(((purchases / views) * 100).toFixed(1)) : 0;
-        return {
-          _id: p._id,
-          name: p.title || p.name || 'Sản phẩm',
-          price: p.price,
-          category: p.category,
-          image: p.images?.[0] || '',
-          stock: p.stockQuantity ?? p.quantity ?? 0,
-          status: p.status,
-          views,
-          cartAdds,
-          purchases,
-          conversionRate
-        };
-      });
-
-      res.json({ success: true, items });
-    } catch (error) {
-      res.status(500).json({ message: 'Lỗi tải phân tích sản phẩm: ' + error.message });
-    }
-  });
+  // Legacy analytics handler removed – replaced by Phase 6 analytics at bottom of file
 
   router.get('/api/seller/shop', protect, isSeller, async (req, res) => {
     res.json({ shopInfo: req.user.shopInfo || {}, user: sanitizeUser(req.user) });
@@ -871,6 +808,163 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       return res.json({ quickReplies: seller.shopInfo.quickReplies });
     } catch (error) {
       return res.status(500).json({ message: 'Lỗi xóa mẫu trả lời nhanh' });
+    }
+  });
+
+  // --- PHASE 6: SELLER PRODUCT ANALYTICS ---
+  router.get('/api/seller/analytics', protect, isSeller, async (req, res) => {
+    try {
+      const mongoose = require('mongoose');
+      const rawRange = parseInt(req.query.range, 10);
+      const rangeDays = [7, 30, 90].includes(rawRange) ? rawRange : 30;
+
+      const sellerIdStr = String(req.user._id);
+      const now = new Date();
+      const toVn = (d) => new Date(d.getTime() + 7 * 3600000).toISOString().slice(0, 10);
+      const toDateStr = toVn(now);
+      const fromDate = new Date(now.getTime() - (rangeDays - 1) * 86400000);
+      const fromDateStr = toVn(fromDate);
+
+      const sellerPosts = await Post.find({
+        $or: [{ sellerId: req.user._id }, { author: req.user._id }],
+      })
+        .select('_id title name category price')
+        .lean();
+
+      const sellerProductIds = sellerPosts.map((p) => String(p._id));
+
+      const db = mongoose.connection;
+      const [dailyDocs, summaryDocs, viewEvents, clickEvents] = await Promise.all([
+        db
+          .collection('analytics_products')
+          .find({
+            sellerId: sellerIdStr,
+            date: { $gte: fromDateStr, $lte: toDateStr },
+          })
+          .sort({ date: 1 })
+          .toArray(),
+        db
+          .collection('analytics_products_summary')
+          .find({
+            sellerId: sellerIdStr,
+            periodDays: rangeDays,
+          })
+          .sort({ views: -1 })
+          .limit(30)
+          .toArray(),
+        sellerProductIds.length
+          ? db
+              .collection('analytics_events')
+              .find(
+                {
+                  name: 'product_view',
+                  ts: { $gte: fromDate },
+                  'props.productId': { $in: sellerProductIds },
+                },
+                { projection: { ts: 1 } }
+              )
+              .limit(5000)
+              .toArray()
+          : Promise.resolve([]),
+        sellerProductIds.length
+          ? db
+              .collection('analytics_events')
+              .find(
+                {
+                  name: 'search_result_click',
+                  ts: { $gte: fromDate },
+                  'props.productId': { $in: sellerProductIds },
+                },
+                { projection: { 'props.query': 1 } }
+              )
+              .limit(2000)
+              .toArray()
+          : Promise.resolve([]),
+      ]);
+
+      const dailyMap = new Map();
+      for (const d of dailyDocs) {
+        const cur = dailyMap.get(d.date) || { date: d.date, views: 0, addToCart: 0, orders: 0 };
+        cur.views += d.views || 0;
+        cur.addToCart += d.addToCart || 0;
+        cur.orders += d.orders || 0;
+        dailyMap.set(d.date, cur);
+      }
+      const dailySeries = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+      const totalViews = dailySeries.reduce((s, d) => s + d.views, 0);
+      const totalAddToCart = dailySeries.reduce((s, d) => s + d.addToCart, 0);
+      const totalOrders = dailySeries.reduce((s, d) => s + d.orders, 0);
+      const conversionRate = totalViews > 0 ? Number(((totalOrders / totalViews) * 100).toFixed(2)) : 0;
+
+      // Peak viewing hours (0..23 VN time)
+      const hourCounts = Array.from({ length: 24 }, (_, hour) => ({ hour, views: 0 }));
+      for (const ev of viewEvents) {
+        if (!ev.ts) continue;
+        const vnHour = new Date(new Date(ev.ts).getTime() + 7 * 3600000).getUTCHours();
+        if (vnHour >= 0 && vnHour < 24) {
+          hourCounts[vnHour].views += 1;
+        }
+      }
+
+      // Keywords leading to seller's products
+      const kwMap = {};
+      for (const ev of clickEvents) {
+        const q = String(ev.props?.query || '').trim().toLowerCase();
+        if (q) kwMap[q] = (kwMap[q] || 0) + 1;
+      }
+      const searchKeywords = Object.entries(kwMap)
+        .map(([query, clicks]) => ({ query, clicks }))
+        .sort((a, b) => b.clicks - a.clicks)
+        .slice(0, 10);
+
+      // Action suggestions
+      const suggestions = [];
+      for (const p of summaryDocs) {
+        if (p.flagHighViewLowBuy || ((p.views || 0) >= 20 && (p.cartRate || 0) < 0.05)) {
+          suggestions.push(
+            `Sản phẩm "${p.title || p.productId}" có nhiều lượt xem (${p.views}) nhưng ít người thêm vào giỏ: xem lại giá hoặc ảnh mô tả.`
+          );
+          if (suggestions.length >= 2) break;
+        }
+      }
+      if (suggestions.length === 0 && summaryDocs.some((p) => p.flagPotential)) {
+        const pot = summaryDocs.find((p) => p.flagPotential);
+        suggestions.push(
+          `Sản phẩm "${pot.title || pot.productId}" có tỷ lệ chuyển đổi tốt (${((pot.conversion || 0) * 100).toFixed(1)}%): nên chia sẻ thêm để tăng lượt xem.`
+        );
+      }
+
+      return res.json({
+        success: true,
+        range: rangeDays,
+        kpis: {
+          totalViews,
+          totalAddToCart,
+          totalOrders,
+          conversionRate,
+        },
+        dailySeries,
+        peakHours: hourCounts,
+        topProducts: summaryDocs.map((p) => ({
+          productId: p.productId,
+          title: p.title,
+          category: p.category,
+          price: p.price,
+          views: p.views || 0,
+          addToCart: p.addToCart || 0,
+          orders: p.orders || 0,
+          cartRate: p.cartRate || 0,
+          conversion: p.conversion || 0,
+          flagHighViewLowBuy: Boolean(p.flagHighViewLowBuy),
+          flagPotential: Boolean(p.flagPotential),
+        })),
+        searchKeywords,
+        suggestions,
+      });
+    } catch (error) {
+      console.error('Seller analytics error:', error);
+      return res.status(500).json({ message: 'Lỗi tải dữ liệu phân tích shop' });
     }
   });
 

@@ -139,4 +139,39 @@ function isAdmin(req, res, next) {
   return res.status(403).json({ message: 'Bạn không có quyền quản trị' });
 }
 
-module.exports = { protect, protectStrict, isSeller, isAdmin };
+/**
+ * Optional JWT-only authentication middleware (Product Analytics).
+ * - Chỉ đọc `Authorization: Bearer <token>` (hoặc `req.body.auth` nếu gửi qua sendBeacon/fallback).
+ * - KHÔNG bao giờ đọc header `userid`, `req.body.userId` hoặc `req.query.userId`.
+ */
+async function optionalJwtAuth(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+    let rawToken = null;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      rawToken = authHeader.split(' ')[1];
+    } else if (typeof req.body?.auth === 'string' && req.body.auth.trim()) {
+      rawToken = req.body.auth.trim();
+    }
+
+    if (!rawToken || rawToken === 'undefined' || rawToken === 'null') {
+      return next();
+    }
+
+    const decoded = jwt.verify(rawToken, JWT_SECRET);
+    if (decoded.type === 'refresh') return next();
+    const userId = decoded.id || decoded._id;
+    if (!userId) return next();
+
+    const user = await User.findById(userId).select('-password');
+    if (user && !user.isDeleted && !user.isBanned) {
+      req.user = user;
+      req.tokenPayload = decoded;
+    }
+  } catch {
+    // Ignore invalid/expired token for optional auth
+  }
+  return next();
+}
+
+module.exports = { protect, protectStrict, optionalJwtAuth, isSeller, isAdmin };

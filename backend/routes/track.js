@@ -1,9 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
+const UAParser = require('ua-parser-js');
 const UserEvent = require('../models/UserEvent');
+const AnalyticsEvent = require('../models/AnalyticsEvent');
 const { Product, Post } = require('../models/Product');
 const { resolveUserIdentity, requireVerifiedUser } = require('../middleware/trackAuth');
+const { optionalJwtAuth } = require('../middleware/auth');
+const { isAllowedEvent, sanitizeEventProps } = require('../analytics/eventSpec');
 const {
   updateProfileIncremental,
   updateCoViewMatrix,
@@ -65,11 +69,156 @@ function sanitizeMeta(metaObj) {
   return clean;
 }
 
+// Product Analytics rate limiter: 120 requests/minute/IP (Phase 1.3)
+const analyticsIpRateMap = new Map();
+setInterval(() => {
+  const now = Date.now();
+  for (const [k, v] of analyticsIpRateMap.entries()) {
+    if (now - v.resetTime > 60 * 1000) analyticsIpRateMap.delete(k);
+  }
+}, 5 * 60 * 1000).unref();
+
+function analyticsRateLimiter(req, res, next) {
+  const ip = String(req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress || 'unknown')
+    .split(',')[0]
+    .trim();
+  const now = Date.now();
+  let rec = analyticsIpRateMap.get(ip);
+  if (!rec || now - rec.resetTime > 60 * 1000) {
+    rec = { count: 1, resetTime: now };
+    analyticsIpRateMap.set(ip, rec);
+    return next();
+  }
+  rec.count += 1;
+  if (rec.count > 120) {
+    return res.status(429).json({ message: 'Quá nhiều yêu cầu phân tích, vui lòng thử lại sau.' });
+  }
+  return next();
+}
+
+function parseUaContext(userAgent, itemContext = {}, props = {}) {
+  const parser = new UAParser(userAgent || '');
+  const res = parser.getResult();
+  const rawType = res.device?.type;
+  let device = 'desktop';
+  if (rawType === 'mobile' || rawType === 'wearable') device = 'mobile';
+  else if (rawType === 'tablet') device = 'tablet';
+
+  return {
+    path: typeof (itemContext.path || props.path) === 'string'
+      ? String(itemContext.path || props.path).slice(0, 300)
+      : '',
+    device,
+    browser: String(res.browser?.name || '').slice(0, 64),
+    os: String(res.os?.name || '').slice(0, 64),
+    locale: typeof itemContext.locale === 'string' ? itemContext.locale.slice(0, 20) : '',
+    viewport: typeof itemContext.viewport === 'string' ? itemContext.viewport.slice(0, 30) : '',
+    area: typeof itemContext.area === 'string' ? itemContext.area.slice(0, 30) : ''
+  };
+}
+
+function isProductAnalyticsPayload(body) {
+  if (!body || typeof body !== 'object') return false;
+  if (!Array.isArray(body.events)) return false;
+  if (body.events.length === 0) return Boolean(body.anonymousId && body.sessionId);
+  return body.events.some((ev) => ev && typeof ev === 'object' && typeof ev.name === 'string');
+}
+
+async function handleProductAnalyticsTrack(req, res) {
+  try {
+    const rawEvents = req.body?.events;
+    if (!Array.isArray(rawEvents) || rawEvents.length === 0) {
+      return res.status(400).json({ message: 'Danh sách sự kiện không hợp lệ' });
+    }
+    if (rawEvents.length > 20) {
+      return res.status(413).json({ message: 'Tối đa 20 sự kiện mỗi lần gửi' });
+    }
+
+    // Bỏ qua tài khoản Admin (Phase 1.3)
+    if (req.user && req.user.role === 'Admin') {
+      return res.status(204).end();
+    }
+
+    const anonymousId = String(req.body?.anonymousId || '')
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(0, 64);
+    const sessionId = String(req.body?.sessionId || '')
+      .trim()
+      .replace(/[^a-zA-Z0-9_-]/g, '')
+      .slice(0, 64);
+
+    if (!anonymousId || !sessionId) {
+      return res.status(400).json({ message: 'Thiếu anonymousId hoặc sessionId' });
+    }
+
+    const nowMs = Date.now();
+    const maxSkewMs = 24 * 60 * 60 * 1000;
+    const userAgent = req.headers['user-agent'] || '';
+    const userId = req.user?._id ? new mongoose.Types.ObjectId(req.user._id) : null;
+
+    const docs = [];
+    for (const item of rawEvents) {
+      if (!item || typeof item !== 'object') continue;
+      const name = String(item.name || '').trim();
+      if (!isAllowedEvent(name, 'client')) continue;
+
+      const eventId = String(item.eventId || '').trim().slice(0, 100);
+      if (!eventId) continue;
+
+      let ts = item.ts ? new Date(item.ts) : new Date(nowMs);
+      if (Number.isNaN(ts.getTime()) || Math.abs(ts.getTime() - nowMs) > maxSkewMs) {
+        ts = new Date(nowMs);
+      }
+
+      const cleanProps = sanitizeEventProps(name, item.props || {});
+      const context = parseUaContext(userAgent, item.context || {}, cleanProps);
+
+      docs.push({
+        eventId,
+        name,
+        ts,
+        receivedAt: new Date(nowMs),
+        anonymousId,
+        sessionId,
+        userId,
+        props: cleanProps,
+        context,
+        synthetic: false
+      });
+    }
+
+    if (docs.length > 0) {
+      try {
+        await AnalyticsEvent.insertMany(docs, { ordered: false });
+      } catch (insertErr) {
+        // Nuốt lỗi trùng eventId (code 11000) hoặc lỗi ghi không làm gián đoạn client
+      }
+    }
+
+    return res.status(204).end();
+  } catch {
+    return res.status(204).end();
+  }
+}
+
 /**
  * POST /api/track
- * Collect a batch of up to 20 user events
+ * Hỗ trợ cả Product Analytics (events[].name) và Recommendation Engine legacy (type/events[].type)
  */
-router.post('/track', resolveUserIdentity, async (req, res) => {
+router.post(
+  '/track',
+  express.json({ limit: '64kb' }),
+  (req, res, next) => {
+    if (isProductAnalyticsPayload(req.body)) {
+      return analyticsRateLimiter(req, res, () =>
+        optionalJwtAuth(req, res, () => handleProductAnalyticsTrack(req, res))
+      );
+    }
+    return next();
+  },
+  resolveUserIdentity,
+  async (req, res) => {
   try {
     // 1. Detect and silently ignore automated crawlers/bots
     const userAgent = req.headers['user-agent'] || '';

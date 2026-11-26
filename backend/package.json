@@ -23,6 +23,7 @@
     "dotenv": "^17.4.2",
     "ejs": "^5.0.1",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.5",
     "express-session": "^1.19.0",
     "jsonwebtoken": "^9.0.3",
     "moment": "^2.30.1",
@@ -32,7 +33,8 @@
     "nodemailer": "^8.0.5",
     "openai": "^7.32.0",
     "qs": "^6.15.0",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "ua-parser-js": "^2.0.10"
   },
   "devDependencies": {
     "jest": "^30.5.2",

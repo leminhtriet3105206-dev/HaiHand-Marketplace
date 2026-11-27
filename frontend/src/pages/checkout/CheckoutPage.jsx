@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
+import { track as trackAnalytics } from '../../analytics/tracker';
 import { AppHeader } from '../../components/AppHeader';
 import { AppFooter } from '../../components/AppFooter';
 import { useToast } from '../../components/Toast';
@@ -69,6 +70,22 @@ export default function CheckoutPage() {
 
   // --- 4. Payment & Discount State ---
   const [paymentMethod, setPaymentMethod] = useState('COD'); // 'COD' | 'VNPAY' | 'HAIPAY'
+  const checkoutTrackedRef = React.useRef(false);
+  useEffect(() => {
+    if (!checkoutTrackedRef.current && Array.isArray(items) && items.length > 0) {
+      checkoutTrackedRef.current = true;
+      const cartValue = items.reduce(
+        (sum, it) => sum + Number(it.price || it.product?.price || 0) * Math.max(1, Number(it.quantity) || 1),
+        0
+      );
+      trackAnalytics('checkout_start', { itemCount: items.length, cartValue });
+    }
+  }, [items]);
+
+  const handleSelectPaymentMethod = (method) => {
+    setPaymentMethod(method);
+    trackAnalytics('payment_method_select', { method });
+  };
   const [voucherCode, setVoucherCode] = useState('');
   const [appliedVoucher, setAppliedVoucher] = useState(null); // { code, discountAmount, label }
   const [voucherError, setVoucherError] = useState('');
@@ -834,7 +851,7 @@ export default function CheckoutPage() {
                       name="paymentMethod"
                       value="VNPAY"
                       checked={paymentMethod === 'VNPAY'}
-                      onChange={() => setPaymentMethod('VNPAY')}
+                      onChange={() => handleSelectPaymentMethod('VNPAY')}
                       className="w-4 h-4 text-amber-500 focus:ring-amber-500"
                     />
                   </div>
@@ -863,7 +880,7 @@ export default function CheckoutPage() {
                       name="paymentMethod"
                       value="HAIPAY"
                       checked={paymentMethod === 'HAIPAY'}
-                      onChange={() => setPaymentMethod('HAIPAY')}
+                      onChange={() => handleSelectPaymentMethod('HAIPAY')}
                       className="w-4 h-4 text-amber-500 focus:ring-amber-500"
                     />
                   </div>
@@ -897,7 +914,7 @@ export default function CheckoutPage() {
                       name="paymentMethod"
                       value="COD"
                       checked={paymentMethod === 'COD'}
-                      onChange={() => setPaymentMethod('COD')}
+                      onChange={() => handleSelectPaymentMethod('COD')}
                       className="w-4 h-4 text-amber-500 focus:ring-amber-500"
                     />
                   </div>

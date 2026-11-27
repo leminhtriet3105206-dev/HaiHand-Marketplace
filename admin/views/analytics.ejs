@@ -1,0 +1,1122 @@
+<!-- PRODUCT ANALYTICS VIEW (Inner Content Only for AdminLayout Outlet) -->
+<div id="analytics-root" class="space-y-6">
+
+  <!-- Header & Last Updated -->
+  <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div>
+      <div class="flex flex-wrap items-center gap-2.5">
+        <h2 class="text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+          📈 Phân tích Hành vi &amp; Sản phẩm
+        </h2>
+        <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800">
+          Product Analytics
+        </span>
+      </div>
+      <p class="text-slate-500 dark:text-slate-400 text-xs mt-1 font-medium">
+        Theo dõi lưu lượng truy cập, phễu chuyển đổi, phân khúc khách hàng RFM/KMeans, hiệu quả sản phẩm và tìm kiếm.
+      </p>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2.5">
+      <div id="lastRunBadge" class="px-3.5 py-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-xs font-semibold text-slate-600 dark:text-slate-300 shadow-xs flex items-center gap-2">
+        <i class="fas fa-clock text-purple-500"></i>
+        <span>Cập nhật lần cuối: <strong id="lastRunText"><%= lastRunAt ? new Date(lastRunAt).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' }) : 'Chưa chạy job' %></strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Synthetic Data Banner -->
+  <div id="syntheticBanner" class="<%= hasSynthetic ? '' : 'hidden' %> bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/70 rounded-2xl px-4 py-3 flex items-center justify-between gap-3 text-amber-800 dark:text-amber-200 text-xs font-semibold">
+    <div class="flex items-center gap-2.5">
+      <span class="text-base">⚠️</span>
+      <span>Đang hiển thị dữ liệu mô phỏng (synthetic). Số liệu này được sinh tự động để minh họa khi hệ thống chưa có đủ lưu lượng thật.</span>
+    </div>
+  </div>
+
+  <!-- Global Filter Bar -->
+  <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-sm">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mr-1">Khoảng ngày:</span>
+        <button type="button" data-range="7" class="range-preset-btn px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-slate-800 transition">7 ngày</button>
+        <button type="button" data-range="30" class="range-preset-btn px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-slate-800 transition">30 ngày</button>
+        <button type="button" data-range="90" class="range-preset-btn px-3 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-slate-800 transition">90 ngày</button>
+
+        <div class="flex items-center gap-1.5 ml-1">
+          <input type="date" id="filterFrom" class="px-2.5 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-purple-500" />
+          <span class="text-slate-400 text-xs">→</span>
+          <input type="date" id="filterTo" class="px-2.5 py-1.5 rounded-xl text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-purple-500" />
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <select id="filterDevice" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-purple-500">
+          <option value="all">Tất cả thiết bị</option>
+          <option value="mobile">Mobile</option>
+          <option value="desktop">Desktop</option>
+          <option value="tablet">Tablet</option>
+        </select>
+
+        <select id="filterSource" class="px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 outline-none focus:border-purple-500">
+          <option value="all">Tất cả nguồn</option>
+          <option value="direct">Trực tiếp (Direct)</option>
+          <option value="facebook">Facebook</option>
+          <option value="google">Google</option>
+          <option value="zalo">Zalo</option>
+          <option value="other">Khác</option>
+        </select>
+
+        <button type="button" id="applyFilterBtn" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20 hover:opacity-95 transition">
+          Áp dụng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6 Tabs Navigation -->
+  <div class="flex items-center gap-2 overflow-x-auto pb-1">
+    <button type="button" data-tab="overview" class="analytics-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2">
+      <span>📊</span><span>Tổng quan</span>
+    </button>
+    <button type="button" data-tab="funnel" class="analytics-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2">
+      <span>🪜</span><span>Phễu mua hàng</span>
+    </button>
+    <button type="button" data-tab="customers" class="analytics-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2">
+      <span>👥</span><span>Khách hàng</span>
+    </button>
+    <button type="button" data-tab="products" class="analytics-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2">
+      <span>📦</span><span>Sản phẩm</span>
+    </button>
+    <button type="button" data-tab="search" class="analytics-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2">
+      <span>🔍</span><span>Tìm kiếm</span>
+    </button>
+    <button type="button" data-tab="retention" class="analytics-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2">
+      <span>🔁</span><span>Giữ chân</span>
+    </button>
+  </div>
+
+  <!-- Loading / Error / Empty States -->
+  <div id="analyticsLoading" class="hidden bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-12 text-center">
+    <div class="inline-block w-8 h-8 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mb-3"></div>
+    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Đang tải dữ liệu phân tích...</p>
+  </div>
+
+  <div id="analyticsError" class="hidden bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 rounded-3xl p-6 text-center space-y-2">
+    <p class="text-sm font-bold text-rose-700 dark:text-rose-300" id="analyticsErrorMsg">Không thể tải dữ liệu.</p>
+    <button type="button" id="retryLoadBtn" class="px-4 py-1.5 rounded-xl bg-rose-600 text-white text-xs font-bold">Thử lại</button>
+  </div>
+
+  <div id="analyticsEmpty" class="hidden bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-10 text-center space-y-3">
+    <div class="text-3xl">📭</div>
+    <h3 class="text-sm font-bold text-slate-800 dark:text-slate-100">Chưa đủ dữ liệu cho kỳ đã chọn</h3>
+    <p class="text-xs text-slate-500 dark:text-slate-400 max-w-lg mx-auto">
+      Hãy chạy pipeline Python để tổng hợp dữ liệu hoặc sinh dữ liệu mô phỏng demo:
+    </p>
+    <div class="inline-block text-left bg-slate-100 dark:bg-slate-800 rounded-xl px-4 py-2.5 text-[11px] font-mono text-slate-700 dark:text-slate-300">
+      <div>python -m analytics.seed_demo --days 30 --sessions-per-day 200</div>
+      <div>python -m analytics.run --job all --since 30d --seed-rfm-from-events</div>
+    </div>
+  </div>
+
+  <!-- Tab Contents Container -->
+  <div id="analyticsTabContent" class="space-y-6">
+
+    <!-- 1. TAB: TỔNG QUAN -->
+    <section id="tab-overview" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">DAU TB / MAU</div>
+          <div class="text-xl font-black text-slate-900 dark:text-white mt-1" id="kpi-dau">0 / 0</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Tổng phiên</div>
+          <div class="text-xl font-black text-purple-600 dark:text-purple-400 mt-1" id="kpi-sessions">0</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Trang / Phiên</div>
+          <div class="text-xl font-black text-slate-900 dark:text-white mt-1" id="kpi-pps">0</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Thời lượng TB</div>
+          <div class="text-xl font-black text-slate-900 dark:text-white mt-1" id="kpi-duration">0s</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Tỷ lệ thoát</div>
+          <div class="text-xl font-black text-amber-600 dark:text-amber-400 mt-1" id="kpi-bounce">0%</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Chuyển đổi đơn</div>
+          <div class="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-1" id="kpi-cr">0%</div>
+        </div>
+      </div>
+
+      <div id="suggestions-overview" class="space-y-2"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-4">Người dùng hoạt động theo ngày (DAU)</h3>
+          <div class="h-64"><canvas id="chartDauLine"></canvas></div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-4">Nguồn truy cập</h3>
+          <div class="h-64"><canvas id="chartSourceDonut"></canvas></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-4">Phiên theo thiết bị</h3>
+          <div class="h-64"><canvas id="chartDeviceBar"></canvas></div>
+        </div>
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm overflow-x-auto">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Heatmap Hoạt động (Thứ × Giờ VN)</h3>
+            <span class="text-[11px] text-slate-400">30 ngày gần nhất</span>
+          </div>
+          <div id="heatmapGrid" class="min-w-[640px]"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. TAB: PHỄU MUA HÀNG -->
+    <section id="tab-funnel" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Điểm rơi lớn nhất</div>
+          <div class="text-lg font-black text-rose-600 dark:text-rose-400 mt-1" id="kpi-biggest-drop">Chưa có dữ liệu</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Tỷ lệ bỏ giỏ (24h)</div>
+          <div class="text-lg font-black text-amber-600 dark:text-amber-400 mt-1" id="kpi-cart-abandon">0%</div>
+        </div>
+      </div>
+
+      <div id="suggestions-funnel" class="space-y-2"></div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+        <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-4">Phễu chuyển đổi 5 bước</h3>
+        <div class="h-72"><canvas id="chartFunnelBar"></canvas></div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">So sánh phễu theo Thiết bị &amp; Nguồn</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px]">
+                <th class="px-5 py-3">Phân khúc</th>
+                <th class="px-5 py-3 text-right">Xem SP</th>
+                <th class="px-5 py-3 text-right">Thêm giỏ</th>
+                <th class="px-5 py-3 text-right">Thanh toán</th>
+                <th class="px-5 py-3 text-right">Đặt hàng</th>
+                <th class="px-5 py-3 text-right">Thành công</th>
+                <th class="px-5 py-3 text-right">CR (Xem→Đặt)</th>
+              </tr>
+            </thead>
+            <tbody id="funnelComparisonBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. TAB: KHÁCH HÀNG -->
+    <section id="tab-customers" class="tab-panel hidden space-y-6">
+      <div id="suggestions-customers" class="space-y-2"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-4">Phân bố nhãn RFM</h3>
+          <div class="h-64"><canvas id="chartRfmBar"></canvas></div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div class="p-5 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Cụm hành vi KMeans</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px]">
+                  <th class="px-4 py-3">Tên cụm</th>
+                  <th class="px-4 py-3 text-right">Số khách</th>
+                  <th class="px-4 py-3 text-right">R (ngày)</th>
+                  <th class="px-4 py-3 text-right">F (đơn)</th>
+                  <th class="px-4 py-3 text-right">M (VNĐ)</th>
+                  <th class="px-4 py-3 text-right">Xem SP</th>
+                </tr>
+              </thead>
+              <tbody id="clustersTableBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3">
+          <div>
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Top 20 Khách hàng "Có nguy cơ rời bỏ" giá trị cao</h3>
+            <p class="text-[11px] text-slate-400 mt-0.5">Email được che để bảo vệ quyền riêng tư.</p>
+          </div>
+          <button type="button" id="exportCustomersCsvBtn" class="px-3.5 py-2 rounded-xl bg-slate-900 dark:bg-slate-800 hover:bg-purple-600 text-white text-xs font-bold transition flex items-center gap-1.5">
+            <i class="fas fa-download"></i><span>Xuất CSV</span>
+          </button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px]">
+                <th class="px-5 py-3">Khách hàng</th>
+                <th class="px-5 py-3">Email</th>
+                <th class="px-5 py-3">Nhãn RFM</th>
+                <th class="px-5 py-3 text-right">Số đơn</th>
+                <th class="px-5 py-3 text-right">Tổng chi tiêu</th>
+                <th class="px-5 py-3 text-right">Lần mua cuối</th>
+              </tr>
+            </thead>
+            <tbody id="atRiskBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. TAB: SẢN PHẨM -->
+    <section id="tab-products" class="tab-panel hidden space-y-6">
+      <div id="suggestions-products" class="space-y-2"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm">
+          <h3 class="font-bold text-sm text-rose-600 dark:text-rose-400 mb-3">⚠️ Xem nhiều – ít mua</h3>
+          <div id="listHighViewLowBuy" class="space-y-2 text-xs"></div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm">
+          <h3 class="font-bold text-sm text-emerald-600 dark:text-emerald-400 mb-3">🚀 Tiềm năng – nên đẩy hiển thị</h3>
+          <div id="listPotentialProducts" class="space-y-2 text-xs"></div>
+        </div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+        <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-4">Hiệu quả theo Danh mục (Lượt xem vs Đơn hàng)</h3>
+        <div class="h-64"><canvas id="chartCategoryBar"></canvas></div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Bảng xếp hạng Sản phẩm</h3>
+          <div class="flex items-center gap-2 text-xs">
+            <span class="text-slate-400">Sắp xếp:</span>
+            <select id="productSortSelect" class="px-3 py-1.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-semibold">
+              <option value="views">Lượt xem</option>
+              <option value="cartRate">Tỷ lệ thêm giỏ</option>
+              <option value="conversion">Tỷ lệ chuyển đổi</option>
+              <option value="favorites">Yêu thích</option>
+            </select>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px]">
+                <th class="px-5 py-3">Sản phẩm</th>
+                <th class="px-5 py-3">Danh mục</th>
+                <th class="px-5 py-3 text-right">Giá</th>
+                <th class="px-5 py-3 text-right">Views</th>
+                <th class="px-5 py-3 text-right">Cart Rate</th>
+                <th class="px-5 py-3 text-right">Conversion</th>
+                <th class="px-5 py-3 text-right">Favorites</th>
+                <th class="px-5 py-3 text-center">Quản lý</th>
+              </tr>
+            </thead>
+            <tbody id="productsTableBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. TAB: TÌM KIẾM -->
+    <section id="tab-search" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Tổng lượt tìm kiếm</div>
+          <div class="text-xl font-black text-slate-900 dark:text-white mt-1" id="kpi-search-total">0</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">CTR tìm kiếm TB</div>
+          <div class="text-xl font-black text-purple-600 dark:text-purple-400 mt-1" id="kpi-search-ctr">0%</div>
+        </div>
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-xs">
+          <div class="text-[11px] font-bold text-slate-400 uppercase">Tỷ lệ 0 kết quả</div>
+          <div class="text-xl font-black text-rose-600 dark:text-rose-400 mt-1" id="kpi-search-zero">0%</div>
+        </div>
+      </div>
+
+      <div id="suggestions-search" class="space-y-2"></div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-5 shadow-sm">
+        <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100 mb-3">Đám mây từ khóa phổ biến</h3>
+        <div id="keywordCloud" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div class="p-5 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Top truy vấn tìm kiếm</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px]">
+                  <th class="px-4 py-3">Từ khóa</th>
+                  <th class="px-4 py-3 text-right">Lượt tìm</th>
+                  <th class="px-4 py-3 text-right">CTR</th>
+                  <th class="px-4 py-3 text-right">Chuyển đổi</th>
+                </tr>
+              </thead>
+              <tbody id="topQueriesBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+          <div class="p-5 border-b border-slate-100 dark:border-slate-800">
+            <h3 class="font-bold text-sm text-rose-600 dark:text-rose-400">Truy vấn không có kết quả (Cơ hội bổ sung hàng)</h3>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px]">
+                  <th class="px-4 py-3">Từ khóa</th>
+                  <th class="px-4 py-3 text-right">Lượt 0 kết quả</th>
+                  <th class="px-4 py-3 text-right">Tỷ lệ 0 KQ</th>
+                </tr>
+              </thead>
+              <tbody id="zeroQueriesBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. TAB: GIỮ CHÂN -->
+    <section id="tab-retention" class="tab-panel hidden space-y-6">
+      <div id="suggestions-retention" class="space-y-2"></div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 p-6 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Đường giữ chân trung bình theo tuần</h3>
+          <div class="flex items-center gap-2 text-xs">
+            <button type="button" id="retModeEventBtn" class="px-3 py-1 rounded-xl font-bold bg-purple-600 text-white">Theo tương tác</button>
+            <button type="button" id="retModeOrderBtn" class="px-3 py-1 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Theo đơn hàng</button>
+          </div>
+        </div>
+        <div class="h-64"><canvas id="chartRetentionLine"></canvas></div>
+      </div>
+
+      <div class="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/80 dark:border-slate-800 overflow-hidden shadow-sm">
+        <div class="p-5 border-b border-slate-100 dark:border-slate-800">
+          <h3 class="font-bold text-sm text-slate-800 dark:text-slate-100">Bảng Cohort giữ chân theo tuần (%)</h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-center text-xs">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold uppercase text-[11px]">
+                <th class="px-4 py-3 text-left">Cohort (Tuần)</th>
+                <th class="px-3 py-3">Kích thước</th>
+                <th class="px-3 py-3">W0</th>
+                <th class="px-3 py-3">W1</th>
+                <th class="px-3 py-3">W2</th>
+                <th class="px-3 py-3">W3</th>
+                <th class="px-3 py-3">W4</th>
+                <th class="px-3 py-3">W5</th>
+                <th class="px-3 py-3">W6</th>
+                <th class="px-3 py-3">W7</th>
+                <th class="px-3 py-3">W8</th>
+              </tr>
+            </thead>
+            <tbody id="cohortMatrixBody" class="divide-y divide-slate-100 dark:divide-slate-800"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function() {
+  const root = document.getElementById('analytics-root');
+  if (!root) return;
+
+  const charts = {};
+  const cache = {};
+  let retentionMode = 'event';
+  let lastCustomersData = null;
+
+  function toVnDate(d) {
+    const ms = d.getTime() + 7 * 60 * 60 * 1000;
+    return new Date(ms).toISOString().slice(0, 10);
+  }
+
+  function formatMoney(v) {
+    return `${Math.round(Number(v || 0)).toLocaleString('vi-VN')} ₫`;
+  }
+
+  function formatDateVn(iso) {
+    if (!iso) return '–';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    return d.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+  }
+
+  function escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function getThemeColors() {
+    const isDark = document.documentElement.classList.contains('dark');
+    return {
+      isDark,
+      text: isDark ? '#94A3B8' : '#64748B',
+      grid: isDark ? 'rgba(148, 163, 184, 0.12)' : 'rgba(148, 163, 184, 0.2)',
+      tooltipBg: isDark ? '#0F172A' : '#1E293B',
+    };
+  }
+
+  function destroyChart(id) {
+    if (charts[id]) {
+      charts[id].destroy();
+      delete charts[id];
+    }
+  }
+
+  // Read initial state from URL query string
+  const params = new URLSearchParams(window.location.search);
+  const todayStr = toVnDate(new Date());
+  const defaultFromStr = toVnDate(new Date(Date.now() - 29 * 86400000));
+
+  let activeTab = params.get('tab') || 'overview';
+  if (!['overview', 'funnel', 'customers', 'products', 'search', 'retention'].includes(activeTab)) {
+    activeTab = 'overview';
+  }
+
+  const fromEl = document.getElementById('filterFrom');
+  const toEl = document.getElementById('filterTo');
+  const devEl = document.getElementById('filterDevice');
+  const srcEl = document.getElementById('filterSource');
+
+  fromEl.value = params.get('from') || defaultFromStr;
+  toEl.value = params.get('to') || todayStr;
+  devEl.value = params.get('device') || 'all';
+  srcEl.value = params.get('source') || 'all';
+
+  function syncUrl() {
+    const q = new URLSearchParams();
+    q.set('tab', activeTab);
+    q.set('from', fromEl.value);
+    q.set('to', toEl.value);
+    if (devEl.value !== 'all') q.set('device', devEl.value);
+    if (srcEl.value !== 'all') q.set('source', srcEl.value);
+    const newUrl = `${window.location.pathname}?${q.toString()}`;
+    window.history.replaceState({}, '', newUrl);
+  }
+
+  function renderSuggestions(containerId, list) {
+    const el = document.getElementById(containerId);
+    if (!el) return;
+    if (!list || list.length === 0) {
+      el.innerHTML = '';
+      return;
+    }
+    el.innerHTML = list
+      .map(
+        (msg) => `
+      <div class="bg-purple-50/80 dark:bg-purple-950/30 border border-purple-200/70 dark:border-purple-800/60 rounded-2xl px-4 py-2.5 text-xs text-purple-900 dark:text-purple-200 flex items-center gap-2">
+        <span>💡</span>
+        <span><strong>Gợi ý hành động:</strong> ${escapeHtml(msg)}</span>
+      </div>`
+      )
+      .join('');
+  }
+
+  function setTabStyles() {
+    document.querySelectorAll('.analytics-tab-btn').forEach((btn) => {
+      const isCurrent = btn.getAttribute('data-tab') === activeTab;
+      btn.className = isCurrent
+        ? 'analytics-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md shadow-purple-500/20'
+        : 'analytics-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold whitespace-nowrap transition flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-purple-50 dark:hover:bg-slate-800';
+    });
+    document.querySelectorAll('.tab-panel').forEach((p) => {
+      p.classList.toggle('hidden', p.id !== `tab-${activeTab}`);
+    });
+  }
+
+  function showState(state, errMsg) {
+    document.getElementById('analyticsLoading').classList.toggle('hidden', state !== 'loading');
+    document.getElementById('analyticsError').classList.toggle('hidden', state !== 'error');
+    document.getElementById('analyticsEmpty').classList.toggle('hidden', state !== 'empty');
+    document.getElementById('analyticsTabContent').classList.toggle('hidden', state !== 'ready');
+    if (errMsg) document.getElementById('analyticsErrorMsg').textContent = errMsg;
+  }
+
+  function renderOverview(data) {
+    if (!data.dailySeries || data.dailySeries.length === 0) {
+      showState('empty');
+      return;
+    }
+    showState('ready');
+    const k = data.kpis || {};
+    document.getElementById('kpi-dau').textContent = `${(k.avgDau || 0).toLocaleString('vi-VN')} / ${(k.latestMau || 0).toLocaleString('vi-VN')}`;
+    document.getElementById('kpi-sessions').textContent = (k.totalSessions || 0).toLocaleString('vi-VN');
+    document.getElementById('kpi-pps').textContent = k.pagesPerSession || 0;
+    document.getElementById('kpi-duration').textContent = `${k.avgDurationSec || 0}s`;
+    document.getElementById('kpi-bounce').textContent = `${k.bounceRate || 0}%`;
+    document.getElementById('kpi-cr').textContent = `${k.conversionRate || 0}%`;
+    renderSuggestions('suggestions-overview', data.suggestions);
+
+    const t = getThemeColors();
+
+    // 1. DAU Line
+    destroyChart('chartDauLine');
+    const ctxDau = document.getElementById('chartDauLine').getContext('2d');
+    charts.chartDauLine = new Chart(ctxDau, {
+      type: 'line',
+      data: {
+        labels: data.dailySeries.map((d) => formatDateVn(d.date)),
+        datasets: [
+          {
+            label: 'Tổng DAU',
+            data: data.dailySeries.map((d) => d.dau),
+            borderColor: '#7C3AED',
+            backgroundColor: 'rgba(124, 58, 237, 0.12)',
+            fill: true,
+            tension: 0.3,
+          },
+          {
+            label: 'Đã đăng nhập',
+            data: data.dailySeries.map((d) => d.loggedInDau),
+            borderColor: '#10B981',
+            tension: 0.3,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: t.text, font: { size: 11 } } } },
+        scales: {
+          x: { ticks: { color: t.text, maxTicksLimit: 10 }, grid: { color: t.grid } },
+          y: { ticks: { color: t.text }, grid: { color: t.grid }, beginAtZero: true },
+        },
+      },
+    });
+
+    // 2. Source Donut
+    destroyChart('chartSourceDonut');
+    const ctxSrc = document.getElementById('chartSourceDonut').getContext('2d');
+    charts.chartSourceDonut = new Chart(ctxSrc, {
+      type: 'doughnut',
+      data: {
+        labels: (data.sources || []).map((s) => s.key),
+        datasets: [
+          {
+            data: (data.sources || []).map((s) => s.sessions),
+            backgroundColor: ['#7C3AED', '#3B82F6', '#10B981', '#F59E0B', '#64748B'],
+            borderWidth: 0,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom', labels: { color: t.text, font: { size: 11 } } } },
+      },
+    });
+
+    // 3. Device Bar
+    destroyChart('chartDeviceBar');
+    const ctxDev = document.getElementById('chartDeviceBar').getContext('2d');
+    charts.chartDeviceBar = new Chart(ctxDev, {
+      type: 'bar',
+      data: {
+        labels: (data.devices || []).map((d) => d.key),
+        datasets: [
+          {
+            label: 'Số phiên',
+            data: (data.devices || []).map((d) => d.sessions),
+            backgroundColor: ['#7C3AED', '#6366F1', '#14B8A6'],
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: t.text }, grid: { display: false } },
+          y: { ticks: { color: t.text }, grid: { color: t.grid }, beginAtZero: true },
+        },
+      },
+    });
+
+    // 4. Heatmap Grid
+    const daysLabel = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
+    const hmMap = new Map();
+    let maxSess = 1;
+    (data.heatmap || []).forEach((h) => {
+      hmMap.set(`${h.weekday}-${h.hour}`, h.sessions);
+      if (h.sessions > maxSess) maxSess = h.sessions;
+    });
+
+    let html = '<div class="grid grid-cols-[36px_repeat(24,minmax(0,1fr))] gap-1 items-center text-[10px]">';
+    html += '<div></div>';
+    for (let h = 0; h < 24; h += 1) {
+      html += `<div class="text-center text-slate-400 font-mono">${h}</div>`;
+    }
+    for (let wd = 0; wd < 7; wd += 1) {
+      html += `<div class="font-bold text-slate-500 dark:text-slate-400">${daysLabel[wd]}</div>`;
+      for (let h = 0; h < 24; h += 1) {
+        const val = hmMap.get(`${wd}-${h}`) || 0;
+        const ratio = val / maxSess;
+        let bg = 'bg-slate-100 dark:bg-slate-800';
+        if (ratio > 0.75) bg = 'bg-purple-700 text-white';
+        else if (ratio > 0.5) bg = 'bg-purple-500 text-white';
+        else if (ratio > 0.25) bg = 'bg-purple-300 dark:bg-purple-800';
+        else if (ratio > 0) bg = 'bg-purple-100 dark:bg-purple-950';
+        html += `<div title="${daysLabel[wd]} ${h}:00 — ${val} phiên" class="h-5 rounded ${bg} flex items-center justify-center font-mono text-[9px]">${val > 0 ? '' : ''}</div>`;
+      }
+    }
+    html += '</div>';
+    document.getElementById('heatmapGrid').innerHTML = html;
+  }
+
+  function renderFunnel(data) {
+    const steps = data.steps || [];
+    if (!steps.length || steps.every((s) => s.sessions === 0)) {
+      showState('empty');
+      return;
+    }
+    showState('ready');
+    document.getElementById('kpi-biggest-drop').textContent = data.biggestDropStep
+      ? `${data.biggestDropStep} (-${data.biggestDropPct}%)`
+      : 'Không đáng kể';
+    document.getElementById('kpi-cart-abandon').textContent = `${data.cartAbandonmentRate || 0}%`;
+    renderSuggestions('suggestions-funnel', data.suggestions);
+
+    const t = getThemeColors();
+    destroyChart('chartFunnelBar');
+    charts.chartFunnelBar = new Chart(document.getElementById('chartFunnelBar').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: steps.map((s) => `${s.label} (${s.pctFromStart}%)`),
+        datasets: [
+          {
+            label: 'Số phiên',
+            data: steps.map((s) => s.sessions),
+            backgroundColor: ['#7C3AED', '#6366F1', '#3B82F6', '#10B981', '#059669'],
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: t.text }, grid: { color: t.grid }, beginAtZero: true },
+          y: { ticks: { color: t.text, font: { weight: 'bold' } }, grid: { display: false } },
+        },
+      },
+    });
+
+    const tbody = document.getElementById('funnelComparisonBody');
+    tbody.innerHTML = (data.comparison || [])
+      .map(
+        (c) => `
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+        <td class="px-5 py-3 font-bold text-slate-800 dark:text-slate-200">${escapeHtml(c.segment)}</td>
+        <td class="px-5 py-3 text-right">${c.views.toLocaleString('vi-VN')}</td>
+        <td class="px-5 py-3 text-right">${c.addToCart.toLocaleString('vi-VN')}</td>
+        <td class="px-5 py-3 text-right">${c.checkout.toLocaleString('vi-VN')}</td>
+        <td class="px-5 py-3 text-right">${c.orders.toLocaleString('vi-VN')}</td>
+        <td class="px-5 py-3 text-right">${c.paid.toLocaleString('vi-VN')}</td>
+        <td class="px-5 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${c.conversionRate}%</td>
+      </tr>`
+      )
+      .join('');
+  }
+
+  function renderCustomers(data) {
+    lastCustomersData = data;
+    if (!data.totalCustomers) {
+      showState('empty');
+      return;
+    }
+    showState('ready');
+    renderSuggestions('suggestions-customers', data.suggestions);
+
+    const t = getThemeColors();
+    destroyChart('chartRfmBar');
+    charts.chartRfmBar = new Chart(document.getElementById('chartRfmBar').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: (data.rfmDistribution || []).map((r) => r.label),
+        datasets: [
+          {
+            label: 'Số khách hàng',
+            data: (data.rfmDistribution || []).map((r) => r.count),
+            backgroundColor: '#7C3AED',
+            borderRadius: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: t.text, font: { size: 10 } }, grid: { display: false } },
+          y: { ticks: { color: t.text }, grid: { color: t.grid }, beginAtZero: true },
+        },
+      },
+    });
+
+    const clustersBody = document.getElementById('clustersTableBody');
+    if (!data.clusters || data.clusters.length === 0) {
+      clustersBody.innerHTML = '<tr><td colspan="6" class="px-4 py-6 text-center text-slate-400 italic">Chưa đủ dữ liệu KMeans (&lt;30 khách có đơn).</td></tr>';
+    } else {
+      clustersBody.innerHTML = data.clusters
+        .map(
+          (cl) => `
+        <tr>
+          <td class="px-4 py-3 font-bold text-purple-700 dark:text-purple-300">${escapeHtml(cl.clusterName)}</td>
+          <td class="px-4 py-3 text-right font-semibold">${cl.customerCount}</td>
+          <td class="px-4 py-3 text-right">${cl.recencyDays}</td>
+          <td class="px-4 py-3 text-right">${cl.frequency}</td>
+          <td class="px-4 py-3 text-right">${formatMoney(cl.monetary)}</td>
+          <td class="px-4 py-3 text-right">${cl.productViews}</td>
+        </tr>`
+        )
+        .join('');
+    }
+
+    const atRiskBody = document.getElementById('atRiskBody');
+    if (!data.atRiskCustomers || data.atRiskCustomers.length === 0) {
+      atRiskBody.innerHTML = '<tr><td colspan="6" class="px-5 py-6 text-center text-slate-400 italic">Không có khách hàng nào trong nhóm nguy cơ rời bỏ.</td></tr>';
+    } else {
+      atRiskBody.innerHTML = data.atRiskCustomers
+        .map(
+          (c) => `
+        <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+          <td class="px-5 py-3 font-bold text-slate-800 dark:text-slate-200">${escapeHtml(c.name)}</td>
+          <td class="px-5 py-3 font-mono text-slate-500">${escapeHtml(c.emailMasked)}</td>
+          <td class="px-5 py-3"><span class="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-bold text-[10px]">${escapeHtml(c.rfmLabel)}</span></td>
+          <td class="px-5 py-3 text-right font-semibold">${c.frequency}</td>
+          <td class="px-5 py-3 text-right font-bold text-purple-600 dark:text-purple-400">${formatMoney(c.monetary)}</td>
+          <td class="px-5 py-3 text-right text-slate-500">${formatDateVn(c.lastOrderAt)}</td>
+        </tr>`
+        )
+        .join('');
+    }
+  }
+
+  function renderProducts(data) {
+    if (!data.products || data.products.length === 0) {
+      showState('empty');
+      return;
+    }
+    showState('ready');
+    renderSuggestions('suggestions-products', data.suggestions);
+
+    const renderMiniList = (items, emptyText) => {
+      if (!items || !items.length) return `<p class="text-slate-400 italic">${emptyText}</p>`;
+      return items
+        .slice(0, 5)
+        .map(
+          (p) => `
+        <div class="flex items-center justify-between gap-2 py-1.5 border-b border-slate-100 dark:border-slate-800 last:border-0">
+          <span class="font-semibold text-slate-700 dark:text-slate-200 truncate">${escapeHtml(p.title || p.productId)}</span>
+          <span class="font-mono text-[11px] text-slate-500 shrink-0">${p.views} views · ${(p.conversion * 100).toFixed(1)}% CR</span>
+        </div>`
+        )
+        .join('');
+    };
+
+    document.getElementById('listHighViewLowBuy').innerHTML = renderMiniList(
+      data.highViewLowBuy,
+      'Chưa phát hiện sản phẩm xem nhiều ít mua.'
+    );
+    document.getElementById('listPotentialProducts').innerHTML = renderMiniList(
+      data.potentialProducts,
+      'Chưa phát hiện sản phẩm tiềm năng nổi bật.'
+    );
+
+    const t = getThemeColors();
+    destroyChart('chartCategoryBar');
+    const cats = data.categoryStats || [];
+    charts.chartCategoryBar = new Chart(document.getElementById('chartCategoryBar').getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: cats.map((c) => c.category),
+        datasets: [
+          { label: 'Lượt xem', data: cats.map((c) => c.views), backgroundColor: '#7C3AED', borderRadius: 6 },
+          { label: 'Đơn hàng', data: cats.map((c) => c.orders), backgroundColor: '#10B981', borderRadius: 6 },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: t.text } } },
+        scales: {
+          x: { ticks: { color: t.text }, grid: { display: false } },
+          y: { ticks: { color: t.text }, grid: { color: t.grid }, beginAtZero: true },
+        },
+      },
+    });
+
+    document.getElementById('productsTableBody').innerHTML = data.products
+      .map(
+        (p) => `
+      <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+        <td class="px-5 py-3 font-bold text-slate-800 dark:text-slate-200 max-w-[220px] truncate">${escapeHtml(p.title || p.productId)}</td>
+        <td class="px-5 py-3 text-slate-500">${escapeHtml(p.category || 'Khác')}</td>
+        <td class="px-5 py-3 text-right font-semibold">${formatMoney(p.price)}</td>
+        <td class="px-5 py-3 text-right font-bold">${(p.views || 0).toLocaleString('vi-VN')}</td>
+        <td class="px-5 py-3 text-right">${((p.cartRate || 0) * 100).toFixed(1)}%</td>
+        <td class="px-5 py-3 text-right font-bold text-emerald-600 dark:text-emerald-400">${((p.conversion || 0) * 100).toFixed(1)}%</td>
+        <td class="px-5 py-3 text-right">${p.favorites || 0}</td>
+        <td class="px-5 py-3 text-center">
+          <a href="/posts?highlight=${encodeURIComponent(p.productId)}" class="text-purple-600 dark:text-purple-400 hover:underline font-bold">Xem tin</a>
+        </td>
+      </tr>`
+      )
+      .join('');
+  }
+
+  function renderSearch(data) {
+    if (!data.topQueries || data.topQueries.length === 0) {
+      showState('empty');
+      return;
+    }
+    showState('ready');
+    const k = data.kpis || {};
+    document.getElementById('kpi-search-total').textContent = (k.totalSearches || 0).toLocaleString('vi-VN');
+    document.getElementById('kpi-search-ctr').textContent = `${k.avgCtr || 0}%`;
+    document.getElementById('kpi-search-zero').textContent = `${k.zeroResultRate || 0}%`;
+    renderSuggestions('suggestions-search', data.suggestions);
+
+    const maxCnt = Math.max(...data.topQueries.map((q) => q.count), 1);
+    document.getElementById('keywordCloud').innerHTML = data.topQueries
+      .slice(0, 20)
+      .map((q) => {
+        const sizeCls = q.count / maxCnt > 0.6 ? 'text-sm font-black px-3.5 py-1.5 bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200' : 'text-xs font-semibold px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
+        return `<span class="rounded-full ${sizeCls}">${escapeHtml(q.query)} (${q.count})</span>`;
+      })
+      .join('');
+
+    document.getElementById('topQueriesBody').innerHTML = data.topQueries
+      .map(
+        (q) => `
+      <tr>
+        <td class="px-4 py-2.5 font-semibold text-slate-800 dark:text-slate-200">${escapeHtml(q.query)}</td>
+        <td class="px-4 py-2.5 text-right font-bold">${q.count}</td>
+        <td class="px-4 py-2.5 text-right">${q.ctr}%</td>
+        <td class="px-4 py-2.5 text-right text-emerald-600 dark:text-emerald-400 font-bold">${q.conversionRate}%</td>
+      </tr>`
+      )
+      .join('');
+
+    const zeroBody = document.getElementById('zeroQueriesBody');
+    if (!data.zeroResultQueries || data.zeroResultQueries.length === 0) {
+      zeroBody.innerHTML = '<tr><td colspan="3" class="px-4 py-6 text-center text-slate-400 italic">Không có từ khóa nào bị 0 kết quả.</td></tr>';
+    } else {
+      zeroBody.innerHTML = data.zeroResultQueries
+        .map(
+          (q) => `
+        <tr>
+          <td class="px-4 py-2.5 font-semibold text-rose-700 dark:text-rose-300">${escapeHtml(q.query)}</td>
+          <td class="px-4 py-2.5 text-right font-bold">${q.zeroResults}</td>
+          <td class="px-4 py-2.5 text-right">${q.zeroResultRate}%</td>
+        </tr>`
+        )
+        .join('');
+    }
+  }
+
+  function renderRetention(data) {
+    if (!data.cohorts || data.cohorts.length === 0) {
+      showState('empty');
+      return;
+    }
+    showState('ready');
+    renderSuggestions('suggestions-retention', data.suggestions);
+
+    const t = getThemeColors();
+    destroyChart('chartRetentionLine');
+    const avg = data.avgByWeek || [];
+    charts.chartRetentionLine = new Chart(document.getElementById('chartRetentionLine').getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: avg.map((a) => a.week),
+        datasets: [
+          {
+            label: retentionMode === 'event' ? 'Giữ chân tương tác (%)' : 'Giữ chân đơn hàng (%)',
+            data: avg.map((a) => (retentionMode === 'event' ? a.eventRetentionAvg : a.orderRetentionAvg)),
+            borderColor: '#7C3AED',
+            backgroundColor: 'rgba(124, 58, 237, 0.12)',
+            fill: true,
+            tension: 0.3,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { labels: { color: t.text } } },
+        scales: {
+          x: { ticks: { color: t.text }, grid: { color: t.grid } },
+          y: { ticks: { color: t.text }, grid: { color: t.grid }, min: 0, max: 100 },
+        },
+      },
+    });
+
+    document.getElementById('cohortMatrixBody').innerHTML = data.cohorts
+      .map((c) => {
+        const retObj = retentionMode === 'event' ? c.eventRetention : c.orderRetention;
+        let cells = '';
+        for (let w = 0; w <= 8; w += 1) {
+          const val = retObj ? retObj[String(w)] : null;
+          if (val === null || val === undefined) {
+            cells += '<td class="px-3 py-2.5 text-slate-300 dark:text-slate-600">–</td>';
+          } else {
+            let cls = 'bg-purple-50 dark:bg-purple-950/40 text-purple-800 dark:text-purple-200';
+            if (val >= 60) cls = 'bg-purple-600 text-white font-bold';
+            else if (val >= 35) cls = 'bg-purple-400 text-white font-semibold';
+            else if (val >= 15) cls = 'bg-purple-200 dark:bg-purple-800 text-purple-900 dark:text-purple-100';
+            cells += `<td class="px-2 py-2.5"><span class="inline-block w-full py-1 rounded-lg ${cls}">${val}%</span></td>`;
+          }
+        }
+        return `
+          <tr>
+            <td class="px-4 py-2.5 text-left font-bold text-slate-800 dark:text-slate-200">${escapeHtml(c.cohortWeek)}</td>
+            <td class="px-3 py-2.5 font-semibold">${c.cohortSize}</td>
+            ${cells}
+          </tr>`;
+      })
+      .join('');
+  }
+
+  async function loadTab(forceReload = false) {
+    setTabStyles();
+    syncUrl();
+    showState('loading');
+
+    const sortParam = activeTab === 'products' ? `&sort=${encodeURIComponent(document.getElementById('productSortSelect').value)}` : '';
+    const url = `/admin/analytics/api/${activeTab}?from=${encodeURIComponent(fromEl.value)}&to=${encodeURIComponent(toEl.value)}&device=${encodeURIComponent(devEl.value)}&source=${encodeURIComponent(srcEl.value)}${sortParam}`;
+
+    try {
+      let data = !forceReload ? cache[url] : null;
+      if (!data) {
+        const res = await fetch(url);
+        if (res.status === 401 || res.status === 403) {
+          window.location.href = '/login';
+          return;
+        }
+        data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Lỗi tải dữ liệu.');
+        }
+        cache[url] = data;
+      }
+
+      document.getElementById('syntheticBanner').classList.toggle('hidden', !data.hasSynthetic);
+      if (data.lastRunAt) {
+        document.getElementById('lastRunText').textContent = new Date(data.lastRunAt).toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+      }
+
+      if (activeTab === 'overview') renderOverview(data);
+      else if (activeTab === 'funnel') renderFunnel(data);
+      else if (activeTab === 'customers') renderCustomers(data);
+      else if (activeTab === 'products') renderProducts(data);
+      else if (activeTab === 'search') renderSearch(data);
+      else if (activeTab === 'retention') renderRetention(data);
+    } catch (err) {
+      showState('error', err.message || 'Lỗi kết nối máy chủ.');
+    }
+  }
+
+  // Event Listeners
+  document.querySelectorAll('.analytics-tab-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      activeTab = btn.getAttribute('data-tab');
+      loadTab();
+    });
+  });
+
+  document.querySelectorAll('.range-preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const days = parseInt(btn.getAttribute('data-range'), 10) || 30;
+      toEl.value = toVnDate(new Date());
+      fromEl.value = toVnDate(new Date(Date.now() - (days - 1) * 86400000));
+      loadTab(true);
+    });
+  });
+
+  document.getElementById('applyFilterBtn').addEventListener('click', () => loadTab(true));
+  document.getElementById('retryLoadBtn').addEventListener('click', () => loadTab(true));
+  document.getElementById('productSortSelect').addEventListener('change', () => loadTab(true));
+
+  document.getElementById('retModeEventBtn').addEventListener('click', () => {
+    retentionMode = 'event';
+    document.getElementById('retModeEventBtn').className = 'px-3 py-1 rounded-xl font-bold bg-purple-600 text-white';
+    document.getElementById('retModeOrderBtn').className = 'px-3 py-1 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300';
+    loadTab();
+  });
+  document.getElementById('retModeOrderBtn').addEventListener('click', () => {
+    retentionMode = 'order';
+    document.getElementById('retModeOrderBtn').className = 'px-3 py-1 rounded-xl font-bold bg-purple-600 text-white';
+    document.getElementById('retModeEventBtn').className = 'px-3 py-1 rounded-xl font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300';
+    loadTab();
+  });
+
+  document.getElementById('exportCustomersCsvBtn').addEventListener('click', () => {
+    const rows = lastCustomersData?.atRiskCustomers || [];
+    if (!rows.length) return;
+    const header = ['TenKhachHang', 'EmailChe', 'NhanRFM', 'SoDon', 'TongChiTieu', 'LanMuaCuoi'];
+    const csvLines = [
+      header.join(','),
+      ...rows.map((r) =>
+        [
+          `"${String(r.name || '').replace(/"/g, '""')}"`,
+          `"${String(r.emailMasked || '').replace(/"/g, '""')}"`,
+          `"${String(r.rfmLabel || '').replace(/"/g, '""')}"`,
+          r.frequency || 0,
+          Math.round(r.monetary || 0),
+          `"${formatDateVn(r.lastOrderAt)}"`,
+        ].join(',')
+      ),
+    ];
+    const blob = new Blob(['\uFEFF' + csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `haihand-khach-hang-nguy-co-${toVnDate(new Date())}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Expose initCharts for dark mode toggle in AdminLayout.ejs
+  window.initCharts = function() {
+    if (document.getElementById('analytics-root')) {
+      loadTab();
+    }
+  };
+
+  loadTab();
+})();
+</script>

@@ -11,14 +11,20 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const querystring = require('qs');
 const Notification = require('./models/Notification');
+const Message = require('./models/Message');
 const User = require('./models/User');
 const SupportConversation = require('./models/SupportConversation');
 const Order = require('./models/Order');
 const { Product, Post } = require('./models/Product');
-const { protect, isSeller } = require('./middleware/auth');
+const { protect, protectStrict, isSeller } = require('./middleware/auth');
+const { initSocket } = require('./socket');
 const Transaction = require('./models/Transaction');
 const Settings = require('./models/Settings');
-const Banner = require('./models/Banner');
+const {
+  createHelmetMiddleware,
+  isOriginAllowed,
+  buildCorsOptions
+} = require('./middleware/security');
 const {
   CATALOG_VISIBLE,
   canonicalStatus,
@@ -31,6 +37,7 @@ const {
   displayProductName
 } = require('./utils/b2c');
 const createSellerRouter = require('./routes/seller');
+const createMessagesRouter = require('./routes/messages');
 const haipayRouter = require('./routes/haipay');
 const { refreshProductSearch } = require('./services/chatbotService');
 const shippingRouter = require('./routes/shipping');
@@ -40,6 +47,7 @@ const { processCheckout, settlePaymentSession } = require('./controllers/checkou
 const { buildVnpayPaymentUrl: buildSignedVnpayPaymentUrl, formatVnpayDate, verifyVnpayChecksumStrict } = require('./utils/vnpay');
 const { isHash, verifyPassword, hashPassword } = require('./utils/password');
 const trackRouter = require('./routes/track');
+const { trackServerEvent } = require('./analytics/track');
 const recommendationsRouter = require('./routes/recommendations');
 const {
   recordServerEvent,
@@ -49,58 +57,37 @@ const {
 
 const app = express();
 
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://127.0.0.1:3000',
-  'http://localhost:4001',
-  'http://127.0.0.1:4001',
-  'https://haihand-marketplace.vercel.app'
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
-      callback(null, true);
-    } else {
-      callback(null, true); // Permissive for development/container networking
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'userid', 'UserId', 'X-Requested-With', 'Origin', 'x-anonymous-id', 'X-Anonymous-Id'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
-};
-
-app.use(cors(corsOptions));
-app.options('{*path}', cors(corsOptions));
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (origin) {
-    res.header('Access-Control-Allow-Origin', origin);
-  } else {
-    res.header('Access-Control-Allow-Origin', 'http://localhost:3000');
-  }
-  res.header('Access-Control-Allow-Credentials', 'true');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, userid, UserId, x-anonymous-id');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+// ============================================================================
+// SECTION 2: CẤU HÌNH CORS, SECURITY HEADERS (HELMET) & SOCKET.IO
+// ============================================================================
+const corsOptions = buildCorsOptions();
+const corsMiddleware = cors(corsOptions);
+app.use(corsMiddleware);
+app.options(/.*/, corsMiddleware);
+app.use(createHelmetMiddleware());
 
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:3000",
-      "http://127.0.0.1:3000",
-      "http://localhost:4001",
-      "http://127.0.0.1:4001",
-      "https://haihand-marketplace.vercel.app"
+    origin(origin, callback) {
+      if (isOriginAllowed(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error('Origin not allowed by Socket.IO CORS'), false);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'userid',
+      'UserId',
+      'X-Requested-With',
+      'Origin',
+      'X-CSRF-Token',
+      'x-anonymous-id',
+      'X-Anonymous-Id'
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
   }
 });
@@ -183,17 +170,6 @@ const Category = mongoose.models.Category || mongoose.model('Category', new mong
   description: { type: String, default: '' }
 }));
 
-const Message = mongoose.models.Message || mongoose.model('Message', new mongoose.Schema({
-  sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  content: String,
-  images: [String],
-  post: { type: mongoose.Schema.Types.ObjectId, ref: 'Post' },
-  forwardedFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'Message', default: null },
-  isRead: { type: Boolean, default: false },
-  timestamp: { type: Date, default: Date.now }
-}));
-
 const Revenue = mongoose.models.Revenue || mongoose.model('Revenue', new mongoose.Schema({
   orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   commissionAmount: { type: Number, required: true },
@@ -228,8 +204,10 @@ const Follow = mongoose.models.Follow || mongoose.model('Follow', new mongoose.S
   following: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true }));
 
+const socketHub = initSocket(io);
+
 const notificationService = require('./utils/notificationService');
-notificationService.init(io, (uId) => (typeof getUserSockets === 'function' ? getUserSockets(uId) : []));
+notificationService.init(io);
 const sendNotification = notificationService.sendNotification;
 const sendAdminNotification = notificationService.sendAdminNotification;
 
@@ -306,6 +284,13 @@ app.post('/register', async (req, res) => {
 
     const newUser = new User({ name, email, username, password, role });
     await newUser.save();
+
+    trackServerEvent('signup', {
+      userId: newUser._id,
+      sessionId: req.headers['x-hh-sid'],
+      anonymousId: req.headers['x-hh-aid'],
+      props: { method: 'email' }
+    });
     res.render('login', { error: 'Tạo tài khoản thành công! Hãy đăng nhập.' });
   } catch (error) {
     res.render('login', { error: 'Lỗi hệ thống khi đăng ký!' });
@@ -902,6 +887,11 @@ app.post('/api/admin/refund-order/:orderId', requireAdmin, async (req, res) => {
     order.cancelledAt = order.cancelledAt || new Date();
     await order.save();
 
+    trackServerEvent('order_cancelled', {
+      userId: order.buyerId || order.buyer,
+      props: { orderId: order._id, by: 'admin' }
+    });
+
     res.json({ message: "✅ Hoàn tiền thành công và đã cộng vào ví HaiPay của người mua!" });
   } catch (error) {
     console.error("Lỗi hoàn tiền:", error);
@@ -1197,6 +1187,13 @@ app.post('/api/users/register', async (req, res) => {
     });
     await newUser.save();
 
+    trackServerEvent('signup', {
+      userId: newUser._id,
+      sessionId: req.headers['x-hh-sid'],
+      anonymousId: req.headers['x-hh-aid'],
+      props: { method: 'email' }
+    });
+
     // Merge anonymous browsing events if anonymousId was passed
     if (req.body.anonymousId && typeof req.body.anonymousId === 'string') {
       setImmediate(() => {
@@ -1260,159 +1257,6 @@ app.put('/api/users/profile/:id', upload.single('avatar'), async (req, res) => {
   } catch (err) { res.status(err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError' ? 401 : 500).json({ message: 'Không thể cập nhật hồ sơ. Vui lòng đăng nhập lại.' }); }
 });
 
-/** Lấy trang hồ sơ công khai của một Shop/Seller (sản phẩm, đánh giá, follow, tỷ lệ phản hồi chat) */
-app.get('/api/users/public-profile/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(404).json({ message: 'ID không hợp lệ' });
-    }
-
-    const user = await User.findById(userId).select('-password');
-    if (!user) return res.status(404).json({ message: 'Không tìm thấy user' });
-
-    let followersCount = 0;
-    let followingCount = 0;
-    try {
-      followersCount = await Follow.countDocuments({ following: userId });
-      followingCount = await Follow.countDocuments({ follower: userId });
-    } catch (err) { console.log('Lỗi đếm follow:', err.message); }
-
-    const posts = await Post.find({ author: userId }).sort({ createdAt: -1 });
-    const reviews = await Review.find({ seller: userId }).populate('buyer', 'name avatar');
-    const avgRating = reviews.length > 0 ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : 5.0;
-
-    const conversationsReceived = await Message.distinct('sender', { receiver: userId });
-    let repliedCount = 0;
-    for (const senderId of conversationsReceived) {
-      const hasReplied = await Message.exists({ sender: userId, receiver: senderId });
-      if (hasReplied) repliedCount++;
-    }
-    const responseRate = conversationsReceived.length > 0 ? Math.round((repliedCount / conversationsReceived.length) * 100) : 100;
-
-    return res.status(200).json({ user: publicUser(user), posts, reviews, followersCount, followingCount, avgRating, responseRate });
-  } catch (error) {
-    console.error('Lỗi sập Profile:', error.message);
-    return res.status(200).json({ user: {}, posts: [], reviews: [], followersCount: 0, followingCount: 0, avgRating: 5 });
-  }
-});
-
-/** Kiểm tra user A có đang theo dõi user B hay không */
-app.get('/api/users/follow-status', async (req, res) => {
-  try {
-    const { followerId, followingId } = req.query;
-
-    if (!followerId || followerId === 'undefined' || !mongoose.Types.ObjectId.isValid(followerId)) {
-      return res.status(200).json({ isFollowing: false });
-    }
-    if (!followingId || followingId === 'undefined' || !mongoose.Types.ObjectId.isValid(followingId)) {
-      return res.status(200).json({ isFollowing: false });
-    }
-
-    const follow = await Follow.findOne({ follower: followerId, following: followingId });
-    return res.status(200).json({ isFollowing: !!follow });
-  } catch (e) {
-    console.error('Lỗi API follow-status:', e.message);
-    return res.status(200).json({ isFollowing: false });
-  }
-});
-
-/** Theo dõi / Bỏ theo dõi người bán (C6: bắt buộc protect, followerId lấy từ token) */
-app.post('/api/users/follow', protect, async (req, res) => {
-  try {
-    const followerId = req.user._id.toString();
-    const { followingId } = req.body || {};
-    if (!followingId || !mongoose.Types.ObjectId.isValid(followingId)) {
-      return res.status(400).json({ message: 'ID người được theo dõi không hợp lệ!' });
-    }
-    if (followerId === String(followingId)) {
-      return res.status(400).json({ message: 'Không thể tự theo dõi chính mình!' });
-    }
-
-    const existingFollow = await Follow.findOne({ follower: followerId, following: followingId });
-
-    if (existingFollow) {
-      await Follow.findByIdAndDelete(existingFollow._id);
-      return res.json({ message: 'Đã bỏ theo dõi', isFollowing: false });
-    } else {
-      await Follow.create({ follower: followerId, following: followingId });
-
-      await sendNotification(
-        followingId,
-        '👤 Có người theo dõi mới!',
-        'Một người dùng vừa bắt đầu theo dõi bạn.',
-        'SYSTEM',
-        `/public-profile/${followerId}`
-      );
-      return res.json({ message: 'Đã theo dõi', isFollowing: true });
-    }
-  } catch (e) { res.status(500).json({ error: 'Lỗi hệ thống' }); }
-});
-
-/** Lấy danh sách người theo dõi / đang theo dõi */
-app.get('/api/users/:userId/follow-list', async (req, res) => {
-  try {
-    const { type } = req.query;
-    const { userId } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(userId)) {
-      return res.status(200).json([]);
-    }
-
-    let list = [];
-    if (type === 'followers') {
-      list = await mongoose.models.Follow.find({ following: userId }).populate('follower', 'name avatar');
-    } else {
-      list = await mongoose.models.Follow.find({ follower: userId }).populate('following', 'name avatar');
-    }
-
-    list = list.filter(item => item.follower && item.following);
-
-    res.status(200).json(list);
-  } catch (e) {
-    console.error('Lỗi get follow list:', e.message);
-    res.status(200).json([]);
-  }
-});
-
-/** Thêm / Xóa sản phẩm khỏi danh sách yêu thích (C6: bắt buộc protect, userId lấy từ token) */
-app.post('/api/users/favorites', protect, async (req, res) => {
-  try {
-    const postId = req.body?.postId;
-    if (!postId || !mongoose.Types.ObjectId.isValid(postId)) {
-      return res.status(400).json({ error: 'ID sản phẩm không hợp lệ' });
-    }
-    const user = await User.findById(req.user._id);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    if (!user.favorites) user.favorites = [];
-    const postIdStr = postId.toString();
-    const index = user.favorites.findIndex(id => id.toString() === postIdStr);
-
-    if (index === -1) user.favorites.push(postId);
-    else user.favorites.splice(index, 1);
-
-    await user.save();
-    res.status(200).json({ message: 'Ok', favorites: user.favorites });
-  } catch (error) { res.status(500).json({ error: 'Lỗi' }); }
-});
-
-/** Lấy danh sách sản phẩm yêu thích của chính người dùng hoặc Admin. */
-app.get('/api/users/favorites/:userId', protect, async (req, res) => {
-  if (String(req.user._id) !== req.params.userId && req.user.role !== 'Admin') {
-    return res.status(403).json({ message: 'Không có quyền xem danh sách yêu thích này.' });
-  }
-  try {
-    const user = await User.findById(req.user._id).populate('favorites');
-    res.status(200).json(user ? user.favorites : []);
-  } catch (error) { res.status(200).json([]); }
-});
-
-// ============================================================================
-// SECTION 12: SẢN PHẨM (POSTS), DANH MỤC, GIỎ HÀNG, ĐÁNH GIÁ & BÁO CÁO
-// ============================================================================
-
 const DEFAULT_HERO_BANNERS = [
   {
     _id: 'default-banner-1',
@@ -1446,23 +1290,10 @@ const DEFAULT_HERO_BANNERS = [
   }
 ];
 
-/** Lấy danh sách Banner Hero đang hoạt động cho trang chủ (fallback mặc định nếu DB trống) */
+/** Lấy danh sách Banner Hero đang hoạt động cho trang chủ (fallback mặc định) */
 app.get('/api/banners', async (req, res) => {
-  try {
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(200).json(DEFAULT_HERO_BANNERS);
-    }
-    const banners = await Banner.find({ isActive: true }).sort({ order: 1, createdAt: -1 }).lean();
-    if (!banners || banners.length === 0) {
-      return res.status(200).json(DEFAULT_HERO_BANNERS);
-    }
-    return res.status(200).json(banners);
-  } catch (error) {
-    console.error('Lỗi lấy banner:', error.message);
-    return res.status(200).json(DEFAULT_HERO_BANNERS);
-  }
+  return res.status(200).json(DEFAULT_HERO_BANNERS);
 });
-
 /** Lấy danh sách sản phẩm công khai (lọc theo CATALOG_VISIBLE, tìm kiếm, giá, khu vực, sắp xếp, phân trang) */
 app.get('/api/posts', async (req, res) => {
   try {
@@ -2525,205 +2356,10 @@ app.post('/api/users/cart', async (req, res) => {
 
 
 
-app.get('/api/messages/clear-all', async (req, res) => {
-  try {
-    await Message.deleteMany({});
-    res.status(200).send("<h1 style='color:green; text-align:center; margin-top:50px;'>✅ ĐÃ DỌN SẠCH RÁC TIN NHẮN!</h1>");
-  } catch (e) { res.status(500).send("Lỗi dọn rác!"); }
-});
+// Mount /api/messages router (A3: bắt buộc JWT protectStrict, xóa clear-all)
+app.use('/api/messages', createMessagesRouter({ io, sendNotification }));
 
-app.get('/api/messages/conversations/:userId', async (req, res) => {
-  try {
-    const userId = req.params.userId;
-    const messages = await Message.find({ $or: [{ sender: userId }, { receiver: userId }] })
-      .sort({ timestamp: -1 }).populate('sender receiver', 'name avatar verified badge').populate('post', 'title price condition author');
-
-    const conversationsMap = new Map();
-
-    messages.forEach(msg => {
-      try {
-        if (!msg || !msg.sender || !msg.receiver) return;
-        const senderId = msg.sender._id ? msg.sender._id.toString() : msg.sender.toString();
-        const receiverId = msg.receiver._id ? msg.receiver._id.toString() : msg.receiver.toString();
-
-        const isSenderMe = senderId === userId;
-        const otherUser = isSenderMe ? msg.receiver : msg.sender;
-        const otherUserId = isSenderMe ? receiverId : senderId;
-
-        if (!conversationsMap.has(otherUserId)) {
-          conversationsMap.set(otherUserId, { otherUser, lastMessage: msg, timestamp: msg.timestamp, unreadCount: 0 });
-        }
-
-        if (!isSenderMe && !msg.isRead) conversationsMap.get(otherUserId).unreadCount += 1;
-      } catch (e) { }
-    });
-
-    res.status(200).json(Array.from(conversationsMap.values()));
-  } catch (error) { res.status(200).json([]); }
-});
-
-app.get('/api/messages/unread-count/:userId', async (req, res) => {
-  try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.userId)) {
-      return res.status(200).json({ count: 0 });
-    }
-    const count = await Message.countDocuments({ receiver: req.params.userId, isRead: false });
-    res.status(200).json({ count });
-  } catch (err) { res.status(200).json({ count: 0 }); }
-});
-
-app.get('/api/messages/:user1/:user2', async (req, res) => {
-  try {
-    const { user1, user2 } = req.params;
-    const messages = await Message.find({
-      $or: [{ sender: user1, receiver: user2 }, { sender: user2, receiver: user1 }]
-    }).populate('post', 'title price image author').sort({ timestamp: 1 });
-    res.status(200).json(messages);
-  } catch (error) { res.status(500).json({ message: 'Lỗi' }); }
-});
-
-app.post('/api/messages', upload.single('image'), async (req, res) => {
-  try {
-    const newMessage = new Message({
-      sender: req.body.senderId,
-      receiver: req.body.receiverId,
-      content: req.body.text || '',
-      post: req.body.postId || null
-    });
-
-
-    if (req.file) {
-      newMessage.images = [req.file.path];
-    }
-    await newMessage.save();
-
-    // Notify receiver
-    await sendNotification(
-      req.body.receiverId,
-      '💬 Tin nhắn mới',
-      req.body.text ? `"${req.body.text.substring(0, 30)}..."` : `Bạn nhận được 1 hình ảnh mới.`,
-      'MESSAGE',
-      '/chat'
-    );
-
-
-    const populatedMsg = await Message.findById(newMessage._id).populate('post', 'title price images image');
-    res.status(200).json(populatedMsg);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Lỗi lưu tin nhắn" });
-  }
-});
-
-app.post('/api/messages/:messageId/forward', async (req, res) => {
-  try {
-    const { messageId } = req.params;
-    const { senderId, receiverId } = req.body;
-    if (![messageId, senderId, receiverId].every(mongoose.Types.ObjectId.isValid)) {
-      return res.status(400).json({ message: 'Thông tin chuyển tiếp không hợp lệ' });
-    }
-    if (senderId === receiverId) {
-      return res.status(400).json({ message: 'Không thể chuyển tiếp tin nhắn cho chính bạn' });
-    }
-
-    const original = await Message.findById(messageId);
-    if (!original) return res.status(404).json({ message: 'Không tìm thấy tin nhắn gốc' });
-    const participants = [String(original.sender), String(original.receiver)];
-    if (!participants.includes(String(senderId))) {
-      return res.status(403).json({ message: 'Bạn không có quyền chuyển tiếp tin nhắn này' });
-    }
-    if (!original.content && !original.images?.length && !original.post) {
-      return res.status(400).json({ message: 'Tin nhắn gốc không có nội dung để chuyển tiếp' });
-    }
-
-    const forwarded = await Message.create({
-      sender: senderId,
-      receiver: receiverId,
-      content: original.content || '',
-      images: original.images || [],
-      post: original.post || null,
-      forwardedFrom: original._id
-    });
-    await sendNotification(
-      receiverId,
-      '💬 Tin nhắn được chuyển tiếp',
-      original.content ? `"${original.content.substring(0, 30)}..."` : 'Bạn nhận được một nội dung đính kèm.',
-      'MESSAGE',
-      '/chat'
-    );
-    const populated = await Message.findById(forwarded._id).populate('post', 'title price images image author');
-    res.status(201).json(populated);
-  } catch (err) {
-    console.error('Lỗi chuyển tiếp tin nhắn:', err);
-    res.status(500).json({ message: 'Lỗi chuyển tiếp tin nhắn' });
-  }
-});
-
-app.put('/api/messages/mark-read', async (req, res) => {
-  try {
-    await Message.updateMany(
-      { sender: req.body.otherId, receiver: req.body.userId, isRead: false },
-      { $set: { isRead: true } }
-    );
-    // Đồng thời đánh dấu đã đọc cho thông báo loại MESSAGE
-    await Notification.updateMany(
-      { userId: req.body.userId, type: 'MESSAGE', isRead: false },
-      { $set: { isRead: true } }
-    );
-    res.status(200).json({ message: 'Đã đọc' });
-  } catch (error) { res.status(500).json({ message: 'Lỗi' }); }
-});
-
-let onlineUsers = [];
-
-io.on('connection', (socket) => {
-
-  socket.on('addUser', (userId) => {
-    if (userId) {
-      socket.join('user_' + userId.toString());
-      socket.userId = userId.toString();
-    }
-    onlineUsers = onlineUsers.filter(u => u.userId !== userId);
-    onlineUsers.push({ userId, socketId: socket.id });
-    io.emit('getUsers', onlineUsers);
-  });
-
-  if (socket.handshake.auth?.role === 'admin' || socket.handshake.query?.role === 'admin') {
-    socket.join('admin_system_room');
-  }
-
-  socket.on('join_admin_room', (data) => {
-    socket.join('admin_system_room');
-    console.log(`🛡️ Socket ${socket.id} joined admin_system_room`);
-  });
-
-  socket.on('join', (room) => {
-    if (room) socket.join(room);
-  });
-
-
-  socket.on('sendMessage', (msgData) => {
-    const receiver = onlineUsers.find(u => u.userId === msgData.receiverId);
-    if (receiver) {
-      io.to(receiver.socketId).emit('getMessage', msgData);
-      io.to(receiver.socketId).emit('updateInbox');
-    }
-  });
-
-
-  socket.on('disconnect', async () => {
-    const disconnectedUser = onlineUsers.find(u => u.socketId === socket.id);
-    if (disconnectedUser) {
-      try {
-        await User.findByIdAndUpdate(disconnectedUser.userId, { lastActive: Date.now() });
-      } catch (e) { }
-    }
-    onlineUsers = onlineUsers.filter(u => u.socketId !== socket.id);
-
-
-    io.emit('getUsers', onlineUsers);
-  });
-});
+// Socket.IO connection & presence được quản lý tập trung tại backend/socket/index.js (initSocket)
 
 const STANDARD_CATEGORIES = [
   {
@@ -2943,6 +2579,10 @@ app.post('/api/vnpay/verify', async (req, res) => {
           { _id: { $in: session.orderIds } },
           { $set: { status: 'Cancelled', cancelReason: 'Thanh toán VNPay không thành công hoặc khách hủy' } }
         );
+        for (const oid of session.orderIds || []) {
+          trackServerEvent('payment_failed', { userId: session.buyer, props: { orderId: oid, method: 'VNPAY' } });
+          trackServerEvent('order_cancelled', { userId: session.buyer, props: { orderId: oid, by: 'system' } });
+        }
         return res.status(400).json({ message: 'Giao dịch thất bại hoặc đã bị khách hủy!' });
       }
     }
@@ -3235,73 +2875,5 @@ app.post('/api/image-search/search', async (req, res) => {
     res.status(500).json({ error: 'Không thể tìm kiếm bằng hình ảnh. Hãy kiểm tra LM Studio rồi thử lại.' });
   }
 });
-
-// Socket.io logic
-let users = [];
-
-const addUser = (userId, socketId) => {
-  // Bỏ logic xóa/chặn nếu cùng userId, thay vào đó cứ push vào mảng để cho phép 1 user đăng nhập nhiều thiết bị (nhiều tab)
-  users.push({ userId, socketId });
-};
-
-const removeUser = (socketId) => {
-  users = users.filter(user => user.socketId !== socketId);
-};
-
-const getUserSockets = (userId) => {
-  return users.filter(user => user.userId === userId);
-};
-
-io.on("connection", (socket) => {
-  const handshakeUserId = socket.handshake.auth?.userId || socket.handshake.query?.userId;
-  if (handshakeUserId) {
-    socket.join('user_' + handshakeUserId.toString());
-    addUser(handshakeUserId, socket.id);
-  }
-
-  socket.on("addUser", (userId) => {
-    if (userId) {
-      socket.join('user_' + userId.toString());
-      socket.userId = userId.toString();
-    }
-    addUser(userId, socket.id);
-    io.emit("getUsers", users);
-  });
-
-  if (socket.handshake.auth?.role === 'admin' || socket.handshake.query?.role === 'admin') {
-    socket.join('admin_system_room');
-  }
-
-  socket.on("join_admin_room", (data) => {
-    socket.join('admin_system_room');
-    console.log(`🛡️ Socket ${socket.id} joined admin_system_room`);
-  });
-
-  socket.on("join", (room) => {
-    if (room) socket.join(room);
-  });
-
-  socket.on("sendMessage", ({ _id, senderId, receiverId, text, post, images, forwardedFrom }) => {
-    const receiverSockets = getUserSockets(receiverId);
-    if (receiverSockets && receiverSockets.length > 0) {
-      receiverSockets.forEach(userSocket => {
-        io.to(userSocket.socketId).emit("getMessage", {
-          _id,
-          senderId,
-          text,
-          post,
-          images,
-          forwardedFrom
-        });
-      });
-    }
-  });
-
-  socket.on("disconnect", () => {
-    removeUser(socket.id);
-    io.emit("getUsers", users);
-  });
-});
-
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, '0.0.0.0', () => console.log(`🚀 Hệ thống HaiHand đã sẵn sàng tại port ${PORT}`));

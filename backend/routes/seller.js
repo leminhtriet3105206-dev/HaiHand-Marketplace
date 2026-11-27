@@ -13,6 +13,7 @@ const {
 } = require('../utils/b2c');
 const shippingService = require('../services/shipping');
 const { pickAddressFields, formatAddress, isCompleteAddress } = require('../models/schemas/Address');
+const { trackServerEvent } = require('../analytics/track');
 
 module.exports = function createSellerRouter({ upload, sendNotification, sendAdminNotification, io }) {
   const router = express.Router();
@@ -54,6 +55,12 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       user.sellerRejectionReason = '';
       user.isSeller = false;
       await user.save();
+
+      trackServerEvent('seller_applied', {
+        userId: user._id,
+        sessionId: req.headers['x-hh-sid'],
+        anonymousId: req.headers['x-hh-aid']
+      });
 
       // Trigger 2: When a user applies for Seller status, create a notification for Admins
       try {
@@ -167,17 +174,37 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
   router.get('/api/seller/dashboard', protect, isSeller, async (req, res) => {
     try {
       const sellerId = req.user._id;
-      const products = await Post.find({ $or: [{ sellerId }, { author: sellerId }] });
-      const orders = await Order.find({ $or: [{ sellerId }, { seller: sellerId }] });
+      const Message = require('../models/Message');
+      const Settings = require('../models/Settings');
+
+      const [products, orders, setting, unreadMessages, inboundBuyers, repliedBuyers] = await Promise.all([
+        Post.find({ $or: [{ sellerId }, { author: sellerId }] }),
+        Order.find({ $or: [{ sellerId }, { seller: sellerId }] }),
+        Settings.findOne().lean().catch(() => null),
+        Message.countDocuments({ receiver: sellerId, sellerId, isRead: false }).catch(() => 0),
+        Message.distinct('sender', { sellerId, receiver: sellerId, sender: { $ne: sellerId } }).catch(() => []),
+        Message.distinct('receiver', { sellerId, sender: sellerId, receiver: { $ne: sellerId } }).catch(() => [])
+      ]);
+
+      const rawRate = setting?.platformFeePercentage ?? setting?.commissionRate ?? 5;
+      const commissionRate = Number.isFinite(Number(rawRate)) ? Number(rawRate) : 5;
+      const sellerShare = Math.max(0, 1 - commissionRate / 100);
 
       const pending = orders.filter((o) => canonicalStatus(o.status) === 'Pending').length;
       const processing = orders.filter((o) => ['Processing', 'Shipped', 'Delivered'].includes(canonicalStatus(o.status))).length;
       const completed = orders.filter((o) => canonicalStatus(o.status) === 'Completed');
-      const revenue = completed.reduce((sum, o) => sum + (o.totalPrice || 0) * 0.95, 0);
+      const revenue = completed.reduce((sum, o) => sum + (o.totalPrice || 0) * sellerShare, 0);
       const totalSales = completed.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+      const repliedSet = new Set(repliedBuyers.map((id) => String(id)));
+      const repliedCount = inboundBuyers.filter((id) => repliedSet.has(String(id))).length;
+      const responseRate = inboundBuyers.length > 0
+        ? Math.round((repliedCount / inboundBuyers.length) * 100)
+        : 100;
 
       res.json({
         shop: req.user.shopInfo || {},
+        commissionRate,
         stats: {
           productCount: products.length,
           activeProducts: products.filter((p) => p.status === 'active' || p.status === 'APPROVED').length,
@@ -186,6 +213,9 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
           completedOrders: completed.length,
           totalSales,
           revenue,
+          commissionRate,
+          unreadMessages,
+          responseRate,
           walletBalance: req.user.walletBalance || 0,
           pendingBalance: req.user.pendingBalance || 0
         }
@@ -195,70 +225,7 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
     }
   });
 
-  router.get('/api/seller/analytics', protect, isSeller, async (req, res) => {
-    try {
-      const sellerId = req.user._id;
-      const products = await Post.find({ $or: [{ sellerId }, { author: sellerId }] })
-        .select('name title price stockQuantity quantity soldCount images category status')
-        .lean();
-
-      const productIds = products.map((p) => p._id);
-      const UserEvent = require('../models/UserEvent');
-
-      const eventStats = await UserEvent.aggregate([
-        {
-          $match: {
-            productId: { $in: productIds },
-            type: { $in: ['product_view', 'cart_add', 'purchase'] }
-          }
-        },
-        {
-          $group: {
-            _id: { productId: '$productId', type: '$type' },
-            count: { $sum: 1 }
-          }
-        }
-      ]);
-
-      const statsMap = new Map();
-      for (const stat of eventStats) {
-        if (!stat._id?.productId) continue;
-        const pid = stat._id.productId.toString();
-        if (!statsMap.has(pid)) {
-          statsMap.set(pid, { views: 0, cartAdds: 0, purchases: 0 });
-        }
-        const record = statsMap.get(pid);
-        if (stat._id.type === 'product_view') record.views = stat.count;
-        else if (stat._id.type === 'cart_add') record.cartAdds = stat.count;
-        else if (stat._id.type === 'purchase') record.purchases = stat.count;
-      }
-
-      const items = products.map((p) => {
-        const s = statsMap.get(p._id.toString()) || { views: 0, cartAdds: 0, purchases: 0 };
-        const views = s.views;
-        const cartAdds = s.cartAdds;
-        const purchases = Math.max(s.purchases, p.soldCount || 0);
-        const conversionRate = views > 0 ? Number(((purchases / views) * 100).toFixed(1)) : 0;
-        return {
-          _id: p._id,
-          name: p.title || p.name || 'Sản phẩm',
-          price: p.price,
-          category: p.category,
-          image: p.images?.[0] || '',
-          stock: p.stockQuantity ?? p.quantity ?? 0,
-          status: p.status,
-          views,
-          cartAdds,
-          purchases,
-          conversionRate
-        };
-      });
-
-      res.json({ success: true, items });
-    } catch (error) {
-      res.status(500).json({ message: 'Lỗi tải phân tích sản phẩm: ' + error.message });
-    }
-  });
+  // Legacy analytics handler removed – replaced by Phase 6 analytics at bottom of file
 
   router.get('/api/seller/shop', protect, isSeller, async (req, res) => {
     res.json({ shopInfo: req.user.shopInfo || {}, user: sanitizeUser(req.user) });
@@ -363,6 +330,16 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       await product.save();
 
       await refreshProductSearch(product);
+
+      trackServerEvent('product_created', {
+        userId: req.user._id,
+        sessionId: req.headers['x-hh-sid'],
+        anonymousId: req.headers['x-hh-aid'],
+        props: {
+          productId: product._id,
+          sellerId: req.user._id
+        }
+      });
 
       // Trigger 1: When a user/seller creates a new Product/Post (and auto-approve is false), automatically create a notification for Admins
       if (!isAutoApprove && postStatus === 'pending') {
@@ -533,6 +510,10 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
       if (next === 'Cancelled') {
         order.cancelledAt = new Date();
         order.cancelReason = req.body.cancelReason || '';
+        trackServerEvent('order_cancelled', {
+          userId: orderBuyerId(order),
+          props: { orderId: order._id, by: 'seller' }
+        });
       }
       await order.save();
 
@@ -632,6 +613,357 @@ module.exports = function createSellerRouter({ upload, sendNotification, sendAdm
    */
   const shippingController = require('../controllers/shippingController');
   router.post('/api/seller/orders/:orderId/ship', protect, isSeller, shippingController.createShipmentGHN);
+
+  /**
+   * B3: GET /api/seller/buyers/:buyerId/summary
+   * Trả thông tin tóm tắt người mua có quan hệ (hội thoại hoặc đơn hàng) với shop.
+   */
+  router.get('/api/seller/buyers/:buyerId/summary', protect, isSeller, async (req, res) => {
+    try {
+      const mongoose = require('mongoose');
+      const Message = require('../models/Message');
+      const sellerId = req.user._id;
+      const { buyerId } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(String(buyerId))) {
+        return res.status(400).json({ message: 'ID người mua không hợp lệ.' });
+      }
+
+      const [hasChat, orders] = await Promise.all([
+        Message.exists({
+          $or: [
+            { sender: sellerId, receiver: buyerId },
+            { sender: buyerId, receiver: sellerId }
+          ]
+        }),
+        Order.find({
+          $and: [
+            { $or: [{ sellerId }, { seller: sellerId }] },
+            { $or: [{ buyerId }, { buyer: buyerId }] }
+          ]
+        })
+          .sort({ createdAt: -1 })
+          .select('_id status totalPrice createdAt items shippingAddress recipientName recipientPhone')
+          .lean()
+      ]);
+
+      if (!hasChat && orders.length === 0) {
+        return res.status(403).json({
+          message: 'Người mua này chưa có hội thoại hoặc đơn hàng với Shop.'
+        });
+      }
+
+      const buyerUser = await User.findById(buyerId)
+        .select('_id name avatar createdAt isVerified lastActive')
+        .lean();
+      if (!buyerUser) {
+        return res.status(404).json({ message: 'Không tìm thấy thông tin người mua.' });
+      }
+
+      const validOrders = orders.filter((o) => canonicalStatus(o.status) !== 'Cancelled');
+      const totalSpent = validOrders.reduce((sum, o) => sum + Number(o.totalPrice || 0), 0);
+      const activeOrder = orders.find((o) =>
+        ['Pending', 'Processing', 'Shipped'].includes(canonicalStatus(o.status))
+      );
+
+      const recentOrders = orders.slice(0, 5).map((o) => ({
+        _id: o._id,
+        shortId: String(o._id).slice(-8).toUpperCase(),
+        status: o.status,
+        canonicalStatus: canonicalStatus(o.status),
+        totalPrice: Number(o.totalPrice || 0),
+        createdAt: o.createdAt,
+        itemsCount: Array.isArray(o.items) ? o.items.length : 0
+      }));
+
+      return res.json({
+        buyer: {
+          _id: buyerUser._id,
+          name: buyerUser.name,
+          avatar: buyerUser.avatar || '',
+          createdAt: buyerUser.createdAt,
+          isVerified: Boolean(buyerUser.isVerified),
+          lastActive: buyerUser.lastActive || null,
+          ...(activeOrder
+            ? {
+                activeOrderRecipientName: activeOrder.recipientName || activeOrder.shippingAddress?.fullName || '',
+                activeOrderPhone: activeOrder.recipientPhone || activeOrder.shippingAddress?.phone || ''
+              }
+            : {})
+        },
+        stats: {
+          totalOrders: orders.length,
+          totalSpent
+        },
+        recentOrders
+      });
+    } catch (error) {
+      console.error('Lỗi tải thông tin người mua:', error);
+      return res.status(500).json({ message: 'Lỗi máy chủ khi tải thông tin người mua' });
+    }
+  });
+
+  /**
+   * B4: Mẫu trả lời nhanh của Shop (tối đa 20 mẫu, title <= 40, content <= 500)
+   */
+  const DEFAULT_QUICK_REPLIES = [
+    { title: 'Còn hàng', content: 'Chào bạn, shop còn hàng ạ' },
+    { title: 'Bảo hành', content: 'Sản phẩm này shop bảo hành 7 ngày' },
+    { title: 'Thời gian giao', content: 'Shop giao hàng trong 1–2 ngày làm việc' },
+    { title: 'Cảm ơn', content: 'Cảm ơn bạn đã quan tâm!' }
+  ];
+
+  router.get('/api/seller/quick-replies', protect, isSeller, async (req, res) => {
+    try {
+      const seller = await User.findById(req.user._id).select('shopInfo.quickReplies').lean();
+      return res.json({
+        quickReplies: seller?.shopInfo?.quickReplies || [],
+        defaults: DEFAULT_QUICK_REPLIES
+      });
+    } catch (error) {
+      return res.status(500).json({ message: 'Lỗi tải mẫu trả lời nhanh' });
+    }
+  });
+
+  router.post('/api/seller/quick-replies', protect, isSeller, async (req, res) => {
+    try {
+      const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+      const content = typeof req.body?.content === 'string' ? req.body.content.trim() : '';
+      if (!title || title.length > 40) {
+        return res.status(400).json({ message: 'Tiêu đề mẫu phải từ 1 đến 40 ký tự.' });
+      }
+      if (!content || content.length > 500) {
+        return res.status(400).json({ message: 'Nội dung mẫu phải từ 1 đến 500 ký tự.' });
+      }
+
+      const seller = await User.findById(req.user._id);
+      if (!seller) return res.status(404).json({ message: 'Không tìm thấy tài khoản.' });
+      if (!seller.shopInfo) seller.shopInfo = {};
+      if (!Array.isArray(seller.shopInfo.quickReplies)) seller.shopInfo.quickReplies = [];
+
+      if (seller.shopInfo.quickReplies.length >= 20) {
+        return res.status(400).json({ message: 'Chỉ được lưu tối đa 20 mẫu trả lời nhanh.' });
+      }
+      const dup = seller.shopInfo.quickReplies.some(
+        (r) => String(r.title).toLowerCase() === title.toLowerCase()
+      );
+      if (dup) {
+        return res.status(400).json({ message: 'Tiêu đề mẫu đã tồn tại.' });
+      }
+
+      seller.shopInfo.quickReplies.push({ title, content });
+      await seller.save();
+      return res.status(201).json({ quickReplies: seller.shopInfo.quickReplies });
+    } catch (error) {
+      return res.status(500).json({ message: 'Lỗi thêm mẫu trả lời nhanh' });
+    }
+  });
+
+  router.put('/api/seller/quick-replies/:replyId', protect, isSeller, async (req, res) => {
+    try {
+      const title = typeof req.body?.title === 'string' ? req.body.title.trim() : '';
+      const content = typeof req.body?.content === 'string' ? req.body.content.trim() : '';
+      if (!title || title.length > 40) {
+        return res.status(400).json({ message: 'Tiêu đề mẫu phải từ 1 đến 40 ký tự.' });
+      }
+      if (!content || content.length > 500) {
+        return res.status(400).json({ message: 'Nội dung mẫu phải từ 1 đến 500 ký tự.' });
+      }
+
+      const seller = await User.findById(req.user._id);
+      const list = seller?.shopInfo?.quickReplies || [];
+      const item = list.id(req.params.replyId);
+      if (!item) {
+        return res.status(404).json({ message: 'Không tìm thấy mẫu trả lời nhanh.' });
+      }
+
+      const dup = list.some(
+        (r) => String(r._id) !== String(req.params.replyId) && String(r.title).toLowerCase() === title.toLowerCase()
+      );
+      if (dup) {
+        return res.status(400).json({ message: 'Tiêu đề mẫu đã tồn tại.' });
+      }
+
+      item.title = title;
+      item.content = content;
+      await seller.save();
+      return res.json({ quickReplies: seller.shopInfo.quickReplies });
+    } catch (error) {
+      return res.status(500).json({ message: 'Lỗi cập nhật mẫu trả lời nhanh' });
+    }
+  });
+
+  router.delete('/api/seller/quick-replies/:replyId', protect, isSeller, async (req, res) => {
+    try {
+      const seller = await User.findById(req.user._id);
+      const list = seller?.shopInfo?.quickReplies;
+      if (!list || !list.id(req.params.replyId)) {
+        return res.status(404).json({ message: 'Không tìm thấy mẫu trả lời nhanh.' });
+      }
+      list.pull(req.params.replyId);
+      await seller.save();
+      return res.json({ quickReplies: seller.shopInfo.quickReplies });
+    } catch (error) {
+      return res.status(500).json({ message: 'Lỗi xóa mẫu trả lời nhanh' });
+    }
+  });
+
+  // --- PHASE 6: SELLER PRODUCT ANALYTICS ---
+  router.get('/api/seller/analytics', protect, isSeller, async (req, res) => {
+    try {
+      const mongoose = require('mongoose');
+      const rawRange = parseInt(req.query.range, 10);
+      const rangeDays = [7, 30, 90].includes(rawRange) ? rawRange : 30;
+
+      const sellerIdStr = String(req.user._id);
+      const now = new Date();
+      const toVn = (d) => new Date(d.getTime() + 7 * 3600000).toISOString().slice(0, 10);
+      const toDateStr = toVn(now);
+      const fromDate = new Date(now.getTime() - (rangeDays - 1) * 86400000);
+      const fromDateStr = toVn(fromDate);
+
+      const sellerPosts = await Post.find({
+        $or: [{ sellerId: req.user._id }, { author: req.user._id }],
+      })
+        .select('_id title name category price')
+        .lean();
+
+      const sellerProductIds = sellerPosts.map((p) => String(p._id));
+
+      const db = mongoose.connection;
+      const [dailyDocs, summaryDocs, viewEvents, clickEvents] = await Promise.all([
+        db
+          .collection('analytics_products')
+          .find({
+            sellerId: sellerIdStr,
+            date: { $gte: fromDateStr, $lte: toDateStr },
+          })
+          .sort({ date: 1 })
+          .toArray(),
+        db
+          .collection('analytics_products_summary')
+          .find({
+            sellerId: sellerIdStr,
+            periodDays: rangeDays,
+          })
+          .sort({ views: -1 })
+          .limit(30)
+          .toArray(),
+        sellerProductIds.length
+          ? db
+              .collection('analytics_events')
+              .find(
+                {
+                  name: 'product_view',
+                  ts: { $gte: fromDate },
+                  'props.productId': { $in: sellerProductIds },
+                },
+                { projection: { ts: 1 } }
+              )
+              .limit(5000)
+              .toArray()
+          : Promise.resolve([]),
+        sellerProductIds.length
+          ? db
+              .collection('analytics_events')
+              .find(
+                {
+                  name: 'search_result_click',
+                  ts: { $gte: fromDate },
+                  'props.productId': { $in: sellerProductIds },
+                },
+                { projection: { 'props.query': 1 } }
+              )
+              .limit(2000)
+              .toArray()
+          : Promise.resolve([]),
+      ]);
+
+      const dailyMap = new Map();
+      for (const d of dailyDocs) {
+        const cur = dailyMap.get(d.date) || { date: d.date, views: 0, addToCart: 0, orders: 0 };
+        cur.views += d.views || 0;
+        cur.addToCart += d.addToCart || 0;
+        cur.orders += d.orders || 0;
+        dailyMap.set(d.date, cur);
+      }
+      const dailySeries = Array.from(dailyMap.values()).sort((a, b) => a.date.localeCompare(b.date));
+
+      const totalViews = dailySeries.reduce((s, d) => s + d.views, 0);
+      const totalAddToCart = dailySeries.reduce((s, d) => s + d.addToCart, 0);
+      const totalOrders = dailySeries.reduce((s, d) => s + d.orders, 0);
+      const conversionRate = totalViews > 0 ? Number(((totalOrders / totalViews) * 100).toFixed(2)) : 0;
+
+      // Peak viewing hours (0..23 VN time)
+      const hourCounts = Array.from({ length: 24 }, (_, hour) => ({ hour, views: 0 }));
+      for (const ev of viewEvents) {
+        if (!ev.ts) continue;
+        const vnHour = new Date(new Date(ev.ts).getTime() + 7 * 3600000).getUTCHours();
+        if (vnHour >= 0 && vnHour < 24) {
+          hourCounts[vnHour].views += 1;
+        }
+      }
+
+      // Keywords leading to seller's products
+      const kwMap = {};
+      for (const ev of clickEvents) {
+        const q = String(ev.props?.query || '').trim().toLowerCase();
+        if (q) kwMap[q] = (kwMap[q] || 0) + 1;
+      }
+      const searchKeywords = Object.entries(kwMap)
+        .map(([query, clicks]) => ({ query, clicks }))
+        .sort((a, b) => b.clicks - a.clicks)
+        .slice(0, 10);
+
+      // Action suggestions
+      const suggestions = [];
+      for (const p of summaryDocs) {
+        if (p.flagHighViewLowBuy || ((p.views || 0) >= 20 && (p.cartRate || 0) < 0.05)) {
+          suggestions.push(
+            `Sản phẩm "${p.title || p.productId}" có nhiều lượt xem (${p.views}) nhưng ít người thêm vào giỏ: xem lại giá hoặc ảnh mô tả.`
+          );
+          if (suggestions.length >= 2) break;
+        }
+      }
+      if (suggestions.length === 0 && summaryDocs.some((p) => p.flagPotential)) {
+        const pot = summaryDocs.find((p) => p.flagPotential);
+        suggestions.push(
+          `Sản phẩm "${pot.title || pot.productId}" có tỷ lệ chuyển đổi tốt (${((pot.conversion || 0) * 100).toFixed(1)}%): nên chia sẻ thêm để tăng lượt xem.`
+        );
+      }
+
+      return res.json({
+        success: true,
+        range: rangeDays,
+        kpis: {
+          totalViews,
+          totalAddToCart,
+          totalOrders,
+          conversionRate,
+        },
+        dailySeries,
+        peakHours: hourCounts,
+        topProducts: summaryDocs.map((p) => ({
+          productId: p.productId,
+          title: p.title,
+          category: p.category,
+          price: p.price,
+          views: p.views || 0,
+          addToCart: p.addToCart || 0,
+          orders: p.orders || 0,
+          cartRate: p.cartRate || 0,
+          conversion: p.conversion || 0,
+          flagHighViewLowBuy: Boolean(p.flagHighViewLowBuy),
+          flagPotential: Boolean(p.flagPotential),
+        })),
+        searchKeywords,
+        suggestions,
+      });
+    } catch (error) {
+      console.error('Seller analytics error:', error);
+      return res.status(500).json({ message: 'Lỗi tải dữ liệu phân tích shop' });
+    }
+  });
 
   return router;
 };

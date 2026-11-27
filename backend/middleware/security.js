@@ -104,7 +104,11 @@ function buildCorsOptions(customOrigins) {
       'UserId',
       'X-Requested-With',
       'Origin',
-      'X-CSRF-Token'
+      'X-CSRF-Token',
+      'x-anonymous-id',
+      'X-Anonymous-Id',
+      'x-hh-sid',
+      'x-hh-aid'
     ],
     exposedHeaders: ['Content-Range', 'X-Content-Range'],
     optionsSuccessStatus: 204

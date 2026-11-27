@@ -181,7 +181,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 const checkLogin = (req, res, next) => {
-  const isApi = req.originalUrl.startsWith("/api/") || req.path.startsWith("/api/");
+  const isApi =
+    req.originalUrl.startsWith("/api/") ||
+    req.path.startsWith("/api/") ||
+    req.originalUrl.startsWith("/admin/analytics/api/");
   const user = req.session && req.session.user;
 
   if (!user) {
@@ -1225,7 +1228,7 @@ app.get("/admin/behavior-analytics", checkLogin, async (req, res) => {
     const zeroResultSearches = zeroSearchesAgg.map(s => ({ query: s._id, count: s.count }));
 
     res.render('behaviorAnalytics', {
-      active: 'analytics',
+      active: 'behavior-analytics',
       days,
       funnel: {
         views,
@@ -1247,6 +1250,9 @@ app.get("/admin/behavior-analytics", checkLogin, async (req, res) => {
     res.status(500).send('Lỗi máy chủ khi tải trang phân tích hành vi: ' + error.message);
   }
 });
+
+const { createAnalyticsRouter } = require("./routes/analytics");
+app.use(createAnalyticsRouter({ checkLogin, User }));
 
 const PORT = process.env.PORT || 4001;
 app.listen(PORT, '0.0.0.0', () =>

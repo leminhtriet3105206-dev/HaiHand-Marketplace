@@ -5,6 +5,7 @@ import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { ProductCard } from '../components/ProductCard';
 import { getProductImageUrl } from '../utils/productMapper';
+import { track as trackAnalytics } from '../analytics/tracker';
 
 export default function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -64,18 +65,24 @@ export default function ProductListPage() {
   const handleSortChange = (e) => {
     searchParams.set('sort', e.target.value);
     setSearchParams(searchParams);
+    trackAnalytics('filter_apply', { sort: e.target.value, category: category || undefined });
   };
 
   const applyPriceFilter = (min, max) => {
     if (min !== null) searchParams.set('minPrice', min); else searchParams.delete('minPrice');
     if (max !== null) searchParams.set('maxPrice', max); else searchParams.delete('maxPrice');
     setSearchParams(searchParams);
+    trackAnalytics('filter_apply', {
+      priceMin: min !== null ? Number(min) : undefined,
+      priceMax: max !== null ? Number(max) : undefined
+    });
   };
 
   const handleCategorySelect = (name) => {
     if (name === 'Tất cả') searchParams.delete('category');
     else searchParams.set('category', name);
     setSearchParams(searchParams);
+    trackAnalytics('filter_apply', { category: name });
   };
 
   const handleLocationSelect = (loc) => {
@@ -89,8 +96,12 @@ export default function ProductListPage() {
   };
 
   const handleSearchSubmit = (keyword) => {
-    if (keyword) searchParams.set('search', keyword);
-    else searchParams.delete('search');
+    if (keyword) {
+      searchParams.set('search', keyword);
+      trackAnalytics('search', { query: String(keyword).trim(), resultCount: posts.length });
+    } else {
+      searchParams.delete('search');
+    }
     setSearchParams(searchParams);
   };
 

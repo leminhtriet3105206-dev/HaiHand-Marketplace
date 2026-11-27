@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
@@ -10,12 +10,14 @@ import {
   startProductDwellTracker,
   trackEvent
 } from '../utils/tracker';
+import { track as trackAnalytics } from '../analytics/tracker';
 
 
 export default function ProductDetailPage() {
   const toast = useToast();
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [post, setPost] = useState(null);
   const [mainImage, setMainImage] = useState('');
   
@@ -39,6 +41,14 @@ export default function ProductDetailPage() {
 
         // Track product view (with 30-min deduplication)
         trackProductView(data, 'detail');
+        trackAnalytics('product_view', {
+          productId: data._id,
+          sellerId: data.sellerId?._id || data.sellerId || data.author?._id || data.author,
+          category: data.category,
+          price: data.price,
+          fromList: location.state?.fromList || 'other',
+          position: typeof location.state?.position === 'number' ? location.state.position : undefined
+        });
 
         // Track real product dwell time
         cleanupDwell = startProductDwellTracker(data, 'detail');
@@ -83,6 +93,12 @@ export default function ProductDetailPage() {
           price: post.price,
           source: 'detail'
         });
+        trackAnalytics('add_to_cart', {
+          productId: post._id,
+          sellerId: post.sellerId?._id || post.sellerId || post.author?._id || post.author,
+          quantity: 1,
+          price: post.price
+        });
         window.dispatchEvent(new Event('cartUpdated')); 
         if (isBuyNow) navigate('/cart');
         else toast.success('Thành công', "🛒 Đã thêm sản phẩm vào giỏ hàng thành công!");
@@ -93,10 +109,32 @@ export default function ProductDetailPage() {
 
   const handleChat = () => {
     if (!currentUser) {
-        toast.warning('Chú ý', "Vui lòng đăng nhập để nhắn tin!");
-        navigate('/login');
-        return;
+      toast.warning('Chú ý', 'Vui lòng đăng nhập để nhắn tin!');
+      navigate('/login');
+      return;
     }
+    const authorObj =
+      (post.author && typeof post.author === 'object' && post.author) ||
+      (post.sellerId && typeof post.sellerId === 'object' && post.sellerId) ||
+      null;
+    const authorId = authorObj?._id || post.author || post.sellerId || '';
+
+    if (!authorId) {
+      toast.error('Lỗi', 'Không tìm thấy thông tin người bán.');
+      return;
+    }
+    if (String(currentUser._id) === String(authorId)) {
+      toast.warning('Chú ý', 'Bạn không thể tự nhắn tin cho chính mình!');
+      return;
+    }
+
+    const receiver = {
+      _id: authorId,
+      name: authorObj?.name || authorObj?.shopInfo?.shopName || 'Người bán',
+      avatar: authorObj?.avatar || authorObj?.shopInfo?.avatar || '',
+      shopInfo: authorObj?.shopInfo
+    };
+
     trackEvent({
       type: 'chat_product_click',
       productId: post._id,
@@ -104,10 +142,17 @@ export default function ProductDetailPage() {
       price: post.price,
       source: 'detail'
     });
-    navigate('/chat', { state: { receiver: post.author, post: post } });
+    trackAnalytics('chat_start', {
+      sellerId: authorId,
+      productId: post._id
+    });
+    navigate('/chat', { state: { receiver, post } });
   };
 
   if (!post) return <div className="min-h-screen flex items-center justify-center text-stone-500"><h3>Đang tải dữ liệu...</h3></div>;
+
+  const postOwnerId = post.author?._id || post.sellerId?._id || post.author || post.sellerId || '';
+  const isOwnPost = Boolean(currentUser?._id && postOwnerId && String(currentUser._id) === String(postOwnerId));
 
   const displayImages = post.images && post.images.length > 0 ? post.images : (post.image ? [post.image] : []);
 
@@ -341,7 +386,7 @@ export default function ProductDetailPage() {
 
               {/* Actions */}
               <div className="flex flex-col gap-3">
-                {currentUser && post.author && currentUser._id === post.author._id ? (
+                {isOwnPost ? (
                   <button onClick={() => navigate(`/edit-post/${post._id}`)} className="w-full bg-[#1C1917] text-white font-bold py-3.5 rounded-lg hover:bg-stone-800 transition-colors flex items-center justify-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
                     Chỉnh sửa tin của bạn

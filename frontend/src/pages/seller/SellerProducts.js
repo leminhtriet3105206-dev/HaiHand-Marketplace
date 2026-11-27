@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axiosClient from '../../api/axiosClient';
 import { useToast } from '../../components/Toast';
 import { useConfirm } from '../../components/ConfirmModal';
+import { getImageUrl } from '../../utils/imageUrl';
 
 const SellerProducts = () => {
     const toast = useToast();
@@ -50,11 +51,7 @@ const SellerProducts = () => {
         }
     };
 
-    const getImageUrl = (img) => {
-        if (!img) return 'https://via.placeholder.com/150';
-        if (img.startsWith('http')) return img;
-        return `${API_URL}/${img.replace(/\\/g, '/')}`;
-    };
+    // Sử dụng helper getImageUrl dùng chung (không dùng via.placeholder.com)
 
     const filteredProducts = products.filter((p) => {
         const title = (p.name || p.title || '').toLowerCase();

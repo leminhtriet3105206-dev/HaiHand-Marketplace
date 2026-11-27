@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "events": {
+    "page_view": {
+      "source": "client",
+      "props": {
+        "path": { "type": "string", "maxLength": 300 },
+        "title": { "type": "string", "maxLength": 200 },
+        "referrer": { "type": "string", "maxLength": 200, "domainOnly": true },
+        "utm_source": { "type": "string", "maxLength": 100 },
+        "utm_medium": { "type": "string", "maxLength": 100 },
+        "utm_campaign": { "type": "string", "maxLength": 100 }
+      }
+    },
+    "product_view": {
+      "source": "client",
+      "props": {
+        "productId": { "type": "objectId" },
+        "sellerId": { "type": "objectId" },
+        "category": { "type": "string", "maxLength": 100 },
+        "price": { "type": "number", "min": 0 },
+        "fromList": { "type": "string", "enum": ["home", "search", "category", "related", "shop", "favorites", "other"] },
+        "position": { "type": "number", "min": 0 }
+      }
+    },
+    "product_impression": {
+      "source": "client",
+      "props": {
+        "productIds": { "type": "objectIdArray", "maxItems": 20 },
+        "list": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "search": {
+      "source": "client",
+      "props": {
+        "query": { "type": "string", "maxLength": 100, "maskPii": true },
+        "resultCount": { "type": "number", "min": 0 },
+        "filters": { "type": "object", "maxKeys": 10 }
+      }
+    },
+    "search_result_click": {
+      "source": "client",
+      "props": {
+        "query": { "type": "string", "maxLength": 100, "maskPii": true },
+        "productId": { "type": "objectId" },
+        "position": { "type": "number", "min": 0 }
+      }
+    },
+    "filter_apply": {
+      "source": "client",
+      "props": {
+        "category": { "type": "string", "maxLength": 100 },
+        "priceMin": { "type": "number", "min": 0 },
+        "priceMax": { "type": "number", "min": 0 },
+        "condition": { "type": "string", "maxLength": 100 },
+        "sort": { "type": "string", "maxLength": 50 }
+      }
+    },
+    "add_to_cart": {
+      "source": "client",
+      "props": {
+        "productId": { "type": "objectId" },
+        "sellerId": { "type": "objectId" },
+        "quantity": { "type": "number", "min": 1 },
+        "price": { "type": "number", "min": 0 },
+        "variantId": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "remove_from_cart": {
+      "source": "client",
+      "props": {
+        "productId": { "type": "objectId" },
+        "sellerId": { "type": "objectId" },
+        "quantity": { "type": "number", "min": 0 },
+        "price": { "type": "number", "min": 0 },
+        "variantId": { "type": "string", "maxLength": 64 }
+      }
+    },
+    "favorite_add": {
+      "source": "client",
+      "props": {
+        "productId": { "type": "objectId" }
+      }
+    },
+    "favorite_remove": {
+      "source": "client",
+      "props": {
+        "productId": { "type": "objectId" }
+      }
+    },
+    "follow_shop": {
+      "source": "client",
+      "props": {
+        "sellerId": { "type": "objectId" }
+      }
+    },
+    "unfollow_shop": {
+      "source": "client",
+      "props": {
+        "sellerId": { "type": "objectId" }
+      }
+    },
+    "chat_start": {
+      "source": "client",
+      "props": {
+        "sellerId": { "type": "objectId" },
+        "productId": { "type": "objectId" }
+      }
+    },
+    "checkout_start": {
+      "source": "client",
+      "props": {
+        "itemCount": { "type": "number", "min": 0 },
+        "cartValue": { "type": "number", "min": 0 }
+      }
+    },
+    "payment_method_select": {
+      "source": "client",
+      "props": {
+        "method": { "type": "string", "enum": ["COD", "VNPAY", "HAIPAY"] }
+      }
+    },
+    "signup": {
+      "source": "server",
+      "props": {
+        "method": { "type": "string", "maxLength": 50 }
+      }
+    },
+    "order_placed": {
+      "source": "server",
+      "props": {
+        "orderId": { "type": "objectId" },
+        "sellerId": { "type": "objectId" },
+        "value": { "type": "number", "min": 0 },
+        "itemCount": { "type": "number", "min": 1 },
+        "paymentMethod": { "type": "string", "maxLength": 50 }
+      }
+    },
+    "payment_success": {
+      "source": "server",
+      "props": {
+        "orderId": { "type": "objectId" },
+        "method": { "type": "string", "maxLength": 50 }
+      }
+    },
+    "payment_failed": {
+      "source": "server",
+      "props": {
+        "orderId": { "type": "objectId" },
+        "method": { "type": "string", "maxLength": 50 }
+      }
+    },
+    "order_cancelled": {
+      "source": "server",
+      "props": {
+        "orderId": { "type": "objectId" },
+        "by": { "type": "string", "enum": ["buyer", "seller", "admin", "system"] }
+      }
+    },
+    "seller_applied": {
+      "source": "server",
+      "props": {}
+    },
+    "product_created": {
+      "source": "server",
+      "props": {
+        "productId": { "type": "objectId" },
+        "sellerId": { "type": "objectId" }
+      }
+    }
+  }
+}

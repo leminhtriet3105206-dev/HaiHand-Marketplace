@@ -5,6 +5,7 @@ import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { useToast } from '../components/Toast';
 import { useConfirm } from '../components/ConfirmModal';
+import { track as trackAnalytics } from '../analytics/tracker';
 import { RecommendationSection } from '../components/RecommendationSection';
 
 export default function CartPage() {
@@ -60,7 +61,8 @@ export default function CartPage() {
         next.delete(postId);
         return next;
       });
-      window.dispatchEvent(new Event('cartUpdated')); 
+      window.dispatchEvent(new Event('cartUpdated'));
+      trackAnalytics('remove_from_cart', { productId: postId });
     } catch (error) {
       toast.error('Lỗi', "Lỗi không thể gỡ sản phẩm!");
     }
@@ -83,6 +85,9 @@ export default function CartPage() {
               postId: postId,
               quantity: change 
           });
+        }
+        if (change > 0) {
+          trackAnalytics('add_to_cart', { productId: postId, quantity: change });
         }
         setCartItems(prev => prev.map(item => {
             if (item.product._id === postId) {

@@ -7,6 +7,7 @@ import { ProductCard } from '../components/ProductCard';
 import { RecommendationSection } from '../components/RecommendationSection';
 import { mapPostToProductCard } from '../utils/productMapper';
 import { trackEvent, getLocalRecentlyViewed } from '../utils/tracker';
+import { track as trackAnalytics } from '../analytics/tracker';
 import { Button } from '../components/Button';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
@@ -176,6 +177,7 @@ export default function HomePage() {
     fetchPosts(1, category, keyword, locationFilter);
     if (category && category !== 'Tất cả') {
       trackEvent({ type: 'category_view', category, source: 'home' });
+      trackAnalytics('filter_apply', { category });
     }
   }, [selectedCategory, keyword, locationFilter, fetchPosts]);
 
@@ -193,6 +195,7 @@ export default function HomePage() {
     fetchPosts(1, 'Kết quả tìm kiếm', searchKeyword, locationFilter);
     if (searchKeyword && searchKeyword.trim()) {
       trackEvent({ type: 'search', query: searchKeyword.trim(), source: 'home' });
+      trackAnalytics('search', { query: searchKeyword.trim() });
     }
   }, [locationFilter, fetchPosts]);
 
@@ -223,6 +226,7 @@ export default function HomePage() {
       
       try {
           await axios.post(`${API_URL}/api/users/favorites`, { userId: user._id, postId: postId });
+          trackAnalytics(isFav ? 'favorite_remove' : 'favorite_add', { productId: postId });
           toast.success(isFav ? 'Đã bỏ lưu tin' : 'Đã lưu tin thành công!');
       } catch (error) { 
           setFavoriteIds(prev => isFav ? [...prev, postId] : prev.filter(id => id !== postId));

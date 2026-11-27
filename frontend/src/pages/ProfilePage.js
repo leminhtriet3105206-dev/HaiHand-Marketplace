@@ -5,6 +5,7 @@ import axiosClient, { persistUser } from '../api/axiosClient';
 import { AppHeader } from '../components/AppHeader';
 import { AppFooter } from '../components/AppFooter';
 import { useToast } from '../components/Toast';
+import { getConsent, setConsent, isDoNotTrackEnabled } from '../analytics/tracker';
 import OrderDetailModal from '../components/OrderDetailModal';
 
 export default function ProfilePage() {
@@ -327,6 +328,20 @@ export default function ProfilePage() {
                         <button onClick={() => setIsEditing(true)} className="w-full bg-stone-50 text-stone-700 font-bold py-2.5 px-6 rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 transition-colors border border-stone-200">
                             <i className="fas fa-user-edit text-stone-500"></i> Chỉnh sửa thông tin
                         </button>
+                        {!isDoNotTrackEnabled() && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const next = getConsent() !== 'granted';
+                                    setConsent(next);
+                                    toast.info(next ? 'Đã bật phân tích trải nghiệm' : 'Đã tắt theo dõi phân tích');
+                                }}
+                                className="w-full bg-stone-50 text-stone-700 font-bold py-2.5 px-6 rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 transition-colors border border-stone-200 text-xs"
+                            >
+                                <i className="fas fa-shield-alt text-stone-500"></i>
+                                {getConsent() === 'granted' ? 'Tắt theo dõi phân tích' : 'Bật theo dõi phân tích'}
+                            </button>
+                        )}
                         <button onClick={() => { localStorage.clear(); window.location.href='/login'; }} className="w-full bg-red-50 text-red-600 font-bold py-2.5 px-6 rounded-xl hover:bg-red-100 flex items-center justify-center gap-2 transition-colors border border-red-200">
                             <i className="fas fa-sign-out-alt"></i> Đăng xuất
                         </button>

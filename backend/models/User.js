@@ -38,9 +38,17 @@ const userSchema = new mongoose.Schema({
         banner: { type: String, default: '' },
         phone: { type: String, default: '' },
         taxCode: { type: String, default: '' },
-        pickupAddress: { type: AddressSnapshotSchema, default: undefined } // shipping origin
+        pickupAddress: { type: AddressSnapshotSchema, default: undefined }, // shipping origin
+        quickReplies: {
+            type: [{
+                title: { type: String, required: true, maxlength: 40, trim: true },
+                content: { type: String, required: true, maxlength: 500, trim: true }
+            }],
+            default: []
+        }
     },
 
+    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     favorites: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
     status: { type: String, enum: ['active', 'locked'], default: 'active' },
     lockReason: { type: String, default: '' },

@@ -15,15 +15,23 @@ const SellerDashboard = () => {
         const fetchDashboardData = async () => {
             setLoading(true);
             try {
-                const [dashRes, ordersRes, analyticsRes] = await Promise.all([
+                const [dashRes, ordersRes, analyticsRes] = await Promise.allSettled([
                     axiosClient.get('/api/seller/dashboard'),
                     axiosClient.get('/api/seller/orders'),
-                    axiosClient.get('/api/seller/analytics').catch(() => ({ data: { items: [] } }))
+                    axiosClient.get('/api/seller/analytics')
                 ]);
-                setStats(dashRes.data.stats || {});
-                setShop(dashRes.data.shop || {});
-                setRecentOrders((ordersRes.data || []).slice(0, 5));
-                setProductAnalytics(analyticsRes.data?.items || []);
+                if (dashRes.status === 'fulfilled') {
+                    setStats(dashRes.value.data.stats || {});
+                    setShop(dashRes.value.data.shop || {});
+                } else {
+                    toast.error('Không thể tải thống kê tổng quan');
+                }
+                if (ordersRes.status === 'fulfilled') {
+                    setRecentOrders((ordersRes.value.data || []).slice(0, 5));
+                }
+                if (analyticsRes.status === 'fulfilled') {
+                    setProductAnalytics(analyticsRes.value.data?.items || []);
+                }
             } catch (error) {
                 console.error("Lỗi tải dashboard Seller", error);
                 toast.error('Không thể tải dữ liệu thống kê Kênh Người Bán');
@@ -91,7 +99,7 @@ const SellerDashboard = () => {
                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Doanh thu thực nhận</p>
                         <h3 className="text-xl font-black text-slate-800 mt-0.5">{formatCurrency(stats?.revenue)}</h3>
                         <p className="text-[11px] text-emerald-600 font-bold mt-0.5">
-                            <i className="fas fa-check-circle mr-1"></i>Đã trừ 5% phí sàn
+                            <i className="fas fa-check-circle mr-1"></i>Đã trừ {stats?.commissionRate ?? 5}% phí sàn
                         </p>
                     </div>
                 </div>
@@ -163,6 +171,29 @@ const SellerDashboard = () => {
                         <p className="text-[11px] text-amber-700 mt-1">Sẽ tự động cộng vào số dư khả dụng khi người mua nhận hàng thành công</p>
                     </div>
                 </div>
+            </div>
+
+            {/* Customer Chat & Response Rate card (B5) */}
+            <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl shrink-0">
+                        <i className="fas fa-comments"></i>
+                    </div>
+                    <div>
+                        <h3 className="text-base font-extrabold text-slate-800">Chăm sóc khách hàng</h3>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                            Tin nhắn chưa đọc: <strong className="text-orange-600">{stats?.unreadMessages || 0}</strong> • Tỷ lệ phản hồi:{' '}
+                            <strong className="text-emerald-600">{stats?.responseRate ?? 100}%</strong>
+                        </p>
+                    </div>
+                </div>
+                <Link
+                    to="/seller-channel/messages"
+                    className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-xs font-bold rounded-xl shadow-xs transition-all shrink-0"
+                >
+                    <i className="fas fa-comment-dots mr-1.5"></i>
+                    Mở hộp thư khách hàng
+                </Link>
             </div>
 
             {/* Recent Orders Table */}

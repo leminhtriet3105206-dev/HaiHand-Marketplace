@@ -26,6 +26,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./analytics/event_spec.json:/analytics/event_spec.json:ro
       - siglip-cache:/app/.cache/huggingface
     networks:
       - haihand-network
@@ -72,6 +73,22 @@ services:
       - NODE_ENV=development
     depends_on:
       - backend
+    networks:
+      - haihand-network
+
+  analytics:
+    build:
+      context: ./analytics
+      dockerfile: Dockerfile
+    container_name: haihand-analytics
+    profiles:
+      - analytics
+    restart: unless-stopped
+    env_file:
+      - path: ./analytics/.env
+        required: false
+    environment:
+      TZ: Asia/Ho_Chi_Minh
     networks:
       - haihand-network
 

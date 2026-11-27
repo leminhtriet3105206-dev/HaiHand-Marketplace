@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import axios from 'axios';
+import axiosClient from '../api/axiosClient';
 
 // Helper to format relative time in Vietnamese
 function formatTime(dateStr) {
@@ -67,9 +68,9 @@ export const AppHeader = ({ onSearch, onHome }) => {
   }, [API_URL, user?._id]);
 
   const fetchUnreadCount = useCallback(async () => {
-    if (user?._id) {
+    if (user?._id && user?.token) {
       try {
-        const { data } = await axios.get(`${API_URL}/api/messages/unread-count/${user._id}`);
+        const { data } = await axiosClient.get('/api/messages/unread-count');
         setUnreadCount(data.count || 0);
       } catch (err) {
         console.error("Lỗi lấy số lượng tin nhắn chưa đọc:", err);
@@ -77,7 +78,7 @@ export const AppHeader = ({ onSearch, onHome }) => {
     } else {
       setUnreadCount(0);
     }
-  }, [API_URL, user?._id]);
+  }, [user?._id, user?.token]);
 
   const fetchNotifications = useCallback(async () => {
     if (user?._id) {
@@ -126,11 +127,19 @@ export const AppHeader = ({ onSearch, onHome }) => {
       }
     };
 
+    const handleInboxRefresh = () => {
+      fetchUnreadCount();
+    };
+
     socket.on('new_notification', handleNewNotif);
+    socket.on('message:new', handleInboxRefresh);
+    socket.on('inbox:update', handleInboxRefresh);
     return () => {
       socket.off('new_notification', handleNewNotif);
+      socket.off('message:new', handleInboxRefresh);
+      socket.off('inbox:update', handleInboxRefresh);
     };
-  }, [socket, user?._id]);
+  }, [socket, user?._id, fetchUnreadCount]);
 
   // Close notification dropdown when clicking outside
   useEffect(() => {

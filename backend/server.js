@@ -49,6 +49,8 @@ const { isHash, verifyPassword, hashPassword } = require('./utils/password');
 const trackRouter = require('./routes/track');
 const { trackServerEvent } = require('./analytics/track');
 const recommendationsRouter = require('./routes/recommendations');
+const createAdminPortalRouter = require('./routes/adminPortal');
+const UserEvent = require('./models/UserEvent');
 const {
   recordServerEvent,
   mergeUserIdentity,
@@ -56,6 +58,7 @@ const {
 } = require('./services/behaviorAnalysisService');
 
 const app = express();
+app.set('trust proxy', 1);
 
 // ============================================================================
 // SECTION 2: CẤU HÌNH CORS, SECURITY HEADERS (HELMET) & SOCKET.IO
@@ -96,13 +99,13 @@ app.use(express.json({ limit: '7mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 
 
 const fs = require('fs');
 app.set('view engine', 'ejs');
-const viewsDir = fs.existsSync(path.join(__dirname, 'views')) ? path.join(__dirname, 'views') : path.join(__dirname, '../admin/views');
-app.set('views', viewsDir);
+app.set('views', path.join(__dirname, 'views'));
 
 
 const cloudinary = require('cloudinary').v2;
@@ -212,14 +215,38 @@ const sendNotification = notificationService.sendNotification;
 const sendAdminNotification = notificationService.sendAdminNotification;
 
 const session = require('express-session');
+const isCookieSecure = process.env.COOKIE_SECURE === 'true';
+
 app.use(session({
-  secret: 'khoa-bi-mat-haihand',
+  secret: process.env.SESSION_SECRET || 'khoa-bi-mat-haihand',
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  proxy: true,
+  cookie: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isCookieSecure,
+    maxAge: 24 * 60 * 60 * 1000
+  }
 }));
 
+app.use((req, res, next) => {
+  if (!req.headers.cookie || !req.headers.cookie.includes('XSRF_TOKEN=')) {
+    const token = crypto.randomBytes(24).toString('hex');
+    res.cookie('XSRF_TOKEN', token, {
+      httpOnly: false,
+      sameSite: 'lax',
+      secure: isCookieSecure
+    });
+  }
+  next();
+});
+
 const requireAdmin = (req, res, next) => {
-  if (req.session.adminId) return next();
+  if (req.session?.user?.role === 'Admin' && req.session.user.status !== 'locked' && !req.session.user.isBanned) {
+    return next();
+  }
+  if (req.session?.adminId) return next();
 
   // Support Bearer JWT for API endpoints
   const authHeader = req.headers.authorization;
@@ -259,50 +286,30 @@ setInterval(() => {
   runNightlyMaintenance().catch((err) => console.warn('Nightly maintenance schedule error:', err.message));
 }, 24 * 60 * 60 * 1000).unref();
 
-app.get('/login', (req, res) => res.render('login', { error: null }));
-
-app.post('/login', async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const admin = await User.findOne({ username, password, role: 'Admin' });
-    if (admin) {
-      req.session.adminId = admin._id;
-      res.redirect('/dashboard');
-    } else {
-      res.render('login', { error: 'Tài khoản không tồn tại hoặc bạn không phải Admin!' });
-    }
-  } catch (err) {
-    res.render('login', { error: 'Lỗi hệ thống khi đăng nhập: ' + err.message });
-  }
-});
-
-app.post('/register', async (req, res) => {
-  try {
-    const { name, email, username, password, role } = req.body;
-    const existingUser = await User.findOne({ $or: [{ email }, { username }] });
-    if (existingUser) return res.render('login', { error: 'Email hoặc Username đã bị trùng!' });
-
-    const newUser = new User({ name, email, username, password, role });
-    await newUser.save();
-
-    trackServerEvent('signup', {
-      userId: newUser._id,
-      sessionId: req.headers['x-hh-sid'],
-      anonymousId: req.headers['x-hh-aid'],
-      props: { method: 'email' }
-    });
-    res.render('login', { error: 'Tạo tài khoản thành công! Hãy đăng nhập.' });
-  } catch (error) {
-    res.render('login', { error: 'Lỗi hệ thống khi đăng ký!' });
-  }
-});
-
-app.get('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/login');
-});
-
-app.get('/', (req, res) => res.redirect('/dashboard'));
+app.use(
+  createAdminPortalRouter({
+    User,
+    Product,
+    Post,
+    Order,
+    Revenue,
+    Transaction,
+    Report,
+    Notification,
+    Message,
+    SupportConversation,
+    Category,
+    GlobalSetting: Settings,
+    UserEvent,
+    UserNotification,
+    upload,
+    sanitizeUser,
+    verifyPassword,
+    hashPassword,
+    isHash,
+    trackServerEvent
+  })
+);
 
 app.post('/api/admin/login', async (req, res) => {
   try {
@@ -541,125 +548,7 @@ app.delete('/api/admin/posts/:id', requireAdminJWT, async (req, res) => {
   } catch (error) { res.status(500).json({ message: 'Lỗi server' }); }
 });
 
-// Use requireAdmin (EJS) for old views, but since they want React, eventually these will be deprecated
-app.get('/dashboard', requireAdmin, async (req, res) => {
-  try {
-    const postCount = await Post.countDocuments();
-    const userCount = await User.countDocuments();
-    const pendingCount = await Post.countDocuments({ status: 'PENDING' });
-
-
-    const revenues = await Revenue.find().sort({ createdAt: -1 });
-    const totalRevenue = revenues.reduce((sum, item) => sum + item.commissionAmount, 0);
-
-
-    const recentRevenues = await Revenue.find()
-      .populate({
-        path: 'orderId',
-        populate: { path: 'buyer', select: 'name' }
-      })
-      .sort({ createdAt: -1 })
-      .limit(5);
-
-    const recentPending = await Post.find({ status: 'PENDING' }).populate('author', 'name email').sort({ createdAt: -1 }).limit(5);
-    const recentUsers = await User.find().sort({ createdAt: -1 }).limit(5);
-
-    res.render('dashboard', {
-      stats: { postCount, userCount, pendingCount, revenue: totalRevenue },
-      recentPending,
-      recentUsers,
-      recentRevenues,
-      active: 'dashboard'
-    });
-  } catch (error) {
-    res.render('dashboard', { stats: { postCount: 0, userCount: 0, pendingCount: 0, revenue: 0 }, recentPending: [], recentUsers: [], recentRevenues: [] });
-  }
-});
-
-app.get('/admin/withdrawals', async (req, res) => {
-  try {
-
-
-    const withdrawalsData = await Transaction.find({ type: 'Rút tiền', status: 'Đang xử lý' }).populate('user');
-
-    res.render('withdrawals', {
-      withdrawals: withdrawalsData,
-      active: 'withdrawals'
-    });
-  } catch (error) {
-    console.error("Lỗi khi tải trang quản lý rút tiền:", error);
-    res.status(500).send("Đã xảy ra lỗi trên server");
-  }
-});
-
-app.get('/admin/chat', requireAdmin, (req, res) => {
-  res.render('admin-chat', { active: 'chat' });
-});
-
-app.get('/users', requireAdmin, async (req, res) => {
-  try {
-    const searchQuery = req.query.q || '';
-    let query = {};
-    if (searchQuery) query = { $or: [{ name: { $regex: searchQuery, $options: 'i' } }, { email: { $regex: searchQuery, $options: 'i' } }] };
-    const users = await User.find(query).sort({ createdAt: -1 });
-    res.render('users', { users, searchQuery });
-  } catch (error) { res.render('users', { users: [], searchQuery: '' }); }
-});
-
-app.get('/admin/seller-applications', requireAdmin, async (req, res) => {
-  try {
-    const applications = await User.find({ sellerStatus: { $in: ['pending', 'approved', 'rejected'] } })
-      .select('-password')
-      .sort({ sellerAppliedAt: -1, updatedAt: -1 });
-    res.render('seller-applications', { applications, active: 'sellers' });
-  } catch (error) {
-    res.render('seller-applications', { applications: [], active: 'sellers' });
-  }
-});
-
-app.post('/admin/approve-seller/:id', requireAdmin, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (user) {
-      user.isSeller = true;
-      user.sellerStatus = 'approved';
-      user.sellerApprovedAt = new Date();
-      user.sellerRejectionReason = '';
-      if (!user.shopInfo || !user.shopInfo.shopName) {
-        user.shopInfo = { ...(user.shopInfo || {}), shopName: user.name, avatar: user.avatar || '' };
-      }
-      await user.save();
-    }
-  } catch (e) { }
-  res.redirect('/admin/seller-applications');
-});
-
-app.post('/admin/reject-seller/:id', requireAdmin, async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (user) {
-      user.isSeller = false;
-      user.sellerStatus = 'rejected';
-      user.sellerRejectionReason = 'Hồ sơ chưa đủ điều kiện';
-      await user.save();
-    }
-  } catch (e) { }
-  res.redirect('/admin/seller-applications');
-});
-
-app.get('/users/delete/:id', requireAdmin, async (req, res) => {
-  try { await User.findByIdAndDelete(req.params.id); res.redirect('/users'); } catch (e) { res.redirect('/users'); }
-});
-
-app.get('/posts', requireAdmin, async (req, res) => {
-  try {
-    const searchQuery = req.query.q || '';
-    let query = {};
-    if (searchQuery) query = { title: { $regex: searchQuery, $options: 'i' } };
-    const posts = await Post.find(query).populate('author', 'name email').sort({ createdAt: -1 });
-    res.render('posts', { posts, searchQuery });
-  } catch (error) { res.render('posts', { posts: [], searchQuery: '' }); }
-});
+// Legacy Admin SSR routes removed (handled by routes/adminPortal.js)
 
 // Replace existing /api/admin/orders with JWT auth and pagination
 app.get('/api/admin/orders', requireAdminJWT, async (req, res) => {
@@ -684,119 +573,7 @@ app.get('/api/admin/orders', requireAdminJWT, async (req, res) => {
 });
 
 
-app.get('/posts/delete/:id', requireAdmin, async (req, res) => {
-  try { await Post.findByIdAndUpdate(req.params.id, { status: 'DELETED' }); res.redirect('/posts'); } catch (e) { res.redirect('/posts'); }
-});
-
-
-app.get('/posts/approve/:id', requireAdmin, async (req, res) => {
-  try {
-    const post = await Post.findById(req.params.id);
-    if (!post) return res.status(404).send("Không tìm thấy bài viết");
-
-
-    post.status = 'APPROVED';
-    await post.save();
-
-
-    await UserNotification.create({
-      user: post.author,
-      title: '✅ Tin đăng đã được duyệt!',
-      message: `Tin đăng "${post.title}" của bạn đã chính thức hiển thị trên chợ. Chúc bạn mau chốt đơn nhé!`,
-      link: `/post/${post._id}`
-    });
-
-    res.redirect('/posts');
-  } catch (error) {
-    res.status(500).send("Lỗi server khi duyệt bài");
-  }
-});
-
-app.get('/orders', requireAdmin, async (req, res) => {
-  try {
-
-    const orders = await Order.find()
-      .populate('buyer', 'name email')
-      .sort({ createdAt: -1 });
-    res.render('orders', { orders });
-  } catch (error) {
-    res.render('orders', { orders: [] });
-  }
-});
-
-app.post('/orders/update-status/:id', requireAdmin, async (req, res) => {
-  try {
-    const { status } = req.body;
-    await Order.findByIdAndUpdate(req.params.id, { status });
-    res.redirect('/orders');
-  } catch (error) { res.redirect('/orders'); }
-});
-
-app.get('/categories', requireAdmin, async (req, res) => {
-  try {
-    const categories = await Category.find();
-    res.render('categories', { categories });
-  } catch (error) {
-    res.render('categories', { categories: [] });
-  }
-});
-
-app.post('/categories/add', requireAdmin, upload.single('image'), async (req, res) => {
-  try {
-    const newCategory = new Category({
-      name: req.body.name,
-      description: req.body.description,
-      image: req.file ? req.file.path : ''
-    });
-    await newCategory.save();
-    res.redirect('/categories');
-  } catch (error) { res.redirect('/categories'); }
-});
-
-app.get('/categories/edit/:id', requireAdmin, async (req, res) => {
-  try {
-    const category = await Category.findById(req.params.id);
-    if (!category) return res.redirect('/categories');
-    res.render('edit-category', { category });
-  } catch (error) { res.redirect('/categories'); }
-});
-
-app.post('/categories/edit/:id', requireAdmin, upload.single('image'), async (req, res) => {
-  try {
-    const updateData = { name: req.body.name, description: req.body.description };
-    if (req.file) updateData.image = req.file.path;
-    await Category.findByIdAndUpdate(req.params.id, updateData);
-    res.redirect('/categories');
-  } catch (error) { res.redirect('/categories'); }
-});
-
-
-app.post('/orders/update-status/:id', requireAdmin, async (req, res) => {
-  try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).send("Không tìm thấy đơn hàng");
-
-
-    if (order.status === 'Đã thanh toán cho người bán' || order.status === 'Đã hủy') {
-      return res.status(400).send(`
-                <div style="text-align:center; padding: 50px; font-family: sans-serif;">
-                    <h2 style="color: red;">⛔ LỖI BẢO MẬT HỆ THỐNG</h2>
-                    <p>Không thể thay đổi trạng thái của đơn hàng đã được CHỐT SỔ hoặc ĐÃ HỦY!</p>
-                    <a href="/orders" style="padding: 10px 20px; background: #333; color: white; text-decoration: none; border-radius: 5px;">Quay lại</a>
-                </div>
-            `);
-    }
-
-
-    order.status = req.body.status;
-    await order.save();
-
-
-    res.redirect('/orders');
-  } catch (error) {
-    res.status(500).send("Lỗi server khi cập nhật trạng thái");
-  }
-});
+// Legacy post/order/category SSR routes removed (handled by routes/adminPortal.js)
 
 
 app.post('/api/admin/release-funds/:orderId', requireAdmin, async (req, res) => {
@@ -900,24 +677,7 @@ app.post('/api/admin/refund-order/:orderId', requireAdmin, async (req, res) => {
 });
 
 
-app.get('/admin/revenue', requireAdmin, async (req, res) => {
-  try {
-
-    const revenueList = await Revenue.find()
-      .populate({
-        path: 'orderId',
-        populate: { path: 'buyer', select: 'name' }
-      })
-      .sort({ createdAt: -1 });
-
-
-    const totalRevenue = revenueList.reduce((sum, item) => sum + item.commissionAmount, 0);
-
-    res.render('revenue', { revenueList, totalRevenue });
-  } catch (error) {
-    res.redirect('/dashboard');
-  }
-});
+// Legacy /admin/revenue removed (handled by routes/adminPortal.js)
 
 app.delete('/api/posts/:id', async (req, res) => {
   try {
@@ -938,58 +698,7 @@ app.delete('/api/posts/:id', async (req, res) => {
   }
 });
 
-app.get('/api/admin/notifications', async (req, res) => {
-  try {
-    const adminFilter = {
-      $or: [
-        { targetRole: 'admin' },
-        { recipientRole: 'admin' },
-        { type: { $in: ['SELLER', 'PRODUCT', 'WITHDRAWAL', 'REPORT'] } }
-      ]
-    };
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 30));
-    const notifs = await Notification.find(adminFilter).sort({ createdAt: -1 }).limit(limit);
-    const unreadCount = await Notification.countDocuments({ ...adminFilter, isRead: false });
-    res.json({ notifications: notifs, unreadCount });
-  } catch (error) { res.status(500).json({ error: "Lỗi: " + error.message }); }
-});
-
-
-app.post('/api/admin/notifications/read', async (req, res) => {
-  try {
-    const adminFilter = {
-      $or: [
-        { targetRole: 'admin' },
-        { recipientRole: 'admin' },
-        { type: { $in: ['SELLER', 'PRODUCT', 'WITHDRAWAL', 'REPORT'] } }
-      ]
-    };
-    await Notification.updateMany({ ...adminFilter, isRead: false }, { isRead: true });
-    res.json({ success: true });
-  } catch (error) {
-    res.status(500).json({ error: "Lỗi cập nhật thông báo: " + error.message });
-  }
-});
-
-
-app.get('/admin/reports', requireAdmin, async (req, res) => {
-  try {
-
-    const reports = await Report.find()
-      .populate('reporter', 'name')
-      .populate('post', 'title')
-      .sort({ createdAt: -1 });
-
-
-    res.render('reports', {
-      reports,
-      active: 'reports',
-      user: req.session.user
-    });
-  } catch (error) {
-    res.status(500).send("Lỗi tải trang báo cáo");
-  }
-});
+// Legacy /api/admin/notifications & /admin/reports removed (handled by routes/adminPortal.js)
 
 /** [API] Lấy thông tin Admin đầu mối để mở chat CSKH (fallback sang Settings mặc định để tránh lỗi console) */
 app.get('/api/admin/contact', async (req, res) => {
@@ -1834,59 +1543,6 @@ app.post('/api/users/:userId/withdraw', async (req, res) => {
 });
 
 
-app.post('/admin/posts/delete/:id', requireAdmin, async (req, res) => {
-  try {
-    const postId = req.params.id;
-
-
-    const deletedPost = await Post.findByIdAndDelete(postId);
-
-    if (!deletedPost) {
-      return res.status(404).send("Không tìm thấy bài viết để xóa!");
-    }
-
-
-    await mongoose.models.Report.deleteMany({ post: postId });
-
-
-    if (deletedPost.author) {
-      await UserNotification.create({
-        user: deletedPost.author,
-        title: '🚫 Bài viết đã bị xóa!',
-        message: `Bài viết "${deletedPost.title}" của bạn đã bị Admin xóa do vi phạm tiêu chuẩn cộng đồng.`,
-        link: '/profile'
-      });
-    }
-
-    // Fix Orphaned Records: Xoá bài đăng khỏi mảng cart & favorites của mọi users
-    await mongoose.model('User').updateMany({}, {
-      $pull: {
-        cart: { product: postId },
-        favorites: postId
-      }
-    });
-
-
-    res.redirect('/admin/reports');
-  } catch (error) {
-    console.error("Lỗi xóa bài Admin:", error);
-    res.status(500).send("Lỗi hệ thống khi xóa bài viết");
-  }
-});
-
-app.get('/admin/orders', async (req, res) => {
-  try {
-
-    const orders = await Order.find()
-      .populate('buyer', 'name email phone')
-      .sort({ createdAt: -1 });
-
-    res.render('orders', { orders });
-  } catch (error) {
-    res.status(500).send("Lỗi tải danh sách đơn hàng");
-  }
-});
-
 app.post('/api/reports', async (req, res) => {
   try {
     const { reporterId, postId, reason } = req.body;
@@ -1902,16 +1558,6 @@ app.post('/api/reports', async (req, res) => {
 
     res.json({ message: "Đã gửi báo cáo thành công!" });
   } catch (e) { res.status(500).json({ error: "Lỗi" }); }
-});
-
-app.post('/admin/reports/ignore/:id', requireAdmin, async (req, res) => {
-  try {
-
-    await mongoose.models.Report.findByIdAndDelete(req.params.id);
-    res.redirect('/admin/reports');
-  } catch (error) {
-    res.status(500).send("Lỗi khi bỏ qua báo cáo");
-  }
 });
 
 app.post('/api/users/follow', async (req, res) => {

@@ -149,6 +149,7 @@ export default function HomeScreen() {
 
   return <SafeAreaView style={s.safe} edges={['top', 'bottom']}><View style={s.page}>
     <HomeHeader query={query} onChangeQuery={setQuery} onSearch={search} cartCount={cartCount} unreadCount={unreadCount} />
+    #gọi component
     <ProductList products={!loading && !error ? products : []} favorites={favorites} onFavorite={toggleFavorite} onEndReached={() => void loadMore()} contentContainerStyle={s.content} footer={
       loadingMore ? <ActivityIndicator color={colors.orange} style={s.listFooter} /> : moreError ? <Pressable onPress={() => void loadMore(true)} style={s.listFooter}><Text style={s.more}>Tải thêm thất bại. Chạm để thử lại.</Text></Pressable> : null
     } header={<>

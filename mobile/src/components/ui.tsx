@@ -82,7 +82,7 @@ export function ProductGrid({ products, favorites, onFavorite }: { products: Pro
 export function ProductList({ products, favorites, onFavorite, header, footer, onEndReached, contentContainerStyle }: {
   products: Product[]; favorites?: string[]; onFavorite?: (id: string) => void; header?: ReactNode; footer?: ReactNode;
   onEndReached?: () => void; contentContainerStyle?: StyleProp<ViewStyle>;
-}) {
+}) { ##flatlist
   return <FlatList
     data={products} numColumns={2} keyExtractor={(item) => item._id}
     ListHeaderComponent={header ? <>{header}</> : undefined} ListFooterComponent={footer ? <>{footer}</> : undefined}

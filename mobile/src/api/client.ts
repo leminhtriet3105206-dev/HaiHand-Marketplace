@@ -56,6 +56,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
   let timedOut = false;
   const timer = controller ? setTimeout(() => { timedOut = true; controller.abort(); }, timeoutMs) : null;
   let response: Response;
+  let raw: string;
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...rest,
@@ -67,6 +68,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
       },
       body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
     });
+    raw = await response.text();
   } catch (cause) {
     if (timedOut) throw new Error('Kết nối máy chủ quá lâu. Vui lòng thử lại.');
     if (signal?.aborted) throw cause;
@@ -75,7 +77,6 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     if (timer) clearTimeout(timer);
     signal?.removeEventListener('abort', onAbort);
   }
-  const raw = await response.text();
   let data: unknown;
   try { data = raw ? JSON.parse(raw) : null; } catch { data = { message: raw }; }
   if (!response.ok) {

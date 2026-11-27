@@ -1,11 +1,12 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Location from 'expo-location';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { formatPrice, request, type Address, type CartItem } from '../api/client';
 import { useSession } from '../auth/SessionContext';
 import { Button, Field, Notice, Screen, Status } from '../components/ui';
+import { emptyAddressDraft, readAddressDraft, writeAddressDraft } from '../data/addressDraft';
 import { writeCart } from '../data/cartCache';
 import { validPhone } from '../domain/validation';
 import { colors } from '../theme';
@@ -15,47 +16,94 @@ type District = { DistrictID: number; DistrictName: string };
 type Ward = { WardCode: string; WardName: string };
 type AddressResponse = { addresses: Address[]; profile: { name: string; phone: string } };
 type CheckoutResponse = { success: boolean; paymentUrl?: string; parentOrderId: string; amount: number };
-type AddressDraft = Omit<Address, 'provinceId' | 'districtId'> & { provinceId?: number; districtId?: number };
 type ShippingQuote = { fee: number };
 
+function useAddressOptions<T>(path: string) {
+  const [retry, setRetry] = useState(0);
+  const [result, setResult] = useState<{ path: string; items: T[]; failed: boolean }>();
+  useEffect(() => {
+    if (!path) return;
+    const controller = new AbortController();
+    void request<T[]>(path, { signal: controller.signal, timeoutMs: 10000 }).then(
+      (items) => { if (!controller.signal.aborted) setResult({ path, items, failed: false }); },
+      () => { if (!controller.signal.aborted) setResult({ path, items: [], failed: true }); },
+    );
+    return () => controller.abort();
+  }, [path, retry]);
+  return {
+    items: result?.path === path ? result.items : [],
+    failed: result?.path === path && result.failed,
+    loading: !!path && result?.path !== path,
+    retry: () => { setResult(undefined); setRetry((count) => count + 1); },
+  };
+}
+
 export default function CheckoutScreen() {
+  const { user } = useSession();
+  return <CheckoutForm key={user?._id ?? 'guest'} />;
+}
+
+function CheckoutForm() {
   const { ids } = useLocalSearchParams<{ ids?: string }>();
   const { user, token } = useSession();
+  const userId = user?._id;
   const [items, setItems] = useState<CartItem[]>([]);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [address, setAddress] = useState<Address | null>(null);
   const [adding, setAdding] = useState(false);
-  const [draft, setDraft] = useState<AddressDraft>({ fullName: '', phone: '', street: '', provinceName: '', districtName: '', wardName: '', wardCode: '' });
-  const [provinces, setProvinces] = useState<Province[]>([]);
-  const [districts, setDistricts] = useState<District[]>([]);
-  const [wards, setWards] = useState<Ward[]>([]);
+  const [draft, setDraft] = useState(emptyAddressDraft);
+  const addressFormOpen = useRef(false);
+  const [draftError, setDraftError] = useState('');
+  const provinces = useAddressOptions<Province>(adding ? '/api/shipping/provinces' : '');
+  const districts = useAddressOptions<District>(adding && draft.provinceId ? `/api/shipping/districts?provinceId=${draft.provinceId}` : '');
+  const wards = useAddressOptions<Ward>(adding && draft.districtId ? `/api/shipping/wards?districtId=${draft.districtId}` : '');
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'VNPAY'>('COD');
   const [shippingFee, setShippingFee] = useState<number | null>(null);
   const [shippingError, setShippingError] = useState('');
   const [shippingLoading, setShippingLoading] = useState(false);
   const [quoteRetry, setQuoteRetry] = useState(0);
+  const [loadRetry, setLoadRetry] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [addressErrors, setAddressErrors] = useState<{ fullName?: string; phone?: string; street?: string; region?: string }>({});
   const [locating, setLocating] = useState(false);
 
-  const load = useCallback(async () => {
-    if (!user) return;
-    setLoading(true); setError('');
+  const load = useCallback(async (signal: AbortSignal) => {
+    if (!userId) return;
+    setLoading(true); setLoadError('');
     try {
-      const [cart, book] = await Promise.all([
-        request<CartItem[]>(`/api/users/cart/${user._id}`, { token: token || undefined }),
-        request<AddressResponse>('/api/addresses', { token: token || undefined }),
+      const [cart, book, savedDraft] = await Promise.all([
+        request<CartItem[]>(`/api/users/cart/${userId}`, { token: token || undefined, signal, timeoutMs: 10000 }),
+        request<AddressResponse>('/api/addresses', { token: token || undefined, signal, timeoutMs: 10000 }),
+        readAddressDraft(userId),
       ]);
+      if (signal.aborted) return;
       setItems(cart.filter((item) => (ids || '').split(',').includes(item.product._id)));
       setAddresses(book.addresses);
       setAddress(book.addresses.find((item) => item.isDefault) || book.addresses[0] || null);
-      setDraft((current) => ({ ...current, fullName: book.profile.name, phone: book.profile.phone }));
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không tải được thông tin thanh toán.'); }
-    finally { setLoading(false); }
-  }, [user, token, ids]);
-  useEffect(() => { const timer = setTimeout(() => { void load(); }, 0); return () => clearTimeout(timer); }, [load]);
+      addressFormOpen.current = !!savedDraft;
+      setDraft(savedDraft ?? emptyAddressDraft(book.profile.name, book.profile.phone));
+      setAdding(!!savedDraft);
+    } catch (cause) {
+      if (!signal.aborted) setLoadError(cause instanceof Error ? cause.message : 'Không tải được thông tin thanh toán.');
+    } finally { if (!signal.aborted) setLoading(false); }
+  }, [userId, token, ids]);
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => { void load(controller.signal); }, 0);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [load, loadRetry]);
+  useEffect(() => {
+    if (!userId || !adding || !addressFormOpen.current) return;
+    let active = true;
+    void writeAddressDraft(userId, draft).then(
+      () => { if (active) setDraftError(''); },
+      () => { if (active) setDraftError('Thiết bị không lưu được bản nháp địa chỉ.'); },
+    );
+    return () => { active = false; };
+  }, [userId, adding, draft]);
   useEffect(() => {
     const controller = new AbortController();
     const timer = setTimeout(() => {
@@ -80,22 +128,21 @@ export default function CheckoutScreen() {
     }, 0);
     return () => { clearTimeout(timer); controller.abort(); };
   }, [address, items, token, quoteRetry]);
-  const openAddressForm = async () => {
+  const openAddressForm = () => {
+    addressFormOpen.current = true;
     setAdding(true); setError('');
-    try { setProvinces(await request<Province[]>('/api/shipping/provinces')); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không tải được danh sách tỉnh thành.'); }
   };
-  const chooseProvince = async (value: Province) => {
+  const closeAddressForm = (saved?: Address) => {
+    addressFormOpen.current = false;
+    setAdding(false); setAddressErrors({}); setError(''); setDraftError('');
+    setDraft(emptyAddressDraft(saved?.fullName ?? user?.name, saved?.phone ?? user?.phone));
+    if (userId) void writeAddressDraft(userId, null).catch(() => setError('Thiết bị không xóa được bản nháp địa chỉ.'));
+  };
+  const chooseProvince = (value: Province) => {
     setDraft((current) => ({ ...current, provinceId: value.ProvinceID, provinceName: value.ProvinceName, districtId: undefined, districtName: '', wardCode: '', wardName: '' }));
-    setWards([]); setDistricts([]);
-    try { setDistricts(await request<District[]>(`/api/shipping/districts?provinceId=${value.ProvinceID}`)); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không tải được quận huyện.'); }
   };
-  const chooseDistrict = async (value: District) => {
+  const chooseDistrict = (value: District) => {
     setDraft((current) => ({ ...current, districtId: value.DistrictID, districtName: value.DistrictName, wardCode: '', wardName: '' }));
-    setWards([]);
-    try { setWards(await request<Ward[]>(`/api/shipping/wards?districtId=${value.DistrictID}`)); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Không tải được phường xã.'); }
   };
   const suggestCurrentAddress = async () => {
     setLocating(true); setError('');
@@ -122,12 +169,12 @@ export default function CheckoutScreen() {
     setBusy(true); setError('');
     try {
       const result = await request<{ address: Address; addresses: Address[] }>('/api/addresses', { method: 'POST', token: token || undefined, body: { ...draft, fullName: draft.fullName.trim(), phone: draft.phone.trim(), street: draft.street.trim(), isDefault: !addresses.length } });
-      setAddresses(result.addresses); setAddress(result.address); setAdding(false);
+      setAddresses(result.addresses); setAddress(result.address); closeAddressForm(result.address);
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'Không lưu được địa chỉ.'); }
     finally { setBusy(false); }
   };
   const checkout = async () => {
-    if (!user || !address || !items.length || shippingFee === null || shippingLoading) return;
+    if (!user || !address || adding || !items.length || shippingFee === null || shippingLoading) return;
     setBusy(true); setError('');
     try {
       const result = await request<CheckoutResponse>('/api/checkout', { method: 'POST', token: token || undefined, body: {
@@ -148,8 +195,8 @@ export default function CheckoutScreen() {
   const subtotal = items.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
   return <Screen title="Thanh toán">
     {!user ? <Button title="Đăng nhập" onPress={() => router.push('/login')} /> : <>
-      <Status loading={loading} error={error && loading ? error : undefined} onRetry={load} />
-      {!loading && <>
+      <Status loading={loading} error={loadError} onRetry={() => setLoadRetry((count) => count + 1)} />
+      {!loading && !loadError && <>
         <Text style={s.heading}>Sản phẩm ({items.length})</Text>
         {items.map((item) => <View key={item.product._id} style={s.row}><Text style={s.rowText} numberOfLines={2}>{item.product.title || item.product.name} × {item.quantity}</Text><Text style={s.bold}>{formatPrice(item.product.price * item.quantity)}</Text></View>)}
         <Text style={s.heading}>Địa chỉ giao hàng</Text>
@@ -160,10 +207,16 @@ export default function CheckoutScreen() {
           <Field label="Số điện thoại" value={draft.phone} onChangeText={(value) => setDraft((current) => ({ ...current, phone: value }))} keyboardType="phone-pad" error={addressErrors.phone} />
           <Field label="Số nhà, tên đường" value={draft.street} onChangeText={(value) => setDraft((current) => ({ ...current, street: value }))} error={addressErrors.street} />
           {!!addressErrors.region && <Notice error>{addressErrors.region}</Notice>}
-          <Text style={s.label}>Tỉnh / Thành phố: {draft.provinceName || 'Chọn'}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.options}>{provinces.map((item) => <Pressable key={item.ProvinceID} onPress={() => void chooseProvince(item)} style={s.option}><Text style={s.optionText}>{item.ProvinceName}</Text></Pressable>)}</ScrollView>
-          {!!draft.provinceId && <><Text style={s.label}>Quận / Huyện: {draft.districtName || 'Chọn'}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.options}>{districts.map((item) => <Pressable key={item.DistrictID} onPress={() => void chooseDistrict(item)} style={s.option}><Text style={s.optionText}>{item.DistrictName}</Text></Pressable>)}</ScrollView></>}
-          {!!draft.districtId && <><Text style={s.label}>Phường / Xã: {draft.wardName || 'Chọn'}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.options}>{wards.map((item) => <Pressable key={item.WardCode} onPress={() => setDraft((current) => ({ ...current, wardCode: item.WardCode, wardName: item.WardName }))} style={s.option}><Text style={s.optionText}>{item.WardName}</Text></Pressable>)}</ScrollView></>}
+          <Text style={s.label}>Tỉnh / Thành phố: {draft.provinceName || 'Chọn'}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.options}>{provinces.items.map((item) => <Pressable key={item.ProvinceID} onPress={() => chooseProvince(item)} style={s.option}><Text style={s.optionText}>{item.ProvinceName}</Text></Pressable>)}</ScrollView>
+          {!!draft.provinceId && <><Text style={s.label}>Quận / Huyện: {draft.districtName || 'Chọn'}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.options}>{districts.items.map((item) => <Pressable key={item.DistrictID} onPress={() => chooseDistrict(item)} style={s.option}><Text style={s.optionText}>{item.DistrictName}</Text></Pressable>)}</ScrollView></>}
+          {!!draft.districtId && <><Text style={s.label}>Phường / Xã: {draft.wardName || 'Chọn'}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.options}>{wards.items.map((item) => <Pressable key={item.WardCode} onPress={() => setDraft((current) => ({ ...current, wardCode: item.WardCode, wardName: item.WardName }))} style={s.option}><Text style={s.optionText}>{item.WardName}</Text></Pressable>)}</ScrollView></>}
+          {(provinces.loading || districts.loading || wards.loading) && <Notice>Đang tải danh sách khu vực...</Notice>}
+          {provinces.failed && <Button title="Tải lại tỉnh / thành phố" secondary onPress={provinces.retry} />}
+          {districts.failed && <Button title="Tải lại quận / huyện" secondary onPress={districts.retry} />}
+          {wards.failed && <Button title="Tải lại phường / xã" secondary onPress={wards.retry} />}
+          {!!draftError && <Notice error>{draftError}</Notice>}
           <Button title="Lưu địa chỉ" onPress={saveAddress} disabled={busy} />
+          <Button title="Bỏ nháp địa chỉ" secondary onPress={() => closeAddressForm()} disabled={busy || locating} />
         </View>}
         <Text style={s.heading}>Phương thức thanh toán</Text>
         {(['COD', 'VNPAY'] as const).map((method) => <Pressable key={method} onPress={() => setPaymentMethod(method)} style={[s.payment, paymentMethod === method && s.paymentActive]}><Text style={s.bold}>{method === 'COD' ? 'Thanh toán khi nhận hàng (COD)' : 'VNPAY'}</Text></Pressable>)}
@@ -175,7 +228,7 @@ export default function CheckoutScreen() {
           {!!shippingError && <><Notice error>{shippingError}</Notice><Button title="Tính lại phí vận chuyển" secondary onPress={() => setQuoteRetry((count) => count + 1)} /></>}
         </View>
         {error && <Notice error>{error}</Notice>}
-        <Button title={busy ? 'Đang đặt hàng...' : 'Xác nhận đặt hàng'} onPress={checkout} disabled={busy || !address || !items.length || shippingLoading || shippingFee === null} />
+        <Button title={busy ? 'Đang đặt hàng...' : 'Xác nhận đặt hàng'} onPress={checkout} disabled={busy || adding || !address || !items.length || shippingLoading || shippingFee === null} />
       </>}
     </>}
   </Screen>;

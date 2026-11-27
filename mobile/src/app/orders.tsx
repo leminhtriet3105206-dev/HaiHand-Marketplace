@@ -44,6 +44,7 @@ export default function OrdersScreen() {
         <Text style={s.muted}>Thanh toán: {order.paymentMethod || 'COD'} · {order.paymentMethod === 'VNPAY' && !['escrow', 'released'].includes(order.paymentStatus || '') ? 'Chờ xác nhận thanh toán' : order.paymentStatus === 'escrow' ? 'Đã thanh toán' : order.paymentStatus === 'released' ? 'Hoàn tất' : order.paymentStatus || 'Chưa thanh toán'}</Text>
         {!!order.trackingCode && <Text style={s.muted}>Mã vận đơn: {order.trackingCode}</Text>}
         <View style={s.totalRow}><Text style={s.muted}>Tổng cộng</Text><Text style={s.total}>{formatPrice(order.totalPrice)}</Text></View>
+        {order.paymentMethod === 'VNPAY' && !!order.parentOrderId && <Button title="Kiểm tra thanh toán VNPAY" secondary onPress={() => router.push({ pathname: '/payment-status', params: { parentOrderId: order.parentOrderId } })} />}
         {['Pending', 'Processing'].includes(order.status || '') && <Button title={confirmCancel === order._id ? 'Xác nhận hủy đơn' : 'Hủy đơn hàng'} secondary onPress={() => confirmCancel === order._id ? void update(order._id, 'cancel') : setConfirmCancel(order._id)} />}
         {['Shipped', 'Delivered'].includes(order.status || '') && <Button title="Xác nhận đã nhận hàng" onPress={() => void update(order._id, 'receive')} />}
       </View>)}

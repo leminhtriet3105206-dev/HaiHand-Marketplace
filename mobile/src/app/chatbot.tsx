@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 
 import { request, type Product } from '../api/client';
 import { useSession } from '../auth/SessionContext';
 import { Button, ProductTile, Screen } from '../components/ui';
+import { useForegroundEffect } from '../lifecycle/useForegroundEffect';
 import { colors } from '../theme';
 
 type ChatTurn = { role: 'user' | 'assistant'; content: string; products?: Product[] };
@@ -21,23 +22,31 @@ export default function ChatbotScreen() {
   const [human, setHuman] = useState(false);
   const [supportStatus, setSupportStatus] = useState('pending');
   const [supportTurns, setSupportTurns] = useState<ChatTurn[]>([]);
+  const [supportRefreshError, setSupportRefreshError] = useState('');
   const version = useRef(0);
-  const updateSupport = (data: { status: string; messages: { sender: string; content: string }[] }) => {
+  const updateSupport = useCallback((data: { status: string; messages: { sender: string; content: string }[] }) => {
     setSupportStatus(data.status);
     setSupportTurns(data.messages.map(m => ({ role: m.sender === 'customer' ? 'user' : 'assistant', content: m.content })));
-  };
-  useEffect(() => {
+    setSupportRefreshError('');
+  }, []);
+  useForegroundEffect(useCallback((signal) => {
     if (!human || !token) return;
-    let cancelled = false;
-    const timer = setInterval(async () => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const poll = async () => {
+      if (signal.aborted) return;
       const current = version.current;
       try {
-        const data = await request<Parameters<typeof updateSupport>[0]>('/api/support/conversation', { token });
-        if (!cancelled && current === version.current) updateSupport(data);
-      } catch { if (!cancelled) setError('Không tải được hội thoại hỗ trợ.'); }
-    }, 3000);
-    return () => { cancelled = true; clearInterval(timer); };
-  }, [human, token]);
+        const data = await request<Parameters<typeof updateSupport>[0]>('/api/support/conversation', { token, signal, timeoutMs: 10000 });
+        if (!signal.aborted && current === version.current) updateSupport(data);
+      } catch {
+        if (!signal.aborted && current === version.current) setSupportRefreshError('Chưa thể cập nhật hội thoại hỗ trợ. App sẽ thử lại.');
+      } finally {
+        if (!signal.aborted) timer = setTimeout(() => void poll(), 3000);
+      }
+    };
+    signal.addEventListener('abort', () => clearTimeout(timer), { once: true });
+    void poll();
+  }, [human, token, updateSupport]));
 
   const openSupport = async () => {
     if (!user) { router.push('/login'); return; }
@@ -86,7 +95,7 @@ export default function ChatbotScreen() {
         </View>)}
         {busy && <View style={s.waiting}><ActivityIndicator color={colors.orange} /><Text style={s.muted}>{human ? 'Đang gửi...' : 'AI đang trả lời...'}</Text></View>}
       </ScrollView>
-      {!!error && <Text style={s.error}>{error}</Text>}
+      {!!(error || (human && supportRefreshError)) && <Text style={s.error}>{error || supportRefreshError}</Text>}
       <Button title={human ? 'Quay lại trợ lý AI' : supportBusy ? 'Đang kết nối CSKH...' : 'Gặp tư vấn viên'} icon="headset-outline" secondary onPress={() => { if (human) { setHuman(false); setDraft(''); } else void openSupport(); }} disabled={supportBusy || busy} />
       <View style={s.composer}><TextInput value={draft} editable={!busy} onChangeText={setDraft} placeholder={human ? 'Nhắn cho tư vấn viên...' : 'Hỏi trợ lý HaiHand...'} placeholderTextColor={colors.muted} multiline maxLength={2000} style={s.input} /><Pressable onPress={() => void send()} disabled={busy || !draft.trim()} accessibilityLabel="Gửi tin nhắn" style={[s.send, (busy || !draft.trim()) && s.disabled]}><Ionicons name="send" size={21} color={colors.text} /></Pressable></View>
     </KeyboardAvoidingView>

@@ -4,17 +4,18 @@ import Constants from 'expo-constants';
 import * as ImagePicker from 'expo-image-picker';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library/legacy';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AccessibilityInfo, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, useAnimatedValue, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { request, type Product } from '../api/client';
 import { Button, ProductGrid, Screen, Status } from '../components/ui';
+import { useForegroundEffect } from '../lifecycle/useForegroundEffect';
 import { colors } from '../theme';
 
 function ImageScan({ uri, loading }: { uri: string; loading: boolean }) {
-  const progress = useRef(new Animated.Value(0)).current;
+  const progress = useAnimatedValue(0);
   const [reducedMotion, setReducedMotion] = useState(true);
 
   useEffect(() => {
@@ -60,7 +61,7 @@ export default function ImageSearchScreen() {
   const searching = useRef(false);
   const capturing = useRef(false);
   const [permission, requestCameraPermission] = useCameraPermissions();
-  const [cameraActive, setCameraActive] = useState(true);
+  const [cameraActive, setCameraActive] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState(false);
   const [facing, setFacing] = useState<CameraType>('back');
@@ -74,9 +75,12 @@ export default function ImageSearchScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  useFocusEffect(useCallback(() => {
+  useForegroundEffect(useCallback((signal) => {
     setCameraActive(true);
-    return () => setCameraActive(false);
+    signal.addEventListener('abort', () => {
+      setCameraActive(false);
+      setCameraReady(false);
+    }, { once: true });
   }, []));
   useEffect(() => {
     if (permission && !permission.granted && permission.canAskAgain && !askedCamera.current) {

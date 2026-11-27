@@ -78,22 +78,8 @@ function isOriginAllowed(origin, customOrigins) {
   return false;
 }
 
-/**
- * Tạo CORS options cho phép Production Frontend (Vercel), FRONTEND_URL, CORS_ORIGINS và Localhost.
- * - Cho phép request không có Origin (server-to-server, curl, Postman).
- * - Từ chối các origin lạ bằng lỗi 403 (CORS_NOT_ALLOWED).
- */
-function buildCorsOptions(customOrigins) {
+function getCorsBaseConfig() {
   return {
-    origin(origin, callback) {
-      if (isOriginAllowed(origin, customOrigins)) {
-        return callback(null, true);
-      }
-      const err = new Error(`Origin ${origin} không nằm trong danh sách CORS được phép`);
-      err.statusCode = 403;
-      err.code = 'CORS_NOT_ALLOWED';
-      return callback(err, false);
-    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     credentials: true,
     allowedHeaders: [
@@ -115,8 +101,65 @@ function buildCorsOptions(customOrigins) {
   };
 }
 
+function buildCorsRejectionError(origin) {
+  const err = new Error(`Origin ${origin} không nằm trong danh sách CORS được phép`);
+  err.statusCode = 403;
+  err.code = 'CORS_NOT_ALLOWED';
+  return err;
+}
+
+/**
+ * Tạo CORS options cho phép Production Frontend (Vercel), FRONTEND_URL, CORS_ORIGINS và Localhost.
+ * - Cho phép request không có Origin (server-to-server, curl, Postman).
+ * - Từ chối các origin lạ bằng lỗi 403 (CORS_NOT_ALLOWED).
+ */
+function buildCorsOptions(customOrigins) {
+  return {
+    origin(origin, callback) {
+      if (isOriginAllowed(origin, customOrigins)) {
+        return callback(null, true);
+      }
+      return callback(buildCorsRejectionError(origin), false);
+    },
+    ...getCorsBaseConfig()
+  };
+}
+
 function createCorsMiddleware(customOrigins) {
-  return cors(buildCorsOptions(customOrigins));
+  const baseOptions = getCorsBaseConfig();
+  return cors((req, callback) => {
+    const origin = req.headers.origin;
+    if (!origin) {
+      return callback(null, { ...baseOptions, origin: true });
+    }
+
+    if (origin === 'null') {
+      const secFetchSite = String(req.headers['sec-fetch-site'] || '').toLowerCase();
+      const reqPath = req.originalUrl || req.url || req.path || '';
+      const isApiPath = reqPath.startsWith('/api/');
+      const allowedNullOrigin =
+        secFetchSite === 'same-origin' ||
+        secFetchSite === 'none' ||
+        (!isApiPath && secFetchSite !== 'cross-site');
+
+      if (allowedNullOrigin) {
+        return callback(null, { ...baseOptions, origin: false });
+      }
+      return callback(buildCorsRejectionError(origin), { ...baseOptions, origin: false });
+    }
+
+    const host = typeof req.get === 'function' ? req.get('host') : req.headers.host;
+    const normalized = normalizeOrigin(origin);
+    const isSameHost = Boolean(
+      host && (normalized === `https://${host}` || normalized === `http://${host}`)
+    );
+
+    if (isSameHost || isOriginAllowed(origin, customOrigins)) {
+      return callback(null, { ...baseOptions, origin: true });
+    }
+
+    return callback(buildCorsRejectionError(origin), { ...baseOptions, origin: false });
+  });
 }
 
 function createHelmetMiddleware() {

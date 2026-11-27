@@ -23,7 +23,7 @@ const Settings = require('./models/Settings');
 const {
   createHelmetMiddleware,
   isOriginAllowed,
-  buildCorsOptions
+  createCorsMiddleware
 } = require('./middleware/security');
 const {
   CATALOG_VISIBLE,
@@ -63,8 +63,7 @@ app.set('trust proxy', 1);
 // ============================================================================
 // SECTION 2: CẤU HÌNH CORS, SECURITY HEADERS (HELMET) & SOCKET.IO
 // ============================================================================
-const corsOptions = buildCorsOptions();
-const corsMiddleware = cors(corsOptions);
+const corsMiddleware = createCorsMiddleware();
 app.use(corsMiddleware);
 app.options(/.*/, corsMiddleware);
 app.use(createHelmetMiddleware());

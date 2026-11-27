@@ -93,6 +93,7 @@ def log_analytics_run(
     has_synthetic: bool = False,
     error: Optional[str] = None,
 ) -> None:
+    now = datetime.now(timezone.utc)
     write_db["analytics_runs"].insert_one(
         {
             "job": job,
@@ -103,6 +104,7 @@ def log_analytics_run(
             "durationMs": duration_ms,
             "hasSynthetic": bool(has_synthetic),
             "error": error,
-            "ranAt": datetime.now(timezone.utc),
+            "ranAt": now,
+            "finishedAt": now,
         }
     )

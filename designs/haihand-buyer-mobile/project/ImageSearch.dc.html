@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Tìm bằng hình ảnh</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet><style>body{margin:0}</style></helmet>
+<div style="width:390px;height:844px;box-sizing:border-box;background:#FFF8F5;color:#1E1B19;font-family:system-ui,sans-serif">
+  <header style="background:#FACC15;padding:20px;display:flex;gap:12px;align-items:center;font-size:20px;font-weight:700">
+    <button aria-label="Quay lại" style="min-width:44px;min-height:44px;border:0;border-radius:12px;background:#FFF8DE;color:#1E1B19;font-size:24px">‹</button>
+    Tìm bằng hình ảnh
+  </header>
+  <main style="margin:16px;padding:16px;background:white;border:1px solid #E9E1DD;border-radius:22px;display:flex;flex-direction:column;gap:12px">
+    <strong>Ảnh dùng để tìm</strong>
+    <div style="position:relative;height:238px;border-radius:16px;background:#FFF4C6;display:grid;place-items:center">
+      <svg aria-hidden="true" width="176" height="146" viewBox="0 0 176 146" fill="none"><rect x="17" y="18" width="132" height="108" rx="14" fill="#FDE68A" stroke="white" stroke-width="7"/><path d="M22 105l39-39 21 21 19-23 40 41" stroke="#A16207" stroke-width="4" stroke-linejoin="round"/><circle cx="105" cy="64" r="30" fill="#FFFFFFA0" stroke="#57534E" stroke-width="10"/><path d="m126 87 27 27" stroke="#B45309" stroke-width="17" stroke-linecap="round"/><path d="m126 84 27 27" stroke="#FACC15" stroke-width="13" stroke-linecap="round"/><circle cx="102" cy="60" r="30" stroke="#292524" stroke-width="9"/></svg>
+      <div style="position:absolute;top:53%;width:90%;height:2px;background:#EAB308;box-shadow:0 0 12px #EAB308"></div>
+    </div>
+    <h1 style="margin:4px 0 0;font-size:22px">Đang tìm sản phẩm</h1>
+    <p style="margin:0;color:#62574D;line-height:1.45">HaiHand đang đối chiếu ảnh của bạn.</p>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

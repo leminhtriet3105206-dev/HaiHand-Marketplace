@@ -25,7 +25,7 @@ import HaiPayAuthGuard from './pages/haipay/HaiPayAuthGuard';
 import PublicProfile from './pages/PublicProfile';
 import FollowPage from './pages/FollowPage';
 import ProductListPage from './pages/ProductListPage';
-import FloatingAdminChat from './components/FloatingAdminChat';
+import ImageSearchPage from './pages/ImageSearchPage';
 import FloatingAIChat from './components/FloatingAIChat';
 
 
@@ -72,6 +72,7 @@ function App() {
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/post/:id" element={<ProductDetailPage />} />
                 <Route path="/products" element={<ProductListPage />} />
+                <Route path="/image-search" element={<ImageSearchPage />} />
                 <Route path="/public-profile/:userId" element={<PublicProfile />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
@@ -152,7 +153,6 @@ function FloatingWidgets() {
   }
   return (
     <>
-      <FloatingAdminChat />
       <FloatingAIChat />
       <AnalyticsTrackerMount />
     </>

@@ -1,0 +1,916 @@
+- generic [active] [ref=f311e1]:
+  - link "Jump to content" [ref=f311e2] [cursor=pointer]:
+    - /url: "#bodyContent"
+  - banner [ref=f311e4]:
+    - generic [ref=f311e5]:
+      - navigation "Site" [ref=f311e6]:
+        - generic "Main menu" [ref=f311e7]:
+          - button "Main menu" [ref=f311e8] [cursor=pointer]
+          - generic [ref=f311e11]: Main menu
+          - option "Qafár af"
+          - option "Arbërisht"
+          - option "аԥсшәа"
+          - option "Abron"
+          - option "bahasa ambon"
+          - option "Acèh"
+          - option "Kwéyòl Sent Lisi"
+          - option "عراقي"
+          - option "адыгабзэ"
+          - option "адыгабзэ"
+          - option "تونسي / Tûnsî"
+          - option "تونسي"
+          - option "Tûnsî"
+          - option "Afrikaans"
+          - option "Aghem"
+          - option "Aanteegan an' Baabyuudan"
+          - option "Akan"
+          - option "Gegë"
+          - option "Alemannisch"
+          - option "алтай тил"
+          - option "አማርኛ"
+          - option "Pangcah"
+          - option "aragonés"
+          - option "Ænglisc"
+          - option "Obolo"
+          - option "अंगिका"
+          - option "شامي"
+          - option "العربية"
+          - option "ܐܪܡܝܐ"
+          - option "mapudungun"
+          - option "جازايرية"
+          - option "الدارجة"
+          - option "مصرى"
+          - option "অসমীয়া"
+          - option "American sign language"
+          - option "asturianu"
+          - option "Atikamekw"
+          - option "авар"
+          - option "Kotava"
+          - option "अवधी"
+          - option "Aymar aru"
+          - option "azərbaycanca"
+          - option "تۆرکجه"
+          - option "башҡортса"
+          - option "Tuki"
+          - option "Basa Bali"
+          - option "ᬩᬲᬩᬮᬶ"
+          - option "Boarisch"
+          - option "Basaa"
+          - option "žemaitėška"
+          - option "Bamum"
+          - option "Batak Toba"
+          - option "Batak Toba"
+          - option "Ghomála'"
+          - option "جهلسری بلوچی"
+          - option "wawle"
+          - option "Bikol Central"
+          - option "Bajau Sama"
+          - option "беларуская"
+          - option "беларуская (тарашкевіца)"
+          - option "беларуская (тарашкевіца)"
+          - option "Betawi"
+          - option "Bafut"
+          - option "ରେମସାମ୍"
+          - option "български"
+          - option "हरियाणवी"
+          - option "روچ کپتین بلوچی"
+          - option "भोजपुरी"
+          - option "भोजपुरी"
+          - option "Bislama"
+          - option "Banjar"
+          - option "Baka"
+          - option "Bakoko"
+          - option "Kom"
+          - option "ပအိုဝ်ႏဘာႏသာႏ"
+          - option "bamanankan"
+          - option "বাংলা"
+          - option "བོད་ཡིག"
+          - option "bòo pìkkà"
+          - option "বিষ্ণুপ্রিয়া মণিপুরী"
+          - option "بختیاری"
+          - option "Mka'a"
+          - option "brezhoneg"
+          - option "Bráhuí"
+          - option "bosanski"
+          - option "Batak Mandailing"
+          - option "Iriga Bicolano"
+          - option "Basa Ugi"
+          - option "ᨅᨔ ᨕᨘᨁᨗ"
+          - option "буряад"
+          - option "Medumba"
+          - option "català"
+          - option "Kaqchikel"
+          - option "Carolinian"
+          - option "Chavacano de Zamboanga"
+          - option "𑄌𑄋𑄴𑄟𑄳𑄦"
+          - option "閩東語 / Mìng-dĕ̤ng-ngṳ̄"
+          - option "閩東語（傳統漢字）"
+          - option "Mìng-dĕ̤ng-ngṳ̄ (Bàng-uâ-cê)"
+          - option "нохчийн"
+          - option "Cebuano"
+          - option "Chamoru"
+          - option "chinuk wawa"
+          - option "Chahta anumpa"
+          - option "ᏣᎳᎩ"
+          - option "Tsetsêhestâhese"
+          - option "کوردی"
+          - option "Hakha Chin"
+          - option "corsu"
+          - option "ϯⲙⲉⲧⲣⲉⲙⲛ̀ⲭⲏⲙⲓ"
+          - option "Capiceño"
+          - option "莆仙語 / Pó-sing-gṳ̂"
+          - option "莆仙语（简体）"
+          - option "莆仙語（繁體）"
+          - option "Pó-sing-gṳ̂ (Báⁿ-uā-ci̍)"
+          - option "Nēhiyawēwin / ᓀᐦᐃᔭᐍᐏᐣ"
+          - option "qırımtatarca"
+          - option "къырымтатарджа (Кирилл)"
+          - option "qırımtatarca (Latin)"
+          - option "tatarşa"
+          - option "čeština"
+          - option "kaszëbsczi"
+          - option "словѣньскъ / ⰔⰎⰑⰂⰡⰐⰠⰔⰍⰟ"
+          - option "чӑвашла"
+          - option "Cymraeg"
+          - option "dansk"
+          - option "dagbanli"
+          - option "Deutsch"
+          - option "Österreichisches Deutsch"
+          - option "Schweizer Hochdeutsch"
+          - option "Deutsch (Sie-Form)"
+          - option "Dagaare"
+          - option "Thuɔŋjäŋ"
+          - option "Zazaki"
+          - option "долган тыла"
+          - option "dolnoserbski"
+          - option "ଦେଶିଆ"
+          - option "Kadazandusun"
+          - option "डोटेली"
+          - option "Duala"
+          - option "ދިވެހިބަސް"
+          - option "ཇོང་ཁ"
+          - option "eʋegbe"
+          - option "Efịk"
+          - option "Emiliàn"
+          - option "Ελληνικά"
+          - option "emiliàn e rumagnòl"
+          - option "English" [selected]
+          - option "Canadian English"
+          - option "British English"
+          - option "American English"
+          - option "Esperanto"
+          - option "español"
+          - option "español de América Latina"
+          - option "español (formal)"
+          - option "eesti"
+          - option "Eton"
+          - option "Ejagham"
+          - option "euskara"
+          - option "Ewondo"
+          - option "estremeñu"
+          - option "فارسی"
+          - option "mfantse"
+          - option "Fulfulde"
+          - option "suomi"
+          - option "meänkieli"
+          - option "võro"
+          - option "Na Vosa Vakaviti"
+          - option "kvääni"
+          - option "Fe'fe'"
+          - option "føroyskt"
+          - option "fɔ̀ngbè"
+          - option "français"
+          - option "français cadien"
+          - option "arpetan"
+          - option "Nordfriisk"
+          - option "Oostfräisk"
+          - option "furlan"
+          - option "poor’íŋ belé’ŋ"
+          - option "Frysk"
+          - option "Gaeilge"
+          - option "Ga"
+          - option "Gagauz"
+          - option "贛語"
+          - option "赣语（简体）"
+          - option "贛語（繁體）"
+          - option "kréyòl Gwadloup"
+          - option "kriyòl gwiyannen"
+          - option "Gàidhlig"
+          - option "گوجری"
+          - option "गुज्जरी"
+          - option "galego"
+          - option "на̄ни"
+          - option "گیلکی"
+          - option "Avañe'ẽ"
+          - option "गोंयची कोंकणी / Gõychi Konknni"
+          - option "गोंयची कोंकणी"
+          - option "Gõychi Konknni"
+          - option "Bahasa Hulontalo"
+          - option "𐌲𐌿𐍄𐌹𐍃𐌺"
+          - option "Ghanaian Pidgin"
+          - option "Ἀρχαία ἑλληνικὴ"
+          - option "Alemannisch"
+          - option "ગુજરાતી"
+          - option "wayuunaiki"
+          - option "farefare"
+          - option "gungbe"
+          - option "Gaelg"
+          - option "Gbaya"
+          - option "Hausa"
+          - option "客家語 / Hak-kâ-ngî"
+          - option "客家语（简体）"
+          - option "客家語（繁體）"
+          - option "Hak-kâ-ngî (Pha̍k-fa-sṳ)"
+          - option "Hawaiʻi"
+          - option "עברית"
+          - option "हिन्दी"
+          - option "Fiji Hindi"
+          - option "Fiji Hindi"
+          - option "Ilonggo"
+          - option "kihunde"
+          - option "ہندکو"
+          - option "Hiri Motu"
+          - option "𑢹𑣉𑣉 𑣎𑣋𑣜"
+          - option "Ho"
+          - option "hrvatski"
+          - option "Hunsrik"
+          - option "hornjoserbsce"
+          - option "湘語"
+          - option "Kreyòl ayisyen"
+          - option "magyar"
+          - option "magyar (formal)"
+          - option "հայերեն"
+          - option "Արեւմտահայերէն"
+          - option "Otsiherero"
+          - option "interlingua"
+          - option "Jaku Iban"
+          - option "ibibio"
+          - option "Bahasa Indonesia"
+          - option "Interlingue"
+          - option "Igbo"
+          - option "Igala"
+          - option "ꆇꉙ"
+          - option "Iñupiatun"
+          - option "ᐃᓄᒃᑎᑐᑦ"
+          - option "inuktitut"
+          - option "Ilokano"
+          - option "гӀалгӀай"
+          - option "Ido"
+          - option "íslenska"
+          - option "Isu"
+          - option "medžuslovjansky"
+          - option "меджусловјанскы"
+          - option "medžuslovjansky"
+          - option "italiano"
+          - option "ᐃᓄᒃᑎᑐᑦ / inuktitut"
+          - option "日本語"
+          - option "Patois"
+          - option "la .lojban."
+          - option "jysk"
+          - option "Jawa"
+          - option "ꦗꦮ"
+          - option "ქართული"
+          - option "Qaraqalpaqsha"
+          - option "Taqbaylit"
+          - option "Karai-karai"
+          - option "Jju"
+          - option "адыгэбзэ"
+          - option "адыгэбзэ"
+          - option "Kabɩyɛ"
+          - option "Tyap"
+          - option "kabuverdianu"
+          - option "Kera"
+          - option "Kongo"
+          - option "Kumoring"
+          - option "गेम्येहाक़ गिपन"
+          - option "کھوار"
+          - option "Gĩkũyũ"
+          - option "Kırmancki"
+          - option "Kwanyama"
+          - option "хакас"
+          - option "ဖၠုံလိက်"
+          - option "қазақша"
+          - option "قازاقشا (تٴوتە)"
+          - option "قازاقشا (جۇنگو)"
+          - option "қазақша (кирил)"
+          - option "қазақша (Қазақстан)"
+          - option "qazaqşa (latın)"
+          - option "qazaqşa (Türkïya)"
+          - option "kalaallisut"
+          - option "ភាសាខ្មែរ"
+          - option "ಕನ್ನಡ"
+          - option "Yerwa Kanuri"
+          - option "한국어"
+          - option "조선말"
+          - option "перем коми"
+          - option "kanuri"
+          - option "къарачай-малкъар"
+          - option "Krio"
+          - option "Kinaray-a"
+          - option "karjal"
+          - option "کٲشُر"
+          - option "کٲشُر"
+          - option "कॉशुर"
+          - option "Bafia"
+          - option "Ripoarisch"
+          - option "စှီၤ"
+          - option "kurdî"
+          - option "کوردی (عەرەبی)"
+          - option "kurdî (latînî)"
+          - option "къумукъ"
+          - option "Kʋsaal"
+          - option "коми"
+          - option "kernowek"
+          - option "кыргызча"
+          - option "Latina"
+          - option "Ladino"
+          - option "Lëtzebuergesch"
+          - option "лакку"
+          - option "Nomaande"
+          - option "лезги"
+          - option "Lingua Franca Nova"
+          - option "Luganda"
+          - option "Limburgs"
+          - option "Ligure"
+          - option "Līvõ kēļ"
+          - option "Lampung Api"
+          - option "لەکی"
+          - option "Lakȟótiyapi"
+          - option "Ladin"
+          - option "lombard"
+          - option "lingála"
+          - option "Lamnso'"
+          - option "ລາວ"
+          - option "Silozi"
+          - option "لۊری شومالی"
+          - option "lietuvių"
+          - option "latgaļu"
+          - option "ciluba"
+          - option "Mizo ţawng"
+          - option "لئری دوٙمینی"
+          - option "latviešu"
+          - option "文言"
+          - option "Lazuri"
+          - option "Madhurâ"
+          - option "मगही"
+          - option "मैथिली"
+          - option "Basa Banyumasan"
+          - option "vùn màsànà"
+          - option "Maka"
+          - option "мокшень"
+          - option "Malagasy"
+          - option "Ebon"
+          - option "олык марий"
+          - option "Māori"
+          - option "Minangkabau"
+          - option "македонски"
+          - option "മലയാളം"
+          - option "монгол"
+          - option "manju gisun"
+          - option "manju gisun"
+          - option "ᠮᠠᠨᠵᡠ ᡤᡳᠰᡠᠨ"
+          - option "ꯃꯤꯇꯩ ꯂꯣꯟ"
+          - option "ဘာသာမန်"
+          - option "молдовеняскэ"
+          - option "moore"
+          - option "मराठी"
+          - option "Mara"
+          - option "кырык мары"
+          - option "Bahasa Melayu"
+          - option "بهاس ملايو"
+          - option "Malti"
+          - option "Mundang"
+          - option "Baso Palembang"
+          - option "Mvskoke"
+          - option "Mirandés"
+          - option "မြန်မာဘာသာ"
+          - option "эрзянь"
+          - option "مازِرونی"
+          - option "Dorerin Naoero"
+          - option "Nāhuatl"
+          - option "閩南語 / Bân-lâm-gí"
+          - option "閩南語"
+          - option "閩南語（傳統漢字）"
+          - option "Bân-lâm-gí (Pe̍h-ōe-jī)"
+          - option "Bân-lâm-gí (Tâi-lô)"
+          - option "Napulitano"
+          - option "norsk bokmål"
+          - option "Plattdüütsch"
+          - option "Nedersaksies"
+          - option "नेपाली"
+          - option "नेपाल भाषा"
+          - option "Oshiwambo"
+          - option "Ngémba"
+          - option "Li Niha"
+          - option "కొలామి"
+          - option "Niuē"
+          - option "Nederlands"
+          - option "Nederlands (informeel)"
+          - option "Ngombala"
+          - option "Kwasio"
+          - option "nawdm"
+          - option "norsk nynorsk"
+          - option "Ngiemboon"
+          - option "Nda'nda'"
+          - option "norsk"
+          - option "ᨣᩤᩴᨾᩮᩬᩥᨦ"
+          - option "ногайша"
+          - option "Novial"
+          - option "ߒߞߏ"
+          - option "isiNdebele seSewula"
+          - option "Nouormand"
+          - option "Sesotho sa Leboa"
+          - option "Nupe"
+          - option "Diné bizaad"
+          - option "Chi-Chewa"
+          - option "runyankore"
+          - option "Orunyoro"
+          - option "Nyunga"
+          - option "occitan"
+          - option "Ojibwemowin"
+          - option "livvinkarjala"
+          - option "Oromoo"
+          - option "ଓଡ଼ିଆ"
+          - option "ирон"
+          - option "Wažáže íe"
+          - option "لسان عثمانى"
+          - option "ਪੰਜਾਬੀ"
+          - option "Pangasinan"
+          - option "Kapampangan"
+          - option "Papiamentu"
+          - option "Papiamento"
+          - option "Picard"
+          - option "Naijá"
+          - option "Deitsch"
+          - option "Plautdietsch"
+          - option "Pälzisch"
+          - option "पालि"
+          - option "Norfuk / Pitkern"
+          - option "polski"
+          - option "Piemontèis"
+          - option "پنجابی"
+          - option "Ποντιακά"
+          - option "Nawat"
+          - option "prūsiskan"
+          - option "پښتو"
+          - option "português"
+          - option "português do Brasil"
+          - option "pinayuanan"
+          - option "Runa Simi"
+          - option "Qatzijob\\ʼal"
+          - option "Runa shimi"
+          - option "Rumagnôl"
+          - option "Tarifit"
+          - option "ရခိုင်"
+          - option "rumantsch"
+          - option "romaňi čhib"
+          - option "kaalengo tšimb"
+          - option "romani čhib"
+          - option "ikirundi"
+          - option "română"
+          - option "armãneashti"
+          - option "tarandíne"
+          - option "руски"
+          - option "русский"
+          - option "русиньскый"
+          - option "armãneashti"
+          - option "Vlăheşte"
+          - option "Влахесте"
+          - option "Vlăheşte"
+          - option "мыхаӀбишды"
+          - option "Ikinyarwanda"
+          - option "मारवाड़ी"
+          - option "沖縄口"
+          - option "संस्कृतम्"
+          - option "саха тыла"
+          - option "Sasak"
+          - option "ᱥᱟᱱᱛᱟᱲᱤ"
+          - option "sardu"
+          - option "sicilianu"
+          - option "Scots"
+          - option "سنڌي"
+          - option "Sassaresu"
+          - option "کوردی خوارگ"
+          - option "davvisámegiella"
+          - option "davvisámegiella (Suoma bealde)"
+          - option "davvisámegiella (Norgga bealde)"
+          - option "davvisámegiella (Ruoŧa bealde)"
+          - option "Cmique Itom"
+          - option "Koyraboro Senni"
+          - option "Sängö"
+          - option "žemaitėška"
+          - option "srpskohrvatski / српскохрватски"
+          - option "српскохрватски (ћирилица)"
+          - option "srpskohrvatski (latinica)"
+          - option "Taclḥit"
+          - option "Taclḥit"
+          - option "ⵜⴰⵛⵍⵃⵉⵜ"
+          - option "တႆး"
+          - option "tacawit"
+          - option "tacawit"
+          - option "සිංහල"
+          - option "Simple English"
+          - option "кӣллт са̄мь кӣлл"
+          - option "bidumsámegiella"
+          - option "ubmejesámiengiälla"
+          - option "slovenčina"
+          - option "سرائیکی"
+          - option "سرائیکی"
+          - option "slovenščina"
+          - option "Schläsch"
+          - option "Gagana Samoa"
+          - option "åarjelsaemien"
+          - option "julevsámegiella"
+          - option "anarâškielâ"
+          - option "nuõrttsääʹmǩiõll"
+          - option "chiShona"
+          - option "Soomaaliga"
+          - option "shqip"
+          - option "српски / srpski"
+          - option "српски (ћирилица)"
+          - option "srpski (latinica)"
+          - option "Sranantongo"
+          - option "sardu campidanesu"
+          - option "mbia cheë"
+          - option "SiSwati"
+          - option "Sesotho"
+          - option "Seeltersk"
+          - option "себертатар"
+          - option "Sunda"
+          - option "svenska"
+          - option "ლუშნუ"
+          - option "Kiswahili"
+          - option "ꠍꠤꠟꠐꠤ"
+          - option "ślůnski"
+          - option "Sakizaya"
+          - option "தமிழ்"
+          - option "Tayal"
+          - option "ತುಳು"
+          - option "ᥖᥭᥰ ᥖᥬᥲ ᥑᥨᥒᥰ"
+          - option "తెలుగు"
+          - option "tetun"
+          - option "тоҷикӣ"
+          - option "тоҷикӣ"
+          - option "tojikī"
+          - option "ไทย"
+          - option "काेचिला थारु"
+          - option "ትግርኛ"
+          - option "ትግሬ"
+          - option "Türkmençe"
+          - option "Tagalog"
+          - option "tolışi"
+          - option "толыши"
+          - option "Setswana"
+          - option "lea faka-Tonga"
+          - option "toki pona"
+          - option "Tok Pisin"
+          - option "Tanapag"
+          - option "Türkçe"
+          - option "Ṫuroyo"
+          - option "Seediq"
+          - option "Xitsonga"
+          - option "татарча / tatarça"
+          - option "татарча"
+          - option "tatarça"
+          - option "Orutooro"
+          - option "chiTumbuka"
+          - option "Tunen"
+          - option "Twi"
+          - option "reo tahiti"
+          - option "тыва дыл"
+          - option "ⵜⴰⵎⴰⵣⵉⵖⵜ"
+          - option "удмурт"
+          - option "ئۇيغۇرچە / Uyghurche"
+          - option "ئۇيغۇرچە"
+          - option "Uyghurche"
+          - option "українська"
+          - option "اردو"
+          - option "oʻzbekcha / ўзбекча"
+          - option "ўзбекча"
+          - option "oʻzbekcha"
+          - option "Tshivenda"
+          - option "vèneto"
+          - option "vepsän kel’"
+          - option "Tiếng Việt"
+          - option "West-Vlams"
+          - option "Mainfränkisch"
+          - option "emakhuwa"
+          - option "Volapük"
+          - option "Vaďďa"
+          - option "võro"
+          - option "Vute"
+          - option "walon"
+          - option "wolaytta"
+          - option "Winaray"
+          - option "Pidgin (Cameroon)"
+          - option "Fakaʻuvea"
+          - option "waale"
+          - option "Wolof"
+          - option "吴语"
+          - option "吴语（简体）"
+          - option "吳語（正體）"
+          - option "Wyandot"
+          - option "хальмг"
+          - option "isiXhosa"
+          - option "მარგალური"
+          - option "saisiyat"
+          - option "Nugunu"
+          - option "Yambeta"
+          - option "Yangben"
+          - option "Yemba"
+          - option "ייִדיש"
+          - option "Yorùbá"
+          - option "Nhẽẽgatú"
+          - option "maaya t’aan"
+          - option "粵語"
+          - option "粵语（简体）"
+          - option "粵語（繁體）"
+          - option "Vahcuengh"
+          - option "Zeêuws"
+          - option "ⵜⴰⵎⴰⵣⵉⵖⵜ ⵜⴰⵏⴰⵡⴰⵢⵜ"
+          - option "tamaziɣt tanawayt"
+          - option "中文"
+          - option "文言"
+          - option "中文（中国大陆）"
+          - option "中文（简体）"
+          - option "中文（繁體）"
+          - option "中文（香港）"
+          - option "Bân-lâm-gú"
+          - option "中文（澳門）"
+          - option "中文（马来西亚）"
+          - option "中文（新加坡）"
+          - option "中文（臺灣）"
+          - option "粵語"
+          - option "isiZulu"
+      - link [ref=f311e12] [cursor=pointer]:
+        - /url: /wiki/Main_Page
+        - img "Wikimedia Commons" [ref=f311e15]
+    - generic [ref=f311e16]:
+      - search [ref=f311e17]:
+        - generic [ref=f311e20]:
+          - searchbox "Search Wikimedia Commons" [ref=f311e23]
+          - button "Search" [ref=f311e25]
+      - navigation "Personal tools" [ref=f311e26]:
+        - generic [ref=f311e27]:
+          - list [ref=f311e30]:
+            - listitem [ref=f311e31]:
+              - link "English" [ref=f311e32] [cursor=pointer]:
+                - /url: "#"
+          - list [ref=f311e37]:
+            - listitem [ref=f311e38]:
+              - link "Donate" [ref=f311e39] [cursor=pointer]:
+                - /url: https://donate.wikimedia.org/?wmf_source=donate&wmf_medium=sidebar&wmf_campaign=commons.wikimedia.org&uselang=en
+            - listitem [ref=f311e40]:
+              - link "Create account" [ref=f311e41] [cursor=pointer]:
+                - /url: /w/index.php?title=Special:CreateAccount&returnto=Special%3AMediaSearch&returntoquery=search%3Delectric%2Bkettle%26type%3Dimage
+            - listitem [ref=f311e42]:
+              - link "Log in" [ref=f311e43] [cursor=pointer]:
+                - /url: /w/index.php?title=Special:UserLogin&returnto=Special%3AMediaSearch&returntoquery=search%3Delectric%2Bkettle%26type%3Dimage
+  - generic [ref=f311e45]:
+    - main [ref=f311e49]:
+      - generic [ref=f311e50]:
+        - heading "Search media" [level=1] [ref=f311e51]
+        - generic [ref=f311e52]:
+          - link "Switch to Special:Search" [ref=f311e54] [cursor=pointer]:
+            - /url: https://commons.wikimedia.org/w/index.php?title=Special%3ASearch&search=electric+kettle
+          - link "Help" [ref=f311e56] [cursor=pointer]:
+            - /url: https://www.mediawiki.org/wiki/Special:MyLanguage/Help:MediaSearch
+      - generic [ref=f311e58]:
+        - generic:
+          - navigation "Namespaces"
+        - generic [ref=f311e59]:
+          - navigation "Views"
+          - navigation "Page tools" [ref=f311e60]:
+            - generic [ref=f311e61]:
+              - button "Tools" [ref=f311e62] [cursor=pointer]
+              - generic [ref=f311e65]: Tools
+      - navigation "Appearance" [ref=f311e68]:
+        - generic [ref=f311e70]:
+          - generic [ref=f311e71]:
+            - generic [ref=f311e72]: Appearance
+            - button "Hide Appearance" [ref=f311e73] [cursor=pointer]: hide
+          - generic [ref=f311e74]:
+            - generic [ref=f311e75]: Text
+            - list [ref=f311e77]:
+              - listitem [ref=f311e78]:
+                - generic [ref=f311e79]:
+                  - generic [ref=f311e80]:
+                    - generic [ref=f311e81]:
+                      - radio "Small" [disabled] [ref=f311e82]
+                      - generic [ref=f311e84]: Small
+                    - generic [ref=f311e86]:
+                      - radio "Standard" [disabled] [ref=f311e87]
+                      - generic [ref=f311e89]: Standard
+                    - generic [ref=f311e91]:
+                      - radio "Large" [disabled] [ref=f311e92]
+                      - generic [ref=f311e94]: Large
+                  - paragraph [ref=f311e96]: This page always uses small font size
+          - generic [ref=f311e97]:
+            - generic [ref=f311e98]: Width
+            - list [ref=f311e100]:
+              - listitem [ref=f311e101]:
+                - generic [ref=f311e103]:
+                  - generic [ref=f311e104]:
+                    - radio "Standard" [checked] [ref=f311e105]
+                    - generic [ref=f311e107]: Standard
+                  - generic [ref=f311e109]:
+                    - radio "Wide" [ref=f311e110]
+                    - generic [ref=f311e112]: Wide
+          - generic [ref=f311e114]:
+            - generic [ref=f311e115]:
+              - text: Color
+              - generic [ref=f311e116]: (beta)
+            - list [ref=f311e118]:
+              - listitem [ref=f311e119]:
+                - generic [ref=f311e121]:
+                  - generic [ref=f311e122]:
+                    - radio "Automatic" [ref=f311e123]
+                    - generic [ref=f311e125]: Automatic
+                  - generic [ref=f311e127]:
+                    - radio "Light" [checked] [ref=f311e128]
+                    - generic [ref=f311e130]: Light
+                  - generic [ref=f311e132]:
+                    - radio "Dark" [ref=f311e133]
+                    - generic [ref=f311e135]: Dark
+      - generic "Search media" [ref=f311e137]:
+        - generic [ref=f311e138]:
+          - generic [ref=f311e140]:
+            - generic [ref=f311e141]:
+              - generic [ref=f311e142]: Search media
+              - textbox "Search media Search media" [ref=f311e144]:
+                - /placeholder: Search for images, audio, video and more
+                - text: electric kettle
+            - button "Search" [ref=f311e146]
+          - generic [ref=f311e148]:
+            - tablist [ref=f311e151]:
+              - tab "Images" [selected] [ref=f311e152]
+              - tab "Audio" [ref=f311e153]
+              - tab "Video" [ref=f311e154]
+              - tab "Other Media" [ref=f311e155]
+              - tab "Categories and Pages" [ref=f311e156]
+            - tabpanel "Images" [ref=f311e158]:
+              - generic [ref=f311e159]: 9,377 results
+              - generic [ref=f311e162]:
+                - generic [ref=f311e163]:
+                  - link "2023 Czajnik elektryczny N'OVEEN.jpg" [ref=f311e164] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:2023_Czajnik_elektryczny_N%27OVEEN.jpg
+                    - img "2023 Czajnik elektryczny N'OVEEN.jpg"
+                  - link "2023 Czajnik elektryczny Bosch (1).jpg" [ref=f311e165] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:2023_Czajnik_elektryczny_Bosch_(1).jpg
+                    - img "2023 Czajnik elektryczny Bosch (1).jpg"
+                  - link "2023 Czajnik elektryczny Bosch (2).jpg" [ref=f311e166] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:2023_Czajnik_elektryczny_Bosch_(2).jpg
+                    - img "2023 Czajnik elektryczny Bosch (2).jpg"
+                  - link "Electric kettle - Электрический чайник.JPG" [ref=f311e167] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_-_%D0%AD%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D0%B9_%D1%87%D0%B0%D0%B9%D0%BD%D0%B8%D0%BA.JPG
+                    - img "Electric kettle - Электрический чайник.JPG"
+                  - link "General electric - electric water kettle.jpg" [ref=f311e168] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:General_electric_-_electric_water_kettle.jpg
+                    - img "General electric - electric water kettle.jpg"
+                  - link "Rival Kettle.jpg" [ref=f311e169] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Rival_Kettle.jpg
+                    - img "Rival Kettle.jpg"
+                  - link "Electric kettle phillips white.JPG" [ref=f311e170] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_phillips_white.JPG
+                    - img "Electric kettle phillips white.JPG"
+                  - link "Electric Kettle by MASA.jpg" [ref=f311e171] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_Kettle_by_MASA.jpg
+                    - img "Electric Kettle by MASA.jpg"
+                  - link "Electric water boiler 2014.JPG" [ref=f311e172] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_water_boiler_2014.JPG
+                    - img "Electric water boiler 2014.JPG"
+                  - link "Electric kettle controller 6.png" [ref=f311e173] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_controller_6.png
+                    - img "Electric kettle controller 6.png"
+                  - link "Electric kettle controller 2.png" [ref=f311e174] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_controller_2.png
+                    - img "Electric kettle controller 2.png"
+                  - link "Electric kettle controller 7.png" [ref=f311e175] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_controller_7.png
+                    - img "Electric kettle controller 7.png"
+                  - link "Electric kettle controller 1.png" [ref=f311e176] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_controller_1.png
+                    - img "Electric kettle controller 1.png"
+                  - link "Electric kettle controller 3.png" [ref=f311e177] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_controller_3.png
+                    - img "Electric kettle controller 3.png"
+                  - link "Electric kettle, Ribnitz-Damgarten (LRM 20200521 132413-hdr).jpg" [ref=f311e178] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle,_Ribnitz-Damgarten_(LRM_20200521_132413-hdr).jpg
+                    - img "Electric kettle, Ribnitz-Damgarten (LRM 20200521 132413-hdr).jpg"
+                  - link "Electric kettle controller 5.png" [ref=f311e179] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_controller_5.png
+                    - img "Electric kettle controller 5.png"
+                  - link "Electric kettle controller 4.png" [ref=f311e180] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_controller_4.png
+                    - img "Electric kettle controller 4.png"
+                  - link "Electric kettle (LRM 20200521 132339-hdr).jpg" [ref=f311e181] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_(LRM_20200521_132339-hdr).jpg
+                    - img "Electric kettle (LRM 20200521 132339-hdr).jpg"
+                  - link "Zelmer Electric kettle in Poland.jpg" [ref=f311e182] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Zelmer_Electric_kettle_in_Poland.jpg
+                    - img "Zelmer Electric kettle in Poland.jpg"
+                  - link "Swan electric kettle, Museum of Liverpool.jpg" [ref=f311e183] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Swan_electric_kettle,_Museum_of_Liverpool.jpg
+                    - img "Swan electric kettle, Museum of Liverpool.jpg"
+                  - link "Electric kettle 1 2022-03-25.jpeg" [ref=f311e184] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_1_2022-03-25.jpeg
+                    - img "Electric kettle 1 2022-03-25.jpeg"
+                  - link "Electric kettle Petra.jpg" [ref=f311e185] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_Petra.jpg
+                    - img "Electric kettle Petra.jpg"
+                  - link "Electric water kettle with green light — animated.gif" [ref=f311e186] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_water_kettle_with_green_light_%E2%80%94_animated.gif
+                    - img "Electric water kettle with green light — animated.gif"
+                  - link "Kettle, electric (AM 1999.153.51-4).jpg" [ref=f311e187] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Kettle,_electric_(AM_1999.153.51-4).jpg
+                    - img "Kettle, electric (AM 1999.153.51-4).jpg"
+                  - link "Kettle, electric (AM 1999.153.51-3).jpg" [ref=f311e188] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Kettle,_electric_(AM_1999.153.51-3).jpg
+                    - img "Kettle, electric (AM 1999.153.51-3).jpg"
+                  - link "Kettle, electric (AM 1999.153.51-2).jpg" [ref=f311e189] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Kettle,_electric_(AM_1999.153.51-2).jpg
+                    - img "Kettle, electric (AM 1999.153.51-2).jpg"
+                  - link "ငွႆးတင်ႈ Kettle ရေနွေးခရား.jpg" [ref=f311e190] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:%E1%80%84%E1%80%BD%E1%82%86%E1%80%B8%E1%80%90%E1%80%84%E1%80%BA%E1%82%88_Kettle_%E1%80%9B%E1%80%B1%E1%80%94%E1%80%BD%E1%80%B1%E1%80%B8%E1%80%81%E1%80%9B%E1%80%AC%E1%80%B8.jpg
+                    - img "ငွႆးတင်ႈ Kettle ရေနွေးခရား.jpg"
+                  - link "Kettle, electric (AM 1999.153.51-1).jpg" [ref=f311e191] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Kettle,_electric_(AM_1999.153.51-1).jpg
+                    - img "Kettle, electric (AM 1999.153.51-1).jpg"
+                  - link "Kettle, electric (AM 1999.153.51-6).jpg" [ref=f311e192] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Kettle,_electric_(AM_1999.153.51-6).jpg
+                    - img "Kettle, electric (AM 1999.153.51-6).jpg"
+                  - link "Kettle, electric (AM 1999.153.51-5).jpg" [ref=f311e193] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Kettle,_electric_(AM_1999.153.51-5).jpg
+                    - img "Kettle, electric (AM 1999.153.51-5).jpg"
+                  - link "Electric kettle (LRM 20200521 132404-hdr).jpg" [ref=f311e194] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle_(LRM_20200521_132404-hdr).jpg
+                    - img "Electric kettle (LRM 20200521 132404-hdr).jpg"
+                  - link "Kettle (4141300920).jpg" [ref=f311e195] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Kettle_(4141300920).jpg
+                    - img "Kettle (4141300920).jpg"
+                  - link "Kettle pic.jpg" [ref=f311e196] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Kettle_pic.jpg
+                    - img "Kettle pic.jpg"
+                  - link "Aeg peter-behrens03.jpg" [ref=f311e197] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Aeg_peter-behrens03.jpg
+                    - img "Aeg peter-behrens03.jpg"
+                  - link "Дисковый электрочайник f01.jpg" [ref=f311e198] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:%D0%94%D0%B8%D1%81%D0%BA%D0%BE%D0%B2%D1%8B%D0%B9_%D1%8D%D0%BB%D0%B5%D0%BA%D1%82%D1%80%D0%BE%D1%87%D0%B0%D0%B9%D0%BD%D0%B8%D0%BA_f01.jpg
+                    - img "Дисковый электрочайник f01.jpg"
+                  - link "White electric kettle.JPG" [ref=f311e199] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:White_electric_kettle.JPG
+                    - img "White electric kettle.JPG"
+                  - link "Kettle (4140317175).jpg" [ref=f311e200] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Kettle_(4140317175).jpg
+                    - img "Kettle (4140317175).jpg"
+                  - link "Bottom-of-electric-kettle Strix-control-360-degree-contact heater-cable-defect LWS5955.JPG" [ref=f311e201] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Bottom-of-electric-kettle_Strix-control-360-degree-contact_heater-cable-defect_LWS5955.JPG
+                    - img "Bottom-of-electric-kettle Strix-control-360-degree-contact heater-cable-defect LWS5955.JPG"
+                  - link "Electric kettle.jpg" [ref=f311e202] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Electric_kettle.jpg
+                    - img "Electric kettle.jpg"
+                  - link "Mate moderno con pava electrica.jpg" [ref=f311e203] [cursor=pointer]:
+                    - /url: https://commons.wikimedia.org/wiki/File:Mate_moderno_con_pava_electrica.jpg
+                    - img "Mate moderno con pava electrica.jpg"
+                - button "Load more" [ref=f311e205]
+                - button "Load more" [ref=f311e208] [cursor=pointer]
+    - contentinfo [ref=f311e210]:
+      - list:
+        - listitem [ref=f311e211]:
+          - link "Privacy policy" [ref=f311e212] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Privacy_policy
+        - listitem [ref=f311e213]:
+          - link "About Wikimedia Commons" [ref=f311e214] [cursor=pointer]:
+            - /url: /wiki/Commons:Welcome
+        - listitem [ref=f311e215]:
+          - link "Disclaimers" [ref=f311e216] [cursor=pointer]:
+            - /url: /wiki/Commons:General_disclaimer
+        - listitem [ref=f311e217]:
+          - link "Legal & safety contacts" [ref=f311e218] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Legal:Wikimedia_Foundation_Legal_and_Safety_Contact_Information
+        - listitem [ref=f311e219]:
+          - link "Code of Conduct" [ref=f311e220] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Universal_Code_of_Conduct
+        - listitem [ref=f311e221]:
+          - link "Developers" [ref=f311e222] [cursor=pointer]:
+            - /url: https://developer.wikimedia.org
+        - listitem [ref=f311e223]:
+          - link "Statistics" [ref=f311e224] [cursor=pointer]:
+            - /url: https://stats.wikimedia.org/#/commons.wikimedia.org
+        - listitem [ref=f311e225]:
+          - link "Cookie statement" [ref=f311e226] [cursor=pointer]:
+            - /url: https://foundation.wikimedia.org/wiki/Special:MyLanguage/Policy:Cookie_statement
+        - listitem [ref=f311e227]:
+          - link "Mobile view" [ref=f311e228] [cursor=pointer]:
+            - /url: //commons.wikimedia.org/w/index.php?title=Special:MediaSearch&search=electric+kettle&type=image&mobileaction=toggle_view_mobile
+      - list [ref=f311e229]:
+        - listitem [ref=f311e230]:
+          - link [ref=f311e231] [cursor=pointer]:
+            - /url: https://www.wikimedia.org/
+            - img "Wikimedia Foundation" [ref=f311e233]
+        - listitem [ref=f311e234]:
+          - link [ref=f311e235] [cursor=pointer]:
+            - /url: https://www.mediawiki.org/
+            - img "Powered by MediaWiki" [ref=f311e237]
+  - generic [ref=f311e238]:
+    - list

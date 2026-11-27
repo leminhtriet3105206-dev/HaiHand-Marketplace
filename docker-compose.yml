@@ -26,6 +26,7 @@ services:
       - "host.docker.internal:host-gateway"
     volumes:
       - ./backend/uploads:/app/uploads
+      - ./analytics/event_spec.json:/analytics/event_spec.json:ro
       - siglip-cache:/app/.cache/huggingface
     networks:
       - haihand-network

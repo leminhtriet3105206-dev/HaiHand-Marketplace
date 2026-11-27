@@ -45,7 +45,14 @@ router.post('/calculate', protect, handle(async (req, res) => {
   if (!sellerId || !Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ message: 'Thiếu sellerId hoặc danh sách sản phẩm', code: 'BAD_REQUEST' });
   }
-  const q = await shipping.quotePackage({ sellerId, items, toAddress: pickAddressFields(toAddress) });
+  let q;
+  try {
+    q = await shipping.quotePackage({ sellerId, items, toAddress: pickAddressFields(toAddress) });
+  } catch (error) {
+    // Checkout uses the same standard fee when a pickup address or carrier quote is unavailable.
+    if (!['SELLER_NO_PICKUP_ADDRESS', 'PROVIDER_ERROR'].includes(error.code)) throw error;
+    q = { fee: 25000, provider: 'mock', carrier: 'HaiHand Express (Tiêu chuẩn)' };
+  }
   res.json({
     sellerId,
     fee: q.fee,

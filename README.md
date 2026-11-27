@@ -1,5 +1,5 @@
 # HaiHand Marketplace
-
+.\Start-HaiHand-Mobile.ps1 
 Nền tảng thương mại điện tử đa người bán (Multi-Vendor C2C/B2C) đồ cũ & tái sử dụng hàng đầu tại Việt Nam, tích hợp trợ lý AI thông minh (Qwen3-VL, BGE-M3) và hệ thống gợi ý sản phẩm cá nhân hóa theo hành vi (Behavioral Recommendation Engine).
 
 ---

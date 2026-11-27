@@ -129,14 +129,8 @@ const HaiPayReturn = () => {
         }
       } catch (error) {
         console.error('Lỗi xác thực VNPAY:', error);
-        if (responseCode === '00') {
-          // Even if backend check gave warning (e.g. already verified), consider it successful
-          setIsSuccess(true);
-          setStatusMessage('Giao dịch đã được ghi nhận thành công trên hệ thống VNPAY.');
-        } else {
-          setIsSuccess(false);
-          setStatusMessage(error.response?.data?.message || VNPAY_RESPONSE_MESSAGES[responseCode] || 'Giao dịch không thành công!');
-        }
+        setIsSuccess(false);
+        setStatusMessage(error.response?.data?.message || 'Chưa xác nhận được thanh toán. Vui lòng kiểm tra lại đơn hàng.');
       } finally {
         setLoading(false);
       }

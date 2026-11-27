@@ -1,23 +1,10 @@
 require('dotenv').config();
 
 const mongoose = require('mongoose');
+const { imageVectorFields } = require('../services/imageVectorIndex');
 const { Post } = require('../models/Product');
 const { buildProductText, describeImage, embeddings, EMBEDDING_MODEL } = require('../services/chatbotService');
-const { embedImage, IMAGE_EMBEDDING_MODEL } = require('../services/imageEmbeddingService');
-
-async function imageAsDataUrl(url) {
-  if (!url || process.env.RAG_INDEX_IMAGES === 'false') return '';
-  if (url.startsWith('data:image/')) return url;
-  if (!/^https?:\/\//i.test(url)) return '';
-
-  const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) throw new Error(`Không tải được ảnh: HTTP ${response.status}`);
-  const bytes = Buffer.from(await response.arrayBuffer());
-  if (bytes.length > 5 * 1024 * 1024) throw new Error('Ảnh vượt quá 5 MB');
-  const responseType = response.headers.get('content-type') || '';
-  const type = responseType.startsWith('image/') ? responseType : 'image/jpeg';
-  return `data:${type};base64,${bytes.toString('base64')}`;
-}
+const { embedProductImages, imageAsDataUrl, IMAGE_EMBEDDING_MODEL } = require('../services/imageEmbeddingService');
 
 async function main() {
   const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
@@ -28,57 +15,60 @@ async function main() {
   if (process.env.RAG_IMAGE_MISSING_ONLY === 'true') {
     filter.imageEmbedding = { $exists: false };
   }
+  if (process.argv.includes('--missing-multi') || process.env.RAG_MULTI_IMAGE_MISSING_ONLY === 'true') {
+    filter['imageEmbeddings.0'] = { $exists: false };
+  }
   const products = await Post.find(filter)
-    .select('+textEmbedding +embeddingModel +imageEmbedding +imageEmbeddingModel title name category condition location description details images')
+    .select('+textEmbedding +embeddingModel +imageEmbedding +imageEmbeddings +imageEmbeddingImages +imageEmbeddingModel title name category condition location description details images')
     .lean();
 
-  const prepared = [];
-  for (const product of products) {
-    let imageDescription = '';
-    let imageEmbedding;
-    let image = '';
-    try {
-      image = await imageAsDataUrl(product.images?.[0]);
-    } catch (error) {
-      console.warn(`Không tải được ảnh ${product._id}: ${error.message}`);
-    }
-    if (image) {
-      try {
-        imageDescription = await describeImage(image);
-      } catch (error) {
-        console.warn(`Không mô tả được ảnh ${product._id}: ${error.message}`);
-      }
-      try {
-        imageEmbedding = await embedImage(image);
-      } catch (error) {
-        console.warn(`Không tạo được image embedding ${product._id}: ${error.message}`);
-      }
-    }
-    prepared.push({ product, text: buildProductText(product, imageDescription), imageEmbedding });
-    if (prepared.length % 5 === 0 || prepared.length === products.length) {
-      console.log(`Đã chuẩn bị ${prepared.length}/${products.length} sản phẩm`);
-    }
-  }
-
-  const batchSize = 16;
-  for (let start = 0; start < prepared.length; start += batchSize) {
-    const batch = prepared.slice(start, start + batchSize);
-    const texts = batch.map((item) => item.text);
-    const vectors = await embeddings.embedDocuments(texts);
-    await Post.bulkWrite(batch.map(({ product, imageEmbedding }, index) => {
-      const fields = { ragText: texts[index], textEmbedding: vectors[index], embeddingModel: EMBEDDING_MODEL };
-      if (imageEmbedding) {
-        fields.imageEmbedding = imageEmbedding;
-        fields.imageEmbeddingModel = IMAGE_EMBEDDING_MODEL;
-      }
-      return {
-        updateOne: {
-          filter: { _id: product._id },
-          update: { $set: fields }
+  const batchSize = 4;
+  for (let start = 0; start < products.length; start += batchSize) {
+    const prepared = [];
+    for (const product of products.slice(start, start + batchSize)) {
+      const needsText = !product.textEmbedding?.length || product.embeddingModel !== EMBEDDING_MODEL;
+      let imageDescription = '';
+      let indexedImages;
+      if (needsText && process.env.RAG_INDEX_IMAGES !== 'false') {
+        try {
+          const image = await imageAsDataUrl(product.images?.[0]);
+          if (image) imageDescription = await describeImage(image);
+        } catch (error) {
+          console.warn(`Không mô tả được ảnh ${product._id}: ${error.message}`);
         }
-      };
-    }));
-    console.log(`Đã lập embedding ${Math.min(start + batch.length, prepared.length)}/${prepared.length} sản phẩm`);
+      }
+      if (process.env.RAG_INDEX_IMAGES !== 'false') {
+        indexedImages = await embedProductImages(product.images);
+      }
+      prepared.push({ product, text: needsText ? buildProductText(product, imageDescription) : '', needsText, indexedImages });
+    }
+    const textItems = prepared.filter((item) => item.needsText);
+    let vectors = [];
+    if (textItems.length) {
+      try {
+        vectors = await embeddings.embedDocuments(textItems.map((item) => item.text));
+      } catch (error) {
+        console.warn(`Không lập được vector văn bản cho nhóm ${start + 1}: ${error.message}`);
+      }
+    }
+    const textVectors = new Map(textItems.map((item, index) => [String(item.product._id), vectors[index]]));
+    const updates = prepared.flatMap(({ product, text, needsText, indexedImages }) => {
+      const textVector = textVectors.get(String(product._id));
+      const fields = needsText && textVector?.length
+        ? { ragText: text, textEmbedding: textVector, embeddingModel: EMBEDDING_MODEL }
+        : {};
+      if (indexedImages) {
+        fields.imageEmbedding = indexedImages.centroid;
+        fields.imageEmbeddings = indexedImages.vectors;
+        fields.imageEmbeddingImages = indexedImages.sources;
+        fields.imageEmbeddingModel = IMAGE_EMBEDDING_MODEL;
+        Object.assign(fields, imageVectorFields(indexedImages.vectors));
+      }
+      if (!Object.keys(fields).length) return [];
+      return [{ updateOne: { filter: { _id: product._id }, update: { $set: fields } } }];
+    });
+    if (updates.length) await Post.bulkWrite(updates);
+    console.log(`Đã lập embedding ${Math.min(start + prepared.length, products.length)}/${products.length} sản phẩm`);
   }
 
   console.log(`Hoàn tất text=${EMBEDDING_MODEL}, image=${IMAGE_EMBEDDING_MODEL}.`);

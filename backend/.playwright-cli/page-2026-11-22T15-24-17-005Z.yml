@@ -1,0 +1,181 @@
+- generic [active] [ref=f297e1]:
+  - generic [ref=f297e2]:
+    - generic [ref=f297e4]:
+      - generic [ref=f297e5]:
+        - generic [ref=f297e6]:
+          - link "DuckDuckGo home" [ref=f297e7] [cursor=pointer]:
+            - /url: /
+            - generic [ref=f297e8]: DuckDuckGo
+          - generic [ref=f297e15]:
+            - combobox "Search privately" [ref=f297e17]: am sieu toc Bear
+            - button "Search" [ref=f297e19] [cursor=pointer]
+        - button "Open menu" [ref=f297e23] [cursor=pointer]
+      - navigation [ref=f297e31]:
+        - list [ref=f297e32]:
+          - listitem [ref=f297e33]:
+            - link [ref=f297e34] [cursor=pointer]:
+              - /url: /?q=am+sieu+toc+Bear&ia=web
+              - strong [ref=f297e35]: All
+          - listitem [ref=f297e38]:
+            - link [ref=f297e39] [cursor=pointer]:
+              - /url: /?q=am+sieu+toc+Bear&iax=images&ia=images
+              - strong [ref=f297e40]: Images
+          - listitem [ref=f297e41]:
+            - link [ref=f297e42] [cursor=pointer]:
+              - /url: /?q=am+sieu+toc+Bear&iax=videos&ia=videos
+              - strong [ref=f297e43]: Videos
+          - listitem [ref=f297e44]:
+            - link [ref=f297e45] [cursor=pointer]:
+              - /url: /?q=am+sieu+toc+Bear&iaxm=maps
+              - strong [ref=f297e46]: Maps
+        - list [ref=f297e47]:
+          - listitem [ref=f297e48]:
+            - link "Ask Duck.ai" [ref=f297e50] [cursor=pointer]:
+              - /url: /?q=am+sieu+toc+Bear&ia=chat&entry=serp
+          - listitem [ref=f297e54]:
+            - button "Search Settings ✀" [ref=f297e56] [cursor=pointer]:
+              - generic [ref=f297e59]: Search Settings
+              - generic [ref=f297e60]: ✀
+    - generic [ref=f297e67]:
+      - navigation [ref=f297e68]:
+        - list [ref=f297e70]:
+          - listitem [ref=f297e71]:
+            - generic [ref=f297e72]:
+              - switch "Filter by the selected region" [ref=f297e76]
+              - button [ref=f297e78] [cursor=pointer]:
+                - strong [ref=f297e81]: Vietnam (en)
+          - listitem [ref=f297e84]:
+            - button [ref=f297e85] [cursor=pointer]:
+              - strong [ref=f297e87]: "Safe search: moderate"
+          - listitem [ref=f297e90]:
+            - button [ref=f297e91] [cursor=pointer]:
+              - strong [ref=f297e93]: "AI images: show"
+          - listitem [ref=f297e96]:
+            - button [ref=f297e97] [cursor=pointer]:
+              - strong [ref=f297e99]: Any time
+          - listitem [ref=f297e102]:
+            - button [ref=f297e103] [cursor=pointer]:
+              - strong [ref=f297e105]: All sizes
+          - listitem [ref=f297e108]:
+            - button [ref=f297e109] [cursor=pointer]:
+              - strong [ref=f297e111]: All colors
+          - listitem [ref=f297e114]:
+            - button [ref=f297e115] [cursor=pointer]:
+              - strong [ref=f297e117]: All types
+          - listitem [ref=f297e120]:
+            - button [ref=f297e121] [cursor=pointer]:
+              - strong [ref=f297e123]: All layouts
+          - listitem [ref=f297e126]:
+            - button [ref=f297e127] [cursor=pointer]:
+              - strong [ref=f297e129]: All Licenses
+      - generic:
+        - generic:
+          - list
+    - list [ref=f297e134]:
+      - button "Close menu" [ref=f297e135] [cursor=pointer]
+      - list [ref=f297e139]:
+        - listitem [ref=f297e140]: Search
+        - listitem [ref=f297e141]:
+          - link "Homepage" [ref=f297e142] [cursor=pointer]:
+            - /url: https://start.duckduckgo.com/
+        - listitem [ref=f297e143]:
+          - link "Themes" [ref=f297e144] [cursor=pointer]:
+            - /url: /settings#appearance
+        - listitem [ref=f297e145]:
+          - link "Settings" [ref=f297e146] [cursor=pointer]:
+            - /url: /settings
+      - list [ref=f297e147]:
+        - listitem [ref=f297e148]: Share Feedback
+        - listitem [ref=f297e149]:
+          - generic [ref=f297e152]:
+            - button "Positive feedback" [ref=f297e153] [cursor=pointer]
+            - button "Negative feedback" [ref=f297e157] [cursor=pointer]
+      - list [ref=f297e161]:
+        - listitem [ref=f297e162]: Downloads
+        - listitem [ref=f297e163]:
+          - link "iOS Browser" [ref=f297e164] [cursor=pointer]:
+            - /url: https://apps.apple.com/app/duckduckgo-private-browser/id663592361?platform=iphone&pt=866401&mt=8&ct=serp-atb-serp
+        - listitem [ref=f297e165]:
+          - link "Android Browser" [ref=f297e166] [cursor=pointer]:
+            - /url: https://play.google.com/store/apps/details?id=com.duckduckgo.mobile.android&referrer=utm_campaign%3Dserp-atb-serp%26origin%3Dfunnel_playstore_searchresults
+        - listitem [ref=f297e167]:
+          - link "Mac Browser" [ref=f297e168] [cursor=pointer]:
+            - /url: /mac?origin=funnel_browser_searchresults
+        - listitem [ref=f297e169]:
+          - link "Windows Browser" [ref=f297e170] [cursor=pointer]:
+            - /url: /windows?origin=funnel_browser_searchresults
+        - listitem [ref=f297e171]:
+          - link "Browser Extensions" [ref=f297e172] [cursor=pointer]:
+            - /url: /duckduckgo-help-pages/desktop/adding-duckduckgo-to-your-browser/
+      - list [ref=f297e173]:
+        - listitem [ref=f297e174]: More From DuckDuckGo
+        - listitem [ref=f297e175]:
+          - generic [ref=f297e178]:
+            - button "Dismiss promotion" [ref=f297e179] [cursor=pointer]
+            - generic [ref=f297e182]:
+              - paragraph [ref=f297e184]:
+                - strong [ref=f297e185]: Upgrade to our Private Browser
+              - paragraph [ref=f297e186]: Fast. Secure. Free.
+            - link "Download Browser" [ref=f297e187] [cursor=pointer]:
+              - /url: /windows
+        - listitem [ref=f297e190]:
+          - link "Duck.ai" [ref=f297e191] [cursor=pointer]:
+            - /url: https://duck.ai
+        - listitem [ref=f297e192]:
+          - link "Email Protection" [ref=f297e193] [cursor=pointer]:
+            - /url: /email
+        - listitem [ref=f297e194]:
+          - link "Newsletter" [ref=f297e195] [cursor=pointer]:
+            - /url: /newsletter
+        - listitem [ref=f297e196]:
+          - link "Blog" [ref=f297e197] [cursor=pointer]:
+            - /url: /blog
+        - listitem [ref=f297e198]:
+          - link "Podcast" [ref=f297e199] [cursor=pointer]:
+            - /url: https://insideduckduckgo.substack.com/?showWelcome=true
+        - listitem [ref=f297e200]:
+          - link "Collaborations" [ref=f297e201] [cursor=pointer]:
+            - /url: /collaborations
+      - list [ref=f297e202]:
+        - listitem [ref=f297e203]: Learn More
+        - listitem [ref=f297e204]:
+          - link "What’s New" [ref=f297e205] [cursor=pointer]:
+            - /url: /updates
+        - listitem [ref=f297e206]:
+          - link "Compare Privacy" [ref=f297e207] [cursor=pointer]:
+            - /url: /compare-privacy
+        - listitem [ref=f297e208]:
+          - link "About Our Browser" [ref=f297e209] [cursor=pointer]:
+            - /url: /app
+        - listitem [ref=f297e210]:
+          - link "About DuckDuckGo" [ref=f297e211] [cursor=pointer]:
+            - /url: /about
+      - list [ref=f297e212]:
+        - listitem [ref=f297e213]: Other Resources
+        - listitem [ref=f297e214]:
+          - link "Help" [ref=f297e215] [cursor=pointer]:
+            - /url: /duckduckgo-help-pages
+        - listitem [ref=f297e216]:
+          - link "Community" [ref=f297e217] [cursor=pointer]:
+            - /url: https://www.reddit.com/r/duckduckgo/
+        - listitem [ref=f297e218]:
+          - link "Careers" [ref=f297e219] [cursor=pointer]:
+            - /url: /careers
+        - listitem [ref=f297e220]:
+          - link "Privacy Policy" [ref=f297e221] [cursor=pointer]:
+            - /url: /privacy
+        - listitem [ref=f297e222]:
+          - link "Terms of Service" [ref=f297e223] [cursor=pointer]:
+            - /url: /terms
+        - listitem [ref=f297e224]:
+          - link "Press Kit" [ref=f297e225] [cursor=pointer]:
+            - /url: /press
+        - listitem [ref=f297e226]:
+          - link "Advertise on Search" [ref=f297e227] [cursor=pointer]:
+            - /url: /duckduckgo-help-pages/company/advertise-on-duckduckgo-search
+  - generic [ref=f297e229]:
+    - generic [ref=f297e230]: Unfortunately, bots use DuckDuckGo too.
+    - generic [ref=f297e231]: Please complete the following challenge to confirm this search was made by a human.
+    - generic [ref=f297e232]: "Select all squares containing a duck:"
+    - button "Submit" [ref=f297e254] [cursor=pointer]
+  - button "Share Feedback" [ref=f297e258] [cursor=pointer]

@@ -68,8 +68,9 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
         try {
           const userRes = await axios.get(`${API_URL}/api/users/${user._id}`);
           if (userRes.data) {
-            setUser(userRes.data);
-            localStorage.setItem('user', JSON.stringify(userRes.data));
+            const updated = { ...user, ...userRes.data, token: userRes.data.token || user.token };
+            setUser(updated);
+            localStorage.setItem('user', JSON.stringify(updated));
           }
 
           axios.get(`${API_URL}/api/users/cart/${user._id}`).then(({ data }) => setCartCount(data.length));
@@ -192,7 +193,7 @@ const Header = ({ keyword: propKeyword, setKeyword: propSetKeyword, onSearch, lo
                 {showCategoryMenu && (
                     <div className="position-absolute bg-white shadow-lg rounded-3 py-2" style={{top: '100%', left: '0', width: '260px', zIndex: 1050, border: '1px solid #eaeaea'}}>
                         {categories.map((cat, idx) => (
-                            <div key={idx} className="px-3 py-2 d-flex align-items-center gap-3 transition-all hover-bg-light" style={{cursor: 'pointer'}} onClick={() => navigate(`/products?category=${cat.name}`)}>
+                            <div key={idx} className="px-3 py-2 d-flex align-items-center gap-3 transition-all hover-bg-light" style={{cursor: 'pointer'}} onClick={() => navigate(`/products?category=${encodeURIComponent(cat.name)}`)}>
                                 <div className="d-flex justify-content-center align-items-center bg-light rounded-circle shadow-sm" style={{width: '35px', height: '35px', overflow: 'hidden'}}>
                                     {cat.name === 'Tất cả' ? <span style={{fontSize: '18px'}}>{cat.icon}</span> : <img src={cat.image?.startsWith('http') ? cat.image : `${API_URL}/uploads/${cat.image}`} style={{width: '100%', height: '100%', objectFit: 'cover'}} alt={cat.name}/>}
                                 </div>

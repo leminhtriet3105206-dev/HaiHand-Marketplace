@@ -51,6 +51,8 @@ export default function ChatPage() {
   const [linkedPost, setLinkedPost] = useState(null);
   const [filter, setFilter] = useState('all'); // all, buy, sell, unread
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [forwardingMessage, setForwardingMessage] = useState(null);
+  const [forwarding, setForwarding] = useState(false);
 
   const initialLoadDoneRef = useRef(false);
   const messagesContainerRef = useRef(null);
@@ -423,6 +425,36 @@ export default function ChatPage() {
 
   const handleSharePost = () => {
     setNewMessage((prev) => `${prev} 📦 Hỏi về sản phẩm: `);
+  };
+
+  const handleForwardMessage = async (receiver) => {
+    if (!forwardingMessage?._id || !receiver || forwarding) return;
+    setForwarding(true);
+    try {
+      const { data } = await axiosClient.post(`/api/messages/${forwardingMessage._id}/forward`, {
+        senderId: user._id,
+        receiverId: receiver._id
+      });
+      if (selectedReceiver?._id === receiver._id) setMessages(prev => [...prev, data]);
+      if (socket) {
+        socket.emit('sendMessage', {
+          _id: data._id,
+          senderId: user._id,
+          receiverId: receiver._id,
+          text: data.content || '',
+          post: data.post || null,
+          images: data.images || [],
+          forwardedFrom: data.forwardedFrom
+        });
+      }
+      setForwardingMessage(null);
+      fetchInboxList();
+      toast.success(`Đã chuyển tiếp đến ${receiver.name}`);
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Không thể chuyển tiếp tin nhắn');
+    } finally {
+      setForwarding(false);
+    }
   };
 
   const emojis = ['😀', '😂', '🥰', '😍', '😎', '😭', '😡', '👍', '🙏', '❤️'];
@@ -1048,6 +1080,32 @@ export default function ChatPage() {
             )}
           </div>
         </div>
+
+        {forwardingMessage && (
+          <div className="fixed inset-0 z-[100] bg-black/40 flex items-center justify-center p-4" onClick={() => !forwarding && setForwardingMessage(null)}>
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="forward-title" onClick={event => event.stopPropagation()}>
+              <div className="p-4 border-b border-stone-200 flex items-center justify-between">
+                <div>
+                  <h3 id="forward-title" className="font-black text-lg">Chuyển tiếp tin nhắn</h3>
+                  <p className="text-xs text-stone-500 mt-0.5">Chọn cuộc trò chuyện để gửi nội dung này</p>
+                </div>
+                <button type="button" disabled={forwarding} aria-label="Đóng" onClick={() => setForwardingMessage(null)} className="w-8 h-8 rounded-full hover:bg-stone-100 text-stone-500">✕</button>
+              </div>
+              <div className="p-3 bg-stone-50 border-b border-stone-200 text-sm text-stone-600 max-h-24 overflow-hidden">
+                {forwardingMessage.content || (forwardingMessage.images?.length ? 'Hình ảnh đính kèm' : 'Sản phẩm đính kèm')}
+              </div>
+              <div className="max-h-80 overflow-y-auto p-2">
+                {inboxList.length ? inboxList.map(item => (
+                  <button key={item.otherUser._id} type="button" disabled={forwarding} onClick={() => handleForwardMessage(item.otherUser)} className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-[#FFFBEB] disabled:opacity-50 text-left">
+                    <img src={item.otherUser.avatar || 'https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png'} alt="" className="w-10 h-10 rounded-full object-cover border border-stone-200" />
+                    <span className="font-bold text-sm flex-1">{item.otherUser.name}</span>
+                    <span className="text-xs font-bold text-[#EA580C]">{forwarding ? 'Đang gửi...' : 'Gửi'}</span>
+                  </button>
+                )) : <p className="p-6 text-center text-sm text-stone-500">Bạn chưa có cuộc trò chuyện nào để chuyển tiếp.</p>}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

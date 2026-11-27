@@ -1,0 +1,433 @@
+- generic [active] [ref=f289e1]:
+  - banner [ref=f289e2]:
+    - generic [ref=f289e3]:
+      - link [ref=f289e4] [cursor=pointer]:
+        - /url: /?FORM=Z9FD1
+        - heading "Back to Bing search" [level=1] [ref=f289e5]
+      - search [ref=f289e6]:
+        - button "Search" [ref=f289e9] [cursor=pointer]
+        - searchbox "Enter your search here - Search suggestions will show as you type" [ref=f289e10]: am sieu toc site:dienmayxanh.com
+        - button "Search using an image" [ref=f289e13] [cursor=pointer]
+    - complementary "Account Rewards and Preferences" [ref=f289e14]:
+      - button "Microsoft Rewards" [ref=f289e15] [cursor=pointer]:
+        - generic [ref=f289e16]: Rewards
+      - link [ref=f289e32] [cursor=pointer]:
+        - /url: javascript:void(0)
+        - button "Sign in" [ref=f289e35]
+      - button "Settings and quick links" [ref=f289e36] [cursor=pointer]
+    - navigation "Search Filter" [ref=f289e37]:
+      - list [ref=f289e38]:
+        - listitem [ref=f289e39]:
+          - link "All" [ref=f289e40] [cursor=pointer]:
+            - /url: /search?q=am+sieu+toc+site%3adienmayxanh.com&FORM=HDRSC1
+        - listitem [ref=f289e41]:
+          - link "AI Mode" [ref=f289e42] [cursor=pointer]:
+            - /url: /copilotsearch?q=am+sieu+toc+site%3adienmayxanh.com&FORM=CSSCOP
+        - listitem [ref=f289e45]:
+          - link "Web Mode" [ref=f289e46] [cursor=pointer]:
+            - /url: /search?q=am+sieu+toc+site%3adienmayxanh.com&webscp=1&FORM=HDRWSC
+        - listitem [ref=f289e47]:
+          - link "Images" [ref=f289e48] [cursor=pointer]:
+            - /url: /images?FORM=HDRSC2
+        - listitem [ref=f289e49]:
+          - list [ref=f289e50]:
+            - listitem [ref=f289e51]:
+              - link "Create" [ref=f289e52] [cursor=pointer]:
+                - /url: /images/create/ai-image-generator?FORM=IRPGEN
+            - listitem [ref=f289e57]:
+              - link "Collections" [ref=f289e58] [cursor=pointer]:
+                - /url: /saves?FORM=IRPCOL
+        - listitem [ref=f289e62]:
+          - link "Videos" [ref=f289e63] [cursor=pointer]:
+            - /url: /videos/search?q=am+sieu+toc+site%3adienmayxanh.com&FORM=HDRSC3
+        - listitem [ref=f289e64]:
+          - link "Maps" [ref=f289e65] [cursor=pointer]:
+            - /url: /maps?q=am+sieu+toc+site%3adienmayxanh.com&FORM=HDRSC4
+        - listitem [ref=f289e66]:
+          - button "More" [ref=f289e67] [cursor=pointer]
+      - generic [ref=f289e71]:
+        - generic [ref=f289e72]:
+          - list:
+            - listitem [ref=f289e73]:
+              - generic [ref=f289e74]: "SafeSearch:"
+            - listitem [ref=f289e75]:
+              - button "Moderate SafeSearch:" [ref=f289e76] [cursor=pointer]:
+                - generic [ref=f289e77]: Moderate
+        - button "Filter" [ref=f289e80] [cursor=pointer]
+  - main [ref=f289e83]:
+    - navigation [aria-hidden] [ref=f289e84]
+    - generic [ref=f289e90]:
+      - list [ref=f289e91]:
+        - listitem [ref=f289e92]:
+          - generic [ref=f289e93]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e95] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=twASF0mU&id=2FA457E21CA6A9F3B498D695AF1F7425235A92EA&thid=OIP.twASF0mUU-JBEn5JOGTYRQHaK3&mediaurl=https%3a%2f%2fi.pinimg.com%2f736x%2f4f%2fbe%2f3e%2f4fbe3e56c5f6e0e4b60558b4c8040e75.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.b7001217499453e241127e493864d845%3frik%3d6pJaIyV0H6%252bV1g%26pid%3dImgRaw%26r%3d0&exph=816&expw=556&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=1D454267EFE992F633F3C807B6270FAF&selectedIndex=10&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e97]
+            - generic [ref=f289e98]:
+              - link "Agent P/Perry the Platypus | Phineas and ferb, Character design ..." [ref=f289e99] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=twASF0mU&id=2FA457E21CA6A9F3B498D695AF1F7425235A92EA&thid=OIP.twASF0mUU-JBEn5JOGTYRQHaK3&mediaurl=https%3a%2f%2fi.pinimg.com%2f736x%2f4f%2fbe%2f3e%2f4fbe3e56c5f6e0e4b60558b4c8040e75.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.b7001217499453e241127e493864d845%3frik%3d6pJaIyV0H6%252bV1g%26pid%3dImgRaw%26r%3d0&exph=816&expw=556&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=1D454267EFE992F633F3C807B6270FAF&selectedIndex=10&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Agent P/Perry the Platypus | Phin…" [ref=f289e100] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=twASF0mU&id=2FA457E21CA6A9F3B498D695AF1F7425235A92EA&thid=OIP.twASF0mUU-JBEn5JOGTYRQHaK3&mediaurl=https%3a%2f%2fi.pinimg.com%2f736x%2f4f%2fbe%2f3e%2f4fbe3e56c5f6e0e4b60558b4c8040e75.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.b7001217499453e241127e493864d845%3frik%3d6pJaIyV0H6%252bV1g%26pid%3dImgRaw%26r%3d0&exph=816&expw=556&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=1D454267EFE992F633F3C807B6270FAF&selectedIndex=10&itb=0
+        - listitem [ref=f289e101]:
+          - generic [ref=f289e102]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e104] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=K9tfvbVJ&id=E9B9B7FF9D2797E54A65163178B00B9540FB531C&thid=OIP.K9tfvbVJBqIrhYqn-Rqj8AHaEK&mediaurl=https%3a%2f%2fcdn.abcotvs.com%2fdip%2fimages%2f16123512_040325-otrc-phineasandferb2-img.JPG&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.2bdb5fbdb54906a22b858aa7f91aa3f0%3frik%3dHFP7QJULsHgxFg%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=0F5FF10B8C9274DDA226FE57C45AD04E&selectedIndex=11&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e106]
+            - generic [ref=f289e107]:
+              - link "Phineas and Ferb are making a return to Disney Channel with a brand new ..." [ref=f289e108] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=K9tfvbVJ&id=E9B9B7FF9D2797E54A65163178B00B9540FB531C&thid=OIP.K9tfvbVJBqIrhYqn-Rqj8AHaEK&mediaurl=https%3a%2f%2fcdn.abcotvs.com%2fdip%2fimages%2f16123512_040325-otrc-phineasandferb2-img.JPG&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.2bdb5fbdb54906a22b858aa7f91aa3f0%3frik%3dHFP7QJULsHgxFg%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=0F5FF10B8C9274DDA226FE57C45AD04E&selectedIndex=11&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Phineas and Ferb are making a return to Disney Channel with a brand ne…" [ref=f289e109] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=K9tfvbVJ&id=E9B9B7FF9D2797E54A65163178B00B9540FB531C&thid=OIP.K9tfvbVJBqIrhYqn-Rqj8AHaEK&mediaurl=https%3a%2f%2fcdn.abcotvs.com%2fdip%2fimages%2f16123512_040325-otrc-phineasandferb2-img.JPG&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.2bdb5fbdb54906a22b858aa7f91aa3f0%3frik%3dHFP7QJULsHgxFg%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=0F5FF10B8C9274DDA226FE57C45AD04E&selectedIndex=11&itb=0
+        - listitem [ref=f289e110]:
+          - generic [ref=f289e111]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e113] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=cHPqC6Lo&id=6669E004C4F2CFA523BC205107FAEFE37F4D4A1E&thid=OIP.cHPqC6LopHHPNOy3sihxuwHaHd&mediaurl=https%3a%2f%2fimages-wixmp-ed30a86b8c4ca887773594c2.wixmp.com%2ff%2f5e942661-b5fb-41a6-a86f-a31fa26f083f%2fdg583lf-fb9de42c-a857-4b3c-8558-1a00c94b003d.png%2fv1%2ffill%2fw_1280%2ch_1289%2cq_80%2cstrp%2fperry_the_platypus_by_tehherminator_dg583lf-fullview.jpg%3ftoken%3deyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTI4OSIsInBhdGgiOiJcL2ZcLzVlOTQyNjYxLWI1ZmItNDFhNi1hODZmLWEzMWZhMjZmMDgzZlwvZGc1ODNsZi1mYjlkZTQyYy1hODU3LTRiM2MtODU1OC0xYTAwYzk0YjAwM2QucG5nIiwid2lkdGgiOiI8PTEyODAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.dM4RH7Nu2qbrFUYw8MQA6Ph4qySAWuiM_Ppqh1HtPVU&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7073ea0ba2e8a471cf34ecb7b22871bb%3frik%3dHkpNf%252bPv%252bgdRIA%26pid%3dImgRaw%26r%3d0&exph=1289&expw=1280&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=1AAA694706FAB8BBBFFB21812130CCD7&selectedIndex=12&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e115]
+            - generic [ref=f289e116]:
+              - link "Perry the Platypus by TehHerminator on DeviantArt" [ref=f289e117] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=cHPqC6Lo&id=6669E004C4F2CFA523BC205107FAEFE37F4D4A1E&thid=OIP.cHPqC6LopHHPNOy3sihxuwHaHd&mediaurl=https%3a%2f%2fimages-wixmp-ed30a86b8c4ca887773594c2.wixmp.com%2ff%2f5e942661-b5fb-41a6-a86f-a31fa26f083f%2fdg583lf-fb9de42c-a857-4b3c-8558-1a00c94b003d.png%2fv1%2ffill%2fw_1280%2ch_1289%2cq_80%2cstrp%2fperry_the_platypus_by_tehherminator_dg583lf-fullview.jpg%3ftoken%3deyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTI4OSIsInBhdGgiOiJcL2ZcLzVlOTQyNjYxLWI1ZmItNDFhNi1hODZmLWEzMWZhMjZmMDgzZlwvZGc1ODNsZi1mYjlkZTQyYy1hODU3LTRiM2MtODU1OC0xYTAwYzk0YjAwM2QucG5nIiwid2lkdGgiOiI8PTEyODAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.dM4RH7Nu2qbrFUYw8MQA6Ph4qySAWuiM_Ppqh1HtPVU&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7073ea0ba2e8a471cf34ecb7b22871bb%3frik%3dHkpNf%252bPv%252bgdRIA%26pid%3dImgRaw%26r%3d0&exph=1289&expw=1280&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=1AAA694706FAB8BBBFFB21812130CCD7&selectedIndex=12&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry the Platypus by TehHerminato…" [ref=f289e118] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=cHPqC6Lo&id=6669E004C4F2CFA523BC205107FAEFE37F4D4A1E&thid=OIP.cHPqC6LopHHPNOy3sihxuwHaHd&mediaurl=https%3a%2f%2fimages-wixmp-ed30a86b8c4ca887773594c2.wixmp.com%2ff%2f5e942661-b5fb-41a6-a86f-a31fa26f083f%2fdg583lf-fb9de42c-a857-4b3c-8558-1a00c94b003d.png%2fv1%2ffill%2fw_1280%2ch_1289%2cq_80%2cstrp%2fperry_the_platypus_by_tehherminator_dg583lf-fullview.jpg%3ftoken%3deyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1cm46YXBwOjdlMGQxODg5ODIyNjQzNzNhNWYwZDQxNWVhMGQyNmUwIiwiaXNzIjoidXJuOmFwcDo3ZTBkMTg4OTgyMjY0MzczYTVmMGQ0MTVlYTBkMjZlMCIsIm9iaiI6W1t7ImhlaWdodCI6Ijw9MTI4OSIsInBhdGgiOiJcL2ZcLzVlOTQyNjYxLWI1ZmItNDFhNi1hODZmLWEzMWZhMjZmMDgzZlwvZGc1ODNsZi1mYjlkZTQyYy1hODU3LTRiM2MtODU1OC0xYTAwYzk0YjAwM2QucG5nIiwid2lkdGgiOiI8PTEyODAifV1dLCJhdWQiOlsidXJuOnNlcnZpY2U6aW1hZ2Uub3BlcmF0aW9ucyJdfQ.dM4RH7Nu2qbrFUYw8MQA6Ph4qySAWuiM_Ppqh1HtPVU&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7073ea0ba2e8a471cf34ecb7b22871bb%3frik%3dHkpNf%252bPv%252bgdRIA%26pid%3dImgRaw%26r%3d0&exph=1289&expw=1280&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=1AAA694706FAB8BBBFFB21812130CCD7&selectedIndex=12&itb=0
+        - listitem [ref=f289e119]:
+          - generic [ref=f289e120]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e122] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=lkdrY9Ai&id=A4B60AB409C8D2597AD731F3F5E9CC21BD514E74&thid=OIP.lkdrY9AisUgcfQX_EyfWOQHaFj&mediaurl=https%3a%2f%2fwww.wikihow.com%2fimages%2f6%2f62%2fDraw-Perry-the-Platypus-Step-29.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.96476b63d022b1481c7d05ff1327d639%3frik%3ddE5RvSHM6fXzMQ%26pid%3dImgRaw%26r%3d0&exph=2408&expw=3210&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=2033A2DD8ABA013F9429D2AC60AFD2E1&selectedIndex=13&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e124]
+            - generic [ref=f289e125]:
+              - link "How to Draw Perry the Platypus (with Pictures) - wikiHow" [ref=f289e126] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=lkdrY9Ai&id=A4B60AB409C8D2597AD731F3F5E9CC21BD514E74&thid=OIP.lkdrY9AisUgcfQX_EyfWOQHaFj&mediaurl=https%3a%2f%2fwww.wikihow.com%2fimages%2f6%2f62%2fDraw-Perry-the-Platypus-Step-29.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.96476b63d022b1481c7d05ff1327d639%3frik%3ddE5RvSHM6fXzMQ%26pid%3dImgRaw%26r%3d0&exph=2408&expw=3210&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=2033A2DD8ABA013F9429D2AC60AFD2E1&selectedIndex=13&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "How to Draw Perry the Platypus (with Pictures) …" [ref=f289e127] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=lkdrY9Ai&id=A4B60AB409C8D2597AD731F3F5E9CC21BD514E74&thid=OIP.lkdrY9AisUgcfQX_EyfWOQHaFj&mediaurl=https%3a%2f%2fwww.wikihow.com%2fimages%2f6%2f62%2fDraw-Perry-the-Platypus-Step-29.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.96476b63d022b1481c7d05ff1327d639%3frik%3ddE5RvSHM6fXzMQ%26pid%3dImgRaw%26r%3d0&exph=2408&expw=3210&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=2033A2DD8ABA013F9429D2AC60AFD2E1&selectedIndex=13&itb=0
+        - listitem [ref=f289e128]:
+          - generic [ref=f289e129]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e131] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=M0W9SjsU&id=A76254DF3B9FFD24AB912FD10815A4EFEC6AF3C3&thid=OIP.M0W9SjsUpRoqi7PUGCDuPwHaFi&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2f0tdJ3qc.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.3345bd4a3b14a51a2a8bb3d41820ee3f%3frik%3dw%252fNq7O%252bkFQjRLw%26pid%3dImgRaw%26r%3d0&exph=1231&expw=1648&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=E9859516D151F001A6AC079ED49E9078&selectedIndex=14&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e133]
+            - generic [ref=f289e134]:
+              - link "Perry The Platypus Wallpapers - Wallpaper Cave" [ref=f289e135] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=M0W9SjsU&id=A76254DF3B9FFD24AB912FD10815A4EFEC6AF3C3&thid=OIP.M0W9SjsUpRoqi7PUGCDuPwHaFi&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2f0tdJ3qc.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.3345bd4a3b14a51a2a8bb3d41820ee3f%3frik%3dw%252fNq7O%252bkFQjRLw%26pid%3dImgRaw%26r%3d0&exph=1231&expw=1648&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=E9859516D151F001A6AC079ED49E9078&selectedIndex=14&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry The Platypus Wallpapers - Wallpaper …" [ref=f289e136] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=M0W9SjsU&id=A76254DF3B9FFD24AB912FD10815A4EFEC6AF3C3&thid=OIP.M0W9SjsUpRoqi7PUGCDuPwHaFi&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2f0tdJ3qc.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.3345bd4a3b14a51a2a8bb3d41820ee3f%3frik%3dw%252fNq7O%252bkFQjRLw%26pid%3dImgRaw%26r%3d0&exph=1231&expw=1648&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=E9859516D151F001A6AC079ED49E9078&selectedIndex=14&itb=0
+        - listitem [ref=f289e137]:
+          - generic [ref=f289e138]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e140] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=ohCpTPsb&id=A76254DF3B9FFD24AB910DB9177C539D68D24CCC&thid=OIP.ohCpTPsbT9pEsf-qkwS0-wHaEK&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2fAwgC34k.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.a210a94cfb1b4fda44b1ffaa9304b4fb%3frik%3dzEzSaJ1TfBe5DQ%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=E23CBD9B10C99EC1DFCBAABE4377FD48&selectedIndex=15&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e142]
+            - generic [ref=f289e143]:
+              - link "Perry The Platypus Wallpapers - Wallpaper Cave" [ref=f289e144] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=ohCpTPsb&id=A76254DF3B9FFD24AB910DB9177C539D68D24CCC&thid=OIP.ohCpTPsbT9pEsf-qkwS0-wHaEK&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2fAwgC34k.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.a210a94cfb1b4fda44b1ffaa9304b4fb%3frik%3dzEzSaJ1TfBe5DQ%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=E23CBD9B10C99EC1DFCBAABE4377FD48&selectedIndex=15&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry The Platypus Wallpapers - Wallpaper Cave" [ref=f289e145] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=ohCpTPsb&id=A76254DF3B9FFD24AB910DB9177C539D68D24CCC&thid=OIP.ohCpTPsbT9pEsf-qkwS0-wHaEK&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2fAwgC34k.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.a210a94cfb1b4fda44b1ffaa9304b4fb%3frik%3dzEzSaJ1TfBe5DQ%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=E23CBD9B10C99EC1DFCBAABE4377FD48&selectedIndex=15&itb=0
+      - list [ref=f289e146]:
+        - listitem [ref=f289e147]:
+          - generic [ref=f289e148]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e150] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=1%2bX4lQFF&id=ED53E18188813224064A5A54E7A82FDDA815E9CD&thid=OIP.1-X4lQFF4BE8F45mXNqZiAHaHa&mediaurl=https%3a%2f%2fcdn.wallpapersafari.com%2f81%2f84%2fTXCdmS.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.d7e5f8950145e0113c178e665cda9988%3frik%3dzekVqN0vqOdUWg%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=91D5D7C047C91D6373354E5DB9E1D246&selectedIndex=16&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e152]
+            - generic [ref=f289e153]:
+              - link "Perry The Platypus Wallpaper - WallpaperSafari" [ref=f289e154] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=1%2bX4lQFF&id=ED53E18188813224064A5A54E7A82FDDA815E9CD&thid=OIP.1-X4lQFF4BE8F45mXNqZiAHaHa&mediaurl=https%3a%2f%2fcdn.wallpapersafari.com%2f81%2f84%2fTXCdmS.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.d7e5f8950145e0113c178e665cda9988%3frik%3dzekVqN0vqOdUWg%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=91D5D7C047C91D6373354E5DB9E1D246&selectedIndex=16&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry The Platypus Wallpaper - Wallpap…" [ref=f289e155] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=1%2bX4lQFF&id=ED53E18188813224064A5A54E7A82FDDA815E9CD&thid=OIP.1-X4lQFF4BE8F45mXNqZiAHaHa&mediaurl=https%3a%2f%2fcdn.wallpapersafari.com%2f81%2f84%2fTXCdmS.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.d7e5f8950145e0113c178e665cda9988%3frik%3dzekVqN0vqOdUWg%26pid%3dImgRaw%26r%3d0&exph=2048&expw=2048&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=91D5D7C047C91D6373354E5DB9E1D246&selectedIndex=16&itb=0
+        - listitem [ref=f289e156]:
+          - generic [ref=f289e157]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e159] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=b5xnOvDp&id=C5645AF21D19BD55FDA32D1FD14B045DF5C8BD37&thid=OIP.b5xnOvDp_SGZcO9AKPhGAgHaEK&mediaurl=https%3a%2f%2fgetwallpapers.com%2fwallpaper%2ffull%2f2%2f3%2f5%2f1106526-perry-the-platypus-wallpaper-1920x1080-screen.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.6f9c673af0e9fd219970ef4028f84602%3frik%3dN73I9V0ES9EfLQ%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=3F84B499672EFA9A6DC887F5CDD95327&selectedIndex=17&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e161]
+            - generic [ref=f289e162]:
+              - link "Perry The Platypus Wallpaper (54+ images)" [ref=f289e163] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=b5xnOvDp&id=C5645AF21D19BD55FDA32D1FD14B045DF5C8BD37&thid=OIP.b5xnOvDp_SGZcO9AKPhGAgHaEK&mediaurl=https%3a%2f%2fgetwallpapers.com%2fwallpaper%2ffull%2f2%2f3%2f5%2f1106526-perry-the-platypus-wallpaper-1920x1080-screen.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.6f9c673af0e9fd219970ef4028f84602%3frik%3dN73I9V0ES9EfLQ%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=3F84B499672EFA9A6DC887F5CDD95327&selectedIndex=17&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry The Platypus Wallpaper (54+ images)" [ref=f289e164] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=b5xnOvDp&id=C5645AF21D19BD55FDA32D1FD14B045DF5C8BD37&thid=OIP.b5xnOvDp_SGZcO9AKPhGAgHaEK&mediaurl=https%3a%2f%2fgetwallpapers.com%2fwallpaper%2ffull%2f2%2f3%2f5%2f1106526-perry-the-platypus-wallpaper-1920x1080-screen.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.6f9c673af0e9fd219970ef4028f84602%3frik%3dN73I9V0ES9EfLQ%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=3F84B499672EFA9A6DC887F5CDD95327&selectedIndex=17&itb=0
+        - listitem [ref=f289e165]:
+          - generic [ref=f289e166]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e168] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=Ed4peK9M&id=304EE4E68F790E72F32343B88A93EB300D2993C5&thid=OIP.Ed4peK9Mq18hZpF7tdTbkQHaEK&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2fwp3352816.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.11de2978af4cab5f2166917bb5d4db91%3frik%3dxZMpDTDrk4q4Qw%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=26F61ECACEFEFFD6F76019EF87928615&selectedIndex=18&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e170]
+            - generic [ref=f289e171]:
+              - link "Perry The Platypus Wallpapers Free - Wallpaper Cave" [ref=f289e172] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=Ed4peK9M&id=304EE4E68F790E72F32343B88A93EB300D2993C5&thid=OIP.Ed4peK9Mq18hZpF7tdTbkQHaEK&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2fwp3352816.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.11de2978af4cab5f2166917bb5d4db91%3frik%3dxZMpDTDrk4q4Qw%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=26F61ECACEFEFFD6F76019EF87928615&selectedIndex=18&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry The Platypus Wallpapers Free - Wallpaper Cave" [ref=f289e173] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=Ed4peK9M&id=304EE4E68F790E72F32343B88A93EB300D2993C5&thid=OIP.Ed4peK9Mq18hZpF7tdTbkQHaEK&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2fwp3352816.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.11de2978af4cab5f2166917bb5d4db91%3frik%3dxZMpDTDrk4q4Qw%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=26F61ECACEFEFFD6F76019EF87928615&selectedIndex=18&itb=0
+        - listitem [ref=f289e174]:
+          - generic [ref=f289e175]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e177] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=e2SRx%2fOQ&id=A76254DF3B9FFD24AB91E8DE850797F34AE51B85&thid=OIP.e2SRx_OQga7bzSyii_lRLQHaEK&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2fFHtcEyK.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7b6491c7f39081aedbcd2ca28bf9512d%3frik%3dhRvlSvOXB4Xe6A%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=21ABEE99330BB4D3FE2D224F636CD7E2&selectedIndex=19&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e179]
+            - generic [ref=f289e180]:
+              - link "Perry The Platypus Wallpapers - Wallpaper Cave" [ref=f289e181] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=e2SRx%2fOQ&id=A76254DF3B9FFD24AB91E8DE850797F34AE51B85&thid=OIP.e2SRx_OQga7bzSyii_lRLQHaEK&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2fFHtcEyK.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7b6491c7f39081aedbcd2ca28bf9512d%3frik%3dhRvlSvOXB4Xe6A%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=21ABEE99330BB4D3FE2D224F636CD7E2&selectedIndex=19&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry The Platypus Wallpapers - Wallpaper Cave" [ref=f289e182] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=e2SRx%2fOQ&id=A76254DF3B9FFD24AB91E8DE850797F34AE51B85&thid=OIP.e2SRx_OQga7bzSyii_lRLQHaEK&mediaurl=https%3a%2f%2fwallpapercave.com%2fwp%2fFHtcEyK.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7b6491c7f39081aedbcd2ca28bf9512d%3frik%3dhRvlSvOXB4Xe6A%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=21ABEE99330BB4D3FE2D224F636CD7E2&selectedIndex=19&itb=0
+        - listitem [ref=f289e183]:
+          - generic [ref=f289e184]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e186] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=xI7J%2fMwS&id=55530364FA4E24970A6935A07561E68E0F4095AD&thid=OIP.xI7J_MwSpnnqUSGSLndAewHaIR&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f58%2fd1%2fb5%2f58d1b5680582b3755ea3d4e6452059dc.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.c48ec9fccc12a679ea5121922e77407b%3frik%3drZVAD47mYXWgNQ%26pid%3dImgRaw%26r%3d0&exph=1673&expw=1497&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=7FEBD050AAD9095E0C88C0B8D7772ED8&selectedIndex=20&itb=1
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e188]
+            - generic [ref=f289e189]:
+              - link "Perry the Platypus | Perry the platypus, Phineas and ferb, Cartoon styles" [ref=f289e190] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=xI7J%2fMwS&id=55530364FA4E24970A6935A07561E68E0F4095AD&thid=OIP.xI7J_MwSpnnqUSGSLndAewHaIR&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f58%2fd1%2fb5%2f58d1b5680582b3755ea3d4e6452059dc.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.c48ec9fccc12a679ea5121922e77407b%3frik%3drZVAD47mYXWgNQ%26pid%3dImgRaw%26r%3d0&exph=1673&expw=1497&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=7FEBD050AAD9095E0C88C0B8D7772ED8&selectedIndex=20&itb=1
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry the Platypus | Perry the platypus…" [ref=f289e191] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=xI7J%2fMwS&id=55530364FA4E24970A6935A07561E68E0F4095AD&thid=OIP.xI7J_MwSpnnqUSGSLndAewHaIR&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f58%2fd1%2fb5%2f58d1b5680582b3755ea3d4e6452059dc.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.c48ec9fccc12a679ea5121922e77407b%3frik%3drZVAD47mYXWgNQ%26pid%3dImgRaw%26r%3d0&exph=1673&expw=1497&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=7FEBD050AAD9095E0C88C0B8D7772ED8&selectedIndex=20&itb=1
+      - list [ref=f289e192]:
+        - listitem [ref=f289e193]:
+          - generic [ref=f289e194]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e196] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=q2Bs%2bm7t&id=0C7CA9D67FBC2C561291773D21453DC08C9FCC27&thid=OIP.q2Bs-m7tUpeHlLYbyqHknwHaJ3&mediaurl=https%3a%2f%2fi.pinimg.com%2f736x%2fba%2f6e%2f47%2fba6e472c049c25a5d42e0ab36f09b661.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.ab606cfa6eed52978794b61bcaa1e49f%3frik%3dJ8yfjMA9RSE9dw%26pid%3dImgRaw%26r%3d0&exph=981&expw=736&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=D50D90D9232611B9346F5C94CFE3879B&selectedIndex=21&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e198]
+            - generic [ref=f289e199]:
+              - link "PERRY THE PLATYPUS?!? | Perry the platypus, Platypus, Cute disney ..." [ref=f289e200] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=q2Bs%2bm7t&id=0C7CA9D67FBC2C561291773D21453DC08C9FCC27&thid=OIP.q2Bs-m7tUpeHlLYbyqHknwHaJ3&mediaurl=https%3a%2f%2fi.pinimg.com%2f736x%2fba%2f6e%2f47%2fba6e472c049c25a5d42e0ab36f09b661.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.ab606cfa6eed52978794b61bcaa1e49f%3frik%3dJ8yfjMA9RSE9dw%26pid%3dImgRaw%26r%3d0&exph=981&expw=736&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=D50D90D9232611B9346F5C94CFE3879B&selectedIndex=21&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "PERRY THE PLATYPUS?!? …" [ref=f289e201] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=q2Bs%2bm7t&id=0C7CA9D67FBC2C561291773D21453DC08C9FCC27&thid=OIP.q2Bs-m7tUpeHlLYbyqHknwHaJ3&mediaurl=https%3a%2f%2fi.pinimg.com%2f736x%2fba%2f6e%2f47%2fba6e472c049c25a5d42e0ab36f09b661.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.ab606cfa6eed52978794b61bcaa1e49f%3frik%3dJ8yfjMA9RSE9dw%26pid%3dImgRaw%26r%3d0&exph=981&expw=736&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=D50D90D9232611B9346F5C94CFE3879B&selectedIndex=21&itb=0
+        - listitem [ref=f289e202]:
+          - generic [ref=f289e203]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e205] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=lz1Wwwch&id=65EBD69EA3C110DF00B2B8C60ACEFD4CB3F24B66&thid=OIP.lz1WwwchrJnKYvIdeCIqaQHaIc&mediaurl=https%3a%2f%2fw7.pngwing.com%2fpngs%2f712%2f950%2fpng-transparent-perry-the-platypus.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.973d56c30721ac99ca62f21d78222a69%3frik%3dZkvys0z9zgrGuA%26pid%3dImgRaw%26r%3d0&exph=1050&expw=920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=6E60E315EB41F679473188205D838182&selectedIndex=22&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e207]
+            - generic [ref=f289e208]:
+              - link "Perry the platypus, png | PNGWing" [ref=f289e209] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=lz1Wwwch&id=65EBD69EA3C110DF00B2B8C60ACEFD4CB3F24B66&thid=OIP.lz1WwwchrJnKYvIdeCIqaQHaIc&mediaurl=https%3a%2f%2fw7.pngwing.com%2fpngs%2f712%2f950%2fpng-transparent-perry-the-platypus.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.973d56c30721ac99ca62f21d78222a69%3frik%3dZkvys0z9zgrGuA%26pid%3dImgRaw%26r%3d0&exph=1050&expw=920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=6E60E315EB41F679473188205D838182&selectedIndex=22&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry the platypus, png | PNGWing" [ref=f289e210] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=lz1Wwwch&id=65EBD69EA3C110DF00B2B8C60ACEFD4CB3F24B66&thid=OIP.lz1WwwchrJnKYvIdeCIqaQHaIc&mediaurl=https%3a%2f%2fw7.pngwing.com%2fpngs%2f712%2f950%2fpng-transparent-perry-the-platypus.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.973d56c30721ac99ca62f21d78222a69%3frik%3dZkvys0z9zgrGuA%26pid%3dImgRaw%26r%3d0&exph=1050&expw=920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=6E60E315EB41F679473188205D838182&selectedIndex=22&itb=0
+        - listitem [ref=f289e211]:
+          - generic [ref=f289e212]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e214] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=pkpeQaAR&id=3B170B595712A19EDF29897D442572D9DBA353BA&thid=OIP.pkpeQaARFRLTUFvsrSeaPwHaKC&mediaurl=https%3a%2f%2fwww.pikpng.com%2fpngl%2fb%2f436-4365643_photopack-phineas-and-ferb-perry-the-platypus-png.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.a64a5e41a0111512d3505becad279a3f%3frik%3dulOj29lyJUR9iQ%26pid%3dImgRaw%26r%3d0&exph=1389&expw=1024&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=7F87D7B014EFC48824A5B1B911A018C9&selectedIndex=23&itb=1
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e216]
+            - generic [ref=f289e217]:
+              - link "Photopack Phineas And Ferb - Perry The Platypus Png Clipart - Large ..." [ref=f289e218] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=pkpeQaAR&id=3B170B595712A19EDF29897D442572D9DBA353BA&thid=OIP.pkpeQaARFRLTUFvsrSeaPwHaKC&mediaurl=https%3a%2f%2fwww.pikpng.com%2fpngl%2fb%2f436-4365643_photopack-phineas-and-ferb-perry-the-platypus-png.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.a64a5e41a0111512d3505becad279a3f%3frik%3dulOj29lyJUR9iQ%26pid%3dImgRaw%26r%3d0&exph=1389&expw=1024&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=7F87D7B014EFC48824A5B1B911A018C9&selectedIndex=23&itb=1
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Photopack Phineas And F…" [ref=f289e219] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=pkpeQaAR&id=3B170B595712A19EDF29897D442572D9DBA353BA&thid=OIP.pkpeQaARFRLTUFvsrSeaPwHaKC&mediaurl=https%3a%2f%2fwww.pikpng.com%2fpngl%2fb%2f436-4365643_photopack-phineas-and-ferb-perry-the-platypus-png.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.a64a5e41a0111512d3505becad279a3f%3frik%3dulOj29lyJUR9iQ%26pid%3dImgRaw%26r%3d0&exph=1389&expw=1024&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=7F87D7B014EFC48824A5B1B911A018C9&selectedIndex=23&itb=1
+        - listitem [ref=f289e220]:
+          - generic [ref=f289e221]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e223] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=fLxfURbp&id=98DB423BB5F890336B4B29F74CACB0E4EE2CADF2&thid=OIP.fLxfURbpDRWk3errVOyKHgHaEK&mediaurl=https%3a%2f%2fstatic.wikia.nocookie.net%2fphineasandferb%2fimages%2f7%2f7c%2f322b_-_Perry_Dancing_4.jpg%2frevision%2flatest%3fcb%3d20120523040136&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7cbc5f5116e90d15a4ddeaeb54ec8a1e%3frik%3d8q0s7uSwrEz3KQ%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=E5D7CF38F74F762025140CFCB4020478&selectedIndex=24&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e225]
+            - generic [ref=f289e226]:
+              - link "Perry the Platypus (1914) | Phineas and Ferb Wiki | Fandom" [ref=f289e227] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=fLxfURbp&id=98DB423BB5F890336B4B29F74CACB0E4EE2CADF2&thid=OIP.fLxfURbpDRWk3errVOyKHgHaEK&mediaurl=https%3a%2f%2fstatic.wikia.nocookie.net%2fphineasandferb%2fimages%2f7%2f7c%2f322b_-_Perry_Dancing_4.jpg%2frevision%2flatest%3fcb%3d20120523040136&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7cbc5f5116e90d15a4ddeaeb54ec8a1e%3frik%3d8q0s7uSwrEz3KQ%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=E5D7CF38F74F762025140CFCB4020478&selectedIndex=24&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry the Platypus (1914) | Phineas and Ferb Wiki | Fandom" [ref=f289e228] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=fLxfURbp&id=98DB423BB5F890336B4B29F74CACB0E4EE2CADF2&thid=OIP.fLxfURbpDRWk3errVOyKHgHaEK&mediaurl=https%3a%2f%2fstatic.wikia.nocookie.net%2fphineasandferb%2fimages%2f7%2f7c%2f322b_-_Perry_Dancing_4.jpg%2frevision%2flatest%3fcb%3d20120523040136&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.7cbc5f5116e90d15a4ddeaeb54ec8a1e%3frik%3d8q0s7uSwrEz3KQ%26pid%3dImgRaw%26r%3d0&exph=1080&expw=1920&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=E5D7CF38F74F762025140CFCB4020478&selectedIndex=24&itb=0
+        - listitem [ref=f289e229]:
+          - generic [ref=f289e230]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e232] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=QsPbqepN&id=5100E5B095D40B13D8A98698180735860ABA9F2D&thid=OIP.QsPbqepNx4P4rlAN_SJhjwHaEx&mediaurl=https%3a%2f%2fcdn.wallpapersafari.com%2f90%2f48%2fBOYtjd.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.42c3dba9ea4dc783f8ae500dfd22618f%3frik%3dLZ%252b6CoY1BxiYhg%26pid%3dImgRaw%26r%3d0&exph=1031&expw=1600&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=D0B88AAA8A3E978B14E5D274124D206C&selectedIndex=25&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e234]
+            - generic [ref=f289e235]:
+              - link "🔥 [100+] Perry The Platypus Wallpapers | WallpaperSafari" [ref=f289e236] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=QsPbqepN&id=5100E5B095D40B13D8A98698180735860ABA9F2D&thid=OIP.QsPbqepNx4P4rlAN_SJhjwHaEx&mediaurl=https%3a%2f%2fcdn.wallpapersafari.com%2f90%2f48%2fBOYtjd.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.42c3dba9ea4dc783f8ae500dfd22618f%3frik%3dLZ%252b6CoY1BxiYhg%26pid%3dImgRaw%26r%3d0&exph=1031&expw=1600&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=D0B88AAA8A3E978B14E5D274124D206C&selectedIndex=25&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "🔥 [100+] Perry The Platypus Wallpapers | WallpaperSafari" [ref=f289e237] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=QsPbqepN&id=5100E5B095D40B13D8A98698180735860ABA9F2D&thid=OIP.QsPbqepNx4P4rlAN_SJhjwHaEx&mediaurl=https%3a%2f%2fcdn.wallpapersafari.com%2f90%2f48%2fBOYtjd.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.42c3dba9ea4dc783f8ae500dfd22618f%3frik%3dLZ%252b6CoY1BxiYhg%26pid%3dImgRaw%26r%3d0&exph=1031&expw=1600&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=D0B88AAA8A3E978B14E5D274124D206C&selectedIndex=25&itb=0
+        - listitem [ref=f289e238]:
+          - generic [ref=f289e239]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e241] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=g8mnzyWp&id=51282317C907462179B083D9E397A29E98B86E34&thid=OIP.g8mnzyWpMfU9YAt1XXITggHaHP&mediaurl=https%3a%2f%2fdisneynews.us%2fwp-content%2fuploads%2f2021%2f04%2fPerry-the-Platypus.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.83c9a7cf25a931f53d600b755d721382%3frik%3dNG64mJ6il%252bPZgw%26pid%3dImgRaw%26r%3d0&exph=685&expw=701&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=D4B8CCED2C3D437DCE00BC3777F67B09&selectedIndex=26&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e243]
+            - generic [ref=f289e244]:
+              - link "Perry the Platypus / Agent P (Phineas and Ferb) | Disney Character Guide" [ref=f289e245] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=g8mnzyWp&id=51282317C907462179B083D9E397A29E98B86E34&thid=OIP.g8mnzyWpMfU9YAt1XXITggHaHP&mediaurl=https%3a%2f%2fdisneynews.us%2fwp-content%2fuploads%2f2021%2f04%2fPerry-the-Platypus.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.83c9a7cf25a931f53d600b755d721382%3frik%3dNG64mJ6il%252bPZgw%26pid%3dImgRaw%26r%3d0&exph=685&expw=701&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=D4B8CCED2C3D437DCE00BC3777F67B09&selectedIndex=26&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry the Platypus / Agent P (Phineas and …" [ref=f289e246] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=g8mnzyWp&id=51282317C907462179B083D9E397A29E98B86E34&thid=OIP.g8mnzyWpMfU9YAt1XXITggHaHP&mediaurl=https%3a%2f%2fdisneynews.us%2fwp-content%2fuploads%2f2021%2f04%2fPerry-the-Platypus.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.83c9a7cf25a931f53d600b755d721382%3frik%3dNG64mJ6il%252bPZgw%26pid%3dImgRaw%26r%3d0&exph=685&expw=701&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=D4B8CCED2C3D437DCE00BC3777F67B09&selectedIndex=26&itb=0
+      - list [ref=f289e247]:
+        - listitem [ref=f289e248]:
+          - generic [ref=f289e249]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e251] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=uI2ngOnd&id=F5E256765891E92CF85AFBA97D8FA08F07E04358&thid=OIP.uI2ngOndNh0BIfas55xB5AHaHa&mediaurl=https%3a%2f%2fcdn.wallpapersafari.com%2f24%2f81%2fRGzagd.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.b88da780e9dd361d0121f6ace79c41e4%3frik%3dWEPgB4%252bgj32p%252bw%26pid%3dImgRaw%26r%3d0&exph=1024&expw=1024&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=642ADE2862A7774F4FEBD92BDEE42379&selectedIndex=27&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e253]
+            - generic [ref=f289e254]:
+              - link "🔥 Free Download Perry The Platypus Wallpaper by @christopherfowler ..." [ref=f289e255] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=uI2ngOnd&id=F5E256765891E92CF85AFBA97D8FA08F07E04358&thid=OIP.uI2ngOndNh0BIfas55xB5AHaHa&mediaurl=https%3a%2f%2fcdn.wallpapersafari.com%2f24%2f81%2fRGzagd.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.b88da780e9dd361d0121f6ace79c41e4%3frik%3dWEPgB4%252bgj32p%252bw%26pid%3dImgRaw%26r%3d0&exph=1024&expw=1024&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=642ADE2862A7774F4FEBD92BDEE42379&selectedIndex=27&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "🔥 Free Download Perry The Platypus …" [ref=f289e256] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=uI2ngOnd&id=F5E256765891E92CF85AFBA97D8FA08F07E04358&thid=OIP.uI2ngOndNh0BIfas55xB5AHaHa&mediaurl=https%3a%2f%2fcdn.wallpapersafari.com%2f24%2f81%2fRGzagd.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.b88da780e9dd361d0121f6ace79c41e4%3frik%3dWEPgB4%252bgj32p%252bw%26pid%3dImgRaw%26r%3d0&exph=1024&expw=1024&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=642ADE2862A7774F4FEBD92BDEE42379&selectedIndex=27&itb=0
+        - listitem [ref=f289e257]:
+          - generic [ref=f289e258]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e260] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=pcbvSDbz&id=BD7A6680B8095E9D1AED97FFA9E37CDAEE2C69F4&thid=OIP.pcbvSDbz4xkbRtzVFTEvWAHaF3&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f64%2f30%2f95%2f643095332e555666d5dab625ef949364.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.a5c6ef4836f3e3191b46dcd515312f58%3frik%3d9Gks7tp846n%252flw%26pid%3dImgRaw%26r%3d0&exph=1584&expw=2000&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=C6ED7A2A9BC3B5AB9B0F52072E9D6747&selectedIndex=28&itb=1
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e262]
+            - generic [ref=f289e263]:
+              - link "Perry the Platypus by Sarrel on DeviantArt | Pet platypus, Disney xd ..." [ref=f289e264] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=pcbvSDbz&id=BD7A6680B8095E9D1AED97FFA9E37CDAEE2C69F4&thid=OIP.pcbvSDbz4xkbRtzVFTEvWAHaF3&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f64%2f30%2f95%2f643095332e555666d5dab625ef949364.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.a5c6ef4836f3e3191b46dcd515312f58%3frik%3d9Gks7tp846n%252flw%26pid%3dImgRaw%26r%3d0&exph=1584&expw=2000&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=C6ED7A2A9BC3B5AB9B0F52072E9D6747&selectedIndex=28&itb=1
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry the Platypus by Sarrel on DeviantArt | Pet platypus…" [ref=f289e265] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=pcbvSDbz&id=BD7A6680B8095E9D1AED97FFA9E37CDAEE2C69F4&thid=OIP.pcbvSDbz4xkbRtzVFTEvWAHaF3&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f64%2f30%2f95%2f643095332e555666d5dab625ef949364.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.a5c6ef4836f3e3191b46dcd515312f58%3frik%3d9Gks7tp846n%252flw%26pid%3dImgRaw%26r%3d0&exph=1584&expw=2000&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=C6ED7A2A9BC3B5AB9B0F52072E9D6747&selectedIndex=28&itb=1
+        - listitem [ref=f289e266]:
+          - generic [ref=f289e267]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e269] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=WSrCLVeJ&id=BF2CDBA073FA3632339406E1E2871988DC0AB13A&thid=OIP.WSrCLVeJ6Ho6TejAuNl4MQHaNK&mediaurl=https%3a%2f%2fi.pinimg.com%2f736x%2fee%2fa0%2f22%2feea022be5a9472f94948c4598a7f5321.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.592ac22d5789e87a3a4de8c0b8d97831%3frik%3dOrEK3IgZh%252bLhBg%26pid%3dImgRaw%26r%3d0&exph=903&expw=508&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=A1D415173019F92DB2063018891EDF4D&selectedIndex=29&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e271]
+            - generic [ref=f289e272]:
+              - link "Phineas and Ferb Dr. Doofenshmirtz Platypus Sticker - Sticker Mania ..." [ref=f289e273] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=WSrCLVeJ&id=BF2CDBA073FA3632339406E1E2871988DC0AB13A&thid=OIP.WSrCLVeJ6Ho6TejAuNl4MQHaNK&mediaurl=https%3a%2f%2fi.pinimg.com%2f736x%2fee%2fa0%2f22%2feea022be5a9472f94948c4598a7f5321.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.592ac22d5789e87a3a4de8c0b8d97831%3frik%3dOrEK3IgZh%252bLhBg%26pid%3dImgRaw%26r%3d0&exph=903&expw=508&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=A1D415173019F92DB2063018891EDF4D&selectedIndex=29&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Phineas and Ferb Dr. Doofenshm…" [ref=f289e274] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=WSrCLVeJ&id=BF2CDBA073FA3632339406E1E2871988DC0AB13A&thid=OIP.WSrCLVeJ6Ho6TejAuNl4MQHaNK&mediaurl=https%3a%2f%2fi.pinimg.com%2f736x%2fee%2fa0%2f22%2feea022be5a9472f94948c4598a7f5321.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.592ac22d5789e87a3a4de8c0b8d97831%3frik%3dOrEK3IgZh%252bLhBg%26pid%3dImgRaw%26r%3d0&exph=903&expw=508&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=A1D415173019F92DB2063018891EDF4D&selectedIndex=29&itb=0
+        - listitem [ref=f289e275]:
+          - generic [ref=f289e276]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e278] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=ZhZnwZcd&id=CA7284EC111C5E3865B61FFC4BA7FA196F746471&thid=OIP.ZhZnwZcdSGg57QhNtSbZ7gHaFu&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f66%2f87%2f82%2f668782cd47d91d28283515c8b12c7fa5.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.661667c1971d486839ed084db526d9ee%3frik%3dcWR0bxn6p0v8Hw%26pid%3dImgRaw%26r%3d0&exph=1275&expw=1650&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=049DD2F8A1153FCD50475EE9A3E2E322&selectedIndex=30&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e280]
+            - generic [ref=f289e281]:
+              - link "Perry the Platypus | Perry the platypus, Platypus, Phineas and ferb" [ref=f289e282] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=ZhZnwZcd&id=CA7284EC111C5E3865B61FFC4BA7FA196F746471&thid=OIP.ZhZnwZcdSGg57QhNtSbZ7gHaFu&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f66%2f87%2f82%2f668782cd47d91d28283515c8b12c7fa5.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.661667c1971d486839ed084db526d9ee%3frik%3dcWR0bxn6p0v8Hw%26pid%3dImgRaw%26r%3d0&exph=1275&expw=1650&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=049DD2F8A1153FCD50475EE9A3E2E322&selectedIndex=30&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Perry the Platypus | Perry the platypus, Platypus, Phineas …" [ref=f289e283] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=ZhZnwZcd&id=CA7284EC111C5E3865B61FFC4BA7FA196F746471&thid=OIP.ZhZnwZcdSGg57QhNtSbZ7gHaFu&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f66%2f87%2f82%2f668782cd47d91d28283515c8b12c7fa5.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.661667c1971d486839ed084db526d9ee%3frik%3dcWR0bxn6p0v8Hw%26pid%3dImgRaw%26r%3d0&exph=1275&expw=1650&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=049DD2F8A1153FCD50475EE9A3E2E322&selectedIndex=30&itb=0
+        - listitem [ref=f289e284]:
+          - generic [ref=f289e285]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e287] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=g4G66W%2bz&id=94FD54DB1963AA0F353EC4DEAFC0AF43CB002A88&thid=OIP.g4G66W-z8vjO2LzG7H7XEAHaGf&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f5e%2f1b%2f2b%2f5e1b2bbd76926aa21e72b4706fe448ec.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8381bae96fb3f2f8ced8bcc6ec7ed710%3frik%3diCoAy0OvwK%252fexA%26pid%3dImgRaw%26r%3d0&exph=609&expw=694&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=0926FA7CE1629F004B9DC89DD6B50744&selectedIndex=31&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e289]
+            - generic [ref=f289e290]:
+              - link "Pet platypus | Weird animal facts, Phineas y ferb, Phineas e ferb" [ref=f289e291] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=g4G66W%2bz&id=94FD54DB1963AA0F353EC4DEAFC0AF43CB002A88&thid=OIP.g4G66W-z8vjO2LzG7H7XEAHaGf&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f5e%2f1b%2f2b%2f5e1b2bbd76926aa21e72b4706fe448ec.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8381bae96fb3f2f8ced8bcc6ec7ed710%3frik%3diCoAy0OvwK%252fexA%26pid%3dImgRaw%26r%3d0&exph=609&expw=694&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=0926FA7CE1629F004B9DC89DD6B50744&selectedIndex=31&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Pet platypus | Weird animal facts, Phineas y …" [ref=f289e292] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=g4G66W%2bz&id=94FD54DB1963AA0F353EC4DEAFC0AF43CB002A88&thid=OIP.g4G66W-z8vjO2LzG7H7XEAHaGf&mediaurl=https%3a%2f%2fi.pinimg.com%2foriginals%2f5e%2f1b%2f2b%2f5e1b2bbd76926aa21e72b4706fe448ec.png&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.8381bae96fb3f2f8ced8bcc6ec7ed710%3frik%3diCoAy0OvwK%252fexA%26pid%3dImgRaw%26r%3d0&exph=609&expw=694&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=0926FA7CE1629F004B9DC89DD6B50744&selectedIndex=31&itb=0
+        - listitem [ref=f289e293]:
+          - generic [ref=f289e294]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e296] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=%2b9yvR7lD&id=7921FBF7C5EF9CE9EE3B795FD30D0C519CD7DE80&thid=OIP.-9yvR7lDLBg-jxGNV5DZawHaEj&mediaurl=https%3a%2f%2fcarboncostume.com%2fwordpress%2fwp-content%2fuploads%2f2024%2f06%2fperry-the-platypus-phineas-ferb.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.fbdcaf47b9432c183e8f118d5790d96b%3frik%3dgN7XnFEMDdNfeQ%26pid%3dImgRaw%26r%3d0&exph=600&expw=975&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=CDA45625CEE73150602F1ADFD47146C6&selectedIndex=32&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e298]
+            - generic [ref=f289e299]:
+              - link "Vanessa Doofenshmirtz from Phineas and Ferb Costume Guide | Carbon Costume" [ref=f289e300] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=%2b9yvR7lD&id=7921FBF7C5EF9CE9EE3B795FD30D0C519CD7DE80&thid=OIP.-9yvR7lDLBg-jxGNV5DZawHaEj&mediaurl=https%3a%2f%2fcarboncostume.com%2fwordpress%2fwp-content%2fuploads%2f2024%2f06%2fperry-the-platypus-phineas-ferb.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.fbdcaf47b9432c183e8f118d5790d96b%3frik%3dgN7XnFEMDdNfeQ%26pid%3dImgRaw%26r%3d0&exph=600&expw=975&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=CDA45625CEE73150602F1ADFD47146C6&selectedIndex=32&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Vanessa Doofenshmirtz from Phineas and Ferb Costume Guide | Carbon C…" [ref=f289e301] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=%2b9yvR7lD&id=7921FBF7C5EF9CE9EE3B795FD30D0C519CD7DE80&thid=OIP.-9yvR7lDLBg-jxGNV5DZawHaEj&mediaurl=https%3a%2f%2fcarboncostume.com%2fwordpress%2fwp-content%2fuploads%2f2024%2f06%2fperry-the-platypus-phineas-ferb.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.fbdcaf47b9432c183e8f118d5790d96b%3frik%3dgN7XnFEMDdNfeQ%26pid%3dImgRaw%26r%3d0&exph=600&expw=975&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=CDA45625CEE73150602F1ADFD47146C6&selectedIndex=32&itb=0
+      - list [ref=f289e302]:
+        - listitem [ref=f289e303]:
+          - generic [ref=f289e304]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e306] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=GR5aPqgA&id=D6021D8245676BAF407A5EC2CA433380BB0CD999&thid=OIP.GR5aPqgAbgEGZnBjqkh5vwHaFv&mediaurl=https%3a%2f%2fwww.shecos.com%2fblog%2fwp-content%2fuploads%2f2019%2f11%2fperry-the-platypus-cosplay.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.191e5a3ea8006e0106667063aa4879bf%3frik%3dmdkMu4AzQ8rCXg%26pid%3dImgRaw%26r%3d0&exph=589&expw=760&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=CDFC00A4729C258407E873A2620D3295&selectedIndex=33&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e308]
+            - generic [ref=f289e309]:
+              - link "Great Outdoors Jeopardy Template" [ref=f289e310] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=GR5aPqgA&id=D6021D8245676BAF407A5EC2CA433380BB0CD999&thid=OIP.GR5aPqgAbgEGZnBjqkh5vwHaFv&mediaurl=https%3a%2f%2fwww.shecos.com%2fblog%2fwp-content%2fuploads%2f2019%2f11%2fperry-the-platypus-cosplay.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.191e5a3ea8006e0106667063aa4879bf%3frik%3dmdkMu4AzQ8rCXg%26pid%3dImgRaw%26r%3d0&exph=589&expw=760&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=CDFC00A4729C258407E873A2620D3295&selectedIndex=33&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "Great Outdoors Jeopardy Template" [ref=f289e311] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=GR5aPqgA&id=D6021D8245676BAF407A5EC2CA433380BB0CD999&thid=OIP.GR5aPqgAbgEGZnBjqkh5vwHaFv&mediaurl=https%3a%2f%2fwww.shecos.com%2fblog%2fwp-content%2fuploads%2f2019%2f11%2fperry-the-platypus-cosplay.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.191e5a3ea8006e0106667063aa4879bf%3frik%3dmdkMu4AzQ8rCXg%26pid%3dImgRaw%26r%3d0&exph=589&expw=760&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=CDFC00A4729C258407E873A2620D3295&selectedIndex=33&itb=0
+        - listitem [ref=f289e312]:
+          - generic [ref=f289e313]:
+            - link "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e315] [cursor=pointer]:
+              - /url: /images/search?view=detailV2&ccid=M1Or%2bRpJ&id=DC51A036C654BCF6E3AC6C5660089E995E485C8A&thid=OIP.M1Or-RpJQ6c1wIIPJOCwTAHaEu&mediaurl=https%3a%2f%2fimages5.fanpop.com%2fimage%2fphotos%2f26200000%2fPerry-perry-the-platypus-26286504-1071-683.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.3353abf91a4943a735c0820f24e0b04c%3frik%3dilxIXpmeCGBWbA%26pid%3dImgRaw%26r%3d0&exph=683&expw=1071&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=76C9C98953625D9BFAF9B8A9A6BA11E1&selectedIndex=34&itb=0
+              - img "Image result for am sieu toc site:dienmayxanh.com" [ref=f289e317]
+            - generic [ref=f289e318]:
+              - link "perry the platypus | ペリー キャラクター – DMLBH" [ref=f289e319] [cursor=pointer]:
+                - /url: /images/search?view=detailV2&ccid=M1Or%2bRpJ&id=DC51A036C654BCF6E3AC6C5660089E995E485C8A&thid=OIP.M1Or-RpJQ6c1wIIPJOCwTAHaEu&mediaurl=https%3a%2f%2fimages5.fanpop.com%2fimage%2fphotos%2f26200000%2fPerry-perry-the-platypus-26286504-1071-683.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.3353abf91a4943a735c0820f24e0b04c%3frik%3dilxIXpmeCGBWbA%26pid%3dImgRaw%26r%3d0&exph=683&expw=1071&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=76C9C98953625D9BFAF9B8A9A6BA11E1&selectedIndex=34&itb=0
+              - generic:
+                - generic:
+                  - list:
+                    - listitem:
+                      - link "perry the platypus | ペリー キャラクター – DMLBH" [ref=f289e320] [cursor=pointer]:
+                        - /url: /images/search?view=detailV2&ccid=M1Or%2bRpJ&id=DC51A036C654BCF6E3AC6C5660089E995E485C8A&thid=OIP.M1Or-RpJQ6c1wIIPJOCwTAHaEu&mediaurl=https%3a%2f%2fimages5.fanpop.com%2fimage%2fphotos%2f26200000%2fPerry-perry-the-platypus-26286504-1071-683.jpg&cdnurl=https%3a%2f%2fth.bing.com%2fth%2fid%2fR.3353abf91a4943a735c0820f24e0b04c%3frik%3dilxIXpmeCGBWbA%26pid%3dImgRaw%26r%3d0&exph=683&expw=1071&q=am+sieu+toc+site%3adienmayxanh.com&FORM=IRPRST&ck=76C9C98953625D9BFAF9B8A9A6BA11E1&selectedIndex=34&itb=0
+  - button "Feedback" [ref=f289e323] [cursor=pointer]
+  - contentinfo [ref=f289e325]:
+    - generic [ref=f289e326]:
+      - generic [ref=f289e327]: © 2026 Microsoft
+      - list:
+        - listitem [ref=f289e328]:
+          - link "Privacy" [ref=f289e329] [cursor=pointer]:
+            - /url: http://go.microsoft.com/fwlink/?LinkId=521839
+        - listitem [ref=f289e330]:
+          - link "Terms" [ref=f289e331] [cursor=pointer]:
+            - /url: http://go.microsoft.com/fwlink/?LinkID=246338
+        - listitem [ref=f289e332]:
+          - link "Advertise" [ref=f289e333] [cursor=pointer]:
+            - /url: https://go.microsoft.com/fwlink/?linkid=868922
+        - listitem [ref=f289e334]:
+          - link "Help" [ref=f289e335] [cursor=pointer]:
+            - /url: https://support.microsoft.com/topic/82d20721-2d6f-4012-a13d-d1910ccf203f
+        - listitem [ref=f289e336]:
+          - button "Feedback" [ref=f289e337] [cursor=pointer]

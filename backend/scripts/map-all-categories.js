@@ -17,9 +17,7 @@ async function mapAllRemainingCategories() {
     'Mẹ & Bé': 'Đồ chơi, Mẹ & Bé',
     'Đồ điện tử': 'Điện tử & Công nghệ',
     'Điện tử - Công nghệ': 'Điện tử & Công nghệ',
-    'Thể thao': 'Thể thao & Dã ngoại',
-    'Linh tinh': 'Đồ gia dụng & Nội thất',
-    'Bất Động Sản': 'Đồ gia dụng & Nội thất'
+    'Thể thao': 'Thể thao & Dã ngoại'
   };
 
   let count = 0;

@@ -38,7 +38,7 @@ function getNotifIcon(type) {
   }
 }
 
-export const AppHeader = ({ onSearch }) => {
+export const AppHeader = ({ onSearch, onHome }) => {
   const [keyword, setKeyword] = useState('');
   const navigate = useNavigate();
   const { user, refreshProfile } = useAuth();
@@ -206,11 +206,11 @@ export const AppHeader = ({ onSearch }) => {
   return (
     <header className="sticky top-0 z-50 bg-[#FACC15] shadow-sm">
       <div className="max-w-[1200px] mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2 shrink-0" aria-label="Về trang chủ" onClick={() => { setKeyword(''); onHome?.(); }}>
           <img src="/logo.png" alt="HaiHand" className="h-10 w-auto object-contain" />
         </Link>
         
-        <div className="flex-1 max-w-2xl mx-8 hidden md:block">
+        <div className="flex-1 min-w-[180px] max-w-2xl mx-4 hidden md:block">
           <form className="relative" onSubmit={handleSearchSubmit}>
             <input 
               type="text" 
@@ -228,11 +228,17 @@ export const AppHeader = ({ onSearch }) => {
         </div>
 
         <div className="flex items-center gap-4 shrink-0">
-          <nav className="hidden lg:flex items-center gap-5 text-sm font-medium text-[#1C1917]">
-            <Link to="/" className="hover:underline">Trang chủ</Link>
-            <Link to="/products" className="hover:underline">Khám phá</Link>
+          <Link to="/image-search" className="xl:hidden p-2 rounded-lg hover:bg-black/5" aria-label="Tìm kiếm bằng hình ảnh" title="Tìm kiếm bằng hình ảnh">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7a2 2 0 012-2h2l1.5-2h7L17 5h2a2 2 0 012 2v11a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
+              <circle cx="12" cy="12" r="3.5" />
+            </svg>
+          </Link>
+          <nav className="hidden xl:flex items-center gap-4 text-sm font-medium text-[#1C1917]">
+            <Link to="/products" className="hidden lg:block hover:underline">Khám phá</Link>
+            <Link to="/image-search" className="hidden lg:block hover:underline">Tìm kiếm bằng hình ảnh</Link>
             {user && (
-              <Link to="/chat" className="relative hover:underline">
+              <Link to="/chat" className="hidden lg:block relative hover:underline">
                 Tin nhắn
                 {unreadCount > 0 && <span className="absolute -top-1 -right-2 w-2 h-2 bg-red-500 rounded-full border border-[#FACC15]"></span>}
               </Link>

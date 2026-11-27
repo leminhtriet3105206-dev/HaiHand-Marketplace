@@ -1,0 +1,12 @@
+- iframe [ref=f91e2]:
+  - generic [ref=f92e1]:
+    - generic [ref=f92e2]:
+      - generic [ref=f92e5]: Application error
+      - paragraph [ref=f92e6]:
+        - text: An error occurred in the application and your page could not be served. If you are the application owner,
+        - link "check your logs for details" [ref=f92e7] [cursor=pointer]:
+          - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error
+        - text: . You can do this from the Heroku CLI with the command
+        - code [ref=f92e8]: heroku logs --tail
+    - link [ref=f92e15] [cursor=pointer]:
+      - /url: https://devcenter.heroku.com/articles/logging#view-logs?utm_source=error-pages&utm_content=application-error

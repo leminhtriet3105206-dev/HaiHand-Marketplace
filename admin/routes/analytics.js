@@ -74,11 +74,11 @@ function defaultGetCollection(name) {
 async function getMetaFlags(getCol = defaultGetCollection) {
   try {
     const [lastRun, syntheticDaily] = await Promise.all([
-      getCol('analytics_runs').find({ error: null }).sort({ finishedAt: -1 }).limit(1).toArray(),
+      getCol('analytics_runs').find({ error: null }).sort({ finishedAt: -1, ranAt: -1 }).limit(1).toArray(),
       getCol('analytics_daily').findOne({ hasSynthetic: true }, { projection: { _id: 1 } }),
     ]);
     return {
-      lastRunAt: lastRun[0]?.finishedAt || null,
+      lastRunAt: lastRun[0]?.finishedAt || lastRun[0]?.ranAt || null,
       hasSyntheticGlobal: Boolean(syntheticDaily),
     };
   } catch (e) {
